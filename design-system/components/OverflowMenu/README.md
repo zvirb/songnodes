@@ -16,7 +16,7 @@ The predictable home for secondary actions: a "More actions" button with an elli
       <button class="sn-overflow-menu__item" role="menuitem" tabindex="-1" aria-disabled="true" aria-describedby="r1">…upload… <span class="sn-overflow-menu__label"><span class="sn-overflow-menu__text">Send to TIDAL on the weekly run</span><span class="sn-overflow-menu__reason" id="r1">Connect TIDAL in Services first</span></span></button>
     </div>
     <div class="sn-overflow-menu__sep" role="separator"></div>
-    <button class="sn-overflow-menu__item sn-overflow-menu__item--danger" role="menuitem" tabindex="-1">…trash… <span class="sn-overflow-menu__label"><span class="sn-overflow-menu__text">Delete set…</span></span></button>
+    <button class="sn-overflow-menu__item sn-overflow-menu__item--danger" role="menuitem" tabindex="-1">…trash-2… <span class="sn-overflow-menu__label"><span class="sn-overflow-menu__text">Delete set…</span></span></button>
   </div></div>
 ```
 
@@ -25,6 +25,8 @@ The predictable home for secondary actions: a "More actions" button with an elli
 - `__menu--start` aligns to the left edge; `__menu--up` opens upwards near the bottom of the screen.
 - Checkbox item: `role="menuitemcheckbox"` + `aria-checked`, the check icon shows only when on.
 - Shortcut hint: a `<kbd>` at the right of the item.
+- Item without an icon: put `<span class="sn-overflow-menu__icon-gap" aria-hidden="true"></span>` where the icon would go, so its label lines up with the others. Never use a placeholder glyph (such as `circle-dot`) to fill the column; an item with neither is indented by the same amount automatically.
+- Groups: a rule is drawn between a group and the section after it; `__sep` is still used before the destructive item.
 
 ## States
 Focused item: `surface-2` fill and inner focus ring. Disabled: `aria-disabled="true"`, stays focusable, dimmed, with a one-line reason in `fg-2`. Destructive: `status-bad` text and icon, always last, after a separator, label ends with "…" because it opens a confirmation.

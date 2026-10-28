@@ -154,6 +154,9 @@ This replaces `getScoreColor` in `components/IntelligentBrowser/utils.ts` (#7ED3
 - Comfortable 40px rows by default; compact 32px via `data-density="compact"`.
 - Keyboard-active row (J/K): `data-active`, a 2px `focus` outline, separate from selection; see DataTable "Keyboard row navigation".
 - Empty table: `EmptyState` inside the box, the header row stays.
+- Row headers (`tbody th scope="row"`) and footer labels (`tfoot th`) take the body cell's box: same padding, height, font size, case and background as a `td`, weight 600. Only `thead th` gets the small uppercase sticky column-header style.
+- Body cells pad `space-1` top and bottom and `space-3` at the sides, so wrapped text never touches a row rule.
+- A table that is the only thing in a `Card` sits flush in it (the card drops its padding and the table box its border); see Layout, "Text inset".
 
 ## Key-value grids
 

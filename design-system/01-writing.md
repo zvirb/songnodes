@@ -97,9 +97,21 @@ Every word in SongNodes and the music library reads like a knowledgeable booth-m
 
 ## File paths and system locations
 
-- Paths and URLs are `data-s`, middle-truncated (`/music/library/…/Overmono – So U Kno.flac`) with the full value in a Tooltip and a `CopyButton`.
+**A page never prints a file or folder location** (1.4.0, imported from BeanAlliance CopyPath v4.17/v4.17.1, chosen by Markus 28 Oct 2026). Not a Mac or Linux path (`/Users/…`, `/Volumes/Crates/…`, `~/Music/…`), not a Windows path (`C:\…`, `\\nas\…`), not a container path (`/app/data`, `/data/exports`), not a cloud-drive or share link (Dropbox, Google Drive, OneDrive). Paths are long, private to one machine, and useless to read; the person needs to know *which place*, not its address.
+
+| The thing is… | What the page shows | How its path reaches the clipboard |
+|---|---|---|
+| a **place** (a folder, a drive, a share) | its name in words: "Music library folder", "Pipeline output folder", "Crate drive", "Your own folder (this device only)". No button | It doesn't. A folder is chosen with the system picker ("Choose folder…"), never typed or copied |
+| a **file** listed in a table or list (an export, a backup, an analysed audio file) | its file **name** in `data-s` mono: `overmono-so-u-kno.aiff`, `songnodes-set-peak-time-friday-2026-10-24-2130.csv` | The row's icon-only `CopyButton` (`copy` icon, `aria-label` "Copy the path of overmono-so-u-kno.aiff"); its `title` tooltip holds the full path. That tooltip is the only place a path appears |
+
+- There is no labelled "Copy path" button anywhere, and no path in a toast, banner, empty state, error message, log line, `KeyValueGrid`, `TextLink` or print sheet.
+- File **names** stay visible in mono, because people match them against a folder or a DJ app. A folder's name on its own is part of a location: words, not mono.
+- Where the place matters to a choice, the words say so: "Saved to the Pipeline output folder", "Kept in your own folder on this device only".
+- If the copy fails, `CopyButton`'s fallback box shows the path selected, so it can be copied by hand. That is the one time a path is drawn on the page.
+- A setting whose value *is* a location (the pipeline's output folder on the server) is a `TextField` showing the value being edited, with no copy button; that is editing, not printing.
 - Non-admin views never show container paths, hostnames, ports, queue names or stack traces (`/app/data`, `redis:6379`, `scraper-orchestrator`). Say the human thing: "The scraping service is unreachable."
-- Admin views (`MonitoringPage`) may show hostnames in `data-s` inside a `Disclosure` labelled "Technical details".
+- Admin views (`MonitoringPage`) may show hostnames and ports in `data-s` inside a `Disclosure` labelled "Technical details"; never a file or folder path.
+- Not covered: the web address of a SongNodes view (the `PrintSheet` traceability footer prints `songnodes.local/sets/peak-time-friday` so paper leads back to the screen) and public source links (`.sn-link--ext`, "Open on Beatport"). Those are pages, not places on a disk (Q22). Guidelines and READMEs written for builders may still name repository files.
 
 ## Symbols, glyphs and punctuation
 
