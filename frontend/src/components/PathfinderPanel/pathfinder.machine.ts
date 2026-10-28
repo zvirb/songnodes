@@ -25,6 +25,8 @@ const initialContext: PathfinderContext = {
   currentStep: 'selectStart',
   completedSteps: new Set(),
   announcement: '',
+  tracks: [],
+  edges: [],
 };
 
 async function calculatePath(context: PathfinderContext): Promise<PathfinderResult> {
@@ -38,11 +40,8 @@ async function calculatePath(context: PathfinderContext): Promise<PathfinderResu
     tolerance_ms: context.constraints.tolerance * 60 * 1000,
     waypoint_track_ids: context.waypoints.map((w) => w.track.id),
     prefer_key_matching: context.constraints.preferKeyMatching,
-    // Additional constraints if needed
-    min_bpm: context.constraints.minBpm,
-    max_bpm: context.constraints.maxBpm,
-    allowed_keys: context.constraints.allowedKeys,
-    max_energy_change: context.constraints.maxEnergyChange,
+    tracks: context.tracks,
+    edges: context.edges,
   };
 
   const response = await fetch(`${REST_API_BASE}/api/v1/pathfinder/find-path`, {
@@ -54,8 +53,14 @@ async function calculatePath(context: PathfinderContext): Promise<PathfinderResu
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ detail: 'Pathfinding failed' }));
-    throw new Error(errorData.detail || 'Pathfinding failed');
+    const errorData = await response.json().catch(() => ({ detail: `Pathfinding failed (HTTP ${response.status})` }));
+    let msg = errorData.detail || `Pathfinding failed (HTTP ${response.status})`;
+    if (Array.isArray(errorData.detail)) {
+      msg = errorData.detail.map((e: any) => e.msg).join('; ');
+    } else if (typeof errorData.detail !== 'string') {
+      msg = `Pathfinding failed (HTTP ${response.status})`;
+    }
+    throw new Error(msg);
   }
 
   return await response.json();
@@ -122,6 +127,19 @@ export const pathfinderMachine = setup({
     exportPath: ({ context, event }) => {
       if (event.type === 'EXPORT_PATH') exportPath(context, event);
     },
+    // Shared by idle, success and error so a recalculation always sends the latest graph.
+    assignCalculateInput: assign(({ event }) =>
+      event.type === 'CALCULATE_PATH'
+        ? { tracks: event.tracks, edges: event.edges, error: null, announcement: 'Calculating optimal path…' }
+        : {}),
+    // A failure before the request is sent (graph not loaded, durations missing).
+    assignPathError: assign(({ event }) =>
+      event.type === 'PATH_ERROR'
+        ? { error: event.error, result: null, announcement: `Error: ${event.error}` }
+        : {}),
+  },
+  guards: {
+    hasStartTrack: ({ context }) => context.startTrack !== null,
   },
 }).createMachine({
   id: 'pathfinder',
@@ -235,14 +253,8 @@ export const pathfinderMachine = setup({
             },
           }),
         },
-        CALCULATE_PATH: {
-          target: 'calculating',
-          guard: ({ context }) => context.startTrack !== null,
-          actions: assign({
-            error: null,
-            announcement: () => 'Calculating optimal path…',
-          }),
-        },
+        CALCULATE_PATH: { target: 'calculating', guard: 'hasStartTrack', actions: 'assignCalculateInput' },
+        PATH_ERROR: { target: 'error', actions: 'assignPathError' },
         RESET: {
           actions: assign(() => initialContext),
         },
@@ -300,7 +312,8 @@ export const pathfinderMachine = setup({
     },
     success: {
       on: {
-        CALCULATE_PATH: 'calculating',
+        CALCULATE_PATH: { target: 'calculating', guard: 'hasStartTrack', actions: 'assignCalculateInput' },
+        PATH_ERROR: { target: 'error', actions: 'assignPathError' },
         RESET: 'idle',
         EXPORT_PATH: {
           actions: 'exportPath',
@@ -328,7 +341,8 @@ export const pathfinderMachine = setup({
     },
     error: {
       on: {
-        CALCULATE_PATH: 'calculating',
+        CALCULATE_PATH: { target: 'calculating', guard: 'hasStartTrack', actions: 'assignCalculateInput' },
+        PATH_ERROR: { target: 'error', actions: 'assignPathError' },
         RESET: 'idle',
         PREVIOUS_STEP: {
           target: 'idle',

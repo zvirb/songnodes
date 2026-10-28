@@ -11,6 +11,8 @@ import { PathfinderContext, WizardStep } from './types';
 import { Track } from '../../types';
 import { adaptServerPath } from '../../utils/serverPath';
 import { SN } from '../../lib/songnodes';
+import { routeTracksFromNodes, trackFromNode } from '../../utils/trackMetadata';
+import { useState } from 'react';
 
 /**
  * Main pathfinder hook - integrates XState machine with Zustand store
@@ -86,6 +88,48 @@ export function usePathfinder() {
     }
   }, [state.context.announcement, send]);
 
+  const [skippedCount, setSkippedCount] = useState(0);
+
+  const calculate = useCallback(() => {
+    if (graphData.nodes.length === 0) {
+      send({ type: 'PATH_ERROR', error: 'The graph has not loaded yet.' });
+      return;
+    }
+
+    let skipCount = 0;
+    const validNodes = graphData.nodes.filter((node) => {
+      // trackFromNode reads duration_ms, duration and duration_seconds, so
+      // seconds-only nodes are kept.
+      const durationMs = trackFromNode(node).duration_ms;
+      if (durationMs === undefined || !(durationMs > 0)) {
+        skipCount++;
+        return false;
+      }
+      return true;
+    });
+
+    setSkippedCount(skipCount);
+
+    let tracksData: ReturnType<typeof routeTracksFromNodes>;
+    try {
+      tracksData = routeTracksFromNodes(validNodes);
+    } catch (err) {
+      send({
+        type: 'PATH_ERROR',
+        error: err instanceof Error && err.message ? err.message : 'Could not prepare the tracks for routing.',
+      });
+      return;
+    }
+    const edgesData = graphData.edges.map(edge => ({
+      from_id: edge.source,
+      to_id: edge.target,
+      weight: edge.weight || 1.0,
+      connection_type: edge.type || 'sequential'
+    }));
+
+    send({ type: 'CALCULATE_PATH', tracks: tracksData, edges: edgesData } as any);
+  }, [graphData.nodes, graphData.edges, send]);
+
   return {
     state: state.context,
     machineState: state.value,
@@ -95,6 +139,8 @@ export function usePathfinder() {
     isCalculating: state.matches('calculating'),
     hasResult: state.matches('success'),
     hasError: state.matches('error'),
+    calculate,
+    skippedCount,
   };
 }
 

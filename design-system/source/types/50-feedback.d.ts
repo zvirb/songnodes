@@ -41,8 +41,8 @@ export interface LoadingStateProps {
 export interface StagedProgressStep {
   /** Step name, verb first: "Match plays to tracks". */
   name: string;
-  /** done ●, running ↻, waiting –, failed ✕, cancelled –. */
-  state: "done" | "running" | "waiting" | "failed" | "cancelled";
+  /** done ●, running ↻, waiting –, failed ✕, cancelled –, stalled ▲ (1.4.0: the running step sent no progress for `stallSeconds`; status-warn until the person tries again or cancels, never failed by elapsed time). */
+  state: "done" | "running" | "waiting" | "failed" | "cancelled" | "stalled";
   /** Current detail: "Matching 312 of 500 tracks", or the failure reason. */
   detail?: string;
   /** Items done and total for the running step; shows a neutral progress bar when both are known. */
@@ -51,8 +51,10 @@ export interface StagedProgressStep {
   total?: number;
   /** Seconds the step took (done/failed). */
   seconds?: number;
-  /** Step-level actions after a failure ("Retry this step", "Skip MixesDB"). */
+  /** Step-level actions after a failure or a stall ("Try again", which resumes from this step; "Skip MixesDB"). */
   actions?: ReactNode;
+  /** Seconds since this step last reported progress; the page turns a running step into `stalled` at `stallSeconds`. */
+  secondsSinceProgress?: number;
 }
 
 export interface StagedProgressProps {
@@ -70,11 +72,15 @@ export interface StagedProgressProps {
   onCancel?: () => void;
   /** True when the job runs on the server and survives navigation; shows the "You can leave this page" notice. */
   runsInBackground?: boolean;
+  /** Seconds without progress from the current step before it turns `stalled`. Default 60; elapsed time alone never stalls or fails a job. */
+  stallSeconds?: number;
+  /** Resumes from the stalled step (the step's "Try again"); done steps are kept. */
+  onResume?: (stepIndex: number) => void;
 }
 
 export interface ErrorStateProps {
-  /** Cause; picks icon, status colour and default retry guidance. */
-  kind: "offline" | "timeout" | "auth-expired" | "not-found" | "server" | "validation";
+  /** Cause; picks icon, status colour and default retry guidance. "stalled" (1.4.0): a staged load whose current step sent no progress for 60 s, warn, Try again resumes from that step. */
+  kind: "offline" | "timeout" | "auth-expired" | "not-found" | "server" | "validation" | "stalled";
   /** What happened, in plain words: "TIDAL is slow right now". */
   title: string;
   /** What it affects and what to do next. */

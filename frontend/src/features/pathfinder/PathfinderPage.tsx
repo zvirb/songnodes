@@ -10,6 +10,7 @@ import { usePageHeader } from '../../shell/AppShell';
 import { Link } from 'react-router-dom';
 import { usePathfinder } from '../../components/PathfinderPanel/hooks';
 import { useUnifiedTracks } from '../../hooks/useUnifiedTracks';
+import { useDataLoader } from '../../hooks/useDataLoader';
 import '../../components/PathfinderPanel.css';
 
 export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds: string[]) => void }) {
@@ -18,6 +19,9 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
   const pf = usePathfinder();
   const { send } = pf;
   const uid = useId().replace(/:/g, '');
+
+  // The graph view may already have loaded the graph; only fetch it when the store is empty.
+  useDataLoader({ onlyIfEmpty: true });
 
   // Use local state for queries and max hops as they are specific to this page
   const [startQuery, setStartQuery] = useState('');
@@ -74,7 +78,7 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
   const endResults = getFilteredTracks(endQuery);
 
   const handleCalculate = () => {
-    pf.send({ type: 'CALCULATE_PATH' });
+    pf.calculate();
   };
 
   const handleTrackSelect = (option: AutocompleteOption, type: 'start' | 'end') => {
@@ -126,6 +130,7 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
             <span>
               Using data from: {source === 'backend' ? 'Backend' : 'Library fixture'}.
               {tracksWithoutKey.length > 0 && ` ${SN.format.count(tracksWithoutKey.length)} tracks excluded due to missing keys.`}
+              {pf.skippedCount > 0 && ` ${SN.format.count(pf.skippedCount)} tracks left out: no duration.`}
             </span>
           </div>
         )}

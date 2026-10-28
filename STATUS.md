@@ -1284,8 +1284,11 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 
 <!-- SLOT:AA1 BEGIN -->
 ### AA1: Audio analysis: key and BPM from audio, proven on synthetic test audio
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
+- Built: Essentia-based key and BPM analyser with half/double BPM folding to typical ranges. Validated via synthetic audio test fixtures representing kicks, hi-hats, claps, and chord progressions. Also added a `benchmark-key-bpm.py` script for local library evaluation.
+- Checks: `cd services/audio-analysis && python -m pytest tests/unit/test_key_bpm.py -q` run successfully.
+- PR: (Pending submission)
 <!-- SLOT:AA1 END -->
 
 <!-- SLOT:AA2 BEGIN -->
@@ -1293,6 +1296,145 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 - Start: _not started_
 - End: _not finished_
 <!-- SLOT:AA2 END -->
+
+<!-- SLOT:AK1 BEGIN -->
+### AK1: AI setlists through the server with keys saved in Settings
+- Start: 2026-10-28
+- Built: Moved AI key management to backend, mapping claude->anthropic, openai->openai, gemini->google, under the `api_key` name. Cleans up any raw keys from localStorage on load. Modified `ai_proxy.py` to add `googleSearch` tool for Gemini when `web_search` is requested. Replaced frontend direct browser AI API calls with requests routed through the proxy using `aiProxyComplete` in `aiService.ts` and `AISetlistsPage.tsx`. Updated AI Setlists page to default to preferred provider and count non-200 responses during import as failed. Added new tests for new API key dispatchers and the frontend key service logic.
+- Checks run: `python -m pytest tests/ai_proxy tests/rest_api/test_api_keys_ai_services.py tests/security/test_api_keys_security.py -q`, `cd frontend && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build`, `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check`. All passed.
+- Checks not run: Playwright E2E suite could not be run in the sandbox.
+- Reviewer Check: Save a Claude key in Settings, reload: the mask shows and `SELECT service_name FROM api_keys` lists 'anthropic'; localStorage has no raw key. Run AI setlists: the browser network panel shows only /api/v1/ai/complete, never api.anthropic.com.
+- PR: (pending)
+- End: 2026-10-28
+<!-- SLOT:AK1 END -->
+
+<!-- SLOT:CR1 BEGIN -->
+- **Status:** Complete. Added `CreditsFooter.tsx` containing track metadata data source attributions according to DS rule 15-print-export.
+- **Checks run:** frontend unit tests, linting, build, DS sync check (all passed).
+- **PR Link:** TBD
+<!-- SLOT:CR1 END -->
+
+<!-- SLOT:EC1 BEGIN -->
+### EC1: Run the browser tests in GitHub Actions
+- Start: 2026-10-28
+- Built: Added `.github/workflows/e2e.yml` to run the Playwright E2E suite against the development Compose stack. On `pull_request`, it runs the chromium project; on `push` to `main`, it runs the full multi-browser suite. Added documentation on the CI run in `frontend/tests/README.md`.
+- Checks run: `docker compose -f compose.dev.yaml config -q`, YAML lint (`python -c "import yaml,sys; yaml.safe_load(open('.github/workflows/e2e.yml'))"`).
+- End: 2026-10-28
+- PR: https://github.com/zvirb/songnodes/pull/NEW
+<!-- SLOT:EC1 END -->
+
+<!-- SLOT:EK1 BEGIN -->
+### EK1: Enrichment uses keys saved in Settings
+- Start: 2026-10-28
+- End: 2026-10-28
+  - Implemented saved key retrieval from the database, falling back to environment variables.
+  - Implemented async-safe synchronisation wrapper `load_sync` to operate within existing worker loops safely.
+  - Adapted `build_providers` to query saved keys using the database connection strings, falling back where necessary, and logging source properly.
+  - Checks run: Scope guard, shared domain unit tests (`python -m pytest common/tests/test_provider_saved_keys.py common/tests/test_providers.py -q`).
+  - The reviewer's check check passes.
+  - PR: TODO
+<!-- SLOT:EK1 END -->
+
+<!-- SLOT:HM1 BEGIN -->
+### HM1: Key and mood: where can I move next
+- Start: 2026-10-28
+- Built: Created `MoveNext.tsx` component which renders a grid of 6 cards indicating harmonic movement options from an active Camelot key. Wired `activeKey`, `counts` and `onMove` to the existing `CamelotPage.tsx`. Implemented `moveTargets` logic inside `camelotLogic.ts`.
+- Checks run: `vitest run src`, `tsc --noEmit -p .`, `oxlint src`, `vite build`, check design system.
+- Checks not run: Playwright E2E suite due to sandbox constraints.
+- Reviewer Check: Open /harmony, click 8A on the wheel, six move cards appear (8A, 9A, 7A, 8B, 10A, 3A). Clicking 10A sets the wheel and "Tracks in" to 10A. Keyboard accessible via Tab and Enter.
+- End: 2026-10-28
+- PR: https://github.com/zvirb/songnodes/pull/NEW
+<!-- SLOT:HM1 END -->
+
+<!-- SLOT:LS1 BEGIN -->
+### LS1: Library search: energy filter and speed check
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:LS1 END -->
+
+<!-- SLOT:NV1 BEGIN -->
+### NV1: Link to AI setlists and refresh the Home text
+- Start: 2026-10-28
+- Built: Added a link to the AI Setlists import page from the SourcesPage header. Updated the Home page pipeline card to correctly indicate live job telemetry and the sources card to mention imports. Created tests to verify text changes. Recorded decision in docs/integration/NV1/decisions.md.
+- Checks run: `cd frontend && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build`, `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check`.
+- Checks not run: Playwright E2E suite due to environment constraints.
+- Reviewer Check: Open / (Home), menu -> Sources -> Target tracks page shows "Import a tracklist with AI"; following it opens Import tracklist page with Sources marked current in the drawer. Back on Home, Pipeline card no longer says telemetry is not connected.
+- End: 2026-10-28
+<!-- SLOT:NV1 END -->
+
+<!-- SLOT:PF1 BEGIN -->
+### PF1: Paths: make Find route work
+- Start: 2026-10-28
+- Built: Updated the pathfinding algorithm event `CALCULATE_PATH` to send both graph nodes mapped to tracks and edges to the API, omitting unused attributes and properly validating nodes without duration. Updated UI to announce how many tracks were excluded, and mapped validation detail strings returned from server.
+- Checks run: `cd frontend && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build`, design system checker passed, scope guard passed. Playwright tests were skipped per sandbox limits.
+- End: 2026-10-28
+<!-- SLOT:PF1 END -->
+
+<!-- SLOT:SQ1 BEGIN -->
+### SQ1: Pipeline: Queue scrape job asks for search words
+- Start: 2026-10-28
+- End: 2026-10-28 - Implemented queueing a scrape job with artist and title search terms. Updated ScraperProgressPage.tsx to use a form, validate fields, and send proper fetch with Idempotency-Key. Updated empty state. Wrote comprehensive tests for ScraperProgressPage validating UI, errors, and fetch parameters. Ran vitest, tsc, oxlint, build, and sync checks. Scope guard passed. PR to be raised.
+<!-- SLOT:SQ1 END -->
+
+<!-- SLOT:ST1 BEGIN -->
+### ST1: Settings: one card per service, coloured by kind
+- Start: 2026-10-28
+- Built: Updated `SettingMeta` interface with `kind: 'api' | 'display' | 'login' | 'about'`. Assigned modules appropriately (paths, harmony, library, neutral). Dropped Beatport from the frontend using `HIDDEN_SERVICES`. Created dynamically generated service cards in `filteredSettings` based on backend requirements using `SERVICE_LABEL_MAP`. Sorted the view systematically by kind (api -> display -> login -> about). Updated tests to assert presence and modules of individual dynamic cards (Spotify, Discogs, 1001Tracklists, etc) and exclusion of Beatport. Fixed sentence casing in Leads and removed misleading "API status" mention.
+- Checks run: `npm ci && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build` and `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check`. All passed.
+- Checks not run: Playwright E2E suite due to environment constraints.
+- Reviewer Check: Open http://127.0.0.1:3006/settings: cards come in coloured groups (pink API keys incl. one card each for Spotify, Discogs, Last.fm …; teal theme, text size, row density, reduce motion; gold TIDAL, Spotify connection, 1001Tracklists, saved data); About is neutral and says nothing about API status; Beatport appears nowhere. Open the Discogs card's page: only the Discogs token field. /settings/scraper-keys still loads.
+- PR Link: https://github.com/zvirb/songnodes/pull/NEW
+- End: 2026-10-28
+<!-- SLOT:ST1 END -->
+
+<!-- SLOT:SV1 BEGIN -->
+* Started: 2026-10-28
+* Finished: 2026-10-28
+* Summary: Updated Set builder to load saved sets from the database on mount. Merges server and local sets, gracefully falls back to local data if the API fails, and prevents duplicates on saves by mapping server IDs back to local items using a pending creates map.
+* Checks: ran vitest tests for data.ts, oxlint, tsc, and sync-design-system.sh --check. All pass.
+* PR: (Pending)
+<!-- SLOT:SV1 END -->
+
+<!-- SLOT:TV1 BEGIN -->
+### TV1: TIDAL: use only the official API
+- Start: 2026-10-28
+- Built: Moved TIDAL playlist router to the official TIDAL API v2 (`openapi.tidal.com`) in `TidalUserApi` client using `GET /v2/searchResults`, `GET /v2/tracks`, `POST /v2/playlists`, and `POST /v2/playlists/{id}/relationships/items` mapping to Bearer token, mapping errors (401, 429), and ISO duration parsed to seconds. Ignored `parent_folder_id` as v2 doesn't support folder targets yet. Removed `client_secret` from Query parameters in `music_auth.py` router. Added unit tests for HTTP mock interactions.
+- Checks run: `python3 -m pytest tests/rest_api/test_tidal_playlists.py tests/rest_api/test_tidal_auth_no_query_secret.py tests/rest_api/test_router_registry.py -q` passed.
+- Checks not run: Full integration due to missing live API tokens in sandbox.
+- Reviewer Check: Signed in with TIDAL, POST /api/v1/tidal/playlists/create {"name":"SongNodes test"} returns an id, POST /api/v1/tidal/playlists/{id}/tracks with three track ids adds them in that order in the TIDAL app, and `git grep api.tidal.com services/rest_api` is empty.
+- Follow-ups: Send a set to TIDAL as a dated playlist.
+- End: 2026-10-28
+<!-- SLOT:TV1 END -->
+
+<!-- SLOT:SC3 BEGIN -->
+### SC3: MixesDB: keep every track of a mix
+- Start: 2026-10-28
+- Built: Fixed gap in positions by changing MixesDB `parse_mix_page` to grab all `ol` tracks between headers and to handle unknown tracks with 'Unknown Artist' preserving their position slots. Modified persistence pipeline to append `#<position>` string to synthetic_track_id to eliminate bronze layer row collisions within and across mixes.
+- Checks run: `python -m pytest tests/unit/scrapers/test_mixesdb_spider.py -q` passed; `cd scrapers && python3 -m pytest -o addopts="" tests -q` passed; tests added via `git add -f`.
+- PR Link: PR pending.
+- End: 2026-10-28
+<!-- SLOT:SC3 END -->
+
+<!-- SLOT:SC4 BEGIN -->
+### SC4: 1001Tracklists spider starts on current Scrapy
+- Start: 2026-10-28
+- Built: Renamed `start(self)` to `start_requests(self)` in `scrapers/spiders/1001tracklists_spider.py` so Scrapy engine's internal `start()` isn't overridden with a synchronous generator. Added `test_start_requests_search` and `test_start_requests_tracklist` in `tests/unit/scrapers/test_1001tracklists_spider.py`.
+- Checks run: `python3 -m pytest -o addopts="" tests/unit/scrapers/test_1001tracklists_spider.py -q`
+- PR: [SC4: 1001Tracklists spider starts on current Scrapy]
+- End: 2026-10-28
+<!-- SLOT:SC4 END -->
+
+<!-- SLOT:TX1 BEGIN -->
+### TX1: Send a set to TIDAL as a new dated playlist
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:TX1 END -->
+
+<!-- SLOT:AX1 BEGIN -->
+### AX1: Accessibility fixes on Target tracks and Pipeline
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:AX1 END -->
 
 ## Scheduled run
 
@@ -1538,3 +1680,37 @@ Ended 2026-10-26 22:29: Audited Pathfinder (DS7). Fixed CSS typography variables
 - Checks: `python -m pytest common/tests` (all 120 tests pass).
 - End: 2026-10-28
 <!-- SLOT:WP1 END -->
+
+<!-- SLOT:ART1-DEEZER BEGIN -->
+### ART1-DEEZER: Capture Album Artwork in Deezer Client
+- Start: 2026-10-28
+- Details: Capture album artwork image URLs from Deezer public API in `detail(track_id)` (`cover_xl` -> `cover_big` -> `cover_medium` fallback) and `search(...)` (`cover_medium`), preserving all return keys. Added unit tests in `pipeline/test_deezer_art.py`.
+- Checks run: `PYTHONPATH=. pytest pipeline/test_deezer_art.py` (9/9 passed offline), `python scripts/scope_guard.py`.
+- End: 2026-10-28
+<!-- SLOT:ART1-DEEZER END -->
+<!-- SLOT:ART3 BEGIN -->
+### ART3: Persist Artwork in SQLite and Set Builder JSON Export
+- Start: 2026-10-29
+- Built: Created `pipeline/build_db.py` adding `artwork_url TEXT` column to `tracks` SQLite table and exporting `"art": r.get("artwork_url")` in Set Builder JSON artifact (`outputs/artifact/library.json`). Added unit tests in `pipeline/test_db_artwork.py`.
+- Checks: `pytest -o addopts="" pipeline/test_db_artwork.py` (4 passed), `pytest -o addopts="" pipeline/test_pipeline.py pipeline/test_normalise.py pipeline/test_db_artwork.py` (11 passed).
+- PR: [ART3-DB: Persist Artwork in SQLite and Set Builder JSON Export](https://github.com/zvirb/songnodes/pull/NEW)
+- End: 2026-10-29
+<!-- SLOT:ART3 END -->
+
+<!-- SLOT:DS18 BEGIN -->
+### DS18: Design system 1.3.0: calendar and text inset from LedgerSchedule
+- Start: 2026-10-28
+- End: 2026-10-28 - design-system/ mirrored to 1.3.0 from the artifact and re-synced (VERSION 1.3.0). Added DateRange (calendar range popover) and the DateField calendar button, SongNodes.calendar / format.range / format.dayLong / dateRange / iconNames, the menu icon-gap part, and the text-inset fixes from a browser audit of all previews (05-layout "Text inset"). Q10–Q18 in 17-governance wait for Markus. Checks: sync --check and check_design_system.py --check pass; frontend checks in the PR body.
+<!-- SLOT:DS18 END -->
+
+<!-- SLOT:DS20 BEGIN -->
+### DS20: Design system 1.4.0: drag and drop, stalled loads, CSV guard, no printed paths
+- Start: 2026-10-28
+- End: 2026-10-28 - design-system/ mirrored to 1.4.0 and re-synced: DragDrop, StagedProgress stalled state, SongNodes.csv formula guard, never print file paths; DR-031 to DR-033. Checks: sync --check, check_design_system.py --check.
+<!-- SLOT:DS20 END -->
+<!-- SLOT:DS19 BEGIN -->
+### DS19: React DateRange, FileDrop and StagedProgress
+- Start: 2026-10-28 (branch ds19-react-daterange-filedrop-staged; started stacked on DS18, rebased on main after #356 merged)
+- End: 2026-10-28. Added `frontend/src/components/ds/{FileDrop,StagedProgress,DateRange}.tsx` with tests, exported from `ds/index.tsx`. DateRange mirrors `SongNodes.dateRange` (table role=grid, roving tabindex, APG keys, live region) using `SN.calendar` and `SN.format.range/dayLong`. Checks: tsc, oxlint (0 errors; +9 warnings, all spec-mandated ARIA roles), vitest 248/248, vite build, sync --check, check_design_system --check, scope guard. Over the ~400-line budget (three components, Markus asked for all three).
+- Next: adopt in TargetTracksManager / SetlistBuilder (FileDrop), TracklistImporter / ScraperProgressPage (StagedProgress), DateField calendar button and scrape-history export (DateRange).
+<!-- SLOT:DS19 END -->

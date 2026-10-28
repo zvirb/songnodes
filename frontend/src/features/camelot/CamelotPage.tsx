@@ -9,6 +9,7 @@ import { compatibleKeys } from './camelotLogic';
 import { CamelotWheel } from '../../components/CamelotWheel';
 import { KeyMoodPanel } from '../../components/KeyMoodPanel';
 import { HarmonicSet } from '../../components/HarmonicCompatibility';
+import { MoveNext } from './MoveNext';
 import './camelot.css';
 
 const CODES: string[] = (['B', 'A'] as const).flatMap((L) => Array.from({ length: 12 }, (_, i) => `${i + 1}${L}`));
@@ -199,6 +200,8 @@ const CamelotPage: React.FC = () => {
           </section>
         </section>
       </div>
+
+      <MoveNext activeKey={activeKey} counts={counts} onMove={setActiveKey} />
 
       <section className="sn-card" style={{ marginBottom: 'var(--space-6)' }}>
         <h2 className="title-m" style={{ marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>

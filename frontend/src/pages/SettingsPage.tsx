@@ -40,6 +40,7 @@ export interface SettingMeta {
   title: string;
   description: string;
   keywords: string[];
+  kind: 'api' | 'display' | 'login' | 'about';
 }
 
 export const SETTINGS_LIST: SettingMeta[] = [
@@ -49,6 +50,7 @@ export const SETTINGS_LIST: SettingMeta[] = [
     title: 'Theme',
     description: 'Choose the interface theme. Booth mode is pure black with high contrast and larger type for dark environments.',
     keywords: ['theme', 'dark', 'light', 'booth', 'system', 'monitor', 'appearance', 'display', 'mode', 'color', 'colour'],
+    kind: 'display',
   },
   {
     id: 'text-size',
@@ -56,6 +58,7 @@ export const SETTINGS_LIST: SettingMeta[] = [
     title: 'Text size',
     description: 'Adjust global font scaling across the entire application (Small, Medium, Large, Extra large).',
     keywords: ['text', 'size', 'font', 'scaling', 'typography', 'reading', 'display', 'small', 'medium', 'large', 'extra large'],
+    kind: 'display',
   },
   {
     id: 'row-density',
@@ -63,6 +66,7 @@ export const SETTINGS_LIST: SettingMeta[] = [
     title: 'Row density',
     description: 'Choose between comfortable 40px table rows or compact 32px rows for maximum data density.',
     keywords: ['row', 'density', 'height', 'comfortable', 'compact', 'table', 'list', 'spacing', 'padding'],
+    kind: 'display',
   },
   {
     id: 'reduce-motion',
@@ -70,71 +74,94 @@ export const SETTINGS_LIST: SettingMeta[] = [
     title: 'Reduce motion',
     description: 'Control user interface animation and motion transition effects.',
     keywords: ['motion', 'reduce motion', 'accessibility', 'animation', 'transition', 'system', 'smooth'],
+    kind: 'display',
   },
   {
     id: 'tidal-connection',
-    lead: 'Music Services',
+    lead: 'Music services',
     title: 'TIDAL connection',
     description: 'Connect your TIDAL account via OAuth 2.1 to export setlists, match audio tracks, and sync playlists.',
     keywords: ['tidal', 'oauth', 'connect', 'playlist', 'music', 'service', 'streaming', 'token', 'account', 'sync'],
+    kind: 'login',
   },
   {
     id: 'spotify-connection',
-    lead: 'Music Services',
+    lead: 'Music services',
     title: 'Spotify connection',
     description: 'Connect your Spotify account via OAuth 2.1 PKCE to match library tracks and export playlists.',
     keywords: ['spotify', 'oauth', 'connect', 'playlist', 'music', 'service', 'streaming', 'token', 'account', 'sync'],
+    kind: 'login',
   },
   {
     id: 'preferred-ai-provider',
-    lead: 'AI Assistants',
+    lead: 'AI assistants',
     title: 'Preferred AI provider',
     description: 'Select the default AI assistant provider used for set structure analysis and track recommendations.',
     keywords: ['ai', 'provider', 'preferred', 'assistant', 'claude', 'openai', 'gemini', 'model', 'llm'],
+    kind: 'api',
   },
   {
     id: 'anthropic-api-key',
-    lead: 'AI Assistants',
+    lead: 'AI assistants',
     title: 'Anthropic (Claude) API key',
     description: 'API key for Anthropic Claude models, used for deep harmonic structure analysis and setlist planning.',
     keywords: ['anthropic', 'claude', 'api key', 'secret', 'sk-ant', 'assistant', 'model', 'ai'],
+    kind: 'api',
   },
   {
     id: 'openai-api-key',
-    lead: 'AI Assistants',
+    lead: 'AI assistants',
     title: 'OpenAI API key',
     description: 'API key for OpenAI GPT models, used for metadata generation and audio feature extraction.',
     keywords: ['openai', 'gpt', 'api key', 'secret', 'sk-', 'assistant', 'model', 'ai'],
+    kind: 'api',
   },
   {
     id: 'gemini-api-key',
-    lead: 'AI Assistants',
+    lead: 'AI assistants',
     title: 'Google (Gemini) API key',
     description: 'API key for Google Gemini models, used for multimodal music reasoning and set flow optimization.',
     keywords: ['google', 'gemini', 'api key', 'secret', 'aiza', 'assistant', 'model', 'ai'],
-  },
-  {
-    id: 'scraper-keys',
-    lead: 'Pipeline Services',
-    title: 'Scraper service API keys',
-    description: 'Manage API keys required by background enrichment scrapers (Beatport, Discogs, 1001Tracklists, Spotify Scraper).',
-    keywords: ['scraper', 'api keys', 'beatport', 'discogs', '1001tracklists', 'enrichment', 'data', 'pipeline'],
+    kind: 'api',
   },
   {
     id: 'data-storage',
-    lead: 'Storage and Reset',
+    lead: 'Storage and reset',
     title: 'Saved data and credentials',
     description: 'Clear local browser credentials, clear saved tokens, or reset preferences to defaults.',
     keywords: ['storage', 'credentials', 'tokens', 'clear', 'reset', 'defaults', 'localstorage', 'browser', 'data'],
+    kind: 'login',
   },
   {
     id: 'about-system',
-    lead: 'System Information',
+    lead: 'System information',
     title: 'About SongNodes',
-    description: 'System information including design system version, locale, time zone, and API status.',
+    description: 'Design system version, locale, time zone and API address.',
     keywords: ['about', 'system', 'version', 'locale', 'timezone', 'songnodes', 'design system', 'melbourne', 'australia'],
+    kind: 'about',
   },
 ];
+
+
+const HIDDEN_SERVICES = new Set(['beatport']);
+const SERVICE_LABEL_MAP: Record<string, string> = {
+  spotify: 'Spotify',
+  discogs: 'Discogs',
+  lastfm: 'Last.fm',
+  musicbrainz: 'MusicBrainz',
+  youtube: 'YouTube',
+  setlistfm: 'Setlist.fm',
+  reddit: 'Reddit',
+  '1001tracklists': '1001Tracklists',
+  getsongbpm: 'GetSongBPM',
+};
+
+const getModuleForKind = (kind: SettingMeta['kind']): 'paths' | 'harmony' | 'library' | undefined => {
+  if (kind === 'api') return 'paths';
+  if (kind === 'display') return 'harmony';
+  if (kind === 'login') return 'library';
+  return undefined;
+};
 
 const isTokenExpired = (expiresAt?: number): boolean => {
   if (!expiresAt) return true;
@@ -167,17 +194,8 @@ export const SettingsPage: React.FC = () => {
   const [scraperKeys, setScraperKeys] = useState<APIKey[]>([]);
   const [loadingScrapers, setLoadingScrapers] = useState(false);
 
-  // Set page header dynamically based on route
-  const currentSetting = useMemo(() => {
-    if (!settingId) return null;
-    return SETTINGS_LIST.find((s) => s.id === settingId) || null;
-  }, [settingId]);
 
-  usePageHeader({
-    lead: 'Services',
-    title: currentSetting ? currentSetting.title : 'Settings',
-    current: 'services',
-  });
+
 
   // Refresh preferences from SN.prefs
   const refreshPrefs = (msg?: string) => {
@@ -345,409 +363,503 @@ export const SettingsPage: React.FC = () => {
     !isTokenExpired(musicCredentials.tidal?.expiresAt)
   );
 
+  // Saved-key fields for every visible service, or for one service when `service` is given
+  const renderServiceKeys = (service?: string) => {
+    const visibleReqs = scraperReqs.filter(
+      (req) => !HIDDEN_SERVICES.has(req.service_name) && (!service || req.service_name === service)
+    );
+    if (loadingScrapers) {
+      return <LoadingPanel message="Loading scraper service keys…" rows={2} />;
+    }
+    if (!visibleReqs.length) {
+      return <p className="sn-muted">No scraper API key requirements configured.</p>;
+    }
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        {visibleReqs.map((req) => {
+          const existing = scraperKeys.find(
+            (k) => k.service_name === req.service_name && k.key_name === req.key_name
+          );
+          const status: 'valid' | 'invalid' | 'unconfigured' =
+            existing?.is_valid === true
+              ? 'valid'
+              : existing?.is_valid === false
+              ? 'invalid'
+              : 'unconfigured';
+
+          return (
+            <SecretField
+              key={`${req.service_name}:${req.key_name}`}
+              label={req.display_name}
+              savedMask={existing ? existing.masked_value : null}
+              status={status}
+              description={req.description}
+              getKeyUrl={req.documentation_url}
+              getKeyLabel="Get key"
+              placeholder={`Paste ${req.display_name}`}
+              onSave={async (keyVal) => {
+                await handleSaveScraperKey(req.service_name, req.key_name, keyVal);
+              }}
+              onTest={async () => {
+                return await handleTestScraperKey(req.service_name, req.key_name);
+              }}
+              onClear={async () => {
+                await handleClearScraperKey(req.service_name, req.key_name);
+              }}
+              lastTest={
+                existing?.last_tested_at
+                  ? {
+                      ok: existing.is_valid === true,
+                      message: existing.test_error || (existing.is_valid ? 'Valid key' : 'Invalid key'),
+                      testedAt: existing.last_tested_at,
+                    }
+                  : undefined
+              }
+            />
+          );
+        })}
+      </div>
+    );
+    };
+
   // Helper to render control content for a specific setting ID
   const renderSettingControl = (id: string, isSinglePage = false) => {
-    switch (id) {
-      case 'theme': {
-        return (
-          <div>
-            <SegmentedControl
-              label="Theme"
-              value={prefs.theme as 'system' | 'dark' | 'light' | 'booth'}
-              options={[
-                { value: 'system', label: 'System' },
-                { value: 'dark', label: 'Dark' },
-                { value: 'light', label: 'Light' },
-                { value: 'booth', label: 'Booth' },
-              ]}
-              onChange={(v) => {
-                SN.prefs.setTheme(v);
-                refreshPrefs(`Theme set to ${v.charAt(0).toUpperCase() + v.slice(1)}`);
-              }}
-              block={isSinglePage}
-            />
-          </div>
-        );
-      }
+switch (id) {
+  case 'theme': {
+    return (
+      <div>
+        <SegmentedControl
+          label="Theme"
+          value={prefs.theme as 'system' | 'dark' | 'light' | 'booth'}
+          options={[
+            { value: 'system', label: 'System' },
+            { value: 'dark', label: 'Dark' },
+            { value: 'light', label: 'Light' },
+            { value: 'booth', label: 'Booth' },
+          ]}
+          onChange={(v) => {
+            SN.prefs.setTheme(v);
+            refreshPrefs(`Theme set to ${v.charAt(0).toUpperCase() + v.slice(1)}`);
+          }}
+          block={isSinglePage}
+        />
+      </div>
+    );
+  }
 
-      case 'text-size': {
-        return (
-          <div>
-            <SegmentedControl
-              label="Text size"
-              value={prefs.textSize as 's' | 'm' | 'l' | 'xl'}
-              options={[
-                { value: 's', label: 'S', ariaLabel: 'Small' },
-                { value: 'm', label: 'M', ariaLabel: 'Medium' },
-                { value: 'l', label: 'L', ariaLabel: 'Large' },
-                { value: 'xl', label: 'XL', ariaLabel: 'Extra large' },
-              ]}
-              onChange={(v) => {
-                SN.prefs.setTextSize(v);
-                refreshPrefs(`Text size set to ${v.toUpperCase()}`);
-              }}
-              block={isSinglePage}
-            />
-          </div>
-        );
-      }
+  case 'text-size': {
+    return (
+      <div>
+        <SegmentedControl
+          label="Text size"
+          value={prefs.textSize as 's' | 'm' | 'l' | 'xl'}
+          options={[
+            { value: 's', label: 'S', ariaLabel: 'Small' },
+            { value: 'm', label: 'M', ariaLabel: 'Medium' },
+            { value: 'l', label: 'L', ariaLabel: 'Large' },
+            { value: 'xl', label: 'XL', ariaLabel: 'Extra large' },
+          ]}
+          onChange={(v) => {
+            SN.prefs.setTextSize(v);
+            refreshPrefs(`Text size set to ${v.toUpperCase()}`);
+          }}
+          block={isSinglePage}
+        />
+      </div>
+    );
+  }
 
-      case 'row-density': {
-        return (
-          <div>
-            <SegmentedControl
-              label="Row density"
-              value={prefs.density as 'comfortable' | 'compact'}
-              options={[
-                { value: 'comfortable', label: 'Comfortable (40px)' },
-                { value: 'compact', label: 'Compact (32px)' },
-              ]}
-              onChange={(v) => {
-                SN.prefs.setDensity(v);
-                refreshPrefs(`Row density set to ${v}`);
-              }}
-              block={isSinglePage}
-            />
-          </div>
-        );
-      }
+  case 'row-density': {
+    return (
+      <div>
+        <SegmentedControl
+          label="Row density"
+          value={prefs.density as 'comfortable' | 'compact'}
+          options={[
+            { value: 'comfortable', label: 'Comfortable (40px)' },
+            { value: 'compact', label: 'Compact (32px)' },
+          ]}
+          onChange={(v) => {
+            SN.prefs.setDensity(v);
+            refreshPrefs(`Row density set to ${v}`);
+          }}
+          block={isSinglePage}
+        />
+      </div>
+    );
+  }
 
-      case 'reduce-motion': {
-        return (
-          <div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-              <Radio
-                name="motion"
-                label="Follow this device’s setting"
-                checked={prefs.motion !== 'reduce'}
-                onChange={() => {
-                  SN.prefs.setMotion('system');
-                  refreshPrefs('Motion follows device setting');
-                }}
-              />
-              <Radio
-                name="motion"
-                label="Always reduce motion"
-                checked={prefs.motion === 'reduce'}
-                onChange={() => {
-                  SN.prefs.setMotion('reduce');
-                  refreshPrefs('Motion reduced');
-                }}
-              />
-            </div>
-          </div>
-        );
-      }
+  case 'reduce-motion': {
+    return (
+      <div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+          <Radio
+            name="motion"
+            label="Follow this device’s setting"
+            checked={prefs.motion !== 'reduce'}
+            onChange={() => {
+              SN.prefs.setMotion('system');
+              refreshPrefs('Motion follows device setting');
+            }}
+          />
+          <Radio
+            name="motion"
+            label="Always reduce motion"
+            checked={prefs.motion === 'reduce'}
+            onChange={() => {
+              SN.prefs.setMotion('reduce');
+              refreshPrefs('Motion reduced');
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
 
-      case 'tidal-connection': {
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-              {isTidalConnected ? (
-                <StatusPill raw="ok" label="Connected" />
-              ) : musicCredentials.tidal?.accessToken && isTokenExpired(musicCredentials.tidal?.expiresAt) ? (
-                <StatusPill raw="warn" label="Expired" />
-              ) : (
-                <StatusPill raw="not_configured" label="Not connected" />
-              )}
-              {musicCredentials.tidal?.lastValidated ? (
-                <span className="sn-muted body-s">
-                  Last validated {SN.format.dateTime(new Date(musicCredentials.tidal.lastValidated))}
-                </span>
-              ) : null}
-            </div>
-            {connectError && id === 'tidal-connection' && (
-              <p className="sn-field__error" role="alert">{connectError}</p>
-            )}
-            <div>
-              <Button
-                kind="secondary"
-                onClick={connectTidal}
-              >
-                <SnIcon name="plug" />
-                {isTidalConnected ? 'Reconnect TIDAL' : 'Connect TIDAL'}
-              </Button>
-            </div>
-          </div>
-        );
-      }
+  case 'tidal-connection': {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+          {isTidalConnected ? (
+            <StatusPill raw="ok" label="Connected" />
+          ) : musicCredentials.tidal?.accessToken && isTokenExpired(musicCredentials.tidal?.expiresAt) ? (
+            <StatusPill raw="warn" label="Expired" />
+          ) : (
+            <StatusPill raw="not_configured" label="Not connected" />
+          )}
+          {musicCredentials.tidal?.lastValidated ? (
+            <span className="sn-muted body-s">
+              Last validated {SN.format.dateTime(new Date(musicCredentials.tidal.lastValidated))}
+            </span>
+          ) : null}
+        </div>
+        {connectError && id === 'tidal-connection' && (
+          <p className="sn-field__error" role="alert">{connectError}</p>
+        )}
+        <div>
+          <Button
+            kind="secondary"
+            onClick={connectTidal}
+          >
+            <SnIcon name="plug" />
+            {isTidalConnected ? 'Reconnect TIDAL' : 'Connect TIDAL'}
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
-      case 'spotify-connection': {
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-              {isSpotifyConnected ? (
-                <StatusPill raw="ok" label="Connected" />
-              ) : musicCredentials.spotify?.accessToken && isTokenExpired(musicCredentials.spotify?.expiresAt) ? (
-                <StatusPill raw="warn" label="Expired" />
-              ) : (
-                <StatusPill raw="not_configured" label="Not connected" />
-              )}
-              {musicCredentials.spotify?.lastValidated ? (
-                <span className="sn-muted body-s">
-                  Last validated {SN.format.dateTime(new Date(musicCredentials.spotify.lastValidated))}
-                </span>
-              ) : null}
-            </div>
-            {connectError && id === 'spotify-connection' && (
-              <p className="sn-field__error" role="alert">{connectError}</p>
-            )}
-            <div>
-              <Button
-                kind="secondary"
-                onClick={connectSpotify}
-              >
-                <SnIcon name="plug" />
-                {isSpotifyConnected ? 'Reconnect Spotify' : 'Connect Spotify'}
-              </Button>
-            </div>
-          </div>
-        );
-      }
+  case 'spotify-connection': {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+          {isSpotifyConnected ? (
+            <StatusPill raw="ok" label="Connected" />
+          ) : musicCredentials.spotify?.accessToken && isTokenExpired(musicCredentials.spotify?.expiresAt) ? (
+            <StatusPill raw="warn" label="Expired" />
+          ) : (
+            <StatusPill raw="not_configured" label="Not connected" />
+          )}
+          {musicCredentials.spotify?.lastValidated ? (
+            <span className="sn-muted body-s">
+              Last validated {SN.format.dateTime(new Date(musicCredentials.spotify.lastValidated))}
+            </span>
+          ) : null}
+        </div>
+        {connectError && id === 'spotify-connection' && (
+          <p className="sn-field__error" role="alert">{connectError}</p>
+        )}
+        <div>
+          <Button
+            kind="secondary"
+            onClick={connectSpotify}
+          >
+            <SnIcon name="plug" />
+            {isSpotifyConnected ? 'Reconnect Spotify' : 'Connect Spotify'}
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
-      case 'preferred-ai-provider': {
-        return (
-          <div>
-            <SegmentedControl
-              label="Preferred AI Provider"
-              options={[
-                { value: 'claude', label: 'Claude' },
-                { value: 'openai', label: 'OpenAI' },
-                { value: 'gemini', label: 'Gemini' },
-              ]}
-              value={aiConfig.preferredProvider || 'claude'}
-              onChange={(val) => {
-                const updated = setPreferredAIProvider(val as AIProvider);
-                setAiConfig(updated);
-                showToast(`Preferred AI provider set to ${val.toUpperCase()}`);
-              }}
-              block={isSinglePage}
-            />
-          </div>
-        );
-      }
+  case 'preferred-ai-provider': {
+    return (
+      <div>
+        <SegmentedControl
+          label="Preferred AI Provider"
+          options={[
+            { value: 'claude', label: 'Claude' },
+            { value: 'openai', label: 'OpenAI' },
+            { value: 'gemini', label: 'Gemini' },
+          ]}
+          value={aiConfig.preferredProvider || 'claude'}
+          onChange={(val) => {
+            const updated = setPreferredAIProvider(val as AIProvider);
+            setAiConfig(updated);
+            showToast(`Preferred AI provider set to ${val.toUpperCase()}`);
+          }}
+          block={isSinglePage}
+        />
+      </div>
+    );
+  }
 
-      case 'anthropic-api-key': {
-        return (
-          <div>
-            <SecretField
-              label="Anthropic (Claude) API key"
-              savedMask={getMaskedKey(aiConfig.claudeApiKey)}
-              status={aiConfig.claudeStatus || 'unconfigured'}
-              onSave={async (key) => {
-                const updated = await saveAIKey('claude', key);
-                setAiConfig(updated);
-                showToast('Anthropic API key saved');
-              }}
-              onTest={async () => {
-                const res = await validateAIKey('claude');
-                setAiConfig(getAIKeyConfig());
-                if (res.ok) showToast('Anthropic API key is valid');
-                return res;
-              }}
-              onClear={async () => {
-                const updated = await clearAIKey('claude');
-                setAiConfig(updated);
-                showToast('Anthropic API key removed');
-              }}
-              lastTest={
-                aiConfig.lastTestedAt?.claude
-                  ? { ok: aiConfig.claudeStatus === 'valid', testedAt: aiConfig.lastTestedAt.claude }
-                  : undefined
-              }
-              getKeyUrl="https://console.anthropic.com/settings/keys"
-              getKeyLabel="Get Anthropic key"
-              placeholder="sk-ant-..."
-            />
-          </div>
-        );
-      }
+  case 'anthropic-api-key': {
+    return (
+      <div>
+        <SecretField
+          label="Anthropic (Claude) API key"
+          savedMask={getMaskedKey(aiConfig.claudeApiKey)}
+          status={aiConfig.claudeStatus || 'unconfigured'}
+          onSave={async (key) => {
+            const updated = await saveAIKey('claude', key);
+            setAiConfig(updated);
+            showToast('Anthropic API key saved');
+          }}
+          onTest={async () => {
+            const res = await validateAIKey('claude');
+            setAiConfig(getAIKeyConfig());
+            if (res.ok) showToast('Anthropic API key is valid');
+            return res;
+          }}
+          onClear={async () => {
+            const updated = await clearAIKey('claude');
+            setAiConfig(updated);
+            showToast('Anthropic API key removed');
+          }}
+          lastTest={
+            aiConfig.lastTestedAt?.claude
+              ? { ok: aiConfig.claudeStatus === 'valid', testedAt: aiConfig.lastTestedAt.claude }
+              : undefined
+          }
+          getKeyUrl="https://console.anthropic.com/settings/keys"
+          getKeyLabel="Get Anthropic key"
+          placeholder="sk-ant-..."
+        />
+      </div>
+    );
+  }
 
-      case 'openai-api-key': {
-        return (
-          <div>
-            <SecretField
-              label="OpenAI API key"
-              savedMask={getMaskedKey(aiConfig.openaiApiKey)}
-              status={aiConfig.openaiStatus || 'unconfigured'}
-              onSave={async (key) => {
-                const updated = await saveAIKey('openai', key);
-                setAiConfig(updated);
-                showToast('OpenAI API key saved');
-              }}
-              onTest={async () => {
-                const res = await validateAIKey('openai');
-                setAiConfig(getAIKeyConfig());
-                if (res.ok) showToast('OpenAI API key is valid');
-                return res;
-              }}
-              onClear={async () => {
-                const updated = await clearAIKey('openai');
-                setAiConfig(updated);
-                showToast('OpenAI API key removed');
-              }}
-              lastTest={
-                aiConfig.lastTestedAt?.openai
-                  ? { ok: aiConfig.openaiStatus === 'valid', testedAt: aiConfig.lastTestedAt.openai }
-                  : undefined
-              }
-              getKeyUrl="https://platform.openai.com/api-keys"
-              getKeyLabel="Get OpenAI key"
-              placeholder="sk-..."
-            />
-          </div>
-        );
-      }
+  case 'openai-api-key': {
+    return (
+      <div>
+        <SecretField
+          label="OpenAI API key"
+          savedMask={getMaskedKey(aiConfig.openaiApiKey)}
+          status={aiConfig.openaiStatus || 'unconfigured'}
+          onSave={async (key) => {
+            const updated = await saveAIKey('openai', key);
+            setAiConfig(updated);
+            showToast('OpenAI API key saved');
+          }}
+          onTest={async () => {
+            const res = await validateAIKey('openai');
+            setAiConfig(getAIKeyConfig());
+            if (res.ok) showToast('OpenAI API key is valid');
+            return res;
+          }}
+          onClear={async () => {
+            const updated = await clearAIKey('openai');
+            setAiConfig(updated);
+            showToast('OpenAI API key removed');
+          }}
+          lastTest={
+            aiConfig.lastTestedAt?.openai
+              ? { ok: aiConfig.openaiStatus === 'valid', testedAt: aiConfig.lastTestedAt.openai }
+              : undefined
+          }
+          getKeyUrl="https://platform.openai.com/api-keys"
+          getKeyLabel="Get OpenAI key"
+          placeholder="sk-..."
+        />
+      </div>
+    );
+  }
 
-      case 'gemini-api-key': {
-        return (
-          <div>
-            <SecretField
-              label="Google (Gemini) API key"
-              savedMask={getMaskedKey(aiConfig.geminiApiKey)}
-              status={aiConfig.geminiStatus || 'unconfigured'}
-              onSave={async (key) => {
-                const updated = await saveAIKey('gemini', key);
-                setAiConfig(updated);
-                showToast('Gemini API key saved');
-              }}
-              onTest={async () => {
-                const res = await validateAIKey('gemini');
-                setAiConfig(getAIKeyConfig());
-                if (res.ok) showToast('Gemini API key is valid');
-                return res;
-              }}
-              onClear={async () => {
-                const updated = await clearAIKey('gemini');
-                setAiConfig(updated);
-                showToast('Gemini API key removed');
-              }}
-              lastTest={
-                aiConfig.lastTestedAt?.gemini
-                  ? { ok: aiConfig.geminiStatus === 'valid', testedAt: aiConfig.lastTestedAt.gemini }
-                  : undefined
-              }
-              getKeyUrl="https://aistudio.google.com/app/apikey"
-              getKeyLabel="Get Gemini key"
-              placeholder="AIza..."
-            />
-          </div>
-        );
-      }
+  case 'gemini-api-key': {
+    return (
+      <div>
+        <SecretField
+          label="Google (Gemini) API key"
+          savedMask={getMaskedKey(aiConfig.geminiApiKey)}
+          status={aiConfig.geminiStatus || 'unconfigured'}
+          onSave={async (key) => {
+            const updated = await saveAIKey('gemini', key);
+            setAiConfig(updated);
+            showToast('Gemini API key saved');
+          }}
+          onTest={async () => {
+            const res = await validateAIKey('gemini');
+            setAiConfig(getAIKeyConfig());
+            if (res.ok) showToast('Gemini API key is valid');
+            return res;
+          }}
+          onClear={async () => {
+            const updated = await clearAIKey('gemini');
+            setAiConfig(updated);
+            showToast('Gemini API key removed');
+          }}
+          lastTest={
+            aiConfig.lastTestedAt?.gemini
+              ? { ok: aiConfig.geminiStatus === 'valid', testedAt: aiConfig.lastTestedAt.gemini }
+              : undefined
+          }
+          getKeyUrl="https://aistudio.google.com/app/apikey"
+          getKeyLabel="Get Gemini key"
+          placeholder="AIza..."
+        />
+      </div>
+    );
+  }
 
-      case 'scraper-keys': {
-        if (loadingScrapers) {
-          return <LoadingPanel message="Loading scraper service keys…" rows={2} />;
-        }
-        if (!scraperReqs.length) {
-          return <p className="sn-muted">No scraper API key requirements configured.</p>;
-        }
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-            {scraperReqs.map((req) => {
-              const existing = scraperKeys.find(
-                (k) => k.service_name === req.service_name && k.key_name === req.key_name
-              );
-              const status: 'valid' | 'invalid' | 'unconfigured' =
-                existing?.is_valid === true
-                  ? 'valid'
-                  : existing?.is_valid === false
-                  ? 'invalid'
-                  : 'unconfigured';
+  case 'scraper-keys':
+    return renderServiceKeys();
 
-              return (
-                <SecretField
-                  key={`${req.service_name}:${req.key_name}`}
-                  label={req.display_name}
-                  savedMask={existing ? existing.masked_value : null}
-                  status={status}
-                  description={req.description}
-                  getKeyUrl={req.documentation_url}
-                  getKeyLabel="Get key"
-                  placeholder={`Paste ${req.display_name}`}
-                  onSave={async (keyVal) => {
-                    await handleSaveScraperKey(req.service_name, req.key_name, keyVal);
-                  }}
-                  onTest={async () => {
-                    return await handleTestScraperKey(req.service_name, req.key_name);
-                  }}
-                  onClear={async () => {
-                    await handleClearScraperKey(req.service_name, req.key_name);
-                  }}
-                  lastTest={
-                    existing?.last_tested_at
-                      ? {
-                          ok: existing.is_valid === true,
-                          message: existing.test_error || (existing.is_valid ? 'Valid key' : 'Invalid key'),
-                          testedAt: existing.last_tested_at,
-                        }
-                      : undefined
-                  }
-                />
-              );
-            })}
-          </div>
-        );
-      }
+  case 'data-storage': {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+          <Button
+            kind="danger-quiet"
+            onClick={() => setConfirmClearCredentials(true)}
+          >
+            Clear saved credentials…
+          </Button>
+          <Button
+            kind="quiet"
+            onClick={() => setConfirmResetPrefs(true)}
+          >
+            Reset preferences to defaults
+          </Button>
+        </div>
+        <p className="sn-muted body-s">
+          Clearing credentials removes stored TIDAL and Spotify OAuth tokens in this browser.
+        </p>
+      </div>
+    );
+  }
 
-      case 'data-storage': {
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
-              <Button
-                kind="danger-quiet"
-                onClick={() => setConfirmClearCredentials(true)}
-              >
-                Clear saved credentials…
-              </Button>
-              <Button
-                kind="quiet"
-                onClick={() => setConfirmResetPrefs(true)}
-              >
-                Reset preferences to defaults
-              </Button>
-            </div>
-            <p className="sn-muted body-s">
-              Clearing credentials removes stored TIDAL and Spotify OAuth tokens in this browser.
-            </p>
-          </div>
-        );
-      }
+  case 'about-system': {
+    return (
+      <div>
+        <dl className="sn-key-value-grid">
+          <dt>Design system</dt>
+          <dd className="sn-mono">{SN.version || '2.0'}</dd>
+          <dt>Locale</dt>
+          <dd className="sn-mono">{SN.locale || 'en-AU'} · {SN.timeZone || 'Australia/Melbourne'}</dd>
+          <dt>API endpoint</dt>
+          <dd className="sn-mono">{API_BASE_URL || '/api'}</dd>
+        </dl>
+      </div>
+    );
+  }
 
-      case 'about-system': {
-        return (
-          <div>
-            <dl className="sn-key-value-grid">
-              <dt>Design system</dt>
-              <dd className="sn-mono">{SN.version || '2.0'}</dd>
-              <dt>Locale</dt>
-              <dd className="sn-mono">{SN.locale || 'en-AU'} · {SN.timeZone || 'Australia/Melbourne'}</dd>
-              <dt>API endpoint</dt>
-              <dd className="sn-mono">{API_BASE_URL || '/api'}</dd>
-            </dl>
-          </div>
-        );
-      }
-
-      default:
-        return null;
-    }
+  default:
+    if (id.startsWith('service-')) return renderServiceKeys(id.slice('service-'.length));
+    return null;
+}
   };
+
 
   // Filter cards for the overview page
   const filteredSettings = useMemo(() => {
-    if (!searchQuery.trim()) return SETTINGS_LIST;
+    // Generate dynamic service cards
+    const serviceCards: SettingMeta[] = [];
+    const seenServices = new Set<string>();
+
+    // Sort reqs by display_order to respect it
+    const sortedReqs = [...scraperReqs].sort((a, b) => a.display_order - b.display_order);
+
+    for (const req of sortedReqs) {
+      if (HIDDEN_SERVICES.has(req.service_name)) continue;
+      if (!seenServices.has(req.service_name)) {
+        seenServices.add(req.service_name);
+        const name = SERVICE_LABEL_MAP[req.service_name] || req.service_name;
+        serviceCards.push({
+          id: `service-${req.service_name}`,
+          lead: 'Pipeline services',
+          title: `${name} API keys`,
+          description: `Manage API keys required by the ${name} background enrichment scraper.`,
+          keywords: ['scraper', 'api keys', req.service_name, name.toLowerCase(), 'enrichment', 'data', 'pipeline'],
+          kind: req.service_name === '1001tracklists' ? 'login' : 'api',
+        });
+      }
+    }
+
+    const allSettings = [...SETTINGS_LIST, ...serviceCards];
+
+    // Sort by group: API keys, colour and size, logins and connections, About
+    const kindOrder: Record<SettingMeta['kind'], number> = { api: 1, display: 2, login: 3, about: 4 };
+    allSettings.sort((a, b) => {
+      if (kindOrder[a.kind] !== kindOrder[b.kind]) {
+        return kindOrder[a.kind] - kindOrder[b.kind];
+      }
+      return 0; // maintain relative order otherwise
+    });
+
+    if (!searchQuery.trim()) return allSettings;
     const q = searchQuery.toLowerCase().trim();
-    return SETTINGS_LIST.filter((item) => {
+    return allSettings.filter((item) => {
       const matchText = [
         item.lead,
         item.title,
         item.description,
         ...item.keywords,
       ].join(' ').toLowerCase();
+      // search match service names as well, included in keywords above
       return matchText.includes(q);
     });
-  }, [searchQuery]);
+  }, [searchQuery, scraperReqs]);
+
+  // SINGLE SETTING PAGE VIEW (/settings/:settingId)
+  const currentSetting = useMemo(() => {
+    if (!settingId) return null;
+
+    // Check static list
+    const foundStatic = SETTINGS_LIST.find((s) => s.id === settingId);
+    if (foundStatic) return foundStatic;
+
+    // All service keys on one page (the old combined card's address)
+    if (settingId === 'scraper-keys') {
+      return {
+        id: 'scraper-keys',
+        lead: 'Pipeline services',
+        title: 'Service API keys',
+        description: 'API keys used by the background enrichment and scrapers, one section per service.',
+        keywords: ['scraper', 'api keys', 'enrichment', 'pipeline'],
+        kind: 'api',
+      } as SettingMeta;
+    }
+
+    // Check dynamic
+    if (settingId.startsWith('service-')) {
+      const serviceName = settingId.replace('service-', '');
+      if (HIDDEN_SERVICES.has(serviceName)) return null;
+
+      const req = scraperReqs.find((r) => r.service_name === serviceName);
+      if (req || settingId === 'service-1001tracklists' || settingId === 'service-spotify' || settingId === 'service-discogs') {
+        const name = SERVICE_LABEL_MAP[serviceName] || serviceName;
+        return {
+          id: settingId,
+          lead: 'Pipeline services',
+          title: `${name} API keys`,
+          description: `Manage API keys required by the ${name} background enrichment scraper.`,
+          keywords: ['scraper', 'api keys', serviceName, name.toLowerCase(), 'enrichment', 'data', 'pipeline'],
+          kind: serviceName === '1001tracklists' ? 'login' : 'api',
+        } as SettingMeta;
+      }
+    }
+
+    return null;
+  }, [settingId, scraperReqs]);
+
+  usePageHeader({
+    lead: 'Services',
+    title: currentSetting ? currentSetting.title : 'Settings',
+    current: 'services',
+  });
+
+
 
   // SINGLE SETTING PAGE VIEW (/settings/:settingId)
   if (settingId) {
@@ -785,11 +897,7 @@ export const SettingsPage: React.FC = () => {
         />
 
         <div style={{ marginTop: 'var(--space-6)', maxWidth: '720px' }}>
-          <Card
-            variant="neutral"
-            eyebrow={currentSetting.lead}
-            title={currentSetting.title}
-          >
+          <Card variant={currentSetting.kind === 'about' ? 'neutral' : 'tonal'} module={getModuleForKind(currentSetting.kind)} eyebrow={currentSetting.lead} title={currentSetting.title}>
             <div className="sn-card__body" style={{ padding: 'var(--space-4) 0' }}>
               <p className="body-s sn-muted" style={{ marginBottom: 'var(--space-4)' }}>
                 {currentSetting.description}
@@ -883,7 +991,7 @@ export const SettingsPage: React.FC = () => {
           }}
         >
           {filteredSettings.map((item) => (
-            <Card key={item.id} variant="neutral" eyebrow={item.lead} title={item.title}>
+            <Card key={item.id} variant={item.kind === 'about' ? 'neutral' : 'tonal'} module={getModuleForKind(item.kind)} eyebrow={item.lead} title={item.title}>
               <div className="sn-card__body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', padding: 'var(--space-2) 0' }}>
                 <p className="body-s sn-muted" style={{ margin: 0 }}>
                   {item.description}

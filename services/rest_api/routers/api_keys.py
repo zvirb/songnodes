@@ -1064,3 +1064,108 @@ async def _test_getsongbpm_key(api_key: str) -> Dict[str, Any]:
             'message': f'GetSongBPM test failed: {str(e)}',
             'error': str(e)
         }
+async def _test_anthropic_key(api_key: str) -> Dict[str, Any]:
+    try:
+        async with aiohttp.ClientSession() as session:
+            headers = {
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01"
+            }
+            async with session.get(
+                "https://api.anthropic.com/v1/models",
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=10)
+            ) as response:
+                if response.status == 200:
+                    return {
+                        'valid': True,
+                        'message': 'Anthropic API key is valid'
+                    }
+                elif response.status in (401, 403):
+                    return {
+                        'valid': False,
+                        'message': 'Invalid Anthropic API key',
+                        'error': 'Authentication failed'
+                    }
+                else:
+                    return {
+                        'valid': False,
+                        'message': f'Anthropic API error: {response.status}',
+                        'error': await response.text()
+                    }
+    except Exception as e:
+        return {
+            'valid': False,
+            'message': f'Anthropic test failed: {str(e)}',
+            'error': str(e)
+        }
+
+async def _test_openai_key(api_key: str) -> Dict[str, Any]:
+    try:
+        async with aiohttp.ClientSession() as session:
+            headers = {
+                "Authorization": f"Bearer {api_key}"
+            }
+            async with session.get(
+                "https://api.openai.com/v1/models",
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=10)
+            ) as response:
+                if response.status == 200:
+                    return {
+                        'valid': True,
+                        'message': 'OpenAI API key is valid'
+                    }
+                elif response.status in (401, 403):
+                    return {
+                        'valid': False,
+                        'message': 'Invalid OpenAI API key',
+                        'error': 'Authentication failed'
+                    }
+                else:
+                    return {
+                        'valid': False,
+                        'message': f'OpenAI API error: {response.status}',
+                        'error': await response.text()
+                    }
+    except Exception as e:
+        return {
+            'valid': False,
+            'message': f'OpenAI test failed: {str(e)}',
+            'error': str(e)
+        }
+
+async def _test_google_key(api_key: str) -> Dict[str, Any]:
+    try:
+        async with aiohttp.ClientSession() as session:
+            headers = {
+                "x-goog-api-key": api_key
+            }
+            async with session.get(
+                "https://generativelanguage.googleapis.com/v1beta/models",
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=10)
+            ) as response:
+                if response.status == 200:
+                    return {
+                        'valid': True,
+                        'message': 'Google Gemini API key is valid'
+                    }
+                elif response.status in (401, 403, 400):
+                    return {
+                        'valid': False,
+                        'message': 'Invalid Google Gemini API key',
+                        'error': 'Authentication failed'
+                    }
+                else:
+                    return {
+                        'valid': False,
+                        'message': f'Google API error: {response.status}',
+                        'error': await response.text()
+                    }
+    except Exception as e:
+        return {
+            'valid': False,
+            'message': f'Google test failed: {str(e)}',
+            'error': str(e)
+        }

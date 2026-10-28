@@ -158,7 +158,7 @@ README_COMPLIANCE_COMPLETE.md
 
 # Test and validation scripts (generated)
 !services/common/refmb/test_refmb.py
-test_*.py
+/test_*.py
 !tests/integration/test_dev_workflows.py
 !tests/integration/test_dev_catalog_reads.py
 !tests/integration/test_dev_metadata_coverage.py

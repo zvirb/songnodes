@@ -51,6 +51,8 @@ export interface PathfinderContext {
   currentStep: WizardStep;
   completedSteps: Set<WizardStep>;
   announcement: string; // For screen reader announcements
+  tracks: any[];
+  edges: any[];
 }
 
 export type PathfinderEvent =
@@ -63,7 +65,7 @@ export type PathfinderEvent =
   | { type: 'NEXT_STEP' }
   | { type: 'PREVIOUS_STEP' }
   | { type: 'GO_TO_STEP'; step: WizardStep }
-  | { type: 'CALCULATE_PATH' }
+  | { type: 'CALCULATE_PATH'; tracks: any[]; edges: any[] }
   | { type: 'PATH_SUCCESS'; result: PathfinderResult }
   | { type: 'PATH_ERROR'; error: string }
   | { type: 'RESET' }
