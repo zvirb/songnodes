@@ -11,6 +11,7 @@ import {
   type CrateFilters, type FilterGroup, type Tier,
 } from '../setBuilder';
 import { AutocompleteSearchField, type AutocompleteOption } from '../../../components/ds/AutocompleteSearchField';
+import { FilterPresets } from './FilterPresets';
 import { LexiconTrie } from '../../../utils/lexiconTrie';
 
 const TIER_LABEL: Record<Tier, string> = { low: 'Low 1–4', building: 'Building 5–7', high: 'High 8–10' };
@@ -252,6 +253,7 @@ export const CrateFilterRail: React.FC<Props> = ({ tracks, filters: F, onChange,
               resultCount={{ shown, total: tracks.length, noun: 'tracks' }}
             />
           </div>
+          <FilterPresets currentFilters={F} onApply={onChange} />
           {group('pillar', 'Pillar', PILLARS.map((p) => ({ key: p.id, label: p.label, on: F.pillar.includes(p.id), n: count('pillar', (t) => t.p === p.id), toggle: () => toggle('pillar', p.id) })), () => onChange({ ...F, pillar: [] }))}
           {group('tier', 'Energy tier', TIERS.map((t) => ({ key: t, label: TIER_LABEL[t], tier: t, on: F.tier.includes(t), n: count('tier', (x) => tierOf(x.e) === t), toggle: () => toggle('tier', t) })), () => onChange({ ...F, tier: [] }))}
           {group('rot', 'Rotation', [1, 2, 3].map((r) => ({ key: String(r), label: ROT[r], emph: r === 1, on: F.rot.includes(r), n: count('rot', (t) => t.rot === r), toggle: () => toggle('rot', r) })), () => onChange({ ...F, rot: [] }), rotationNote)}
