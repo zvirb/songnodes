@@ -49,7 +49,7 @@ test('reset restores the defaults', async ({ page }) => {
   await page.getByRole('radiogroup', { name: 'Theme' }).getByRole('radio', { name: 'Light' }).click();
   await page.getByRole('radiogroup', { name: 'Text size' }).getByRole('radio', { name: 'Extra large' }).click();
   await page.getByRole('button', { name: 'Reset preferences to defaults' }).click();
-  await page.getByRole('dialog').getByRole('button', { name: 'Reset preferences' }).click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Reset preferences', exact: true }).click();
 
   await expect(page.getByRole('radiogroup', { name: 'Theme' }).getByRole('radio', { name: 'System' })).toHaveAttribute('aria-checked', 'true');
   await expect(page.getByRole('radiogroup', { name: 'Text size' }).getByRole('radio', { name: 'Medium' })).toHaveAttribute('aria-checked', 'true');
