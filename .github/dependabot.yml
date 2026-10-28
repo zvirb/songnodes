@@ -109,15 +109,6 @@ updates:
           - "*"
 
   - package-ecosystem: "pip"
-    directory: "/services/tidal-integration"
-    schedule:
-      interval: "weekly"
-    groups:
-      pip-tidal-integration:
-        patterns:
-          - "*"
-
-  - package-ecosystem: "pip"
     directory: "/services/data-transformer"
     schedule:
       interval: "weekly"
