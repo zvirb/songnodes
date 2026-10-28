@@ -1291,6 +1291,78 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 - End: _not finished_
 <!-- SLOT:AA2 END -->
 
+<!-- SLOT:AK1 BEGIN -->
+### AK1: AI setlists through the server with keys saved in Settings
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:AK1 END -->
+
+<!-- SLOT:CR1 BEGIN -->
+### CR1: Data-source credits in the app footer
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:CR1 END -->
+
+<!-- SLOT:EC1 BEGIN -->
+### EC1: Run the browser tests in GitHub Actions
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:EC1 END -->
+
+<!-- SLOT:EK1 BEGIN -->
+### EK1: Enrichment uses keys saved in Settings
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:EK1 END -->
+
+<!-- SLOT:HM1 BEGIN -->
+### HM1: Key and mood: where can I move next
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:HM1 END -->
+
+<!-- SLOT:LS1 BEGIN -->
+### LS1: Library search: energy filter and speed check
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:LS1 END -->
+
+<!-- SLOT:NV1 BEGIN -->
+### NV1: Link to AI setlists and refresh the Home text
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:NV1 END -->
+
+<!-- SLOT:PF1 BEGIN -->
+### PF1: Paths: make Find route work
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:PF1 END -->
+
+<!-- SLOT:SQ1 BEGIN -->
+### SQ1: Pipeline: Queue scrape job asks for search words
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:SQ1 END -->
+
+<!-- SLOT:ST1 BEGIN -->
+### ST1: Settings: one card per service, coloured by kind
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:ST1 END -->
+
+<!-- SLOT:SV1 BEGIN -->
+### SV1: Set builder: load saved sets from the database
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:SV1 END -->
+
+<!-- SLOT:TV1 BEGIN -->
+### TV1: TIDAL: use only the official API
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:TV1 END -->
+
 ## Scheduled run
 
 ### 2026-10-26 15:10 AEDT (Claude, scheduled run on tuf-boi)
