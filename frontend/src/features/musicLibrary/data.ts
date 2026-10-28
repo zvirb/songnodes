@@ -6,6 +6,7 @@
  * scripts/sync-music-library.sh. Field names are the pipeline's compact keys; do not
  * rename them here, map them at the edge.
  */
+import { DRAFT_KEY, lsGet, lsSet } from './storage';
 
 export interface LibraryTrack {
   id: string;
@@ -175,7 +176,35 @@ export interface SavedSet {
 
 let serverSetsCache: SavedSet[] = [];
 
-export async function readSavedSetsAsync(): Promise<{ sets: SavedSet[], source: 'server' | 'device' }> {
+/** A set the server has not given an id yet carries a local id such as `set-mh2x9k`. */
+const isServerId = (id: string) => /^\d+$/.test(id);
+
+/** Same set by content: the name and the running order (track ids in order). */
+const sameContent = (a: SavedSet, b: SavedSet) =>
+  a.name === b.name &&
+  a.tracks.length === b.tracks.length &&
+  a.tracks.every((t, i) => t.id === b.tracks[i].id);
+
+/**
+ * The stored draft still points at a set's local id after the server gave it a real one:
+ * point it at the server id so the open set, Save and Delete all find the same document.
+ */
+function remapStoredDraftId(idMap: Map<string, string>): void {
+  if (!idMap.size) return;
+  const draft = lsGet<{ id?: unknown } | null>(DRAFT_KEY, null);
+  if (draft && typeof draft.id === 'string' && idMap.has(draft.id)) {
+    lsSet(DRAFT_KEY, { ...draft, id: idMap.get(draft.id) });
+  }
+}
+
+export interface SavedSetsRead {
+  sets: SavedSet[];
+  source: 'server' | 'device';
+  /** Local id → server id for local copies that turned out to be sets already on the server. */
+  remapped: Record<string, string>;
+}
+
+export async function readSavedSetsAsync(): Promise<SavedSetsRead> {
   const localSets = readSavedSets();
   try {
     const res = await fetch('/api/v1/library/sets');
@@ -192,31 +221,43 @@ export async function readSavedSetsAsync(): Promise<{ sets: SavedSet[], source: 
 
       serverSetsCache = JSON.parse(JSON.stringify(mapped));
 
+      // Pair every server set with its local copy: by id, or, for a copy still holding its local
+      // id (the create reached the server but its new id never came back), by content. A paired
+      // local copy is replaced by the server set, so each set is listed once, under the server id.
       const merged: SavedSet[] = [];
-      const serverIds = new Set(mapped.map(s => s.id));
+      const used = new Set<SavedSet>();
+      const idMap = new Map<string, string>();
 
       for (const serverSet of mapped) {
-        const local = localSets.find(s => s.id === serverSet.id);
+        let local = localSets.find(s => !used.has(s) && s.id === serverSet.id);
+        if (!local) {
+          local = localSets.find(s => !used.has(s) && !isServerId(s.id) && sameContent(s, serverSet));
+          if (local) idMap.set(local.id, serverSet.id);
+        }
         if (local) {
+          used.add(local);
           merged.push({ ...local, ...serverSet, name: serverSet.name, description: serverSet.description, tracks: serverSet.tracks });
         } else {
           merged.push(serverSet);
         }
       }
 
+      // Sets made on this device that never reached the server stay; a numeric id the server
+      // no longer lists was deleted elsewhere.
       for (const localSet of localSets) {
-        if (!serverIds.has(localSet.id) && !/^\d+$/.test(localSet.id)) {
+        if (!used.has(localSet) && !isServerId(localSet.id)) {
           merged.push(localSet);
         }
       }
 
       writeSavedSets(merged);
-      return { sets: merged, source: 'server' };
+      remapStoredDraftId(idMap);
+      return { sets: merged, source: 'server', remapped: Object.fromEntries(idMap) };
     }
   } catch (e) {
     console.warn('API sets read failed, falling back to local storage', e);
   }
-  return { sets: localSets, source: 'device' };
+  return { sets: localSets, source: 'device', remapped: {} };
 }
 
 const pendingCreates = new Map<string, Promise<string>>();
@@ -245,7 +286,7 @@ export async function writeSavedSetsAsync(sets: SavedSet[]): Promise<SavedSet[]>
   const idMap = new Map<string, string>();
 
   for (const s of toSave) {
-    const isNew = !/^\d+$/.test(s.id);
+    const isNew = !isServerId(s.id);
     const intId = isNew ? 0 : parseInt(s.id, 10);
 
     if (isNew && pendingCreates.has(s.id)) {
@@ -271,9 +312,13 @@ export async function writeSavedSetsAsync(sets: SavedSet[]): Promise<SavedSet[]>
         });
         if (res.ok) {
           /* eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-type-assertion */
-          const data = await res.json() as { id: number };
-          if (intId === 0 && data.id) {
-            return String(data.id);
+          const data = await res.json() as { id?: unknown } | null;
+          if (intId === 0) {
+            // A create must come back with the new set's id. Without one the set keeps its
+            // local id and is matched to the server copy by content on the next read.
+            const id = Number(data?.id);
+            if (Number.isInteger(id) && id > 0) return String(id);
+            hasError = true;
           }
         } else {
           hasError = true;
@@ -306,6 +351,7 @@ export async function writeSavedSetsAsync(sets: SavedSet[]): Promise<SavedSet[]>
   }
 
   writeSavedSets(updatedSets);
+  remapStoredDraftId(idMap);
   return updatedSets;
 }
 

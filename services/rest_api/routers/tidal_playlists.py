@@ -270,3 +270,95 @@ async def check_track_availability(
     except Exception as e:
         logger.error(f"Error checking track availability: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Availability check failed: {str(e)}")
+
+
+# ===========================================
+# Send a whole set to TIDAL (TX1)
+# ===========================================
+
+class SendSetTrack(BaseModel):
+    """One set track, in play order"""
+    artist: str = ""
+    title: str = ""
+    tidal: Optional[str] = Field(default=None, description="TIDAL track id or URL, if already known")
+
+
+class SendSetRequest(BaseModel):
+    """A set to send to TIDAL as a new playlist"""
+    name: str = Field(..., min_length=1, max_length=255)
+    description: Optional[str] = Field(default="", max_length=1000)
+    tracks: List[SendSetTrack] = Field(..., min_length=1, max_length=500)
+
+
+class UnmatchedTrack(BaseModel):
+    position: int
+    artist: str
+    title: str
+
+
+class SendSetResponse(BaseModel):
+    playlist_id: str
+    url: str
+    added: int
+    unmatched: List[UnmatchedTrack]
+
+
+def tidal_track_id(value: Optional[str]) -> Optional[str]:
+    """A TIDAL track id from a bare id or a tidal.com track URL; None otherwise."""
+    if not value:
+        return None
+    value = str(value).strip()
+    if value.isdigit():
+        return value
+    import re
+    match = re.search(r"/track/(\d+)", value)
+    return match.group(1) if match else None
+
+
+@router.post("/sets/send", response_model=SendSetResponse)
+async def send_set(
+    request: SendSetRequest,
+    authorization: Optional[str] = Header(default=None, description="Bearer token from TIDAL OAuth")
+):
+    """
+    Create a new TIDAL playlist holding the set's tracks in play order.
+
+    Tracks with a known TIDAL id are used as they are; the rest are searched by artist and
+    title. Tracks TIDAL cannot find are returned in `unmatched` with their set position.
+    """
+    if not authorization or not authorization.startswith("Bearer ") or not authorization[7:].strip():
+        raise HTTPException(status_code=401, detail="TIDAL is not connected. Connect it in Settings, then try again.")
+    access_token = authorization[7:].strip()
+
+    track_ids: List[str] = []
+    unmatched: List[UnmatchedTrack] = []
+    try:
+        async with TidalUserApi(access_token=access_token) as client:
+            for position, track in enumerate(request.tracks, start=1):
+                tid = tidal_track_id(track.tidal)
+                if tid is None and track.artist and track.title:
+                    found = await client.search_track(track.artist, track.title)
+                    if found and found.get("id") is not None:
+                        tid = str(found["id"])
+                if tid is None:
+                    unmatched.append(UnmatchedTrack(position=position, artist=track.artist, title=track.title))
+                else:
+                    track_ids.append(tid)
+
+            if not track_ids:
+                raise HTTPException(status_code=422, detail="TIDAL found none of this set's tracks, so no playlist was made.")
+
+            playlist_id = str(await client.create_playlist(request.name, request.description or ""))
+            await client.add_tracks_in_order(playlist_id, track_ids, allow_duplicates=True)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Sending set to TIDAL failed: {e.__class__.__name__}")
+        raise HTTPException(status_code=502, detail="TIDAL did not accept the playlist. Try again in a minute.")
+
+    return SendSetResponse(
+        playlist_id=playlist_id,
+        url=f"https://tidal.com/browse/playlist/{playlist_id}",
+        added=len(track_ids),
+        unmatched=unmatched,
+    )
