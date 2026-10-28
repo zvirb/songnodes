@@ -189,4 +189,34 @@ describe('SettingsPage', () => {
     expect(h1?.textContent).toContain('Services: Setting not found');
     expect(screen.getByText('The requested setting page does not exist.')).toBeDefined();
   });
+
+  const renderAt = (path: string) =>
+    render(
+      <MemoryRouter initialEntries={[path]}>
+        <Routes>
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/settings/:settingId" element={<SettingsPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+  it('a service card holds that service\'s key fields', async () => {
+    renderAt('/settings');
+    expect(await screen.findByText('Discogs Token')).toBeTruthy();
+    expect(screen.getByText('Spotify Client ID')).toBeTruthy();
+    expect(screen.queryByText('Beatport API Key')).toBeNull();
+  });
+
+  it('a service page shows only that service\'s key fields', async () => {
+    renderAt('/settings/service-discogs');
+    expect(await screen.findByText('Discogs Token')).toBeTruthy();
+    expect(screen.queryByText('Spotify Client ID')).toBeNull();
+  });
+
+  it('the combined service keys page still loads', async () => {
+    renderAt('/settings/scraper-keys');
+    expect(await screen.findByText('Discogs Token')).toBeTruthy();
+    expect(screen.queryByText('Setting not found')).toBeNull();
+    expect(screen.queryByText('Beatport API Key')).toBeNull();
+  });
 });

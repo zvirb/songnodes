@@ -123,3 +123,17 @@ def test_existing_filters(patch_pool):
     res = client.get("/api/v1/library/search?q=test&limit=5")
     assert res.status_code == 200
     assert "%test%" in patch_pool.last_params
+
+
+def test_slow_ms_threshold_reads_env(monkeypatch):
+    import importlib
+    monkeypatch.setenv('LIBRARY_SEARCH_SLOW_MS', '275')
+    try:
+        reloaded = importlib.reload(libsearch)
+        assert reloaded.LIBRARY_SEARCH_SLOW_MS == 275
+        monkeypatch.delenv('LIBRARY_SEARCH_SLOW_MS')
+        reloaded = importlib.reload(libsearch)
+        assert reloaded.LIBRARY_SEARCH_SLOW_MS == 150
+    finally:
+        monkeypatch.delenv('LIBRARY_SEARCH_SLOW_MS', raising=False)
+        importlib.reload(libsearch)

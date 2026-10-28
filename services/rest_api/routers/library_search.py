@@ -1,4 +1,5 @@
 import json
+import os
 import time
 import logging
 from typing import List, Optional
@@ -8,7 +9,7 @@ from common.metadata.energy import BANDS
 
 logger = logging.getLogger(__name__)
 
-LIBRARY_SEARCH_SLOW_MS = 150
+LIBRARY_SEARCH_SLOW_MS = int(os.getenv('LIBRARY_SEARCH_SLOW_MS', '150'))
 
 def get_pool():
     from main import db_pool

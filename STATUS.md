@@ -1331,8 +1331,13 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 
 <!-- SLOT:HM1 BEGIN -->
 ### HM1: Key and mood: where can I move next
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-28
+- Built: Created `MoveNext.tsx` component which renders a grid of 6 cards indicating harmonic movement options from an active Camelot key. Wired `activeKey`, `counts` and `onMove` to the existing `CamelotPage.tsx`. Implemented `moveTargets` logic inside `camelotLogic.ts`.
+- Checks run: `vitest run src`, `tsc --noEmit -p .`, `oxlint src`, `vite build`, check design system.
+- Checks not run: Playwright E2E suite due to sandbox constraints.
+- Reviewer Check: Open /harmony, click 8A on the wheel, six move cards appear (8A, 9A, 7A, 8B, 10A, 3A). Clicking 10A sets the wheel and "Tracks in" to 10A. Keyboard accessible via Tab and Enter.
+- End: 2026-10-28
+- PR: https://github.com/zvirb/songnodes/pull/NEW
 <!-- SLOT:HM1 END -->
 
 <!-- SLOT:LS1 BEGIN -->
@@ -1343,8 +1348,12 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 
 <!-- SLOT:NV1 BEGIN -->
 ### NV1: Link to AI setlists and refresh the Home text
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-28
+- Built: Added a link to the AI Setlists import page from the SourcesPage header. Updated the Home page pipeline card to correctly indicate live job telemetry and the sources card to mention imports. Created tests to verify text changes. Recorded decision in docs/integration/NV1/decisions.md.
+- Checks run: `cd frontend && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build`, `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check`.
+- Checks not run: Playwright E2E suite due to environment constraints.
+- Reviewer Check: Open / (Home), menu -> Sources -> Target tracks page shows "Import a tracklist with AI"; following it opens Import tracklist page with Sources marked current in the drawer. Back on Home, Pipeline card no longer says telemetry is not connected.
+- End: 2026-10-28
 <!-- SLOT:NV1 END -->
 
 <!-- SLOT:PF1 BEGIN -->

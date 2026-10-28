@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import patch, MagicMock
 
 from common.providers.registry import build_providers
-from common.providers.saved_keys import load_sync
+from common.providers.saved_keys import load, load_sync, normalise_dsn
 
 # A dummy mock class for the DB connection
 class MockConnection:
@@ -112,6 +112,40 @@ class TestProviderSavedKeys(unittest.TestCase):
             self.assertEqual(len(providers), 1)
             self.assertEqual(providers[0].name, 'lastfm')
             self.assertEqual(providers[0].api_key, 'env_lastfm')
+
+    def test_normalise_dsn_strips_sqlalchemy_driver(self):
+        self.assertEqual(normalise_dsn('postgresql+asyncpg://u:p@h:5432/db'), 'postgresql://u:p@h:5432/db')
+        self.assertEqual(normalise_dsn('postgresql+psycopg2://u@h/db'), 'postgresql://u@h/db')
+        self.assertEqual(normalise_dsn('postgresql+psycopg://u@h/db'), 'postgresql://u@h/db')
+        self.assertEqual(normalise_dsn('postgresql://u@h/db'), 'postgresql://u@h/db')
+        self.assertEqual(normalise_dsn('postgres://u@h/db'), 'postgres://u@h/db')
+
+    @patch('common.providers.saved_keys.asyncpg.connect')
+    def test_load_sync_passes_plain_dsn_to_asyncpg(self, mock_connect):
+        seen = []
+
+        async def dummy_connect(dsn, timeout):
+            seen.append(dsn)
+            return MockConnection({})
+
+        mock_connect.side_effect = dummy_connect
+        load_sync('postgresql+asyncpg://u:p@h:5432/db', 'dummy_secret')
+        self.assertEqual(seen, ['postgresql://u:p@h:5432/db'])
+
+    def test_load_logs_only_service_and_exception_type(self):
+        class FailingConnection:
+            async def fetchval(self, *args):
+                raise RuntimeError('boom secret=top-secret-value dsn=postgresql://u:pw@h/db')
+
+        with self.assertLogs('common.providers.saved_keys', level='WARNING') as cm:
+            result = asyncio.run(load(FailingConnection(), 'top-secret-value'))
+        self.assertEqual(result, {})
+        joined = '\n'.join(cm.output)
+        self.assertIn('discogs', joined)
+        self.assertIn('RuntimeError', joined)
+        self.assertNotIn('top-secret-value', joined)
+        self.assertNotIn('pw@h', joined)
+        self.assertNotIn('boom', joined)
 
 if __name__ == '__main__':
     unittest.main()
