@@ -1258,6 +1258,18 @@ PR: https://github.com/zvirb/songnodes/pull/LY2
 - End: _not finished_
 <!-- SLOT:L8 END -->
 
+<!-- SLOT:AA1 BEGIN -->
+### AA1: Audio analysis: key and BPM from audio, proven on synthetic test audio
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:AA1 END -->
+
+<!-- SLOT:AA2 BEGIN -->
+### AA2: Audio analysis: fill missing key and BPM from Deezer previews
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:AA2 END -->
+
 ## Scheduled run
 
 ### 2026-10-26 15:10 AEDT (Claude, scheduled run on tuf-boi)
