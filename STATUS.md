@@ -976,8 +976,12 @@ Work done:
 
 <!-- SLOT:U7 BEGIN -->
 ### U7: Prepare the Postgres 18 upgrade (owner runs it)
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: 2026-10-28
+- Built: Modified `compose.dev.yaml` to use `postgres:18-alpine` with a new `dev-postgres-18` volume, and setting `PGDATA` to avoid Docker volume layout issues. Added `scripts/upgrade-postgres-18.sh` to handle pg_dumpall, restart, readiness wait loop, and restore. Added `docs/upgrades/postgres-18.md` with instructions and rollback steps.
+- Checks run: `bash -n scripts/upgrade-postgres-18.sh`, `docker compose -f compose.dev.yaml config`, sandbox run demonstrating identical counts before and after the upgrade.
+- Checks not run: Full CI suite as this is a local development script.
+- Reviewer check: The PR shows before/after counts from the sandbox run.
+- End: 2026-10-28
 <!-- SLOT:U7 END -->
 
 <!-- SLOT:U8 BEGIN -->
