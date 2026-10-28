@@ -70,7 +70,10 @@ export interface LibraryFile {
 
 let cache: Promise<LibraryFile> | null = null;
 
-export function loadLibrary(): Promise<LibraryFile> {
+export function loadLibrary(forceRefresh = false): Promise<LibraryFile> {
+  if (forceRefresh) {
+    cache = null;
+  }
   if (!cache) {
     cache = (async () => {
       try {
@@ -78,14 +81,16 @@ export function loadLibrary(): Promise<LibraryFile> {
         if (res.ok) {
           /* eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-type-assertion */
           const tracks = await res.json() as LibraryTrack[];
-          return {
-            generated: new Date().toISOString(),
-            ledger_updated: new Date().toISOString(),
-            counts: { tracks: tracks.length, pending: 0, rejected: 0, beatport_check: 0 },
-            sources: [],
-            runs: [],
-            tracks
-          };
+          if (tracks.length > 0) {
+            return {
+              generated: new Date().toISOString(),
+              ledger_updated: new Date().toISOString(),
+              counts: { tracks: tracks.length, pending: 0, rejected: 0, beatport_check: 0 },
+              sources: [],
+              runs: [],
+              tracks
+            };
+          }
         }
       } catch (e) {
         console.warn('API library search error, falling back to static JSON', e);

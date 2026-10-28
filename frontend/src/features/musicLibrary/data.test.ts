@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
-import { readSavedSetsAsync, writeSavedSetsAsync, readSavedSets, writeSavedSets, SAVED_SETS_KEY, type SavedSet } from './data';
+import { readSavedSetsAsync, writeSavedSetsAsync, readSavedSets, writeSavedSets, SAVED_SETS_KEY, loadLibrary, type SavedSet } from './data';
 
 describe('SavedSets', () => {
     let store: Record<string, string> = {};
@@ -86,5 +86,57 @@ describe('SavedSets', () => {
         // Ensure local storage still works despite API error
         expect(readSavedSets()).toHaveLength(1);
         expect(readSavedSets()[0].id).toBe('999');
+    });
+});
+
+describe('loadLibrary', () => {
+    beforeEach(() => {
+        vi.stubGlobal('fetch', vi.fn());
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('falls back to static json when API returns empty array', async () => {
+        const fetchMock = fetch as Mock;
+        // API returns 200 OK with empty array
+        fetchMock.mockResolvedValueOnce({
+            ok: true,
+            json: async () => []
+        });
+        // Fallback static JSON
+        const staticPayload = {
+            generated: '2026-10-28T00:00:00Z',
+            ledger_updated: '2026-10-28T00:00:00Z',
+            counts: { tracks: 1, pending: 0, rejected: 0, beatport_check: 0 },
+            sources: [],
+            runs: [],
+            tracks: [{ id: 'static-1', a: 'Artist', t: 'Track', m: null, d: 300, bpm: 125, k: '8A', e: 5, p: 'House', rot: 1, tags: [], src: ['pbs'], first: null, last: null, g: 'House', lbl: null, sync: null, tidal: null, dz: null, bp: null, chart: null, rev: false, ovr: false, local: false }]
+        };
+        fetchMock.mockResolvedValueOnce({
+            ok: true,
+            json: async () => staticPayload
+        });
+
+        const lib = await loadLibrary(true);
+        expect(fetchMock).toHaveBeenCalledWith('/api/v1/library/search?limit=5000');
+        expect(fetchMock).toHaveBeenCalledWith('/data/music-library.json', { cache: 'no-cache' });
+        expect(lib.tracks).toHaveLength(1);
+        expect(lib.tracks[0].id).toBe('static-1');
+    });
+
+    it('uses API results when API returns tracks', async () => {
+        const fetchMock = fetch as Mock;
+        const apiTracks = [{ id: 'api-1', a: 'Api Artist', t: 'Api Track', m: null, d: 250, bpm: 128, k: '9A', e: 7, p: 'Techno', rot: 1, tags: [], src: [], first: null, last: null, g: null, lbl: null, sync: null, tidal: null, dz: null, bp: null, chart: null, rev: false, ovr: false, local: false }];
+        fetchMock.mockResolvedValueOnce({
+            ok: true,
+            json: async () => apiTracks
+        });
+
+        const lib = await loadLibrary(true);
+        expect(fetchMock).toHaveBeenCalledWith('/api/v1/library/search?limit=5000');
+        expect(lib.tracks).toHaveLength(1);
+        expect(lib.tracks[0].id).toBe('api-1');
     });
 });
