@@ -215,3 +215,57 @@ def test_check_availability_rejects_bad_header(route_client):
                     json={'artist': 'deadmau5', 'title': 'Strobe'},
                     headers={'Authorization': 'Token nope'})
     assert r.status_code == 401
+
+
+# ---------------------------------------------------------------- send a set (TX1)
+
+def test_tidal_track_id_accepts_ids_and_urls():
+    assert tidal_playlists.tidal_track_id('123') == '123'
+    assert tidal_playlists.tidal_track_id('https://tidal.com/browse/track/456?u') == '456'
+    assert tidal_playlists.tidal_track_id('https://tidal.com/browse/album/9') is None
+    assert tidal_playlists.tidal_track_id(None) is None
+
+
+def test_send_set_makes_one_playlist_in_play_order(route_client):
+    client, holder = route_client
+    body = {
+        'name': '28 Oct 2026 · Warmup',
+        'description': 'Friday',
+        'tracks': [
+            {'artist': 'A', 'title': 'Known', 'tidal': 'https://tidal.com/browse/track/7'},
+            {'artist': 'deadmau5', 'title': 'Strobe'},
+            {'artist': '', 'title': ''},
+            {'artist': 'B', 'title': 'Also known', 'tidal': '9'},
+        ],
+    }
+    r = client.post('/api/v1/tidal/sets/send', json=body, headers={'Authorization': f'Bearer {TOKEN}'})
+    assert r.status_code == 200, r.text
+    data = r.json()
+    assert data['playlist_id'] == 'pl-1'
+    assert data['url'] == 'https://tidal.com/browse/playlist/pl-1'
+    assert data['added'] == 3
+    assert data['unmatched'] == [{'position': 3, 'artist': '', 'title': ''}]
+    rec = holder['recorder']
+    assert_official_and_safe(rec)
+    create = next(req for req in rec.requests if req.method == 'POST' and req.url.path == '/v2/playlists')
+    attrs = json.loads(create.content)['data']['attributes']
+    assert attrs == {'name': '28 Oct 2026 · Warmup', 'description': 'Friday'}
+    adds = [req for req in rec.requests if req.url.path.endswith('/relationships/items')]
+    sent = [item['id'] for req in adds for item in json.loads(req.content)['data']]
+    assert sent == ['7', '42', '9']
+
+
+def test_send_set_without_tidal_login_is_401(route_client):
+    client, holder = route_client
+    r = client.post('/api/v1/tidal/sets/send', json={'name': 'x', 'tracks': [{'artist': 'a', 'title': 't'}]})
+    assert r.status_code == 401
+    assert 'Settings' in r.json()['detail']
+    assert holder['recorder'].requests == []
+
+
+def test_send_set_with_nothing_found_makes_no_playlist(route_client):
+    client, holder = route_client
+    r = client.post('/api/v1/tidal/sets/send', json={'name': 'x', 'tracks': [{'artist': '', 'title': ''}]},
+                    headers={'Authorization': f'Bearer {TOKEN}'})
+    assert r.status_code == 422
+    assert not any(req.method == 'POST' for req in holder['recorder'].requests)

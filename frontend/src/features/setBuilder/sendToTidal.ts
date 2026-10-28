@@ -42,7 +42,11 @@ export async function sendSetToTidal(set: SavedSet, note: string = ""): Promise<
   }
 
   const response = await fetch('/api/v1/tidal/sets/send', { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(payload) });
-  if (!response.ok) throw new Error('API error');
+  if (!response.ok) {
+    const body = await response.json().catch(() => null) as { detail?: unknown } | null;
+    const detail = typeof body?.detail === 'string' ? body.detail : `TIDAL send failed (HTTP ${response.status})`;
+    throw new Error(detail);
+  }
   const data = await response.json();
   return data as SendSetToTidalResult;
 
