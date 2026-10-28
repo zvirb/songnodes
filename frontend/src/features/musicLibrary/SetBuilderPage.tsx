@@ -91,8 +91,10 @@ const SetBuilderPage: React.FC = () => {
 
   useEffect(() => {
     const seq = ++savedSeq.current;
-    readSavedSetsAsync().then(({ sets, source }) => {
+    readSavedSetsAsync().then(({ sets, source, remapped }) => {
       if (seq === savedSeq.current) setSavedState(sets);
+      // A local copy found on the server under its server id: the open draft follows it.
+      setDraftState((d) => (d.id && remapped[d.id] ? { ...d, id: remapped[d.id] } : d));
       setSavedSource(source);
       setSavedLoaded(true);
     });

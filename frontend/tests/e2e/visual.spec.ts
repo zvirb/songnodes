@@ -1,4 +1,5 @@
 import { fileURLToPath } from 'url';
+import type { Page } from '@playwright/test';
 import { test, expect, openRoute } from './fixtures';
 
 const stylePath = fileURLToPath(new URL('./visual.css', import.meta.url));
@@ -19,6 +20,19 @@ const PAGES: [string, string, boolean][] = [
   ['pipeline', '/pipeline', true],
   ['not-found', '/no-such-page', true],
 ];
+/**
+ * The pipeline page shows live jobs, workers, outbox consumers and target tracks, which differ
+ * between a laptop with history and CI's fresh database. Its requests are answered with an empty
+ * pipeline so every machine captures the same page (the empty state of each section).
+ */
+const json = (body: unknown) => ({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+async function stubEmptyPipeline(page: Page) {
+  await page.route((url) => url.pathname === '/api/v1/jobs', (route) => route.fulfill(json([])));
+  await page.route((url) => url.pathname === '/api/v1/outbox/status',
+    (route) => route.fulfill(json({ consumers: [], dead_letters: 0, projection: {} })));
+  await page.route((url) => url.pathname === '/api/v1/target-tracks', (route) => route.fulfill(json([])));
+}
+
 const WIDTHS: [string, number, number][] = [['desktop', 1440, 900], ['phone', 390, 844]];
 
 for (const theme of ['dark', 'light'] as const) {
@@ -29,6 +43,7 @@ for (const theme of ['dark', 'light'] as const) {
           try { localStorage.setItem('sn-theme', t); } catch { /* storage blocked */ }
         }, theme);
         await page.setViewportSize({ width, height });
+        if (name === 'pipeline') await stubEmptyPipeline(page);
         await openRoute(page, route);
         await page.evaluate(() => document.fonts.ready);
         await expect(page).toHaveScreenshot(`${name}-${theme}-${wName}.png`, {
