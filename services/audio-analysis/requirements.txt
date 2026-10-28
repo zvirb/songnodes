@@ -18,8 +18,6 @@ resampy==0.4.3
 audioread==3.1.0
 psutil==7.2.2
 mutagen
-# Essentia can be difficult to build on some platforms.
-# The user's Python 3.15 environment likely doesn't have a wheel for Essentia,
-# but the brief allows assuming it exists or explicitly using it if available.
-# We omit forcing essentia installation here to prevent build breaks,
-# but our code expects it at runtime (it was installed manually during this session).
+# Essentia (AA1's analysis_modules/key_bpm.py). 2.1b6.dev1438 ships cp314 wheels only (no Python 3.15 wheel
+# exists), which is why this image is based on python:3.14-slim.
+essentia==2.1b6.dev1438

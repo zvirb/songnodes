@@ -123,6 +123,12 @@ services:
       PROVIDER_GROUPS: ${PROVIDER_GROUPS:-}
       # 'none' keeps the dev stack and its tests from calling external providers; list names (e.g. tidal,deezer) to enable.
       ENRICHMENT_PROVIDERS: ${ENRICHMENT_PROVIDERS:-none}
+      # Key and BPM from Deezer previews (AA2, docs/audio-analysis/deezer-previews.md). Its Deezer calls are governed
+      # by AUDIO_ANALYSIS_ENABLED, not ENRICHMENT_PROVIDERS; set it to false to stop them.
+      AUDIO_ANALYSIS_ENABLED: ${AUDIO_ANALYSIS_ENABLED:-true}
+      AUDIO_ANALYSIS_INTERVAL_SECONDS: ${AUDIO_ANALYSIS_INTERVAL_SECONDS:-600}
+      AUDIO_ANALYSIS_PER_RUN: ${AUDIO_ANALYSIS_PER_RUN:-10}
+      AUDIO_ANALYSIS_URL: http://audio-analysis:8020
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -170,6 +176,19 @@ services:
       timeout: 6s
       retries: 12
       start_period: 20s
+
+  audio-analysis:
+    # Key and BPM from short clips (POST /analyze-url, AA1's Essentia analyser). Called by the worker's
+    # 'audio_analysis' job; needs no database or RabbitMQ for that, so neither is configured here.
+    build:
+      context: services/audio-analysis
+    mem_limit: 1g
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8020/health', timeout=5)"]
+      interval: 10s
+      timeout: 6s
+      retries: 12
+      start_period: 30s
 
   frontend:
     build:
