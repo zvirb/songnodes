@@ -19,6 +19,7 @@ import { Banner, TrackCell, useAnnouncer, useToaster } from './components/ui';
 import { CrateFilterRail } from './components/CrateFilterRail';
 import { TargetActionButton } from './targetAction/TargetActionButton';
 import { DiscoveryBanner } from './targetAction/DiscoveryBanner';
+import { useTableKeyboardNav } from '../../hooks/useTableKeyboardNav';
 import './musicLibrary.css';
 
 const FIRST_BATCH = 150;
@@ -85,6 +86,7 @@ const LibraryPage: React.FC = () => {
   const [newFrom, setNewFrom] = useState<number | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [bannerGone, setBannerGone] = useState<number | null>(() => lsGet<number | null>(bannerKey('library'), null));
+  const [activeId, setActiveId] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const { toast, region } = useToaster();
   const { say, node: liveNode } = useAnnouncer();
@@ -144,10 +146,22 @@ const LibraryPage: React.FC = () => {
   const visible = rows.slice(0, limit);
 
   useEffect(() => {
+    if (activeId && !visible.some((t) => t.id === activeId)) {
+      setActiveId(null);
+    }
+  }, [visible, activeId]);
+
+  useEffect(() => {
     if (focusRow == null) return;
     document.querySelector<HTMLElement>(`[data-row="${focusRow}"]`)?.focus();
     setFocusRow(null);
   }, [focusRow, limit]);
+
+  useEffect(() => {
+    if (activeId) {
+      document.querySelector<HTMLElement>(`tr[data-id="${activeId}"]`)?.scrollIntoView({ block: 'nearest' });
+    }
+  }, [activeId]);
 
   const changeFilters = useCallback((f: CrateFilters) => { setFilters(f); setQuery(f.q); setLimit(FIRST_BATCH); setNewFrom(null); }, []);
   const onSort = (key: SortKey, label: string) => {
@@ -164,6 +178,34 @@ const LibraryPage: React.FC = () => {
     writeDraft(draft);
     toast(<>Added <q>{t.a} – {t.t}</q> to <q>{name}</q></>, { label: 'Undo', run: () => writeDraft(before) });
   };
+
+  const { boxProps, announcement } = useTableKeyboardNav({
+    rowIds: visible.map((t) => t.id),
+    activeId,
+    onActiveChange: setActiveId,
+    onOpen: (id) => {
+      document.querySelector<HTMLButtonElement>(`tr[data-id="${id}"] .sn-data-table__actions .sn-btn[title^="Add "]`)?.click();
+    },
+    shortcuts: {
+      t: (id) => {
+        document.querySelector<HTMLButtonElement>(`tr[data-id="${id}"] .sn-data-table__actions .sn-btn[title^="Add "][aria-label^="Add "]`)?.click();
+      },
+      a: (id) => {
+        const t = visible.find((x) => x.id === id);
+        if (t) addToSet(t);
+      },
+      ' ': () => {
+        // Space does nothing yet (no preview source)
+      }
+    },
+    describe: (id) => {
+      const t = visible.find((x) => x.id === id);
+      return t ? `${t.a} – ${t.t}` : '';
+    }
+  });
+
+  // Override aria-keyshortcuts to reflect the actually handled keys
+  boxProps['aria-keyshortcuts'] = 'J K ArrowDown ArrowUp Enter T A';
 
   const buildFromCrate = () => {
     const p = filtersToParams(filters);
@@ -286,7 +328,8 @@ const LibraryPage: React.FC = () => {
                 {lib ? `${SN.format.count(rows.length)} of ${SN.format.count(tracks.length)} tracks · showing ${SN.format.count(visible.length)}` : 'Loading the crate…'}
               </span>
             </div>
-            <div className="sn-tablebox sn-data-table__box">
+            <div className="sn-tablebox sn-data-table__box" {...boxProps}>
+              <p className="sn-sr" aria-live="polite">{announcement}</p>
               <table className="sn-table" aria-busy={!lib && !error ? true : undefined}>
                 <caption className="sn-sr">Crate, {SN.format.count(visible.length)} of {SN.format.count(rows.length)} matching tracks. Column headers with buttons are sortable.</caption>
                 <thead>
@@ -337,7 +380,7 @@ const LibraryPage: React.FC = () => {
                     visible.map((t, i) => {
                       const name = `${t.a} – ${t.t}`;
                       return (
-                        <tr key={t.id} data-flag={t.rev ? '' : undefined} data-row={i} tabIndex={i >= FIRST_BATCH ? -1 : undefined} className={newFrom != null && i >= newFrom ? 'sn-show-more__new' : undefined}>
+                        <tr key={t.id} data-id={t.id} data-active={activeId === t.id ? '' : undefined} data-flag={t.rev ? '' : undefined} data-row={i} tabIndex={i >= FIRST_BATCH ? -1 : undefined} className={newFrom != null && i >= newFrom ? 'sn-show-more__new' : undefined}>
                           <td data-label="Energy"><EnergyBar value={t.e} /></td>
                           <td className="sn-data-table__track"><TrackCell t={t} /></td>
                           <td className="num" data-label="BPM"><Bpm value={t.bpm} /></td>
