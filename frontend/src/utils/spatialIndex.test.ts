@@ -315,14 +315,17 @@ describe('benchmarkSpatialVsLinear', () => {
     expect(benchmark.linear.duration).toBeGreaterThan(0);
   });
 
-  it('should show spatial index performance advantage for large graphs', () => {
+  it('finds the same node as a linear scan on a large graph', () => {
     const nodes = generateTestNodes(1000);
     const testPoint: Point = { x: 500, y: 500 };
 
     const benchmark = benchmarkSpatialVsLinear(nodes, testPoint, 50);
 
-    // With 1000 nodes, spatial should be faster
-    expect(benchmark.speedup).toBeGreaterThan(1);
+    // One timed query is too short to compare speeds reliably on shared CI
+    // runners, so only check the results agree and the timings were taken.
+    expect(benchmark.spatial.result?.id).toBe(benchmark.linear.result?.id);
+    expect(benchmark.spatial.duration).toBeGreaterThanOrEqual(0);
+    expect(benchmark.linear.duration).toBeGreaterThanOrEqual(0);
   });
 });
 
