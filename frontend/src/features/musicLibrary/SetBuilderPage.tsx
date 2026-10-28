@@ -23,6 +23,7 @@ import { Banner, ConfirmDialog, CopyButton, NumberField, OverflowMenu, Switch, T
 import { EnergyWave, type WaveSlot } from './components/EnergyWave';
 import { findCompatibleTracks } from '../setBuilder/transitions';
 import { ExportDialog } from '../setBuilder/ExportDialog';
+import { SendToTidalDialog } from '../setBuilder/SendToTidalDialog';
 import { reorderTracks } from '../setBuilder/reorder';
 import './musicLibrary.css';
 
@@ -62,7 +63,7 @@ const SetBuilderPage: React.FC = () => {
   const [bannerGone, setBannerGone] = useState<number | null>(() => lsGet<number | null>(bannerKey('sets'), null));
   const [controlsOpen, setControlsOpen] = useState(() => !(typeof window !== 'undefined' && !window.matchMedia?.(WIDE).matches && readDraft().slots.length));
   const [exportingSet, setExportingSet] = useState<SavedSet | null>(null);
-  const [tidalSaved, setTidalSaved] = useState<string | null>(null);
+  const [sendingTidal, setSendingTidal] = useState<boolean>(false);
   const { toast, region } = useToaster();
   const { say, node: liveNode } = useAnnouncer();
   const focusAfter = useRef<string | null>(null);
@@ -232,14 +233,7 @@ const SetBuilderPage: React.FC = () => {
     toast('Draft cleared. Shape, length, genre mix and pool are kept.');
   };
 
-  const setTidal = (on: boolean) => {
-    setDraft((d) => ({ ...d, tidal: on }));
-    if (savedDoc) {
-      setSaved(saved.map((s) => (s.id === savedDoc.id ? { ...s, tidal: on, updated: new Date().toISOString() } : s)));
-      setTidalSaved(`Saved ${SN.format.time(new Date())}`);
-    }
-    say(on ? 'Sends to TIDAL on the weekly run' : 'Won’t send to TIDAL');
-  };
+
 
   const slotName = (i: number) => { const t = items[i]?.t; return t ? `${t.a} – ${t.t}` : `slot ${i + 1}`; };
   const toggleLock = (i: number) => {
@@ -444,10 +438,11 @@ const SetBuilderPage: React.FC = () => {
         desc={`${shape.name} over ${draft.minutes} min: ${SN.format.count(filled.length)} tracks, ${mixLine}.`}
         stampVerb="Saved"
         stamp={savedDoc?.updated ?? null}
-        pill={savedDoc && savedDoc.tidal ? <StatusPill raw="idle" label="Queued for the weekly run" /> : undefined}
+        pill={undefined}
         actions={
           <>
             <button className="sn-btn sn-page-header__secondary" type="button" onClick={save}><SnIcon name="save" />Save set</button>
+            <button className="sn-btn sn-page-header__secondary" type="button" onClick={() => setSendingTidal(true)} disabled={!savedDoc}><SnIcon name="list-music" />Send to TIDAL</button>
             <OverflowMenu label="More actions" heading="Set" items={menuItems} onSelect={(id) => { if (id === 'save') save(); if (id === 'export') exportSets(); if (id === 'export-single' && savedDoc) setExportingSet(savedDoc); if (id === 'delete' && savedDoc) setToDelete(savedDoc); }} />
             <button className="sn-btn sn-btn--primary" type="button" onClick={() => build()} disabled={!lib}><SnIcon name="wand-sparkles" />Build set</button>
           </>
@@ -531,13 +526,6 @@ const SetBuilderPage: React.FC = () => {
                     <span className="sn-field__help">To build from a filtered crate, filter the <Link className="sn-link sn-m-library" to="/library">library</Link> and choose Build set from crate.</span>
                   )}
                 </div>
-                <Switch
-                  label="Send to TIDAL on the weekly run"
-                  desc={`The weekly run copies this set into TIDAL as a playlist named “SET · ${name}”.${savedDoc ? '' : ' Applies once the set is saved.'}`}
-                  saved={savedDoc ? tidalSaved ?? undefined : undefined}
-                  checked={draft.tidal}
-                  onChange={setTidal}
-                />
                 <div className="sn-card__foot">
                   <button className={`sn-btn sn-btn--quiet${armedNew ? ' sn-confirm-dialog__armed' : ''}`} type="button" data-armed={armedNew ? '' : undefined} onClick={newEmpty} onBlur={() => setArmedNew(false)}>
                     {armedNew ? 'Clear the current draft?' : 'New empty set'}
@@ -629,7 +617,7 @@ const SetBuilderPage: React.FC = () => {
                       {es2.map((e, k) => <i key={k} data-e={e} style={{ height: `${e * 10}%` }} />)}
                     </div>
                     <div className="sn-set-card__meta">
-                      {s.tidal ? <StatusPill raw="idle" label="Queued for the weekly run" /> : <StatusPill raw="idle" label="Not sent to TIDAL" />}
+
                     </div>
                     <div className="sn-set-card__meta">
                       <time dateTime={s.updated} title={SN.format.stamp(s.updated)}>Updated {SN.format.relative(s.updated)}</time>
@@ -647,12 +635,13 @@ const SetBuilderPage: React.FC = () => {
             <EmptyState icon="list-music" title="No saved sets yet">Build a set and save it to see it here.</EmptyState>
           )}
           <div className="sn-card sn-card--flat sn-ml-export">
-            <p className="sn-page-sets__note">Saved sets live on this device. Export them as <span className="sn-mono">artifact_sets.json</span> into <span className="sn-mono">musicLibrary/inbox/</span> and the weekly run adds them to the library database and sends the ones marked for TIDAL.</p>
+            <p className="sn-page-sets__note">Saved sets live on this device. Export them as <span className="sn-mono">artifact_sets.json</span> into <span className="sn-mono">musicLibrary/inbox/</span> and the weekly run adds them to the library database.</p>
             <div><button className="sn-btn sn-btn--sm" type="button" onClick={exportSets} disabled={!saved.length}><SnIcon name="download" />Export sets for the weekly run</button></div>
           </div>
         </aside>
       </div>
 
+      <SendToTidalDialog open={sendingTidal} set={savedDoc} onClose={() => setSendingTidal(false)} />
       <ExportDialog
         open={!!exportingSet}
         set={exportingSet}
@@ -663,7 +652,7 @@ const SetBuilderPage: React.FC = () => {
         open={!!toDelete}
         title={toDelete ? `Delete “${toDelete.name}”?` : ''}
         text={<>This removes the saved set from this device. Its {SN.format.count(toDelete?.tracks.length ?? 0)} tracks stay in the library.</>}
-        facts={toDelete?.tidal ? ['It is no longer sent to TIDAL on the weekly run. A playlist already made stays in TIDAL.'] : undefined}
+        facts={undefined}
         confirmLabel="Delete set"
         onConfirm={confirmDelete}
         onCancel={() => setToDelete(null)}

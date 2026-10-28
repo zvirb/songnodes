@@ -1410,8 +1410,13 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 
 <!-- SLOT:TX1 BEGIN -->
 ### TX1: Send a set to TIDAL as a new dated playlist
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-28
+- Built: Replaced the Set builder's 'Send to TIDAL on the weekly run' switch with an instant 'Send to TIDAL' dialog that creates a new playlist using the official TIDAL API. It uses the stored access token, preserves the set track order, logs unmatched tracks, and uses the design system.
+- Checks run: `pytest tests/rest_api/test_tidal_playlists.py -q` (16 passed), `cd frontend && npm ci && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src/features/setBuilder src/features/musicLibrary && npx vite build`, `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check`.
+- Reviewer check: With TIDAL connected in Settings, open /sets, build and save a set, choose Send to TIDAL, add a note, send: a new playlist named "<today> . <set name>" appears in the TIDAL app with the note as its description and the tracks in set order; unmatched tracks are listed in the dialog. Sending again makes a second playlist.
+- PR Link: https://github.com/zvirb/songnodes/pull/NEW
+- Follow-ups: Removing SavedSet.tidal and the weekly-run TIDAL step in the musicLibrary pipeline.
+- End: 2026-10-28
 <!-- SLOT:TX1 END -->
 
 <!-- SLOT:AX1 BEGIN -->
