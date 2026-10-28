@@ -61,4 +61,66 @@ async def test_importer_records_only_allowed_evidence_fields(mock_conn, mocker, 
         assert call_args[0][2] != 'release_year'
         assert call_args[0][2] != 'label'
 
-# Note: In Python, rewriting this test using caplog works.
+async def test_importer_processes_musiclibrary_export_runs(mock_conn):
+    payload = {
+        "runs": [
+            {"date": "2026-10-24", "added": 25, "demoted": 0, "archived": 0, "promoted": 0, "rejected": 234, "review_queue": 319},
+            {"date": "2026-10-27", "added": 20, "demoted": 0, "archived": 0, "promoted": 0, "rejected": 7, "review_queue": 339}
+        ]
+    }
+
+    stats = await _process_payload(mock_conn, payload)
+
+    assert stats['runs']['inserted'] == 2
+    assert stats['runs']['skipped'] == 0
+
+    calls = mock_conn.fetchval.call_args_list
+    run_calls = [c for c in calls if "INSERT INTO library.runs" in c[0][0]]
+    assert len(run_calls) == 2
+
+    # 2026-10-24 midnight Melbourne
+    assert run_calls[0][0][1] == '2026-10-24T00:00:00+11:00'
+    assert run_calls[0][0][2] == 'completed'
+    assert '"added": 25' in run_calls[0][0][3]
+
+    # 2026-10-27 midnight Melbourne
+    assert run_calls[1][0][1] == '2026-10-27T00:00:00+11:00'
+    assert run_calls[1][0][2] == 'completed'
+    assert '"added": 20' in run_calls[1][0][3]
+
+async def test_importer_processes_canonical_runs(mock_conn):
+    payload = {
+        "runs": [
+            {"run_date": "2026-10-28T04:35:31+00", "status": "failed", "metrics": {"retry_count": 3}}
+        ]
+    }
+
+    stats = await _process_payload(mock_conn, payload)
+
+    assert stats['runs']['inserted'] == 1
+    assert stats['runs']['skipped'] == 0
+
+    calls = mock_conn.fetchval.call_args_list
+    run_calls = [c for c in calls if "INSERT INTO library.runs" in c[0][0]]
+    assert len(run_calls) == 1
+
+    assert run_calls[0][0][1] == "2026-10-28T04:35:31+00"
+    assert run_calls[0][0][2] == "failed"
+    assert '"retry_count": 3' in run_calls[0][0][3]
+
+async def test_importer_skips_runs_without_valid_dates(mock_conn, caplog):
+    payload = {
+        "runs": [
+            {"date": "2026-10-24", "added": 25},
+            {"status": "completed", "added": 10},
+            {"date": "not-a-date", "added": 5}
+        ]
+    }
+
+    stats = await _process_payload(mock_conn, payload)
+
+    assert stats['runs']['inserted'] == 1
+    assert stats['runs']['skipped'] == 2
+
+    assert "Skipping run at index 1 due to missing valid date" in caplog.text
+    assert "Skipping run at index 2 due to missing valid date" in caplog.text
