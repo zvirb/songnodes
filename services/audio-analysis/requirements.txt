@@ -17,3 +17,9 @@ numba==0.68.0
 resampy==0.4.3
 audioread==3.1.0
 psutil==7.2.2
+mutagen
+# Essentia can be difficult to build on some platforms.
+# The user's Python 3.15 environment likely doesn't have a wheel for Essentia,
+# but the brief allows assuming it exists or explicitly using it if available.
+# We omit forcing essentia installation here to prevent build breaks,
+# but our code expects it at runtime (it was installed manually during this session).

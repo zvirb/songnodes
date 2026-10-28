@@ -1278,8 +1278,11 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 
 <!-- SLOT:AA1 BEGIN -->
 ### AA1: Audio analysis: key and BPM from audio, proven on synthetic test audio
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-26
+- Built: Essentia-based key and BPM analyser with half/double BPM folding to typical ranges. Validated via synthetic audio test fixtures representing kicks, hi-hats, claps, and chord progressions. Also added a `benchmark-key-bpm.py` script for local library evaluation.
+- Checks: `cd services/audio-analysis && python -m pytest tests/unit/test_key_bpm.py -q` run successfully.
+- PR: (Pending submission)
 <!-- SLOT:AA1 END -->
 
 <!-- SLOT:AA2 BEGIN -->
