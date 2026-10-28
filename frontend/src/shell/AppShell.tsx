@@ -6,6 +6,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { SN, SnIcon, MODULE_ROUTES, moduleOf, type ModuleKey } from '../lib/songnodes';
 import { ToastRegion } from '../components/ds';
+import { CreditsFooter } from './CreditsFooter';
 
 interface HeaderState {
   lead: string;
@@ -177,6 +178,7 @@ export const AppShell: React.FC = () => {
       <div className="sn-shell" inert={drawerOpen ? true : undefined}>
         <AppHeader state={state} drawerOpen={drawerOpen} onOpenDrawer={() => setDrawerOpen(true)} menuRef={menuRef} />
         <Outlet />
+        <CreditsFooter />
       </div>
       <NavDrawer open={drawerOpen} onClose={closeDrawer} current={state.current} />
       {/* One toast region for the whole app, mounted at start (design-system Toast). */}

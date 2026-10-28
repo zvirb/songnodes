@@ -1291,6 +1291,96 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 - End: _not finished_
 <!-- SLOT:AA2 END -->
 
+<!-- SLOT:AK1 BEGIN -->
+### AK1: AI setlists through the server with keys saved in Settings
+- Start: 2026-10-28
+- Built: Moved AI key management to backend, mapping claude->anthropic, openai->openai, gemini->google, under the `api_key` name. Cleans up any raw keys from localStorage on load. Modified `ai_proxy.py` to add `googleSearch` tool for Gemini when `web_search` is requested. Replaced frontend direct browser AI API calls with requests routed through the proxy using `aiProxyComplete` in `aiService.ts` and `AISetlistsPage.tsx`. Updated AI Setlists page to default to preferred provider and count non-200 responses during import as failed. Added new tests for new API key dispatchers and the frontend key service logic.
+- Checks run: `python -m pytest tests/ai_proxy tests/rest_api/test_api_keys_ai_services.py tests/security/test_api_keys_security.py -q`, `cd frontend && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build`, `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check`. All passed.
+- Checks not run: Playwright E2E suite could not be run in the sandbox.
+- Reviewer Check: Save a Claude key in Settings, reload: the mask shows and `SELECT service_name FROM api_keys` lists 'anthropic'; localStorage has no raw key. Run AI setlists: the browser network panel shows only /api/v1/ai/complete, never api.anthropic.com.
+- PR: https://github.com/zvirb/songnodes/pull/NEW
+- End: 2026-10-28
+<!-- SLOT:AK1 END -->
+
+<!-- SLOT:CR1 BEGIN -->
+- **Status:** Complete. Added `CreditsFooter.tsx` containing track metadata data source attributions according to DS rule 15-print-export.
+- **Checks run:** frontend unit tests, linting, build, DS sync check (all passed).
+- **PR Link:** TBD
+<!-- SLOT:CR1 END -->
+
+<!-- SLOT:EC1 BEGIN -->
+### EC1: Run the browser tests in GitHub Actions
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:EC1 END -->
+
+<!-- SLOT:EK1 BEGIN -->
+### EK1: Enrichment uses keys saved in Settings
+- Start: 2026-10-28
+- End: 2026-10-28
+  - Implemented saved key retrieval from the database, falling back to environment variables.
+  - Implemented async-safe synchronisation wrapper `load_sync` to operate within existing worker loops safely.
+  - Adapted `build_providers` to query saved keys using the database connection strings, falling back where necessary, and logging source properly.
+  - Checks run: Scope guard, shared domain unit tests (`python -m pytest common/tests/test_provider_saved_keys.py common/tests/test_providers.py -q`).
+  - The reviewer's check check passes.
+  - PR: TODO
+<!-- SLOT:EK1 END -->
+
+<!-- SLOT:HM1 BEGIN -->
+### HM1: Key and mood: where can I move next
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:HM1 END -->
+
+<!-- SLOT:LS1 BEGIN -->
+### LS1: Library search: energy filter and speed check
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:LS1 END -->
+
+<!-- SLOT:NV1 BEGIN -->
+### NV1: Link to AI setlists and refresh the Home text
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:NV1 END -->
+
+<!-- SLOT:PF1 BEGIN -->
+### PF1: Paths: make Find route work
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:PF1 END -->
+
+<!-- SLOT:SQ1 BEGIN -->
+### SQ1: Pipeline: Queue scrape job asks for search words
+- Start: 2026-10-28
+- End: 2026-10-28 - Implemented queueing a scrape job with artist and title search terms. Updated ScraperProgressPage.tsx to use a form, validate fields, and send proper fetch with Idempotency-Key. Updated empty state. Wrote comprehensive tests for ScraperProgressPage validating UI, errors, and fetch parameters. Ran vitest, tsc, oxlint, build, and sync checks. Scope guard passed. PR to be raised.
+<!-- SLOT:SQ1 END -->
+
+<!-- SLOT:ST1 BEGIN -->
+### ST1: Settings: one card per service, coloured by kind
+- Start: 2026-10-28
+- Built: Updated `SettingMeta` interface with `kind: 'api' | 'display' | 'login' | 'about'`. Assigned modules appropriately (paths, harmony, library, neutral). Dropped Beatport from the frontend using `HIDDEN_SERVICES`. Created dynamically generated service cards in `filteredSettings` based on backend requirements using `SERVICE_LABEL_MAP`. Sorted the view systematically by kind (api -> display -> login -> about). Updated tests to assert presence and modules of individual dynamic cards (Spotify, Discogs, 1001Tracklists, etc) and exclusion of Beatport. Fixed sentence casing in Leads and removed misleading "API status" mention.
+- Checks run: `npm ci && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build` and `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check`. All passed.
+- Checks not run: Playwright E2E suite due to environment constraints.
+- Reviewer Check: Open http://127.0.0.1:3006/settings: cards come in coloured groups (pink API keys incl. one card each for Spotify, Discogs, Last.fm …; teal theme, text size, row density, reduce motion; gold TIDAL, Spotify connection, 1001Tracklists, saved data); About is neutral and says nothing about API status; Beatport appears nowhere. Open the Discogs card's page: only the Discogs token field. /settings/scraper-keys still loads.
+- PR Link: https://github.com/zvirb/songnodes/pull/NEW
+- End: 2026-10-28
+<!-- SLOT:ST1 END -->
+
+<!-- SLOT:SV1 BEGIN -->
+* Started: 2026-10-28
+* Finished: 2026-10-28
+* Summary: Updated Set builder to load saved sets from the database on mount. Merges server and local sets, gracefully falls back to local data if the API fails, and prevents duplicates on saves by mapping server IDs back to local items using a pending creates map.
+* Checks: ran vitest tests for data.ts, oxlint, tsc, and sync-design-system.sh --check. All pass.
+* PR: (Pending)
+<!-- SLOT:SV1 END -->
+
+<!-- SLOT:TV1 BEGIN -->
+### TV1: TIDAL: use only the official API
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:TV1 END -->
+
 ## Scheduled run
 
 ### 2026-10-26 15:10 AEDT (Claude, scheduled run on tuf-boi)
@@ -1535,3 +1625,25 @@ Ended 2026-10-26 22:29: Audited Pathfinder (DS7). Fixed CSS typography variables
 - Checks: `python -m pytest common/tests` (all 120 tests pass).
 - End: 2026-10-28
 <!-- SLOT:WP1 END -->
+
+<!-- SLOT:ART1-DEEZER BEGIN -->
+### ART1-DEEZER: Capture Album Artwork in Deezer Client
+- Start: 2026-10-28
+- Details: Capture album artwork image URLs from Deezer public API in `detail(track_id)` (`cover_xl` -> `cover_big` -> `cover_medium` fallback) and `search(...)` (`cover_medium`), preserving all return keys. Added unit tests in `pipeline/test_deezer_art.py`.
+- Checks run: `PYTHONPATH=. pytest pipeline/test_deezer_art.py` (9/9 passed offline), `python scripts/scope_guard.py`.
+- End: 2026-10-28
+<!-- SLOT:ART1-DEEZER END -->
+<!-- SLOT:ART3 BEGIN -->
+### ART3: Persist Artwork in SQLite and Set Builder JSON Export
+- Start: 2026-10-29
+- Built: Created `pipeline/build_db.py` adding `artwork_url TEXT` column to `tracks` SQLite table and exporting `"art": r.get("artwork_url")` in Set Builder JSON artifact (`outputs/artifact/library.json`). Added unit tests in `pipeline/test_db_artwork.py`.
+- Checks: `pytest -o addopts="" pipeline/test_db_artwork.py` (4 passed), `pytest -o addopts="" pipeline/test_pipeline.py pipeline/test_normalise.py pipeline/test_db_artwork.py` (11 passed).
+- PR: [ART3-DB: Persist Artwork in SQLite and Set Builder JSON Export](https://github.com/zvirb/songnodes/pull/NEW)
+- End: 2026-10-29
+<!-- SLOT:ART3 END -->
+
+<!-- SLOT:DS18 BEGIN -->
+### DS18: Design system 1.3.0: calendar and text inset from LedgerSchedule
+- Start: 2026-10-28
+- End: 2026-10-28 - design-system/ mirrored to 1.3.0 from the artifact and re-synced (VERSION 1.3.0). Added DateRange (calendar range popover) and the DateField calendar button, SongNodes.calendar / format.range / format.dayLong / dateRange / iconNames, the menu icon-gap part, and the text-inset fixes from a browser audit of all previews (05-layout "Text inset"). Q10–Q18 in 17-governance wait for Markus. Checks: sync --check and check_design_system.py --check pass; frontend checks in the PR body.
+<!-- SLOT:DS18 END -->

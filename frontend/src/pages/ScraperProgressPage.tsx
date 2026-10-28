@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, FormEvent } from 'react';
 import { RefreshCw, Activity, CheckCircle2, ServerCrash, Clock, Zap, AlertTriangle, XCircle, Play } from 'lucide-react';
 import TargetTracksManager from '../components/TargetTracksManager';
 import { SN } from '../lib/songnodes';
@@ -8,13 +8,24 @@ import { usePipelineTelemetry } from '../features/pipeline/usePipelineTelemetry'
 import { api } from '../services/api';
 import { usePageHeader } from '../shell/AppShell';
 
-import { SectionHeading } from '../components/ds';
+import { SectionHeading, TextField, SegmentedControl, Button } from '../components/ds';
+import { API_BASE_URL } from '../lib/apiBase';
 
 const ScraperProgressPage: React.FC = () => {
   usePageHeader({ lead: 'Pipeline', title: 'Telemetry', current: 'pipeline' });
-  const { telemetry, stages, workers, jobs, scrapeRuns, isLoading, error, lastUpdated, source, refresh } = usePipelineTelemetry();
+  const { telemetry, stages, workers, jobs, scrapeRuns, isLoading, error, lastUpdated, source: telemetrySource, refresh } = usePipelineTelemetry();
   const [retryingJob, setRetryingJob] = useState<string | null>(null);
   const [confirmRetryId, setConfirmRetryId] = useState<string | null>(null);
+
+  const [artist, setArtist] = useState('');
+  const [title, setTitle] = useState('');
+  const [source, setSource] = useState<'mixesdb' | '1001tracklists'>('mixesdb');
+  const [artistError, setArtistError] = useState('');
+  const [titleError, setTitleError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const artistRef = useRef<HTMLInputElement>(null);
+  const titleRef = useRef<HTMLInputElement>(null);
+  const idempotencyKeyRef = useRef<string | null>(null);
 
   const handleRetryJob = async () => {
     if (!confirmRetryId) return;
@@ -32,13 +43,89 @@ const ScraperProgressPage: React.FC = () => {
     }
   };
 
-  const handleQueueJob = async () => {
+  const handleQueueJob = async (e?: FormEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+
+    const trimmedArtist = artist.trim();
+    const trimmedTitle = title.trim();
+    let hasError = false;
+
+    setArtistError('');
+    setTitleError('');
+
+    if (!trimmedArtist) {
+      setArtistError('Enter the artist.');
+      hasError = true;
+    }
+    if (!trimmedTitle) {
+      setTitleError('Enter the track title.');
+      hasError = true;
+    }
+
+    if (!trimmedArtist && !trimmedTitle) {
+      artistRef.current?.focus();
+    } else if (!trimmedArtist) {
+      artistRef.current?.focus();
+    } else if (!trimmedTitle) {
+      titleRef.current?.focus();
+    }
+
+    if (hasError) return;
+
+    const query = `${trimmedArtist} ${trimmedTitle}`;
+    if (query.length > 255) {
+      setArtistError('Combined artist and title must be at most 255 characters.');
+      artistRef.current?.focus();
+      return;
+    }
+
+    setIsSubmitting(true);
+    if (!idempotencyKeyRef.current) {
+      idempotencyKeyRef.current = crypto.randomUUID();
+    }
+
     try {
-      await api.post('/scrape/trigger?source=1001tracklists');
-      await refresh();
+      const params = new URLSearchParams({
+        source,
+        search_query: query
+      });
+
+      const response = await fetch(`${API_BASE_URL || ''}/api/v1/scrape/trigger?${params.toString()}`, {
+        method: 'POST',
+        headers: {
+          'Idempotency-Key': idempotencyKeyRef.current,
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.status === 202) {
+        if (data.created === false) {
+          showToast(`Already queued`);
+        } else {
+          showToast(`Queued ${query} on ${source}`);
+        }
+        setArtist('');
+        setTitle('');
+        setArtistError('');
+        setTitleError('');
+        idempotencyKeyRef.current = null;
+        await refresh();
+      } else {
+        const detail = data.detail;
+        if (typeof detail === 'string') {
+          showToast(detail);
+        } else {
+          showToast(`Could not queue the scrape (HTTP ${response.status})`);
+        }
+      }
     } catch (e) {
       console.error('Failed to queue job:', e);
-      showToast('Failed to queue job');
+      showToast('Could not queue the scrape');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -52,7 +139,7 @@ const ScraperProgressPage: React.FC = () => {
   const STAGE_PILL: Record<string, [string, string]> = { done: ['completed', 'Done'], running: ['running', 'Running'], waiting: ['idle', 'Waiting'], warning: ['warning', 'Warning'], failed: ['failed', 'Failed'], cancelled: ['cancelled', 'Cancelled'] };
   const RUN_PILL: Record<string, [string, string]> = { queued: ['queued', 'Queued'], running: ['running', 'Running'], found_nothing: ['warning', 'Found nothing'], done: ['success', 'Done'], failed: ['failed', 'Failed'] };
 
-  if (error && source === 'unavailable') {
+  if (error && telemetrySource === 'unavailable') {
     return (
       <main className="sn-page__main" id="main" tabIndex={-1}>
         <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-8)' }}>
@@ -109,7 +196,7 @@ const ScraperProgressPage: React.FC = () => {
         </div>
       </header>
 
-      {source !== 'live' && (
+      {telemetrySource !== 'live' && (
         <div className="sn-banner" data-status="info" style={{ marginBottom: 'var(--space-6)' }}>
           <Activity size={20} />
           <div>
@@ -118,14 +205,64 @@ const ScraperProgressPage: React.FC = () => {
         </div>
       )}
 
-      {jobs.length === 0 && source === 'live' && (
+      {jobs.length === 0 && telemetrySource === 'live' && (
         <section className="sn-page__section sn-empty-state" style={{ border: "1px dashed var(--line)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "var(--space-8)", backgroundColor: "var(--surface-1)", borderRadius: "var(--radius-card)", marginBottom: "var(--space-6)" }}>
           <Clock size={48} color="var(--fg-3)" style={{ marginBottom: 'var(--space-4)' }} />
           <h2 className="heading-3" style={{ marginBottom: 'var(--space-2)' }}>No jobs yet</h2>
           <p className="body" style={{ color: 'var(--fg-2)', marginBottom: 'var(--space-4)' }}>The pipeline queue is currently empty.</p>
-          <button className="sn-btn sn-btn--primary" onClick={handleQueueJob}>
-            <Play size={16} aria-hidden="true" /> Queue scrape job
-          </button>
+          <Button kind="quiet" onClick={() => artistRef.current?.focus()}>
+            Queue scrape job
+          </Button>
+        </section>
+      )}
+
+      {telemetrySource === 'live' && (
+        <section className="sn-page__section" style={{ marginBottom: 'var(--space-6)' }}>
+          <SectionHeading title="Queue a scrape" />
+          <form
+            onSubmit={handleQueueJob}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 'var(--space-4)',
+              border: '1px solid var(--line)',
+              padding: 'var(--space-4)',
+              backgroundColor: 'var(--surface-1)',
+              borderRadius: 'var(--radius-card)'
+            }}
+          >
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-4)' }}>
+              <TextField
+                label="Artist"
+                value={artist}
+                onChange={setArtist}
+                error={artistError}
+                ref={artistRef}
+              />
+              <TextField
+                label="Title"
+                value={title}
+                onChange={setTitle}
+                error={titleError}
+                ref={titleRef}
+              />
+            </div>
+            <div>
+              <SegmentedControl
+                options={[
+                  { value: 'mixesdb', label: 'MixesDB' },
+                  { value: '1001tracklists', label: '1001Tracklists' }
+                ]}
+                value={source}
+                onChange={(v) => setSource(v as 'mixesdb' | '1001tracklists')}
+              />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+              <Button type="submit" kind="primary" disabled={isSubmitting} busy={isSubmitting} busyLabel="Queueing scrape…">
+                Queue scrape
+              </Button>
+            </div>
+          </form>
         </section>
       )}
 
@@ -149,39 +286,55 @@ const ScraperProgressPage: React.FC = () => {
               <tbody>
                 {scrapeRuns.slice(0, 20).map((r) => (
                   <tr key={r.id}>
-                    <td className="body-strong">{r.query || <span className="sn-none">–</span>}</td>
-                    <td>{r.source || <span className="sn-none">–</span>}</td>
-                    <td title={r.error ?? undefined}><StatusPill raw={RUN_PILL[r.state][0]} label={RUN_PILL[r.state][1]} /></td>
-                    <td className="data">{SN.format.dateTime(r.createdAt)}</td>
-                    <td className="num data">{SN.format.duration(r.seconds)}</td>
-                    <td className="num data">{SN.format.count(r.playlists)}</td>
-                    <td className="num data">{SN.format.count(r.tracks)}</td>
+                    <td className="body-strong" >
+                      {r.query || <span className="sn-none">–</span>}
+                    </td>
+                    <td >{r.source}</td>
+                    <td>
+                      <StatusPill
+                        raw={RUN_PILL[r.state]?.[0] || 'idle'}
+                        label={RUN_PILL[r.state]?.[1] || r.state}
+                        title={r.error || undefined}
+                      />
+                    </td>
+                    <td className="data" >
+                      {SN.format.dateTime(r.createdAt)}
+                    </td>
+                    <td className="num data" >
+                      {r.seconds !== null ? SN.format.duration(r.seconds) : '—'}
+                    </td>
+                    <td className="num data" >
+                      {r.playlists !== null ? SN.format.count(r.playlists) : '—'}
+                    </td>
+                    <td className="num data" >
+                      {r.tracks !== null ? SN.format.count(r.tracks) : '—'}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         ) : (
-          <p className="body" style={{ color: 'var(--fg-2)' }}>No scrape has run yet. Queue one from the target tracks below.</p>
+          <p className="body" >No scrapes have been requested yet.</p>
         )}
       </section>
 
-      {/* Primary KPI Metrics Tiles */}
+      {/* Overview Metric Tiles */}
       <section className="sn-page__section" style={{ marginBottom: 'var(--space-6)' }}>
-        <SectionHeading title="Global pipeline health" />
+        <SectionHeading title="System health" count="Last 15 minutes" />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
 
-          {/* Tile 1: Active Workers */}
+          {/* Tile 1: Active Jobs */}
           <div className="sn-card" style={{ border: '1px solid var(--line)', padding: 'var(--space-4)', backgroundColor: 'var(--surface-1)', borderRadius: 'var(--radius-card)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
-              <span className="label" style={{ flex: 1 }}>Scrapes running</span>
+              <span className="label" style={{ flex: 1 }}>Active workers</span>
               <Activity size={18} color="var(--brand)" />
             </div>
             <div className="figure data" >
-              {SN.format.count(runningScrapes.length)}
+              {telemetry.activeWorkers}
             </div>
             <div className="caption" style={{ color: 'var(--fg-2)', marginTop: 'var(--space-1)' }}>
-              {runningScrapes.length > 0 ? runningScrapes.map(r => r.query || r.source).join(', ') : 'None at the moment'}
+              Processing {SN.format.count(activeJobs.length)} active jobs
             </div>
           </div>
 
@@ -385,7 +538,6 @@ const ScraperProgressPage: React.FC = () => {
         </ConfirmDialog>
       )}
     </main>
-
   );
 };
 

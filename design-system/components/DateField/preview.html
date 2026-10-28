@@ -1,10 +1,10 @@
-<!-- @dsCard group="Inputs" height=569 subtitle="Last heard between: day-month-year fields with presets and readable date; error for an impossible date; native date input with en-AU display" -->
+<!-- @dsCard group="Inputs" height=1010 subtitle="Last heard between: day-month-year fields with presets, readable date and a calendar button that opens DateRange; error for an impossible date; native date input with en-AU display" -->
 <!doctype html>
 <html>
 <head><meta charset="utf-8"><title>DateField — preview</title></head>
 <body>
 <div class="sn-preview" id="root">
-  <fieldset class="sn-date-field" id="range" style="max-width: 640px">
+  <fieldset class="sn-date-field sn-date-field--calendar" id="range" style="max-width: 640px">
     <legend class="sn-date-field__legend">Last heard between</legend>
     <div class="sn-date-field__presets" role="group" aria-label="Date presets">
       <button type="button" class="sn-chip" aria-pressed="false" data-preset="7">Last 7 days</button>
@@ -13,6 +13,7 @@
     </div>
     <div class="sn-date-field__range" id="range-fields"></div>
     <span class="sn-field__error" id="range-err" hidden></span>
+    <div class="sn-popover sn-date-range--static" id="range-pop" hidden></div>
   </fieldset>
 
   <div class="sn-preview__label">Error: impossible date</div>
@@ -50,14 +51,22 @@
   }
   function show(g) { var dt = read(g), out = g.querySelector(".sn-date-field__shown"); out.textContent = dt ? dateOnly(dt) : ""; return dt; }
 
-  document.getElementById("range-fields").innerHTML = group("From", null) + '<span class="sn-date-field__to" aria-hidden="true">to</span>' + group("To", null);
+  document.getElementById("range-fields").innerHTML = group("From", null) + '<span class="sn-date-field__to" aria-hidden="true">to</span>' + group("To", null) +
+    '<button type="button" class="sn-btn sn-btn--icon sn-date-field__pick" id="range-pick" aria-label="Pick the dates on the calendar" title="Pick the dates on the calendar" aria-haspopup="dialog" aria-expanded="false" aria-controls="range-pop">' + S.icon("calendar") + '</button>';
   document.getElementById("bad").innerHTML = group("Released on", [31, 9, 2026], { err: "Released on must be a real date. September has 30 days.", bad: ["d"], help: "For example, 24 10 2026" });
   var groups = document.querySelectorAll("#range-fields [data-date]");
+  function iso(dt) { return dt ? S.calendar.iso(dt.getFullYear(), dt.getMonth() + 1, dt.getDate()) : null; }
+  function fromIso(s) { var p = s.split("-"); return new Date(+p[0], p[1] - 1, +p[2]); }
+  var PRESET_ID = { "7": "last-7-days", "30": "last-30-days", "year": "this-year" };
+  // The calendar: DateRange in a popover under the fieldset. Typed dates show in the months; picked dates fill the boxes.
+  var pick = null, pop = null, cal = null;
+  function syncCal() { if (!cal) return; var a = read(groups[0]), b = read(groups[1]), on = document.querySelector('.sn-date-field__presets [data-preset][aria-pressed="true"]'); cal.set(a ? iso(a) : null, b ? iso(b) : null, on ? PRESET_ID[on.dataset.preset] : null); }
+  function closeCal(back) { if (!pop || pop.hidden) return; pop.hidden = true; pick.setAttribute("aria-expanded", "false"); if (back) pick.focus(); }
   function preset(p) {
     var from = new Date(TODAY); if (p === "7") from.setDate(from.getDate() - 6); else if (p === "30") from.setDate(from.getDate() - 29); else from = new Date(TODAY.getFullYear(), 0, 1);
     setGroup(groups[0], from); setGroup(groups[1], TODAY);
-    document.querySelectorAll("[data-preset]").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.preset === p); });
-    check();
+    document.querySelectorAll(".sn-date-field__presets [data-preset]").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.preset === p); });
+    check(); syncCal();
   }
   function check() {
     var a = read(groups[0]), b = read(groups[1]), err = document.getElementById("range-err");
@@ -66,11 +75,28 @@
     groups.forEach(function (g) { g.querySelectorAll("input").forEach(function (i) { i.setAttribute("aria-invalid", msg ? "true" : "false"); i.setAttribute("aria-describedby", g.id + "-shown" + (msg ? " range-err" : "")); }); });
   }
   preset("30");
-  document.addEventListener("click", function (e) { var b = e.target.closest("[data-preset]"); if (b) preset(b.dataset.preset); });
+  document.addEventListener("click", function (e) { var b = e.target.closest(".sn-date-field__presets [data-preset]"); if (b) preset(b.dataset.preset); });
   document.addEventListener("input", function (e) {
     var g = e.target.closest("[data-date]"); if (!g) return; show(g);
-    if (g.closest("#range-fields")) { document.querySelectorAll("[data-preset]").forEach(function (b) { b.setAttribute("aria-pressed", "false"); }); check(); }
+    if (g.closest("#range-fields")) { document.querySelectorAll(".sn-date-field__presets [data-preset]").forEach(function (b) { b.setAttribute("aria-pressed", "false"); }); check(); syncCal(); }
   });
+  pick = document.getElementById("range-pick"); pop = document.getElementById("range-pop");
+  cal = S.dateRange(pop, {
+    today: iso(TODAY), title: "Last heard between", outcome: "Use these dates",
+    marks: [{ date: "2026-11-03", code: "PH", name: "Melbourne Cup", kind: "Public holiday" }],
+    onChange: function (a, b, presetId) {
+      if (a) setGroup(groups[0], fromIso(a)); else groups[0].querySelectorAll("input").forEach(function (i) { i.value = ""; show(groups[0]); });
+      if (b) setGroup(groups[1], fromIso(b)); else groups[1].querySelectorAll("input").forEach(function (i) { i.value = ""; show(groups[1]); });
+      document.querySelectorAll(".sn-date-field__presets [data-preset]").forEach(function (x) { x.setAttribute("aria-pressed", String(PRESET_ID[x.dataset.preset] === presetId)); });
+      check();
+    },
+    onApply: function () { closeCal(true); },
+    onClose: function () { closeCal(true); }
+  });
+  syncCal();
+  pop.hidden = false; pick.setAttribute("aria-expanded", "true");  // shown open in the preview (in flow, so it does not cover the examples below)
+  pick.addEventListener("click", function () { if (!pop.hidden) { closeCal(true); return; } pop.hidden = false; pick.setAttribute("aria-expanded", "true"); cal.focus(); });
+  document.addEventListener("click", function (e) { if (pop && !pop.hidden && !e.target.closest("#range-pop") && !e.target.closest("#range-pick") && !e.target.closest(".sn-date-field__presets")) closeCal(false); });
   document.querySelectorAll("#bad [data-date]").forEach(show);
   var nat = document.getElementById("nat");
   function natShow() { var v = nat.value.split("-"); document.getElementById("nat-shown").textContent = nat.value ? dateOnly(new Date(+v[0], v[1] - 1, +v[2])) : ""; }

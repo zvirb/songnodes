@@ -11,13 +11,17 @@ import { PageHeader, EmptyState } from '../../shell/PageParts';
 import { SN, SnIcon, KeyBadge, Bpm, CompatPill, StatusPill, type CompatLevel } from '../../lib/songnodes';
 import { loadLibrary, readSavedSetsAsync, writeSavedSetsAsync, readSavedSets, writeSavedSets, type LibraryFile, type LibraryTrack, type SavedSet } from './data';
 import {
+  addTrack,
+  filterTracks,
   MAX_MINUTES, MIN_MINUTES, PILLARS, POOLS, SHAPES, buildSlots, countPeaks, draftFromSaved, filtersFromParams, filtersToParams,
   genreRunBefore, mixTotal, mixedSecs, newSetId, normaliseMix, pillarLabel, poolTracks, removeSlot, retarget,
   savedSetFromDraft, shapeOf, slotCount, spares, tracklistText, waveIssues, type Draft, type PoolKey,
 } from './setBuilder';
 import { bannerKey, downloadJson, lsGet, lsSet, melbourneStamp, normaliseTracks, readDraft, writeDraft } from './storage';
+import { InlineMessage } from '../aiSetlists/components/ui';
 import { Banner, ConfirmDialog, CopyButton, NumberField, OverflowMenu, Switch, TrackCell, useAnnouncer, useToaster } from './components/ui';
 import { EnergyWave, type WaveSlot } from './components/EnergyWave';
+import { findCompatibleTracks } from '../setBuilder/transitions';
 import { ExportDialog } from '../setBuilder/ExportDialog';
 import { reorderTracks } from '../setBuilder/reorder';
 import './musicLibrary.css';
@@ -49,7 +53,10 @@ const SetBuilderPage: React.FC = () => {
   const [attempt, setAttempt] = useState(0);
   const [draft, setDraftState] = useState<Draft>(readDraft);
   const [saved, setSavedState] = useState<SavedSet[]>(readSavedSets);
+  const [savedLoaded, setSavedLoaded] = useState(false);
+  const [savedSource, setSavedSource] = useState<'server' | 'device' | null>(null);
   const [openSpares, setOpenSpares] = useState<Set<number>>(new Set());
+  const [suggestOpen, setSuggestOpen] = useState<number | null>(null);
   const [toDelete, setToDelete] = useState<SavedSet | null>(null);
   const [armedNew, setArmedNew] = useState(false);
   const [bannerGone, setBannerGone] = useState<number | null>(() => lsGet<number | null>(bannerKey('sets'), null));
@@ -63,7 +70,26 @@ const SetBuilderPage: React.FC = () => {
   const setDraft = useCallback((u: Draft | ((d: Draft) => Draft)) => {
     setDraftState((d) => { const next = typeof u === 'function' ? (u as (d: Draft) => Draft)(d) : u; writeDraft(next); return next; });
   }, []);
-  const setSaved = useCallback((s: SavedSet[]) => { setSavedState(s); writeSavedSetsAsync(s); }, []);
+  const setSaved = useCallback((s: SavedSet[], docIdToUpdate?: string) => {
+    setSavedState(s);
+    writeSavedSetsAsync(s).then(resolved => {
+      setSavedState(resolved);
+      if (docIdToUpdate) {
+        const found = resolved.find(r => r.id === docIdToUpdate || r.name === s.find(x => x.id === docIdToUpdate)?.name && r.updated === s.find(x => x.id === docIdToUpdate)?.updated);
+        if (found && found.id !== docIdToUpdate) {
+          setDraftState(d => d.id === docIdToUpdate ? { ...d, id: found.id } : d);
+        }
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    readSavedSetsAsync().then(({ sets, source }) => {
+      setSavedState(sets);
+      setSavedSource(source);
+      setSavedLoaded(true);
+    });
+  }, []);
 
   useEffect(() => {
     setLoadError(false);
@@ -83,10 +109,10 @@ const SetBuilderPage: React.FC = () => {
   // Intake from links: ?open=<saved id>, or ?pool=crate&<library filters> from "Build set from crate".
   useEffect(() => {
     const open = params.get('open'), pool = params.get('pool');
-    if (!open && pool !== 'crate') return;
+    if (!savedLoaded || (!open && pool !== 'crate')) return;
     if (open) {
-      const s = readSavedSets().find((x) => x.id === open);
-      if (s) { setDraft(draftFromSaved(s, byId)); setOpenSpares(new Set()); toast(<>Opened <q>{s.name}</q></>); }
+      const s = saved.find((x) => x.id === open);
+      if (s) { setDraft(draftFromSaved(s, byId)); setOpenSpares(new Set()); setSuggestOpen(null); toast(<>Opened <q>{s.name}</q></>); }
       else toast('That saved set is no longer on this device.');
     } else {
       const crate = filtersFromParams(params);
@@ -95,7 +121,7 @@ const SetBuilderPage: React.FC = () => {
     }
     setParams(new URLSearchParams(), { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params]);
+  }, [params, savedLoaded, saved, byId, setDraft, toast, say, setParams]);
 
   const name = draft.name.trim() || 'Untitled set';
   usePageHeader({ lead: 'Set builder', title: name, current: 'sets', updatedAt: generated ?? undefined });
@@ -151,6 +177,7 @@ const SetBuilderPage: React.FC = () => {
     const slots = buildSlots(tracks, d, true, byId);
     setDraft({ ...d, slots });
     setOpenSpares(new Set());
+    setSuggestOpen(null);
     const n = slots.filter((s) => s.id).length;
     toast(<>{seed === draft.seed ? 'Built' : 'New take of'} <q>{name}</q>: {SN.format.count(n)} tracks, {SN.format.span(mixedSecs(slots.map((s) => byId.get(s.id ?? ''))))}.</>);
     if (!window.matchMedia?.(WIDE).matches) setControlsOpen(false);
@@ -161,7 +188,7 @@ const SetBuilderPage: React.FC = () => {
     const prev = saved, prevId = draft.id;
     const doc = savedSetFromDraft(draft, byId, saved);
     const next = [doc, ...saved.filter((s) => s.id !== doc.id)];
-    setSaved(next);
+    setSaved(next, doc.id);
     setDraft((d) => ({ ...d, id: doc.id }));
     toast(<>Saved <q>{doc.name}</q> · {SN.format.count(doc.tracks.length)} tracks, {SN.format.span(secs)}</>, {
       label: 'Undo', run: () => { setSaved(prev); setDraft((d) => ({ ...d, id: prevId })); },
@@ -185,9 +212,8 @@ const SetBuilderPage: React.FC = () => {
   };
 
   const exportSets = () => {
-    const sets = readSavedSets();
-    downloadJson('artifact_sets.json', sets);
-    toast(<>Exported {SN.format.count(sets.length)} {sets.length === 1 ? 'set' : 'sets'} as <span className="sn-mono">artifact_sets.json</span></>);
+    downloadJson('artifact_sets.json', saved);
+    toast(<>Exported {SN.format.count(saved.length)} {saved.length === 1 ? 'set' : 'sets'} as <span className="sn-mono">artifact_sets.json</span></>);
   };
 
   useEffect(() => { if (!armedNew) return; const t = window.setTimeout(() => setArmedNew(false), 3000); return () => window.clearTimeout(t); }, [armedNew]);
@@ -196,6 +222,7 @@ const SetBuilderPage: React.FC = () => {
     setArmedNew(false);
     setDraft((d) => ({ ...d, id: null, name: 'New set', slots: [], seed: 1 }));
     setOpenSpares(new Set());
+    setSuggestOpen(null);
     toast('Draft cleared. Shape, length, genre mix and pool are kept.');
   };
 
@@ -219,6 +246,7 @@ const SetBuilderPage: React.FC = () => {
     const nm = slotName(i);
     setDraft((d) => ({ ...d, slots: reorderTracks(d.slots, i, dir) }));
     setOpenSpares(new Set());
+    setSuggestOpen(null);
     focusAfter.current = `[data-slot="${j}"] [data-act="${dir < 0 ? 'up' : 'down'}"]`;
     say(`${nm} moved to slot ${j + 1}`);
   };
@@ -226,13 +254,21 @@ const SetBuilderPage: React.FC = () => {
     const before = draft, nm = slotName(i);
     setDraft((d) => ({ ...d, slots: removeSlot(d, i) }));
     setOpenSpares(new Set());
+    setSuggestOpen(null);
     toast(<>Removed <q>{nm}</q> from slot {i + 1}</>, { label: 'Undo', run: () => setDraft(before) });
   };
   const swapIn = (i: number, t: LibraryTrack) => {
     setDraft((d) => ({ ...d, slots: d.slots.map((s, k) => (k === i ? { ...s, id: t.id, lock: true } : s)) }));
     setOpenSpares((o) => { const n = new Set(o); n.delete(i); return n; });
+    setSuggestOpen(null);
     focusAfter.current = `[data-slot="${i}"] [data-act="lock"]`;
     say(`${t.a} – ${t.t} swapped into slot ${i + 1} and locked`);
+  };
+
+  const appendTrack = (t: LibraryTrack) => {
+    setDraft((d) => addTrack(d, t).draft);
+    setSuggestOpen(null);
+    say(`${t.a} – ${t.t} added to set`);
   };
   useEffect(() => {
     if (!focusAfter.current) return;
@@ -274,17 +310,47 @@ const SetBuilderPage: React.FC = () => {
       );
     }
     if (!t) {
+      const prevT = items[i - 1]?.t;
+      const canSuggest = !!prevT;
+      const isSuggestOpen = suggestOpen === i;
+
       order.push(
-        <li key={`s${i}`} className="sn-set-slot sn-set-slot--empty" data-slot={i} aria-label={`Slot ${n}: empty`}>
+        <React.Fragment key={`s${i}`}>
+        <li className="sn-set-slot sn-set-slot--empty" data-slot={i} aria-label={`Slot ${n}: empty`}>
           <span className="sn-set-slot__n">{n}</span>
           <span className="sn-set-slot__energy"><SlotEnergy e={null} tgt={s.tgt} /></span>
-          <span className="sn-set-slot__empty">No track in the pool fits energy {s.tgt} here. Widen the pool, or add one from the library.</span>
+          <span className="sn-set-slot__empty">
+            No track in the pool fits energy {s.tgt} here. Widen the pool, or add one from the library.
+            {canSuggest && (
+              <button className="sn-btn sn-btn--quiet sn-btn--sm" type="button" aria-expanded={isSuggestOpen} onClick={() => setSuggestOpen(o => o === i ? null : i)} style={{ marginLeft: 'var(--space-4)' }}>
+                <SnIcon name="wand-sparkles" /> Suggest next
+              </button>
+            )}
+          </span>
           <span className="sn-set-slot__act">
             {btn('arrow-up', `Move slot ${n} up`, () => move(i, -1), { disabled: s.lock || i === 0 || prevLocked, act: 'up' })}
             {btn('arrow-down', `Move slot ${n} down`, () => move(i, 1), { disabled: s.lock || i === items.length - 1 || nextLocked, act: 'down' })}
             {btn('x', `Remove empty slot ${n}`, () => remove(i), { act: 'remove' })}
           </span>
-        </li>,
+        </li>
+        {isSuggestOpen && canSuggest && (
+          <li>
+            <div className="sn-set-slot__spares">
+              <span className="sn-set-slot__spares-label">Suggestions to follow {prevT.a} – {prevT.t}:</span>
+              {findCompatibleTracks(prevT, { pool: draft.crate ? filterTracks(tracks, draft.crate) : poolTracks(tracks, draft), tgtEnergy: s.tgt }).map((m) => (
+                <button className="sn-set-slot__spare" type="button" key={m.track.id} aria-label={`Swap in ${m.track.a} – ${m.track.t}`} onClick={() => swapIn(i, m.track)}>
+                  <span>{m.track.a} – {m.track.t}</span>
+                  <span className="sn-mono sn-dim">{m.track.e ?? '–'}</span>
+                  <KeyBadge value={m.track.k} />
+                  <span className="sn-mono sn-dim" style={{ marginLeft: 'auto', display: 'flex', gap: 'var(--space-2)' }}>
+                    {m.badges.map((b, bi) => <CompatPill key={bi} level="compatible" label={b} />)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </li>
+        )}
+        </React.Fragment>
       );
       return;
     }
@@ -324,6 +390,34 @@ const SetBuilderPage: React.FC = () => {
             ))}
           </div>
         </li>,
+      );
+    }
+
+    if (i === items.length - 1 && t) {
+      const isSuggestOpen = suggestOpen === (i + 1);
+      order.push(
+        <li key="suggest-next" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
+          <div>
+            <button className="sn-btn sn-btn--quiet sn-btn--sm" type="button" aria-expanded={isSuggestOpen} onClick={() => setSuggestOpen(o => o === (i + 1) ? null : (i + 1))}>
+              <SnIcon name="wand-sparkles" /> Suggest next
+            </button>
+          </div>
+          {isSuggestOpen && (
+            <div className="sn-set-slot__spares">
+              <span className="sn-set-slot__spares-label">Suggestions to follow {t.a} – {t.t}:</span>
+              {findCompatibleTracks(t, { pool: draft.crate ? filterTracks(tracks, draft.crate) : poolTracks(tracks, draft) }).map((m) => (
+                <button className="sn-set-slot__spare" type="button" key={m.track.id} aria-label={`Append ${m.track.a} – ${m.track.t}`} onClick={() => appendTrack(m.track)}>
+                  <span>{m.track.a} – {m.track.t}</span>
+                  <span className="sn-mono sn-dim">{m.track.e ?? '–'}</span>
+                  <KeyBadge value={m.track.k} />
+                  <span className="sn-mono sn-dim" style={{ marginLeft: 'auto', display: 'flex', gap: 'var(--space-2)' }}>
+                    {m.badges.map((b, bi) => <CompatPill key={bi} level="compatible" label={b} />)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </li>
       );
     }
   });
@@ -505,6 +599,11 @@ const SetBuilderPage: React.FC = () => {
             <h2 className="sn-title title-s" id="saved-t">Saved sets</h2>
             <span className="sn-section-heading__count">{SN.format.count(saved.length)}</span>
           </div>
+          {savedSource === 'device' && (
+            <div style={{ marginBottom: 'var(--space-3)' }}>
+              <div className="sn-inline-message" data-status="info" role="status"><span>Saved sets are from this device; the server did not answer.</span></div>
+            </div>
+          )}
           {saved.length ? (
             <div className="sn-page-sets__saved sn-m-sets">
               {saved.map((s, i) => {

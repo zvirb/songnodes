@@ -849,10 +849,10 @@
   "Favicon"
  ],
  "lastChange": {
-   "by": "Markus",
-   "at": "2026-10-24T22:36:06Z",
-   "via": "Claude (Claude Code)",
-   "note": "1.1.1: exceptions register (EX-001 wordmark contrast, EX-002 LauncherCard name) in 17-governance"
+  "by": "Markus",
+  "at": "2026-10-28T08:40:00Z",
+  "via": "Claude (claude.ai)",
+  "note": "1.3.0: DateRange calendar picker and DateField calendar button (from BeanAlliance DateRange v4.17.3); text-inset fixes from a browser audit of every preview (from BeanAlliance v4.17.3 spacing); menu icon gap; icon-name warning; Q10–Q18 fitted for Markus"
  },
  "layout": "files",
  "libraries": [],
