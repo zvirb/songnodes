@@ -1247,9 +1247,14 @@ PR: https://github.com/zvirb/songnodes/pull/LY2
 <!-- SLOT:DB1 END -->
 
 <!-- SLOT:SC2 BEGIN -->
-### SC2: Scrape target tracks on a schedule
-- Start: _not started_
-- End: _not finished_
+Started: 2024-11-20
+Ended: 2024-11-20
+Built: Added scrape_targets handler and recurring celery job to automatically search target tracks on a schedule. Tested via test_target_scrape.py.
+Checks run: cd services && python -m unittest common/tests/test_target_scrape.py, python scripts/scope_guard.py.
+Checks not run: UI checks (not applicable).
+Reviewer check: With stack running, add target track on /sources/targets; set SCRAPE_TARGETS_INTERVAL_SECONDS=60, GET /api/v1/jobs?kind=scrape lists 2 jobs, target's last_searched is set.
+Follow-ups: Updating playlists_found after a scrape.
+PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 <!-- SLOT:SC2 END -->
 
 <!-- SLOT:L8 BEGIN -->
