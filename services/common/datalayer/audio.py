@@ -98,10 +98,13 @@ async def record_result(conn, row, result: Dict[str, Any]) -> int:
         await evidence.record(conn, row['id'], 'bpm', round(float(bpm), 2), SOURCE, method=METHOD, method_version=method_version,
                               independent_group=SOURCE, confidence=unit_confidence(result.get('bpm_confidence')), raw=raw)
         usable += 1
-    # The analyser image cannot import common.metadata, so key_camelot may be empty: derive it from the key name.
-    code = camelot.to_camelot(result.get('key_camelot')) or camelot.to_camelot(result.get('key_name'))
-    if row['key'] is None and code:
-        await evidence.record(conn, row['id'], 'key', code, SOURCE, method=METHOD, method_version=method_version,
+    # Record the key name (e.g. "A minor"), as the providers do: consensus stores it in `key` and derives
+    # camelot_key. The analyser image cannot import common.metadata, so key_camelot may be empty; fall back to it
+    # only when the name is missing or unreadable.
+    name = result.get('key_name')
+    value = name if camelot.to_camelot(name) else camelot.to_camelot(result.get('key_camelot'))
+    if row['key'] is None and value:
+        await evidence.record(conn, row['id'], 'key', value, SOURCE, method=METHOD, method_version=method_version,
                               independent_group=SOURCE, confidence=unit_confidence(result.get('key_confidence')), raw=raw)
         usable += 1
     return usable

@@ -9,6 +9,7 @@ import httpx
 
 from common.datalayer import audio, handlers
 from common.datalayer.handlers import Context, RetryableError
+from common.metadata import camelot
 from common.metadata.matching import Track
 from common.providers.base import ProviderTrack, ProviderUnavailable
 
@@ -79,7 +80,8 @@ class AudioAnalysisJobTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(seen, [{'url': 'https://cdnt-preview.dzcdn.net/x.mp3'}])
         calls = {c.args[2]: c for c in self.record.await_args_list}
         self.assertEqual(calls['bpm'].args[3], 124.0)
-        self.assertEqual(calls['key'].args[3], '8A')   # derived from the key name when key_camelot is empty
+        self.assertEqual(calls['key'].args[3], 'A minor')   # the key name, as providers record it
+        self.assertEqual(camelot.to_camelot(calls['key'].args[3]), '8A')
         for call in calls.values():
             self.assertEqual(call.args[1], track['id'])
             self.assertEqual(call.args[4], 'audio_analysis')
