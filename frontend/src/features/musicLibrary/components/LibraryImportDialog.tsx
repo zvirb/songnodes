@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Dialog, showToast } from '../../../components/ds';
 import { SN, SnIcon } from '../../../lib/songnodes';
-import { resetLibraryCache, type LibraryFile } from '../data';
+import { type LibraryFile } from '../data';
 
 export async function readExport(file: File): Promise<{ text: string; count: number; generated?: string }> {
   const text = await file.text();
@@ -145,7 +145,6 @@ export const LibraryImportDialog: React.FC<LibraryImportDialogProps> = ({ open, 
         setJobStatus(data.status);
         if (data.status === 'succeeded') {
           showToast(`Library imported: ${SN.format.count(data.result?.tracks || 0)} tracks`);
-          resetLibraryCache();
           onReload();
         } else if (data.status === 'dead') {
           setJobError(data.last_error || 'Import failed');

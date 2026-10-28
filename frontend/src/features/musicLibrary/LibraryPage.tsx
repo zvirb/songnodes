@@ -96,7 +96,7 @@ const LibraryPage: React.FC = () => {
   useEffect(() => {
     setError(null);
     const t = window.setTimeout(() => setSlow(true), 1000);
-    loadLibrary().then(setLib).catch(() => setError('load')).finally(() => window.clearTimeout(t));
+    loadLibrary(attempt > 0).then(setLib).catch(() => setError('load')).finally(() => window.clearTimeout(t));
     return () => window.clearTimeout(t);
   }, [attempt]);
 

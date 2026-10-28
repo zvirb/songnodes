@@ -1,11 +1,10 @@
 /** @vitest-environment jsdom */
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
-import { readSavedSetsAsync, writeSavedSetsAsync, readSavedSets, writeSavedSets, SAVED_SETS_KEY, type SavedSet, loadLibrary, mapApiToLibraryTrack, resetLibraryCache } from './data';
+import { readSavedSetsAsync, writeSavedSetsAsync, readSavedSets, writeSavedSets, SAVED_SETS_KEY, type SavedSet, loadLibrary, mapApiToLibraryTrack } from './data';
 
 describe('loadLibrary', () => {
     beforeEach(() => {
         vi.stubGlobal('fetch', vi.fn());
-        resetLibraryCache();
     });
 
     afterEach(() => {
