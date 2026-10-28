@@ -9,14 +9,14 @@ frontend/src/components/AdvancedSearch.tsx
 # migrated DS12: frontend/src/components/DJInterface/DJInterface.module.css
 # migrated DS12: frontend/src/components/DJInterface/panels/PlanModePanel.tsx
 # migrated DS12: frontend/src/components/DJInterface/panels/PlayModePanel.tsx
-frontend/src/components/FilterPanel.tsx
+# migrated: frontend/src/components/FilterPanel.tsx
 # migrated DS11: frontend/src/components/IntelligentBrowser.legacy.tsx
 # migrated DS2A: frontend/src/components/IntelligentBrowser/IntelligentBrowser.module.css
 # migrated DS2B: frontend/src/components/MobileTrackExplorer.css
 # migrated DS6: frontend/src/components/MoodVisualizer.css
 frontend/src/components/MultiSelect.tsx
 # migrated DS10: frontend/src/components/OAuthCallback.tsx
-frontend/src/components/PathBuilder.tsx
+# migrated: frontend/src/components/PathBuilder.tsx
 # migrated DS2B: frontend/src/components/QuickSearch.tsx
 frontend/src/components/RadialMenu.tsx
 # migrated DS12: frontend/src/components/SetlistBuilder/AnalyticsPanel.tsx
