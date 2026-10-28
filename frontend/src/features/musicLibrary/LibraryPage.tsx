@@ -346,7 +346,7 @@ const LibraryPage: React.FC = () => {
                           <td data-label="Rotation"><RotationTag rot={t.rot} /></td>
                           <td className="num" data-label="Heard"><Heard t={t} /></td>
                           <td className="num" data-label="Last heard"><LastHeard d={t.last} /></td>
-                          <td className="sn-data-table__actions" style={{ display: 'flex', gap: 'var(--space-1)' }}>
+                          <td className="sn-data-table__actions">
                             <TargetActionButton track={t} />
                             <button className="sn-btn sn-btn--quiet sn-btn--sm sn-btn--icon" type="button" aria-label={`Add ${name} to set`} title={`Add ${name} to set`} onClick={() => addToSet(t)}>
                               <SnIcon name="plus" />
