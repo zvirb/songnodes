@@ -431,18 +431,23 @@ COMMENT ON COLUMN user_oauth_tokens.scope IS 'Space-separated list of granted OA
 COMMENT ON FUNCTION has_valid_oauth_token IS 'Check if a valid (non-expired) OAuth token exists for user and service';
 COMMENT ON FUNCTION cleanup_expired_oauth_tokens IS 'Remove tokens expired more than 30 days ago (run via cron job)';
 
--- Grant appropriate permissions
-GRANT SELECT, INSERT, UPDATE ON api_keys TO musicdb_user;
-GRANT SELECT ON api_key_requirements TO musicdb_user;
-GRANT INSERT ON api_key_audit_log TO musicdb_user;
-GRANT EXECUTE ON FUNCTION store_api_key TO musicdb_user;
-GRANT EXECUTE ON FUNCTION get_api_key TO musicdb_user;
-GRANT EXECUTE ON FUNCTION get_masked_api_key TO musicdb_user;
-GRANT EXECUTE ON FUNCTION update_api_key_test_result TO musicdb_user;
-
--- Grant permissions for OAuth tokens table
-GRANT SELECT, INSERT, UPDATE, DELETE ON user_oauth_tokens TO musicdb_user;
-GRANT SELECT ON user_oauth_tokens_status TO musicdb_user;
-GRANT EXECUTE ON FUNCTION has_valid_oauth_token TO musicdb_user;
-GRANT EXECUTE ON FUNCTION get_oauth_token_expiry TO musicdb_user;
-GRANT EXECUTE ON FUNCTION cleanup_expired_oauth_tokens TO musicdb_user;
+-- Grant permissions to musicdb_user where that role exists. The Compose stack connects
+-- as its own owner role, so on a fresh database there is no musicdb_user to grant to.
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'musicdb_user') THEN
+        GRANT SELECT, INSERT, UPDATE ON api_keys TO musicdb_user;
+        GRANT SELECT ON api_key_requirements TO musicdb_user;
+        GRANT INSERT ON api_key_audit_log TO musicdb_user;
+        GRANT EXECUTE ON FUNCTION store_api_key TO musicdb_user;
+        GRANT EXECUTE ON FUNCTION get_api_key TO musicdb_user;
+        GRANT EXECUTE ON FUNCTION get_masked_api_key TO musicdb_user;
+        GRANT EXECUTE ON FUNCTION update_api_key_test_result TO musicdb_user;
+        GRANT SELECT, INSERT, UPDATE, DELETE ON user_oauth_tokens TO musicdb_user;
+        GRANT SELECT ON user_oauth_tokens_status TO musicdb_user;
+        GRANT EXECUTE ON FUNCTION has_valid_oauth_token TO musicdb_user;
+        GRANT EXECUTE ON FUNCTION get_oauth_token_expiry TO musicdb_user;
+        GRANT EXECUTE ON FUNCTION cleanup_expired_oauth_tokens TO musicdb_user;
+    END IF;
+END
+$$;
