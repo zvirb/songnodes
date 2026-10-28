@@ -1,19 +1,32 @@
 import { renderHook, act } from '@testing-library/react';
-import { useTableKeyboardNav } from './useTableKeyboardNav';
-import { KeyboardEvent } from 'react';
+import { useTableKeyboardNav, type TableNavKeyEvent } from './useTableKeyboardNav';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 /** @vitest-environment jsdom */
 
+const createKeyDownEvent = (
+  key: string,
+  target?: HTMLElement,
+  modifiers: Partial<Pick<TableNavKeyEvent, 'ctrlKey' | 'metaKey' | 'altKey'>> = {}
+): TableNavKeyEvent => ({
+  key,
+  ctrlKey: false,
+  metaKey: false,
+  altKey: false,
+  preventDefault: vi.fn<() => void>(),
+  target: target || document.createElement('div'),
+  ...modifiers
+});
+
 describe('useTableKeyboardNav', () => {
   const rowIds = ['id-1', 'id-2', 'id-3'];
-  const describeMock = vi.fn((id) => `Track ${id}`);
-  const onActiveChangeMock = vi.fn();
-  const onOpenMock = vi.fn();
+  const describeMock = vi.fn<(id: string) => string>((id) => `Track ${id}`);
+  const onActiveChangeMock = vi.fn<(id: string | null) => void>();
+  const onOpenMock = vi.fn<(id: string) => void>();
   const shortcutsMock = {
-    ' ': vi.fn(),
-    t: vi.fn(),
-    x: vi.fn()
+    ' ': vi.fn<(id: string) => void>(),
+    t: vi.fn<(id: string) => void>(),
+    x: vi.fn<(id: string) => void>()
   };
 
   beforeEach(() => {
@@ -33,15 +46,6 @@ describe('useTableKeyboardNav', () => {
     );
   };
 
-  const createKeyDownEvent = (key: string, target?: HTMLElement, modifiers = {}) => {
-    const e = {
-      key,
-      preventDefault: vi.fn(),
-      target: target || document.createElement('div'),
-      ...modifiers
-    } as unknown as KeyboardEvent<HTMLElement>;
-    return e;
-  };
 
   it('moves active index down on J', () => {
     const { result } = setup('id-1');

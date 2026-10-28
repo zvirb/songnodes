@@ -1,4 +1,7 @@
-import { KeyboardEvent } from 'react';
+import type { KeyboardEvent } from 'react';
+
+/** The parts of a keydown event the hook reads; a React KeyboardEvent satisfies it. */
+export type TableNavKeyEvent = Pick<KeyboardEvent<HTMLElement>, 'key' | 'ctrlKey' | 'metaKey' | 'altKey' | 'target' | 'preventDefault'>;
 
 interface UseTableKeyboardNavProps {
   rowIds: string[];
@@ -19,14 +22,15 @@ export function useTableKeyboardNav({
 }: UseTableKeyboardNavProps) {
   const currentIndex = activeId ? rowIds.indexOf(activeId) : -1;
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLElement>) => {
+  const handleKeyDown = (e: TableNavKeyEvent) => {
     // Ignore if Ctrl/Meta/Alt are held
     if (e.ctrlKey || e.metaKey || e.altKey) {
       return;
     }
 
     // Ignore if focus is in an input, select, contenteditable, or dialog
-    const target = e.target as HTMLElement;
+    const target = e.target;
+    if (!(target instanceof HTMLElement)) return;
     const tagName = target.tagName.toLowerCase();
 
     if (
