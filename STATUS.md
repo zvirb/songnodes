@@ -1608,6 +1608,13 @@ Ended 2026-10-26 22:29: Audited Pathfinder (DS7). Fixed CSS typography variables
 - End: 2026-10-28
 <!-- SLOT:WP1 END -->
 
+<!-- SLOT:ART1-DEEZER BEGIN -->
+### ART1-DEEZER: Capture Album Artwork in Deezer Client
+- Start: 2026-10-28
+- Details: Capture album artwork image URLs from Deezer public API in `detail(track_id)` (`cover_xl` -> `cover_big` -> `cover_medium` fallback) and `search(...)` (`cover_medium`), preserving all return keys. Added unit tests in `pipeline/test_deezer_art.py`.
+- Checks run: `PYTHONPATH=. pytest pipeline/test_deezer_art.py` (9/9 passed offline), `python scripts/scope_guard.py`.
+- End: 2026-10-28
+<!-- SLOT:ART1-DEEZER END -->
 <!-- SLOT:ART3 BEGIN -->
 ### ART3: Persist Artwork in SQLite and Set Builder JSON Export
 - Start: 2026-10-29
