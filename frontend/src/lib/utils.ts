@@ -5,7 +5,6 @@
 
 import { type ClassValue, clsx } from 'clsx';
 
-
 /**
  * Merge class names
  *
