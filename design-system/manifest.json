@@ -188,8 +188,7 @@
     "source/types/50-feedback.d.ts",
     "source/types/60-pages-a.d.ts",
     "source/types/61-pages-b.d.ts",
-    "tokens.css",
-    "components/DateRange/README.md"
+    "tokens.css"
   ],
   "libraries": [],
   "components": [
@@ -662,11 +661,6 @@
       "name": "WeeklyGridPage",
       "group": "Pages",
       "summary": "Shows × days for one week: plays and new tracks per cell, today's column marked in --now, totals per day and per show, and one list per day on phones."
-    },
-    {
-      "name": "DateRange",
-      "group": "Inputs",
-      "summary": "The calendar popover for a from–to span: two months (Monday first), presets beside them, the range in words and its day count, the range in lavender, today in…"
     }
   ],
   "assetGroups": [

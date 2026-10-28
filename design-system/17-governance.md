@@ -20,22 +20,6 @@ The design system has one version number, [semver](https://semver.org) `MAJOR.MI
 
 Newest first. Each entry: version, date (Melbourne), one line per change, prefixed Added / Changed / Deprecated / Removed / Fixed, with the decision record if any.
 
-**1.4.0 — 28 Oct 2026: drag and drop, stalled loads, CSV guard, no printed paths (imported from BeanAlliance v4.15, v4.17 and v4.17.1, chosen by Markus 28 Oct 2026)**
-- Added `DragDrop` (Inputs): one pattern for reordering the running order and dragging crate tracks into a set: `grip-vertical` handle, 4px threshold, name-only ghost, dashed `brand` target with the outcome in words, insertion line, locked slots refuse and say why, Space / arrows / Enter / Escape, Undo toast (`.sn-drag-handle`, `.sn-drag-origin`, `.sn-drag-ghost`, `__name`, `--static`, `[data-locked]`, `.sn-drop-target`, `.sn-drop-text`, `.sn-drop-line` in the new `source/css/35-drag-drop.css`).
-- Added `SongNodes.csv` (`cell`, `row`, `file`, `BOM`, `EOL`): the formula guard prefixes typed or scraped text starting with `=`, `+`, `-`, `@`, tab or carriage return with an apostrophe, before quoting; numbers the export writes are untouched; the BOM, sentence-case header and timestamped name stay (DR-033). 15-print-export updated.
-- Added the `stalled` StagedProgress step state (▲, `status-warn`): a load fails only after 60 s with no progress from the current step, never on elapsed time; Try again resumes from that step; a refresh with data on screen never shows a loading screen. LoadingState, ErrorState, FreshnessStamp and 07-feedback-status updated.
-- Changed: a page never prints a file or folder location; places are named in words, and only an icon-only CopyButton in a file's row carries the path in its tooltip (01-writing "File paths and system locations"; CopyButton, FileDrop, LogPage, MonitoringPage, PrintSheet, SettingsPage, TextLink updated).
-- Recorded DR-031 (calendar-day count), DR-032 (AppHeader 8px on phones), DR-033 (CSV conventions kept).
-
-**1.3.0 — 28 Oct 2026: date ranges on a calendar, text inset (imported from BeanAlliance v4.17–v4.17.3)**
-- Added `DateRange` (Inputs): the from–to calendar popover, ported from BeanAlliance DateRange and fitted to SongNodes (`.sn-date-range` and parts `__body`, `__months`, `__month`, `__head`, `__title`, `__spacer`, `__next`, `__grid`, `__dow`, `__day` with `[data-range=start|end|in|single]`, `[data-today]`, `[data-mark]`, `__n`, `__mark`, `__dot`, `__presets`, `__key`, `__code`, `__now-bar`, `__foot`, `__sum`; modifiers `--static`, `--stacked`, `--one`, `--sheet`) in the new `source/css/25-date-range.css`. Fitted, Markus to confirm (Q10–Q16): lavender selection, amber today, weekends not greyed, marks passed in by the page, calendar-day count, DateField's presets first with optional week presets, outcome as a default button.
-- Added `SongNodes.calendar` (`today`, `iso`, `month`, `addDays`, `addMonths`, `compare`, `days`, `weekStart`, `preset`, `PRESET_LABELS`), `SongNodes.format.range` and `format.dayLong`, and `SongNodes.dateRange(el, opts)`, which renders and runs the popover. Types `DateRangeProps`, `DateRangeMark`, `DateRangePreset`, `DateRangePresetId`.
-- Changed `DateField`: the range variant gains an icon-only calendar button (`.sn-date-field__pick`, `calendar` icon, "Pick the dates on the calendar") that opens DateRange with focus on the grid; typed and picked dates show in both (`.sn-date-field--calendar`; props `calendar`, `calendarProps`, `onPickOnCalendar`).
-- Added `SongNodes.iconNames`; `SongNodes.icon()` now logs one console warning for a name outside the set instead of silently drawing `circle-help` (BeanAlliance found a step glyph that drew nothing).
-- Added `.sn-overflow-menu__icon-gap`: a menu item with no icon keeps an empty icon column so labels line up; previews no longer use `circle-dot` as a placeholder. Menu and command-palette groups are separated by a rule.
-- Changed (text inset, from a browser audit of every preview at 1440 and 390px in dark, light and booth: 315 cramped and 26 overflowing text boxes before, 0 after): a card holding only a table or a lone empty, loading or error state is flush and its cells carry the inset (`:where`, so a page's padding wins); table row headers and footer labels (`tbody th`, `tfoot th`) take the body cell's box instead of the column-header style; table cells get `space-1` block padding; key caps, tab badges, drawer counts, source-badge "+N" and error-state ref codes pad `space-2` and never wrap; KeyPicker keys, segmented controls, graph legend and recommendation reasons wrap instead of spilling. Rules written into 05-layout "Text inset" and 11-data-display Tables.
-- No token changed; every new class uses existing tokens.
-
 **1.2.0 — 28 Oct 2026: completions, preview player, presets and keyboard rows**
 - Added `AutocompleteSearchField` (Inputs): a SearchField whose input is a WAI-ARIA combobox with a grouped listbox of recent searches and suggestions (`.sn-autocomplete`, `__popup`, `__list`, `__group`, `__group-label`, `__option`, `__icon`, `__text`, `__meta`, `__foot`, `__clear`). Needed by UX4, UX5, UX6.
 - Added `MiniAudioPreview` (Music): a 32px preview player with paused, loading, playing and unavailable states and one-at-a-time playback (`.sn-mini-preview`, `__btn`, `__track`, `__fill`, `__time`; `--sn-mini-preview-pct`). Needed by FL4 and the Space action of FL1.
@@ -137,13 +121,6 @@ Consequences: brand lavender has one meaning. If Markus prefers lavender for Key
 | DR-029 | Phone tables become stacked cards; medium and large dialogs become full-screen sheets on phones; priority shows as neutral tags with only Critical in red; finished staged steps are green; tier chips use a mini three-segment bar. |
 | DR-030 | Copy: "TIDAL"; "65%"; weeks start Monday; visited links unstyled; tooltips appear at once on keyboard focus (500 ms on hover); filter rail visible from 1024px; library default columns exclude Last heard; Settings is one page with anchors; the 50x page prints a request ID via nginx SSI; radio show times come from the library's source data; the conflicting shortcuts are removed; monitoring covers full pipeline health; favicon is "SN" in Sora 800 on a lavender tile. |
 
-### DR-031 to DR-033 — answers of 28 Oct 2026 (after 1.3.0)
-| # | Decision |
-|---|---|
-| DR-031 | DateRange counts a span in calendar days ("3 days"), on every page including gig spans (closes Q10). |
-| DR-032 | The AppHeader keeps `space-2` (8px) side padding under a 560px container, so its actions fit; it is the one exception to the 16px phone gutter (closes Q17). |
-| DR-033 | CSV exports keep the SongNodes convention (UTF-8 with BOM, sentence-case headers, timestamped file names); BeanAlliance's no-BOM, lowercase-header, period-named files are not adopted. Its formula-injection guard is adopted (1.4.0). |
-
 ## How rules are derived
 
 1. Markus's own decisions (DR-001…DR-016) and his past corrections win.
@@ -154,18 +131,11 @@ Consequences: brand lavender has one meaning. If Markus prefers lavender for Key
 
 ## Open questions
 
-All questions raised at the 1.0.0 release were answered on 24 Oct 2026 (DR-018 revised, DR-021 to DR-030). Q9 remains open; Q11–Q16 and Q18 were fitted in 1.3.0 and wait for Markus (Q10 and Q17 answered as DR-031 and DR-032):
+All questions raised at the 1.0.0 release were answered on 24 Oct 2026 (DR-018 revised, DR-021 to DR-030). One remains open:
 
 | # | Question | Options | Default until answered |
 |---|---|---|---|
 | Q9 | Score bands for recommendations | 80/60/40 (current code) · fit to Markus's accepted picks | 80/60/40 until enough accepted picks exist to fit, then fitted from his own picks |
-| Q11 | DateRange outcome button weight | Default button · primary when the picker is the whole view · always primary | Default button (one primary per view) |
-| Q12 | When the DateRange popover closes | Stays open until the outcome button · closes on the second pick in DateField | Stays open |
-| Q13 | Week presets in DateField's chip row | Popover only · mirrored in the field when enabled | Popover only |
-| Q14 | More than one mark on a day | One code, extra marks in the name · two stacked codes · "+1" | One code |
-| Q15 | DateRange on phones | Bottom sheet below 480px · full-screen Dialog sheet (DR-029) | Bottom sheet |
-| Q16 | Limit future days in exports | None · `max` greys days after the last data with a reason | None |
-| Q18 | "Tight" text inset (4–7px) | Warn only · fail the check | Warn only |
 
 ### Approved exceptions
 

@@ -8,10 +8,9 @@ How the interface says "nothing here", "working on it", "done" and "that went wr
 |---|---|---|
 | Nothing yet (first use) | `EmptyState` | What this area holds + one action: "No saved sets yet. Build a set from the library and save it here." → "Build a set" |
 | Nothing matches | `EmptyState` (compact, inside the table box) | The filters that hide everything + "Clear filters" |
-| Loading, first time | `LoadingState` | Skeleton (`.sn-skel`) in the shape of the content, in the first paint: table rows, `FigureTile`s, chart frame |
+| Loading, first time | `LoadingState` | Skeleton (`.sn-skel`) in the shape of the content: table rows, `FigureTile`s, chart frame |
 | Loading, long or staged | `StagedProgress` | Named steps and real progress |
 | Failed | `ErrorState` (region) or `ErrorPage` (whole page) | What happened, what to do, Retry |
-| Stalled (a staged load, 60 s without progress) | `StagedProgress` step `stalled` (▲, warn) | The step that stopped, what is kept, Try again from that step |
 | Partly failed | `InlineMessage` above the affected content + the content that did load | "Spotify data didn’t load. BPM and key from SongNodes are shown." |
 
 - An empty state is never blank and never a spinner that never ends.
@@ -19,7 +18,6 @@ How the interface says "nothing here", "working on it", "done" and "that went wr
 
 ## The one loading idiom
 
-- **Loading shows from the first paint** (1.4.0, imported from BeanAlliance AsyncState v4.15): a region's first render already holds its `LoadingState` skeleton (or its `StagedProgress`, when the load runs in steps), in the place the data will appear. A panel never opens blank and never waits to see whether the data is quick. Data the page already holds this session (a tab switched back to, Back, a filter) appears at once and checks for changes as a refresh.
 - First load of a region: skeleton in the shape of the final content (`LoadingState`). No full-page overlays ("Loading DJ Interface..." in `App.tsx` and "Loading your music library..." in `DJInterface.tsx` become skeletons).
 - Inline busy (a button or a row action): the button's own `aria-busy` + `.sn-spinner`, label "Saving…".
 - `.sn-spinner` is the only spinner. No custom spinners, no `loading-spinner` class, no animated logos.
@@ -27,26 +25,21 @@ How the interface says "nothing here", "working on it", "done" and "that went wr
 
 | Expected wait | Show |
 |---|---|
-| under 1 s, first load of a region | The skeleton from the first paint, replaced in place by the data (it has the content's shape, so nothing moves) |
-| under 0.1 s, an action on screen (toggle, sort, filter) | Nothing; the result is the feedback |
-| 0.1–1 s, an action on screen | The busy button after 300 ms, held for at least 500 ms so it doesn't flash |
+| under 0.1 s | Nothing; the result is the feedback |
+| 0.1–1 s | Nothing for the first 300 ms; then the busy button or skeleton, held for at least 500 ms so it doesn't flash |
 | 1–10 s | Skeleton or busy button; text says what is happening ("Building set…") |
-| over 10 s, or in steps | `StagedProgress` with steps, count, time so far, and Cancel or "Run in background". No total-time limit: it stops only when the current step sends no progress for 60 s (`stalled`, below) |
-| a refresh with data on screen, any length | The slim top line and "Updating…" in the `FreshnessStamp`; never a skeleton, a `StagedProgress` or a blank region |
+| over 10 s | `StagedProgress` with steps, percentage or count, time so far, and Cancel or "Run in background" |
 
 ## Long and staged loads
 
 - Use `StagedProgress` for the set build ("Filtering crate → Scoring transitions → Ordering slots"), tracklist import ("Parsing → Matching 42 tracks → Saving"), the weekly run and enrichment jobs.
 - Each step shows done ●, current ↻ or waiting –, and the current step shows a count when known: "Matching 18 of 42".
-- **Stall, not elapsed time, stops a staged load** (1.4.0, imported from BeanAlliance AsyncState v4.15). Elapsed time alone never fails anything. If the current step reports no progress for **60 s**, it turns `stalled` (▲ "No progress for 60 s", `status-warn`), naming the step and where it stopped; the done steps stay. **Try again** resumes from that step, never from step 1. Stalled stays a warning, not a failure, until the person tries again or cancels; if progress arrives first, the step goes back to running. A step that answers with an error is `failed` (✕) at once, as before.
-- A step whose one unit of work can be long (a big file, a long query) reports progress inside the step (rows, bytes, tracks), so a healthy slow step is never called stalled.
-- When a staged **load** finishes, the step list goes with it; its finished counts and timings move to a "How this was read" `Disclosure` under the `FreshnessStamp`. A background job's card (Pipeline monitoring) keeps its steps as the job's record.
 - Progress bars move only with real progress (08-motion). If the total is unknown, say what is being done and how many so far, not a fake percentage.
 - Long jobs survive navigation: leave the page, the job keeps running, a `Toast` reports the result.
 
 ## Refresh versus first load
 
-- **A refresh with data on screen is never a loading screen** (rule since 1.4.0; the pattern was already `LoadingState`'s). Keep the old values readable and clickable, show the slim top line (`.sn-loading-state__bar`) along the region and "Updating…" in the `FreshnessStamp`, and swap values in place when they arrive. No skeleton, no `StagedProgress`, no blank region, no "Updating" `Banner`. (1.0 said a spinner and "Refreshing…" beside the stamp; `LoadingState` and `FreshnessStamp` always drew the top line and "Updating…", and that is the rule.)
+- Refreshing data that is already on screen never blanks it. Keep the old values, show a small `.sn-spinner` next to the `FreshnessStamp` ("Refreshing…") and swap values in place when they arrive.
 - If a refresh fails, keep the old data, mark the stamp warn ("▲ Couldn’t refresh, showing 24 Oct, 06:00 AEDT") and offer Retry. Do not replace good data with an `ErrorState`.
 - Live updates (WebSocket) patch rows in place and never reorder rows under the pointer (08-motion).
 
@@ -88,8 +81,7 @@ How the interface says "nothing here", "working on it", "done" and "that went wr
 
 | Action | Confirmation |
 |---|---|
-| Toggle, filter, sort; move a slot with Move up / Move down or Alt+↑ / Alt+↓ | The change itself and the polite announcement ("Slow Burner moved to slot 4"); no toast |
-| Drop a dragged slot or crate track (`DragDrop`, 1.4.0) | `Toast` naming what happened, with Undo: "Moved Bicep – Glue to slot 4". A drag can land somewhere the person did not mean, so every drop confirms |
+| Toggle, filter, sort, reorder a slot | The change itself; no message |
 | Add to set, lock slot | The row updates; count in the header updates; no toast |
 | Save set, import tracklist, send to TIDAL | `Toast`: "Saved “Peak time Friday”." / "Sent 24 tracks to TIDAL. 2 had no TIDAL ID." |
 | Long background job finished | `Toast` + `FreshnessStamp` update |

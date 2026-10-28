@@ -5,17 +5,12 @@ The single loading idiom: skeletons shaped like the content on first load, a sli
 ## When to use
 | Wait | Show |
 |---|---|
-| Any first load | The skeleton is in the panel's **first paint** (1.4.0): skeleton rows (`sn-table` rows with `sn-skel`) or tiles; after 1 s add the message "Loading 1,284 tracks…". The data replaces it in place, however quick it was |
-| Data this page already holds this session (a tab switched back to, a filter, Back) | The data at once, no skeleton; any check for changes runs as a refresh |
-| Refresh of visible data | Keep the data, show `__bar` along the top of the panel and "Updating…" in the freshness stamp. **Never** a skeleton, a StagedProgress or a blank panel |
+| Under 1 s | Nothing (no flash of skeleton; render skeleton only if data is not back within ~300 ms, then keep it for at least 500 ms) |
+| First load, content-shaped | Skeleton rows (`sn-table` rows with `sn-skel`) or tiles; after 1 s add the message "Loading 1,284 tracks…" |
+| Refresh of visible data | Keep the data, show `__bar` along the top of the panel and "Updating…" in the freshness stamp |
 | A button's own action | `sn-spinner` inside the button, label becomes the ongoing verb ("Saving set…") |
 | Over ~10 s or several steps | StagedProgress, not a skeleton |
 Never a centred spinner for more than one row, never a blank panel.
-
-## Rules (1.4.0, imported from BeanAlliance AsyncState v4.15)
-- **Loading shows from the first paint.** A panel never opens blank and never waits to see whether the data is quick: the skeleton is part of the first render, in the place the data will appear. This replaces the 1.0 habit of showing nothing for the first 300 ms. The skeleton has the content's final shape and height, so the swap to data moves nothing (08-motion, layout stability), and no minimum display time is needed.
-- **A refresh with data on screen is never a loading screen.** The slim top line (`__bar`) and "Updating…" in the `FreshnessStamp` are the whole of it; the data stays readable and clickable. A failed refresh keeps the data and marks the stamp ▲ (07-feedback-status); it never swaps in an ErrorState.
-- **A first load that runs in steps, or usually takes over 10 s, is a StagedProgress**, which has no total-time limit: it is stopped only by 60 s without progress from the current step (StagedProgress, *Stalls*), never by elapsed time. A single request still times out at 15 s for a read (07-feedback-status) and becomes ErrorState.
 
 ## Anatomy
 ```html
@@ -29,7 +24,7 @@ Never a centred spinner for more than one row, never a blank panel.
 Refresh: wrap the content in `sn-loading-state__frame`, put `<div class="sn-loading-state__bar" aria-hidden="true">` first, set `aria-busy="true"` on `sn-loading-state` while fetching. Stamp: `<span class="sn-loading-state__stamp" aria-live="polite">Updated <time>24 Oct 2026, 06:00 AEDT</time></span>`. Inline: `sn-loading-state__inline` with a 14px `sn-spinner` + text. Skeleton sizes via `--w` and `--h` on `sn-skel`; `__lines` stacks two lines for a two-line track cell; `__tiles` / `__tile` for card grids.
 
 ## States
-- First load: skeleton from the first paint + reserved message line (hidden, so the 1 s message causes no shift).
+- First load: skeleton + reserved message line (hidden, so the 1 s message causes no shift).
 - Slow (≥ 1 s): message visible; name the count when known.
 - Refreshing: data visible and interactive, bar animates, stamp reads "Updating…".
 - Done: bar fades out, stamp shows the new time. Failed: keep the data and switch to ErrorState's last-good layout.

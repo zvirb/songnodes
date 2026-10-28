@@ -5,7 +5,7 @@
 <style>
   .stage { position: relative; height: 690px; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--bg); }
   .faux-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; }
-  .faux-row { min-height: var(--row-comfortable); padding-block: var(--space-1); border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 16px; color: var(--fg-2); font-size: 0.875rem; }
+  .faux-row { height: 40px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 16px; color: var(--fg-2); font-size: 0.875rem; }
 </style>
 </head>
 <body>
@@ -74,7 +74,7 @@
       var rid = it.reason ? id + "-r" + (++n) : "";
       h += '<button type="button" tabindex="-1" class="sn-overflow-menu__item' + (it.danger ? " sn-overflow-menu__item--danger" : "") + (it.cls ? " " + it.cls : "") + '" role="' + (it.checked != null ? "menuitemcheckbox" : "menuitem") + '"' +
         (it.checked != null ? ' aria-checked="' + it.checked + '"' : "") + (it.id ? ' data-id="' + it.id + '"' : "") + (it.reason ? ' aria-disabled="true" aria-describedby="' + rid + '"' : "") + ">" +
-        (it.checked != null || it.icon ? S.icon(it.checked != null ? "check" : it.icon, { size: 16 }) : '<span class="sn-overflow-menu__icon-gap" aria-hidden="true"></span>') + '<span class="sn-overflow-menu__label"><span class="sn-overflow-menu__text">' + S.esc(it.label) + "</span>" +
+        S.icon(it.checked != null ? "check" : (it.icon || "circle-dot"), { size: 16 }) + '<span class="sn-overflow-menu__label"><span class="sn-overflow-menu__text">' + S.esc(it.label) + "</span>" +
         (it.reason ? '<span class="sn-overflow-menu__reason" id="' + rid + '">' + S.esc(it.reason) + "</span>" : "") + "</span>" + (it.kbd ? "<kbd>" + S.esc(it.kbd) + "</kbd>" : "") + "</button>";
     });
     if (open) h += "</div>";

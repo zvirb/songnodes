@@ -36,16 +36,7 @@ Usually inside an `sn-card` scoped to the owning module (`sn-m-pipeline`, `sn-m-
 | `waiting` | – | dim name, "Waiting" |
 | `failed` | ✕ | `status-bad`; detail says why and what is kept; step actions ("Retry this step", "Skip MixesDB") in `__actions` |
 | `cancelled` | – | dim; job head shows "Cancelled" |
-| `stalled` | ▲ | `status-warn` glyph on `status-warn-bg`, state text "▲ No progress for 60 s" in `status-warn` 600; the meter stays where it stopped; detail names where it stopped, what is kept and that Try again carries on from there; `__actions` holds **Try again** (resumes from this step) and Cancel. Added 1.4.0 |
 The meter inside a running step uses `progress-fill` (completion is not health); only finished steps turn green.
-
-## Stalls, not elapsed time (1.4.0, imported from BeanAlliance AsyncState v4.15)
-- **Elapsed time alone never fails a job or a load.** A weekly build may take 20 minutes; that is not a fault. There is no total-time limit on a staged job.
-- **A stall does.** If the current step reports no progress (no count, byte or row change, no step change) for **60 s**, it turns `stalled`: ▲, "No progress for 60 s", the step named in the words ("Stopped at 1,204 of 2,410 tracks: MusicBrainz has sent nothing for a minute"). Done steps stay as evidence of what was read.
-- **Stalled is a warning (`status-warn`), not a failure (`status-bad`)**, until the person acts: the job may still be alive (a slow source, a long query), nothing is lost, and the person decides. **Try again** resumes from the stalled step, never from step 1; **Cancel** turns the remaining steps `cancelled` and says what is kept. If progress arrives before the person acts, the step goes back to `running` by itself and the announcement says so once ("Look up key and BPM is moving again").
-- A step that really failed (the source answered with an error, the engine threw) is `failed` at once, with its own words and actions, as before. A stall never becomes `failed` by waiting longer.
-- **Give the stall rule something to watch:** a step whose one unit of work can be long (a large file, a long query, a big MusicBrainz batch) reports progress inside the step (rows, bytes, tracks), so the meter keeps moving and a healthy slow step is never called stalled.
-- **After a staged load finishes**, the step list goes and the data takes its place; the finished counts and timings ("Read the library · 2,410 tracks · 0:09") move to a "How this was read" `Disclosure` under the `FreshnessStamp`, so they stay available without taking the screen. A background job card (Pipeline monitoring, the weekly build) keeps its finished steps: there the list is the job's record.
 
 ## Content rules
 - Step names verb first: "Fetch radio plays", "Look up key and BPM", "Send sets to TIDAL".
@@ -55,7 +46,7 @@ The meter inside a running step uses `progress-fill` (completion is not health);
 
 ## Accessibility
 - Ordered list; current step has `aria-current="step"`; the meter is a `progressbar` with `aria-valuetext` ("312 of 500 tracks").
-- A polite live region announces step changes, failures and completion only, not every count tick, and a stall once ("Look up key and BPM: no progress for 60 s. Try again carries on from track 1,205."). A stall is `polite`, not `alert`: it needs a decision, not an interruption.
+- A polite live region announces step changes, failures and completion only, not every count tick.
 - Cancel is a real button; if cancelling is not possible, leave it out rather than disabling it.
 
 ## Responsive

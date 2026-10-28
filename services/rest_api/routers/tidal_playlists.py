@@ -1,18 +1,21 @@
 """
 Tidal Playlist Management Router
-Handles playlist operations using Tidal API v2 with OAuth access tokens
+Handles playlist operations using Tidal API v1/v2 with OAuth access tokens
 """
 
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException, Header, status
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
+import aiohttp
 import logging
-
-from utils.tidal_user_api import TidalUserApi
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/tidal", tags=["Tidal Playlists"])
+
+# Tidal API base URLs
+TIDAL_API_V1 = "https://api.tidal.com/v1"
+TIDAL_API_V2 = "https://api.tidal.com/v2"
 
 # ===========================================
 # Request/Response Models
@@ -60,6 +63,46 @@ class TrackResponse(BaseModel):
     url: Optional[str]
 
 # ===========================================
+# Helper Functions
+# ===========================================
+
+def get_auth_headers(access_token: str) -> Dict[str, str]:
+    """Generate authentication headers for Tidal API requests"""
+    return {
+        "Authorization": f"Bearer {access_token}",
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+    }
+
+async def get_user_id(access_token: str) -> str:
+    """Get the current user's Tidal ID from their access token"""
+    try:
+        headers = get_auth_headers(access_token)
+        async with aiohttp.ClientSession() as session:
+            # Use the sessions endpoint to get current user info
+            async with session.get(
+                f"{TIDAL_API_V1}/sessions",
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=10)
+            ) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    user_id = data.get("userId")
+                    if not user_id:
+                        raise HTTPException(status_code=500, detail="Unable to retrieve user ID from Tidal")
+                    return str(user_id)
+                else:
+                    error_text = await response.text()
+                    logger.error(f"Failed to get user ID: {error_text}")
+                    raise HTTPException(
+                        status_code=response.status,
+                        detail=f"Failed to authenticate with Tidal: {error_text[:200]}"
+                    )
+    except aiohttp.ClientError as e:
+        logger.error(f"Network error getting user ID: {str(e)}")
+        raise HTTPException(status_code=503, detail="Unable to connect to Tidal API")
+
+# ===========================================
 # Playlist Management Endpoints
 # ===========================================
 
@@ -79,31 +122,49 @@ async def create_playlist(
             raise HTTPException(status_code=401, detail="Invalid authorization header format")
 
         access_token = authorization.replace("Bearer ", "")
+        headers = get_auth_headers(access_token)
+
+        # Prepare request body for Tidal API v2
+        playlist_data = {
+            "name": request.name,
+            "description": request.description,
+            "folderId": request.parent_folder_id
+        }
 
         logger.info(f"Creating Tidal playlist: {request.name}")
-        # Note: parent_folder_id is ignored because Tidal API v2 POST /v2/playlists does not accept a folderId
 
-        client = TidalUserApi(access_token=access_token)
-        # Using a new client object per request
+        async with aiohttp.ClientSession() as session:
+            # Use v2 endpoint for playlist creation
+            async with session.put(
+                f"{TIDAL_API_V2}/my-collection/playlists/folders/create-playlist",
+                json=playlist_data,
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=15)
+            ) as response:
+                if response.status in [200, 201]:
+                    data = await response.json()
 
-        try:
-            playlist_id = await client.create_playlist(request.name, request.description)
+                    # Extract playlist details from response
+                    playlist_id = data.get("data", {}).get("id") or data.get("id")
+                    attributes = data.get("data", {}).get("attributes", {})
 
-            # Since create_playlist in v2 might only return ID (or a subset of properties in the response,
-            # but we just grabbed ID to stay minimal), we'll return a stubbed/partial response
-            # that satisfies the frontend, as we only definitively have the ID and Name.
-            return PlaylistResponse(
-                id=str(playlist_id),
-                name=request.name,
-                description=request.description,
-                track_count=0,
-                duration=0,
-                public=False,
-                url=None,
-                created_at=None
-            )
-        finally:
-            await client.close()
+                    return PlaylistResponse(
+                        id=str(playlist_id),
+                        name=attributes.get("name", request.name),
+                        description=attributes.get("description"),
+                        track_count=attributes.get("numberOfTracks", 0),
+                        duration=attributes.get("duration", 0),
+                        public=attributes.get("publicPlaylist", False),
+                        url=attributes.get("url"),
+                        created_at=attributes.get("created")
+                    )
+                else:
+                    error_text = await response.text()
+                    logger.error(f"Tidal playlist creation failed: {error_text}")
+                    raise HTTPException(
+                        status_code=response.status,
+                        detail=f"Failed to create playlist: {error_text[:200]}"
+                    )
 
     except HTTPException:
         raise
@@ -123,35 +184,51 @@ async def list_playlists(
     Requires: Bearer token in Authorization header
     """
     try:
+        # Extract access token
         if not authorization.startswith("Bearer "):
             raise HTTPException(status_code=401, detail="Invalid authorization header format")
 
         access_token = authorization.replace("Bearer ", "")
 
-        logger.info(f"Fetching playlists")
+        # Get user ID first
+        user_id = await get_user_id(access_token)
+        headers = get_auth_headers(access_token)
 
-        client = TidalUserApi(access_token=access_token)
-        # Using a new client object per request
+        logger.info(f"Fetching playlists for user {user_id}")
 
-        try:
-            playlists_data = await client.list_playlists(limit=limit, offset=offset)
+        async with aiohttp.ClientSession() as session:
+            # Use v1 endpoint for getting playlists
+            async with session.get(
+                f"{TIDAL_API_V1}/users/{user_id}/playlists",
+                headers=headers,
+                params={"limit": limit, "offset": offset},
+                timeout=aiohttp.ClientTimeout(total=15)
+            ) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    items = data.get("items", [])
 
-            playlists = []
-            for item in playlists_data:
-                playlists.append(PlaylistResponse(
-                    id=str(item.get("id", "")),
-                    name=item.get("name", "Unnamed Playlist"),
-                    description=item.get("description"),
-                    track_count=item.get("track_count", 0),
-                    duration=item.get("duration", 0),
-                    public=item.get("public", False),
-                    url=item.get("url"),
-                    created_at=item.get("created_at")
-                ))
+                    playlists = []
+                    for item in items:
+                        playlists.append(PlaylistResponse(
+                            id=str(item.get("uuid", item.get("id", ""))),
+                            name=item.get("title", "Unnamed Playlist"),
+                            description=item.get("description"),
+                            track_count=item.get("numberOfTracks", 0),
+                            duration=item.get("duration", 0),
+                            public=item.get("publicPlaylist", False),
+                            url=item.get("url"),
+                            created_at=item.get("created")
+                        ))
 
-            return playlists
-        finally:
-            await client.close()
+                    return playlists
+                else:
+                    error_text = await response.text()
+                    logger.error(f"Failed to fetch playlists: {error_text}")
+                    raise HTTPException(
+                        status_code=response.status,
+                        detail=f"Failed to fetch playlists: {error_text[:200]}"
+                    )
 
     except HTTPException:
         raise
@@ -171,21 +248,39 @@ async def add_tracks_to_playlist(
     Requires: Bearer token in Authorization header
     """
     try:
+        # Extract access token
         if not authorization.startswith("Bearer "):
             raise HTTPException(status_code=401, detail="Invalid authorization header format")
 
         access_token = authorization.replace("Bearer ", "")
+        headers = get_auth_headers(access_token)
+
+        # Prepare request body
+        tracks_data = {
+            "onArtifactNotFound": "SKIP",
+            "trackIds": ",".join(request.track_ids),
+            "toIndex": request.position,
+            "onDupes": "ADD" if request.allow_duplicates else "SKIP"
+        }
 
         logger.info(f"Adding {len(request.track_ids)} tracks to playlist {playlist_id}")
 
-        client = TidalUserApi(access_token=access_token)
-        # Using a new client object per request
-
-        try:
-            await client.add_tracks_in_order(playlist_id, request.track_ids, request.allow_duplicates)
-            return {"success": True, "message": f"Added {len(request.track_ids)} tracks to playlist"}
-        finally:
-            await client.close()
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{TIDAL_API_V1}/playlists/{playlist_id}/items",
+                json=tracks_data,
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=15)
+            ) as response:
+                if response.status in [200, 201, 204]:
+                    return {"success": True, "message": f"Added {len(request.track_ids)} tracks to playlist"}
+                else:
+                    error_text = await response.text()
+                    logger.error(f"Failed to add tracks: {error_text}")
+                    raise HTTPException(
+                        status_code=response.status,
+                        detail=f"Failed to add tracks: {error_text[:200]}"
+                    )
 
     except HTTPException:
         raise
@@ -204,36 +299,72 @@ async def search_track(
     Requires: Bearer token in Authorization header
     """
     try:
+        # Extract access token
         if not authorization.startswith("Bearer "):
             raise HTTPException(status_code=401, detail="Invalid authorization header format")
 
         access_token = authorization.replace("Bearer ", "")
+        headers = get_auth_headers(access_token)
 
-        logger.info(f"Searching for track: {request.title} {request.artist} (ISRC: {request.isrc})")
+        # Build search query - try ISRC first if available
+        if request.isrc:
+            query = request.isrc
+        else:
+            query = f"{request.title} {request.artist}"
 
-        client = TidalUserApi(access_token=access_token)
-        # Using a new client object per request
+        logger.info(f"Searching for track: {query}")
 
-        try:
-            track = await client.search_track(request.artist, request.title, request.isrc)
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                f"{TIDAL_API_V1}/search/tracks",
+                headers=headers,
+                params={"query": query, "limit": 10},
+                timeout=aiohttp.ClientTimeout(total=15)
+            ) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    tracks = data.get("items", [])
 
-            if track:
-                return TrackResponse(
-                    id=track.get("id"),
-                    name=track.get("name"),
-                    artist=track.get("artist"),
-                    album=track.get("album"),
-                    duration=track.get("duration", 0),
-                    isrc=track.get("isrc"),
-                    explicit=track.get("explicit", False),
-                    available=track.get("available", True),
-                    url=track.get("url")
-                )
+                    # If searching by ISRC, find exact match
+                    if request.isrc:
+                        for track in tracks:
+                            if track.get("isrc") == request.isrc:
+                                return TrackResponse(
+                                    id=track.get("id"),
+                                    name=track.get("title"),
+                                    artist=track.get("artist", {}).get("name", "Unknown"),
+                                    album=track.get("album", {}).get("title", "Unknown"),
+                                    duration=track.get("duration", 0),
+                                    isrc=track.get("isrc"),
+                                    explicit=track.get("explicit", False),
+                                    available=track.get("streamReady", True),
+                                    url=track.get("url")
+                                )
 
-            return None  # No tracks found
+                    # Return first result if no ISRC match
+                    if tracks:
+                        track = tracks[0]
+                        return TrackResponse(
+                            id=track.get("id"),
+                            name=track.get("title"),
+                            artist=track.get("artist", {}).get("name", "Unknown"),
+                            album=track.get("album", {}).get("title", "Unknown"),
+                            duration=track.get("duration", 0),
+                            isrc=track.get("isrc"),
+                            explicit=track.get("explicit", False),
+                            available=track.get("streamReady", True),
+                            url=track.get("url")
+                        )
 
-        finally:
-            await client.close()
+                    return None  # No tracks found
+
+                else:
+                    error_text = await response.text()
+                    logger.error(f"Track search failed: {error_text}")
+                    raise HTTPException(
+                        status_code=response.status,
+                        detail=f"Track search failed: {error_text[:200]}"
+                    )
 
     except HTTPException:
         raise

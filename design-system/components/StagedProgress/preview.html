@@ -1,4 +1,4 @@
-<!-- @dsCard group="Feedback" height=600 subtitle="Weekly library build running (done in green, running, waiting) with elapsed, estimate and Cancel; tracklist import with a failed step; first library load with a step stalled after 60 s without progress" -->
+<!-- @dsCard group="Feedback" height=600 subtitle="Weekly library build running (done in green, running, waiting) with elapsed, estimate and Cancel; tracklist import with a failed step" -->
 <!doctype html>
 <html>
 <head><meta charset="utf-8"><title>StagedProgress — preview</title>
@@ -46,36 +46,6 @@
             <span class="sn-staged-progress__glyph" aria-hidden="true"></span>
             <span class="sn-staged-progress__name">Add tracks and edges to the graph</span>
             <span class="sn-staged-progress__state">Not started</span>
-          </li>
-        </ol>
-      </div>
-    </section>
-
-    <section class="sn-card sn-m-library" aria-labelledby="t3">
-      <div class="sn-staged-progress">
-        <div class="sn-staged-progress__head">
-          <h2 class="sn-title title-s" id="t3"><span class="sn-lead">Loading the library:</span> 2,410 tracks</h2>
-          <div class="sn-staged-progress__time"><span>Elapsed <b>2:47</b></span></div>
-        </div>
-        <ol class="sn-staged-progress__steps">
-          <li class="sn-staged-progress__step" data-state="done">
-            <span class="sn-staged-progress__glyph" aria-hidden="true"></span>
-            <span class="sn-staged-progress__name">Read the library</span>
-            <span class="sn-staged-progress__state">● Done · 0:09</span>
-            <p class="sn-staged-progress__detail">2,410 tracks</p>
-          </li>
-          <li class="sn-staged-progress__step" data-state="stalled" aria-current="step">
-            <span class="sn-staged-progress__glyph" aria-hidden="true"></span>
-            <span class="sn-staged-progress__name">Look up key and BPM</span>
-            <span class="sn-staged-progress__state">▲ No progress for 60 s</span>
-            <p class="sn-staged-progress__detail">Stopped at 1,204 of 2,410 tracks: MusicBrainz has sent nothing for a minute. The 1,204 tracks looked up so far are kept; Try again carries on from track 1,205.</p>
-            <div class="sn-staged-progress__meter" role="progressbar" aria-label="Look up key and BPM" aria-valuemin="0" aria-valuemax="2410" aria-valuenow="1204" aria-valuetext="1,204 of 2,410 tracks, no progress for 60 s"><i style="--p:50%"></i></div>
-            <div class="sn-staged-progress__actions"><button class="sn-btn sn-btn--sm" type="button" aria-label="Try again from Look up key and BPM">Try again</button><button class="sn-btn sn-btn--sm sn-btn--quiet" type="button">Cancel load</button></div>
-          </li>
-          <li class="sn-staged-progress__step" data-state="waiting">
-            <span class="sn-staged-progress__glyph" aria-hidden="true"></span>
-            <span class="sn-staged-progress__name">Draw the crate</span>
-            <span class="sn-staged-progress__state">Waiting</span>
           </li>
         </ol>
       </div>

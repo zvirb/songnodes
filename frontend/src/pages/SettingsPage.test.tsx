@@ -11,41 +11,13 @@ global.fetch = vi.fn().mockImplementation((url: string) => {
     return Promise.resolve({
       ok: true,
       json: () => Promise.resolve([
-                {
+        {
           service_name: 'beatport',
           key_name: 'api_key',
           display_name: 'Beatport API Key',
           description: 'Key for Beatport metadata scraper.',
           documentation_url: 'https://beatport.com',
           required: false,
-          display_order: 1,
-        },
-        {
-          service_name: 'spotify',
-          key_name: 'client_id',
-          display_name: 'Spotify Client ID',
-          description: 'Spotify API Client ID.',
-          documentation_url: 'https://developer.spotify.com',
-          required: true,
-          display_order: 2,
-        },
-        {
-          service_name: 'discogs',
-          key_name: 'token',
-          display_name: 'Discogs Token',
-          description: 'Discogs API Token.',
-          documentation_url: 'https://discogs.com',
-          required: true,
-          display_order: 3,
-        },
-        {
-          service_name: '1001tracklists',
-          key_name: 'password',
-          display_name: '1001Tracklists Password',
-          description: '1001Tracklists Password.',
-          documentation_url: 'https://1001tracklists.com',
-          required: true,
-          display_order: 4,
         },
       ]),
     });
@@ -92,47 +64,6 @@ describe('SettingsPage', () => {
     expect(screen.getByText('TIDAL connection')).toBeDefined();
     expect(screen.getByText('Spotify connection')).toBeDefined();
     expect(screen.getByRole('heading', { name: 'Anthropic (Claude) API key' })).toBeDefined();
-  });
-
-    it('renders one card per service and none for Beatport', async () => {
-    const { container } = render(
-      <MemoryRouter initialEntries={['/settings']}>
-        <Routes>
-          <Route path="/settings" element={<SettingsPage />} />
-        </Routes>
-      </MemoryRouter>
-    );
-
-    // Wait for the mock fetch to settle
-    const spotifyCards = await screen.findAllByText('Spotify API keys');
-    expect(spotifyCards.length).toBeGreaterThan(0);
-
-    expect(screen.getByText('Discogs API keys')).toBeDefined();
-    expect(screen.getByText('1001Tracklists API keys')).toBeDefined();
-    expect(screen.queryByText(/Beatport/i)).toBeNull();
-    expect(screen.queryByText(/API status/i)).toBeNull();
-
-    // Check modules via classes
-    // 1001Tracklists carries sn-m-library
-    const ttCardTitle = screen.getByText('1001Tracklists API keys');
-    const ttCard = ttCardTitle.closest('.sn-card');
-    expect(ttCard?.className).toContain('sn-m-library');
-
-    // Theme carries sn-m-harmony
-    const themeCardTitle = screen.getByText('Theme');
-    const themeCard = themeCardTitle.closest('.sn-card');
-    expect(themeCard?.className).toContain('sn-m-harmony');
-
-    // AI key carries sn-m-paths
-    const aiCardTitle = screen.getAllByText('Anthropic (Claude) API key')[0];
-    const aiCard = aiCardTitle.closest('.sn-card');
-    expect(aiCard?.className).toContain('sn-m-paths');
-
-    // About is neutral (no module)
-    const aboutCardTitle = screen.getByText('About SongNodes');
-    const aboutCard = aboutCardTitle.closest('.sn-card');
-    expect(aboutCard?.className).not.toContain('sn-m-');
-    // expect(aboutCard?.className).toContain('sn-card--neutral');
   });
 
   it('filters setting cards live when typing in the search box', async () => {

@@ -41,6 +41,3 @@ Run scrapers now.
 
 ## Replaces
 The planned monitoring dashboard ("Recently scraped data", pipeline progress, scraper health), `clearQueue` `alert()` flows in `DJInterface.tsx`, and checking Grafana for basic health.
-
-## Locations (1.4.0)
-Output files (exports, audio-analysis results, logs) are listed by file name in mono, each row with the icon-only `CopyButton` whose tooltip holds the path (CopyButton, 1.4.0). "Technical details" may show hostnames and ports, never a file or folder path; folders are named in words ("Pipeline output folder").

@@ -914,8 +914,8 @@ async def search_spotify_tracks(
 
 @router.post("/tidal/device/init", response_model=TidalDeviceCodeResponse)
 async def init_tidal_device_flow(
-
-
+    client_id: Optional[str] = Query(None, description="Optional Client ID (defaults to TIDAL_CLIENT_ID env var)"),
+    client_secret: Optional[str] = Query(None, description="Optional Client secret (defaults to TIDAL_CLIENT_SECRET env var)")
 ):
     """
     Initiate Tidal Device Code flow - perfect for localhost development
@@ -925,8 +925,8 @@ async def init_tidal_device_flow(
     to avoid exposing client secrets in query parameters.
     """
     try:
-        cid = TIDAL_CLIENT_ID
-        csecret = TIDAL_CLIENT_SECRET
+        cid = client_id or TIDAL_CLIENT_ID
+        csecret = client_secret or TIDAL_CLIENT_SECRET
 
         if not cid or not csecret:
             raise HTTPException(
@@ -1231,8 +1231,8 @@ async def tidal_oauth_callback(
 @router.post("/tidal/refresh")
 async def refresh_tidal_token(
     refresh_token: str = Query(..., description="Refresh token"),
-
-
+    client_id: Optional[str] = Query(None, description="Optional Client ID (defaults to TIDAL_CLIENT_ID env var)"),
+    client_secret: Optional[str] = Query(None, description="Optional Client secret (defaults to TIDAL_CLIENT_SECRET env var)")
 ):
     """
     Refresh Tidal access token using refresh token
@@ -1241,8 +1241,8 @@ async def refresh_tidal_token(
     Client secret is NOT required in query params to prevent secret exposure in server logs.
     """
     try:
-        cid = TIDAL_CLIENT_ID
-        csecret = TIDAL_CLIENT_SECRET
+        cid = client_id or TIDAL_CLIENT_ID
+        csecret = client_secret or TIDAL_CLIENT_SECRET
 
         if not cid or not csecret:
             raise HTTPException(

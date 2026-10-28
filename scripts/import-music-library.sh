@@ -26,7 +26,7 @@ if [[ ! -f "$src" ]]; then
   exit 1
 fi
 
-read -r count key < <("$py" - "$src" <<'PY' | tr -d '\r'
+read -r count key < <("$py" - "$src" <<'PY'
 import hashlib, json, sys
 path = sys.argv[1]
 raw = open(path, 'rb').read()
@@ -44,9 +44,9 @@ echo "Importing $count tracks from $src"
 
 response="$(curl -sS --fail-with-body -X POST "$api/api/v1/library/ingest" \
   -H 'Content-Type: application/json' -H "Idempotency-Key: $key" --data-binary "@$src")"
-job_id="$("$py" -c 'import json,sys; r=json.load(sys.stdin); print(r["job_id"]); sys.stderr.write(("New import job " if r.get("created") else "This file was already submitted; job ") + r["job_id"] + "\n")' <<<"$response" | tr -d '\r')"
+job_id="$("$py" -c 'import json,sys; r=json.load(sys.stdin); print(r["job_id"]); sys.stderr.write(("New import job " if r.get("created") else "This file was already submitted; job ") + r["job_id"] + "\n")' <<<"$response")"
 
-first="$(curl -sS "$api/api/v1/jobs/$job_id" | "$py" -c 'import json,sys; print(json.load(sys.stdin)["status"])' | tr -d '\r')"
+first="$(curl -sS "$api/api/v1/jobs/$job_id" | "$py" -c 'import json,sys; print(json.load(sys.stdin)["status"])')"
 if [[ "$first" == "dead" ]]; then
   echo "That earlier import of this file failed; retrying it."
   curl -sS --fail-with-body -X POST "$api/api/v1/jobs/$job_id/retry" >/dev/null
@@ -54,11 +54,11 @@ fi
 
 for _ in $(seq 1 120); do
   job="$(curl -sS "$api/api/v1/jobs/$job_id")"
-  status="$("$py" -c 'import json,sys; print(json.load(sys.stdin)["status"])' <<<"$job" | tr -d '\r')"
+  status="$("$py" -c 'import json,sys; print(json.load(sys.stdin)["status"])' <<<"$job")"
   case "$status" in
     succeeded)
       "$py" -c 'import json,sys; j=json.load(sys.stdin); print("Import finished:", json.dumps(j.get("result") or {}, indent=2))' <<<"$job"
-      in_db="$(curl -sS "$api/api/v1/library/search?limit=5000" | "$py" -c 'import json,sys; print(len(json.load(sys.stdin)))' | tr -d '\r')"
+      in_db="$(curl -sS "$api/api/v1/library/search?limit=5000" | "$py" -c 'import json,sys; print(len(json.load(sys.stdin)))')"
       echo "Library tracks now in the database: $in_db"
       exit 0 ;;
     dead)

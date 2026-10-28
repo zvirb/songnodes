@@ -18,7 +18,6 @@ import {
   savedSetFromDraft, shapeOf, slotCount, spares, tracklistText, waveIssues, type Draft, type PoolKey,
 } from './setBuilder';
 import { bannerKey, downloadJson, lsGet, lsSet, melbourneStamp, normaliseTracks, readDraft, writeDraft } from './storage';
-import { InlineMessage } from '../aiSetlists/components/ui';
 import { Banner, ConfirmDialog, CopyButton, NumberField, OverflowMenu, Switch, TrackCell, useAnnouncer, useToaster } from './components/ui';
 import { EnergyWave, type WaveSlot } from './components/EnergyWave';
 import { findCompatibleTracks } from '../setBuilder/transitions';
@@ -53,8 +52,6 @@ const SetBuilderPage: React.FC = () => {
   const [attempt, setAttempt] = useState(0);
   const [draft, setDraftState] = useState<Draft>(readDraft);
   const [saved, setSavedState] = useState<SavedSet[]>(readSavedSets);
-  const [savedLoaded, setSavedLoaded] = useState(false);
-  const [savedSource, setSavedSource] = useState<'server' | 'device' | null>(null);
   const [openSpares, setOpenSpares] = useState<Set<number>>(new Set());
   const [suggestOpen, setSuggestOpen] = useState<number | null>(null);
   const [toDelete, setToDelete] = useState<SavedSet | null>(null);
@@ -70,26 +67,7 @@ const SetBuilderPage: React.FC = () => {
   const setDraft = useCallback((u: Draft | ((d: Draft) => Draft)) => {
     setDraftState((d) => { const next = typeof u === 'function' ? (u as (d: Draft) => Draft)(d) : u; writeDraft(next); return next; });
   }, []);
-  const setSaved = useCallback((s: SavedSet[], docIdToUpdate?: string) => {
-    setSavedState(s);
-    writeSavedSetsAsync(s).then(resolved => {
-      setSavedState(resolved);
-      if (docIdToUpdate) {
-        const found = resolved.find(r => r.id === docIdToUpdate || r.name === s.find(x => x.id === docIdToUpdate)?.name && r.updated === s.find(x => x.id === docIdToUpdate)?.updated);
-        if (found && found.id !== docIdToUpdate) {
-          setDraftState(d => d.id === docIdToUpdate ? { ...d, id: found.id } : d);
-        }
-      }
-    });
-  }, []);
-
-  useEffect(() => {
-    readSavedSetsAsync().then(({ sets, source }) => {
-      setSavedState(sets);
-      setSavedSource(source);
-      setSavedLoaded(true);
-    });
-  }, []);
+  const setSaved = useCallback((s: SavedSet[]) => { setSavedState(s); writeSavedSetsAsync(s); }, []);
 
   useEffect(() => {
     setLoadError(false);
@@ -109,9 +87,9 @@ const SetBuilderPage: React.FC = () => {
   // Intake from links: ?open=<saved id>, or ?pool=crate&<library filters> from "Build set from crate".
   useEffect(() => {
     const open = params.get('open'), pool = params.get('pool');
-    if (!savedLoaded || (!open && pool !== 'crate')) return;
+    if (!open && pool !== 'crate') return;
     if (open) {
-      const s = saved.find((x) => x.id === open);
+      const s = readSavedSets().find((x) => x.id === open);
       if (s) { setDraft(draftFromSaved(s, byId)); setOpenSpares(new Set()); setSuggestOpen(null); toast(<>Opened <q>{s.name}</q></>); }
       else toast('That saved set is no longer on this device.');
     } else {
@@ -121,7 +99,7 @@ const SetBuilderPage: React.FC = () => {
     }
     setParams(new URLSearchParams(), { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params, savedLoaded, saved, byId, setDraft, toast, say, setParams]);
+  }, [params]);
 
   const name = draft.name.trim() || 'Untitled set';
   usePageHeader({ lead: 'Set builder', title: name, current: 'sets', updatedAt: generated ?? undefined });
@@ -188,7 +166,7 @@ const SetBuilderPage: React.FC = () => {
     const prev = saved, prevId = draft.id;
     const doc = savedSetFromDraft(draft, byId, saved);
     const next = [doc, ...saved.filter((s) => s.id !== doc.id)];
-    setSaved(next, doc.id);
+    setSaved(next);
     setDraft((d) => ({ ...d, id: doc.id }));
     toast(<>Saved <q>{doc.name}</q> · {SN.format.count(doc.tracks.length)} tracks, {SN.format.span(secs)}</>, {
       label: 'Undo', run: () => { setSaved(prev); setDraft((d) => ({ ...d, id: prevId })); },
@@ -212,8 +190,9 @@ const SetBuilderPage: React.FC = () => {
   };
 
   const exportSets = () => {
-    downloadJson('artifact_sets.json', saved);
-    toast(<>Exported {SN.format.count(saved.length)} {saved.length === 1 ? 'set' : 'sets'} as <span className="sn-mono">artifact_sets.json</span></>);
+    const sets = readSavedSets();
+    downloadJson('artifact_sets.json', sets);
+    toast(<>Exported {SN.format.count(sets.length)} {sets.length === 1 ? 'set' : 'sets'} as <span className="sn-mono">artifact_sets.json</span></>);
   };
 
   useEffect(() => { if (!armedNew) return; const t = window.setTimeout(() => setArmedNew(false), 3000); return () => window.clearTimeout(t); }, [armedNew]);
@@ -599,11 +578,6 @@ const SetBuilderPage: React.FC = () => {
             <h2 className="sn-title title-s" id="saved-t">Saved sets</h2>
             <span className="sn-section-heading__count">{SN.format.count(saved.length)}</span>
           </div>
-          {savedSource === 'device' && (
-            <div style={{ marginBottom: 'var(--space-3)' }}>
-              <div className="sn-inline-message" data-status="info" role="status"><span>Saved sets are from this device; the server did not answer.</span></div>
-            </div>
-          )}
           {saved.length ? (
             <div className="sn-page-sets__saved sn-m-sets">
               {saved.map((s, i) => {

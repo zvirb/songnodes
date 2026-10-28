@@ -40,7 +40,6 @@ export interface SettingMeta {
   title: string;
   description: string;
   keywords: string[];
-  kind: 'api' | 'display' | 'login' | 'about';
 }
 
 export const SETTINGS_LIST: SettingMeta[] = [
@@ -50,7 +49,6 @@ export const SETTINGS_LIST: SettingMeta[] = [
     title: 'Theme',
     description: 'Choose the interface theme. Booth mode is pure black with high contrast and larger type for dark environments.',
     keywords: ['theme', 'dark', 'light', 'booth', 'system', 'monitor', 'appearance', 'display', 'mode', 'color', 'colour'],
-    kind: 'display',
   },
   {
     id: 'text-size',
@@ -58,7 +56,6 @@ export const SETTINGS_LIST: SettingMeta[] = [
     title: 'Text size',
     description: 'Adjust global font scaling across the entire application (Small, Medium, Large, Extra large).',
     keywords: ['text', 'size', 'font', 'scaling', 'typography', 'reading', 'display', 'small', 'medium', 'large', 'extra large'],
-    kind: 'display',
   },
   {
     id: 'row-density',
@@ -66,7 +63,6 @@ export const SETTINGS_LIST: SettingMeta[] = [
     title: 'Row density',
     description: 'Choose between comfortable 40px table rows or compact 32px rows for maximum data density.',
     keywords: ['row', 'density', 'height', 'comfortable', 'compact', 'table', 'list', 'spacing', 'padding'],
-    kind: 'display',
   },
   {
     id: 'reduce-motion',
@@ -74,94 +70,71 @@ export const SETTINGS_LIST: SettingMeta[] = [
     title: 'Reduce motion',
     description: 'Control user interface animation and motion transition effects.',
     keywords: ['motion', 'reduce motion', 'accessibility', 'animation', 'transition', 'system', 'smooth'],
-    kind: 'display',
   },
   {
     id: 'tidal-connection',
-    lead: 'Music services',
+    lead: 'Music Services',
     title: 'TIDAL connection',
     description: 'Connect your TIDAL account via OAuth 2.1 to export setlists, match audio tracks, and sync playlists.',
     keywords: ['tidal', 'oauth', 'connect', 'playlist', 'music', 'service', 'streaming', 'token', 'account', 'sync'],
-    kind: 'login',
   },
   {
     id: 'spotify-connection',
-    lead: 'Music services',
+    lead: 'Music Services',
     title: 'Spotify connection',
     description: 'Connect your Spotify account via OAuth 2.1 PKCE to match library tracks and export playlists.',
     keywords: ['spotify', 'oauth', 'connect', 'playlist', 'music', 'service', 'streaming', 'token', 'account', 'sync'],
-    kind: 'login',
   },
   {
     id: 'preferred-ai-provider',
-    lead: 'AI assistants',
+    lead: 'AI Assistants',
     title: 'Preferred AI provider',
     description: 'Select the default AI assistant provider used for set structure analysis and track recommendations.',
     keywords: ['ai', 'provider', 'preferred', 'assistant', 'claude', 'openai', 'gemini', 'model', 'llm'],
-    kind: 'api',
   },
   {
     id: 'anthropic-api-key',
-    lead: 'AI assistants',
+    lead: 'AI Assistants',
     title: 'Anthropic (Claude) API key',
     description: 'API key for Anthropic Claude models, used for deep harmonic structure analysis and setlist planning.',
     keywords: ['anthropic', 'claude', 'api key', 'secret', 'sk-ant', 'assistant', 'model', 'ai'],
-    kind: 'api',
   },
   {
     id: 'openai-api-key',
-    lead: 'AI assistants',
+    lead: 'AI Assistants',
     title: 'OpenAI API key',
     description: 'API key for OpenAI GPT models, used for metadata generation and audio feature extraction.',
     keywords: ['openai', 'gpt', 'api key', 'secret', 'sk-', 'assistant', 'model', 'ai'],
-    kind: 'api',
   },
   {
     id: 'gemini-api-key',
-    lead: 'AI assistants',
+    lead: 'AI Assistants',
     title: 'Google (Gemini) API key',
     description: 'API key for Google Gemini models, used for multimodal music reasoning and set flow optimization.',
     keywords: ['google', 'gemini', 'api key', 'secret', 'aiza', 'assistant', 'model', 'ai'],
-    kind: 'api',
+  },
+  {
+    id: 'scraper-keys',
+    lead: 'Pipeline Services',
+    title: 'Scraper service API keys',
+    description: 'Manage API keys required by background enrichment scrapers (Beatport, Discogs, 1001Tracklists, Spotify Scraper).',
+    keywords: ['scraper', 'api keys', 'beatport', 'discogs', '1001tracklists', 'enrichment', 'data', 'pipeline'],
   },
   {
     id: 'data-storage',
-    lead: 'Storage and reset',
+    lead: 'Storage and Reset',
     title: 'Saved data and credentials',
     description: 'Clear local browser credentials, clear saved tokens, or reset preferences to defaults.',
     keywords: ['storage', 'credentials', 'tokens', 'clear', 'reset', 'defaults', 'localstorage', 'browser', 'data'],
-    kind: 'login',
   },
   {
     id: 'about-system',
-    lead: 'System information',
+    lead: 'System Information',
     title: 'About SongNodes',
-    description: 'Design system version, locale, time zone and API address.',
+    description: 'System information including design system version, locale, time zone, and API status.',
     keywords: ['about', 'system', 'version', 'locale', 'timezone', 'songnodes', 'design system', 'melbourne', 'australia'],
-    kind: 'about',
   },
 ];
-
-
-const HIDDEN_SERVICES = new Set(['beatport']);
-const SERVICE_LABEL_MAP: Record<string, string> = {
-  spotify: 'Spotify',
-  discogs: 'Discogs',
-  lastfm: 'Last.fm',
-  musicbrainz: 'MusicBrainz',
-  youtube: 'YouTube',
-  setlistfm: 'Setlist.fm',
-  reddit: 'Reddit',
-  '1001tracklists': '1001Tracklists',
-  getsongbpm: 'GetSongBPM',
-};
-
-const getModuleForKind = (kind: SettingMeta['kind']): 'paths' | 'harmony' | 'library' | undefined => {
-  if (kind === 'api') return 'paths';
-  if (kind === 'display') return 'harmony';
-  if (kind === 'login') return 'library';
-  return undefined;
-};
 
 const isTokenExpired = (expiresAt?: number): boolean => {
   if (!expiresAt) return true;
@@ -194,8 +167,17 @@ export const SettingsPage: React.FC = () => {
   const [scraperKeys, setScraperKeys] = useState<APIKey[]>([]);
   const [loadingScrapers, setLoadingScrapers] = useState(false);
 
+  // Set page header dynamically based on route
+  const currentSetting = useMemo(() => {
+    if (!settingId) return null;
+    return SETTINGS_LIST.find((s) => s.id === settingId) || null;
+  }, [settingId]);
 
-
+  usePageHeader({
+    lead: 'Services',
+    title: currentSetting ? currentSetting.title : 'Settings',
+    current: 'services',
+  });
 
   // Refresh preferences from SN.prefs
   const refreshPrefs = (msg?: string) => {
@@ -752,94 +734,20 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
-
   // Filter cards for the overview page
   const filteredSettings = useMemo(() => {
-    // Generate dynamic service cards
-    const serviceCards: SettingMeta[] = [];
-    const seenServices = new Set<string>();
-
-    // Sort reqs by display_order to respect it
-    const sortedReqs = [...scraperReqs].sort((a, b) => a.display_order - b.display_order);
-
-    for (const req of sortedReqs) {
-      if (HIDDEN_SERVICES.has(req.service_name)) continue;
-      if (!seenServices.has(req.service_name)) {
-        seenServices.add(req.service_name);
-        const name = SERVICE_LABEL_MAP[req.service_name] || req.service_name;
-        serviceCards.push({
-          id: `service-${req.service_name}`,
-          lead: 'Pipeline services',
-          title: `${name} API keys`,
-          description: `Manage API keys required by the ${name} background enrichment scraper.`,
-          keywords: ['scraper', 'api keys', req.service_name, name.toLowerCase(), 'enrichment', 'data', 'pipeline'],
-          kind: req.service_name === '1001tracklists' ? 'login' : 'api',
-        });
-      }
-    }
-
-    const allSettings = [...SETTINGS_LIST, ...serviceCards];
-
-    // Sort by group: API keys, colour and size, logins and connections, About
-    const kindOrder: Record<SettingMeta['kind'], number> = { api: 1, display: 2, login: 3, about: 4 };
-    allSettings.sort((a, b) => {
-      if (kindOrder[a.kind] !== kindOrder[b.kind]) {
-        return kindOrder[a.kind] - kindOrder[b.kind];
-      }
-      return 0; // maintain relative order otherwise
-    });
-
-    if (!searchQuery.trim()) return allSettings;
+    if (!searchQuery.trim()) return SETTINGS_LIST;
     const q = searchQuery.toLowerCase().trim();
-    return allSettings.filter((item) => {
+    return SETTINGS_LIST.filter((item) => {
       const matchText = [
         item.lead,
         item.title,
         item.description,
         ...item.keywords,
       ].join(' ').toLowerCase();
-      // search match service names as well, included in keywords above
       return matchText.includes(q);
     });
-  }, [searchQuery, scraperReqs]);
-
-  // SINGLE SETTING PAGE VIEW (/settings/:settingId)
-  const currentSetting = useMemo(() => {
-    if (!settingId) return null;
-
-    // Check static list
-    const foundStatic = SETTINGS_LIST.find((s) => s.id === settingId);
-    if (foundStatic) return foundStatic;
-
-    // Check dynamic
-    if (settingId.startsWith('service-')) {
-      const serviceName = settingId.replace('service-', '');
-      if (HIDDEN_SERVICES.has(serviceName)) return null;
-
-      const req = scraperReqs.find((r) => r.service_name === serviceName);
-      if (req || settingId === 'service-1001tracklists' || settingId === 'service-spotify' || settingId === 'service-discogs') {
-        const name = SERVICE_LABEL_MAP[serviceName] || serviceName;
-        return {
-          id: settingId,
-          lead: 'Pipeline services',
-          title: `${name} API keys`,
-          description: `Manage API keys required by the ${name} background enrichment scraper.`,
-          keywords: ['scraper', 'api keys', serviceName, name.toLowerCase(), 'enrichment', 'data', 'pipeline'],
-          kind: serviceName === '1001tracklists' ? 'login' : 'api',
-        } as SettingMeta;
-      }
-    }
-
-    return null;
-  }, [settingId, scraperReqs]);
-
-  usePageHeader({
-    lead: 'Services',
-    title: currentSetting ? currentSetting.title : 'Settings',
-    current: 'services',
-  });
-
-
+  }, [searchQuery]);
 
   // SINGLE SETTING PAGE VIEW (/settings/:settingId)
   if (settingId) {
@@ -877,7 +785,11 @@ export const SettingsPage: React.FC = () => {
         />
 
         <div style={{ marginTop: 'var(--space-6)', maxWidth: '720px' }}>
-          <Card variant={currentSetting.kind === 'about' ? 'neutral' : 'tonal'} module={getModuleForKind(currentSetting.kind)} eyebrow={currentSetting.lead} title={currentSetting.title}>
+          <Card
+            variant="neutral"
+            eyebrow={currentSetting.lead}
+            title={currentSetting.title}
+          >
             <div className="sn-card__body" style={{ padding: 'var(--space-4) 0' }}>
               <p className="body-s sn-muted" style={{ marginBottom: 'var(--space-4)' }}>
                 {currentSetting.description}
@@ -971,7 +883,7 @@ export const SettingsPage: React.FC = () => {
           }}
         >
           {filteredSettings.map((item) => (
-            <Card key={item.id} variant={item.kind === 'about' ? 'neutral' : 'tonal'} module={getModuleForKind(item.kind)} eyebrow={item.lead} title={item.title}>
+            <Card key={item.id} variant="neutral" eyebrow={item.lead} title={item.title}>
               <div className="sn-card__body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', padding: 'var(--space-2) 0' }}>
                 <p className="body-s sn-muted" style={{ margin: 0 }}>
                   {item.description}

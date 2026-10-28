@@ -1,4 +1,4 @@
-<!-- @dsCard group="Actions" height=640 subtitle="Copy tracklist, copy an ID, icon-only path copy on file rows (the path only in the tooltip), copied state with announcement, fallback when the clipboard is refused" -->
+<!-- @dsCard group="Actions" height=485 subtitle="Copy tracklist, copy an ID or path, copied state with announcement, fallback when the clipboard is refused" -->
 <!doctype html>
 <html>
 <head><meta charset="utf-8"><title>CopyButton — preview</title>
@@ -11,9 +11,6 @@
 
   <div class="sn-preview__label">Value with icon-only copy</div>
   <div class="sn-preview__row" id="row2"></div>
-
-  <div class="sn-preview__label">Files in a table: the name in mono, the path only in the icon button's tooltip</div>
-  <div class="sn-card pv-col" id="files"></div>
 
   <div class="sn-preview__label">Fallback when the browser refuses clipboard access</div>
   <div class="pv-col" id="fb"></div>
@@ -36,20 +33,8 @@
   document.getElementById("row1").innerHTML = btn("Copy tracklist", TRACKLIST, { what: "Tracklist" }) + btn("Copy Spotify link", "https://open.spotify.com/track/2b8fOow8UzyDFAE27YhOZM", { sm: true, what: "Spotify link" });
   document.getElementById("row2").innerHTML =
     value("Spotify ID", "2b8fOow8UzyDFAE27YhOZM", "Spotify ID") +
-    value("ISRC", "GBCEN2300412", "ISRC");
-  var FILES = [
-    ["overmono-so-u-kno.aiff", "6:12 · analysed 24 Oct", "/Volumes/Crates/2026/10-Oct/overmono-so-u-kno.aiff"],
-    ["songnodes-set-peak-time-friday-2026-10-24-2130.csv", "24 tracks · exported 24 Oct", "/Users/dj/Music/SongNodes exports/songnodes-set-peak-time-friday-2026-10-24-2130.csv"]
-  ];
-  document.getElementById("files").innerHTML =
-    '<div class="sn-tablebox"><table class="sn-table"><caption class="sn-sr">Files in the Pipeline output folder</caption><thead><tr><th scope="col">File</th><th scope="col">Details</th><th scope="col"><span class="sn-sr">Copy</span></th></tr></thead><tbody>' +
-    FILES.map(function (f) {
-      return '<tr><td><code class="sn-mono">' + S.esc(f[0]) + '</code></td><td>' + S.esc(f[1]) + '</td><td>' +
-        '<button class="sn-btn sn-btn--icon sn-btn--quiet sn-btn--sm sn-copy-button" type="button" aria-label="Copy the path of ' + S.esc(f[0]) + '" title="' + S.esc(f[2]) + '" data-copy="' + S.esc(f[2]) + '" data-what="Path">' +
-        '<span class="sn-copy-button__idle">' + S.icon("copy") + '</span><span class="sn-copy-button__done">' + S.icon("check") + '</span></button></td></tr>';
-    }).join("") + '</tbody></table></div>' +
-    '<p class="body-s" style="margin:0">Saved to the Pipeline output folder. The copy button\u2019s tooltip (hover, or keyboard focus at once) shows where a file lives:</p>' +
-    '<div><div class="sn-tooltip sn-tooltip--static" role="tooltip">Copy the path of overmono-so-u-kno.aiff<br><span class="sn-tooltip__data">' + S.esc(FILES[0][2]) + '</span></div></div>';
+    value("ISRC", "GBCEN2300412", "ISRC") +
+    value("File", "/Volumes/Crates/2026/10-Oct/Overmono-So_U_Kno.aiff", "file path");
   document.getElementById("fb").innerHTML =
     '<div class="sn-copy-button__fallback" role="group" aria-labelledby="fb-msg">' +
     '<p id="fb-msg"><b>Copy isn’t allowed in this browser.</b> The tracklist is selected below: press <kbd>Ctrl</kbd> + <kbd>C</kbd> (<kbd>⌘</kbd> + <kbd>C</kbd> on Mac) to copy it.</p>' +
