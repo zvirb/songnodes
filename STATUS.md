@@ -1329,9 +1329,11 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 <!-- SLOT:UX5 END -->
 
 <!-- SLOT:UX6 BEGIN -->
-### UX6: Pathfinder: waypoint autocompletion for start and end tracks
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-28
+- End: 2026-10-28
+- What: Replaced start and destination track inputs in `PathfinderPage.tsx` with `AutocompleteSearchField` from the design system, populating suggestions using `useUnifiedTracks()` with prioritizing prefix matches. Also updated tests.
+- Checks: `npm ci`, `npx tsc --noEmit -p .`, `npx oxlint src`, `npx vitest run src`, `npx vite build` (all run successfully except e2e tests due to lack of local playwright installation)
+- PR: Pending
 <!-- SLOT:UX6 END -->
 
 <!-- SLOT:UX7 BEGIN -->

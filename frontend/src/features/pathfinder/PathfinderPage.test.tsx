@@ -60,4 +60,10 @@ describe('PathfinderPage', () => {
     expect(screen.getByText('Pathfinder')).toBeTruthy();
     expect(screen.getByText('Found path')).toBeTruthy();
   });
+
+  // Adding test for the Autocomplete fields rendering as per brief
+  it('renders autocomplete fields for start and end tracks', () => {
+    render(<MemoryRouter><PathfinderPage /></MemoryRouter>);
+    expect(screen.getAllByLabelText('End track (optional): suggestions')).toBeTruthy();
+  });
 });

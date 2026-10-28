@@ -4,7 +4,7 @@
 import React, { useState, useId, useEffect } from 'react';
 import { Route, Search, ServerCrash, X } from 'lucide-react';
 import { Title, Bpm, KeyBadge, EnergyBar, SN } from '../../lib/songnodes';
-import { CompatibilityBadge, ErrorPanel, LoadingPanel } from '../../components/ds';
+import { CompatibilityBadge, ErrorPanel, LoadingPanel, AutocompleteSearchField, AutocompleteOption } from '../../components/ds';
 import { EmptyState, PageHeader } from '../../shell/PageParts';
 import { usePageHeader } from '../../shell/AppShell';
 import { Link } from 'react-router-dom';
@@ -38,14 +38,36 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
     });
   }, [maxHops, send]);
 
-  // Basic filtering for track pickers
-  const getFilteredTracks = (query: string) => {
+  // Advanced filtering for track pickers
+  const getFilteredTracks = (query: string): AutocompleteOption[] => {
     if (!query.trim()) return [];
     const q = query.toLowerCase();
-    return routeableTracks.filter(t =>
+
+    // Prioritize prefix matches, then substring matches
+    const matches = routeableTracks.filter(t =>
       t.title.toLowerCase().includes(q) ||
       t.artist.toLowerCase().includes(q)
-    ).slice(0, 5); // Limit results
+    );
+
+    matches.sort((a, b) => {
+      const aPrefix = a.title.toLowerCase().startsWith(q) || a.artist.toLowerCase().startsWith(q);
+      const bPrefix = b.title.toLowerCase().startsWith(q) || b.artist.toLowerCase().startsWith(q);
+      if (aPrefix && !bPrefix) return -1;
+      if (!aPrefix && bPrefix) return 1;
+      return 0;
+    });
+
+    return matches.slice(0, 8).map(t => {
+      const metaParts = [];
+      if (t.key) metaParts.push(t.key);
+      if (t.bpm) metaParts.push(Math.round(t.bpm));
+
+      return {
+        id: t.id,
+        value: `${t.artist} – ${t.title}`,
+        meta: metaParts.length > 0 ? metaParts.join(' · ') : undefined
+      };
+    });
   };
 
   const startResults = getFilteredTracks(startQuery);
@@ -55,9 +77,9 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
     pf.send({ type: 'CALCULATE_PATH' });
   };
 
-  const handleTrackSelect = (track: UnifiedTrack, type: 'start' | 'end') => {
+  const handleTrackSelect = (option: AutocompleteOption, type: 'start' | 'end') => {
     // We need to find the equivalent Track object from pf.availableTracks
-    const fullTrack = pf.availableTracks.find(t => t.id === track.id);
+    const fullTrack = pf.availableTracks.find(t => t.id === option.id);
     if (fullTrack) {
        // Ensure name property exists to satisfy TS Track requirement if it's missing on GraphNode
        const trackToUse = { ...fullTrack, name: fullTrack.name || (fullTrack as any).title || 'Unknown' };
@@ -121,39 +143,16 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
                 </button>
               </div>
             ) : (
-              <div style={{ position: 'relative' }}>
-                <div className="sn-search-field__box">
-                  <span className="sn-search-field__icon" aria-hidden="true">
-                    <Search size={16} strokeWidth={2} />
-                  </span>
-                  <input
-                    id={`${uid}-start`}
-                    type="search"
-                    className="sn-input sn-search-field__input"
-                    aria-label="Search tracks"
-                    placeholder="Search tracks…"
-                    value={startQuery}
-                    onChange={e => setStartQuery(e.target.value)}
-                  />
-                  {startQuery ? (
-                    <div className="sn-search-field__end">
-                      <button type="button" className="sn-search-field__clear" aria-label="Clear search" onClick={() => setStartQuery('')}>
-                        <X size={14} strokeWidth={2} aria-hidden="true" />
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-
-                {startQuery && startResults.length > 0 && (
-                  <ul role="listbox" className="sn-popover__list" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 'var(--z-popover)', backgroundColor: 'var(--surface-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-control)', marginTop: 'var(--space-1)', maxHeight: '200px', overflowY: 'auto', boxShadow: 'var(--shadow-2)' }}>
-                    {startResults.map(t => (
-                      <li key={t.id} role="option" aria-selected="false" tabIndex={0} onClick={() => handleTrackSelect(t, 'start')} style={{ cursor: 'pointer', borderBottom: '1px solid var(--line)', padding: 'var(--space-2) var(--space-3)' }}>
-                        <span className="sn-track-cell__name">{t.artist} – {t.title}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
+              <AutocompleteSearchField
+                label="Start track"
+                placeholder="Search tracks…"
+                value={startQuery}
+                onChange={setStartQuery}
+                suggestions={startResults}
+                suggestionsLabel="Tracks"
+                namespace="pathfinder-waypoints"
+                onSelect={(_val, option) => { if (option) handleTrackSelect(option, 'start'); }}
+              />
             )}
           </div>
 
@@ -169,39 +168,16 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
                 </button>
               </div>
             ) : (
-              <div style={{ position: 'relative' }}>
-                <div className="sn-search-field__box">
-                  <span className="sn-search-field__icon" aria-hidden="true">
-                    <Search size={16} strokeWidth={2} />
-                  </span>
-                  <input
-                    id={`${uid}-end`}
-                    type="search"
-                    className="sn-input sn-search-field__input"
-                    aria-label="Search tracks"
-                    placeholder="Search tracks…"
-                    value={endQuery}
-                    onChange={e => setEndQuery(e.target.value)}
-                  />
-                  {endQuery ? (
-                    <div className="sn-search-field__end">
-                      <button type="button" className="sn-search-field__clear" aria-label="Clear search" onClick={() => setEndQuery('')}>
-                        <X size={14} strokeWidth={2} aria-hidden="true" />
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-
-                {endQuery && endResults.length > 0 && (
-                  <ul role="listbox" className="sn-popover__list" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 'var(--z-popover)', backgroundColor: 'var(--surface-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-control)', marginTop: 'var(--space-1)', maxHeight: '200px', overflowY: 'auto', boxShadow: 'var(--shadow-2)' }}>
-                    {endResults.map(t => (
-                      <li key={t.id} role="option" aria-selected="false" tabIndex={0} onClick={() => handleTrackSelect(t, 'end')} style={{ cursor: 'pointer', borderBottom: '1px solid var(--line)', padding: 'var(--space-2) var(--space-3)' }}>
-                        <span className="sn-track-cell__name">{t.artist} – {t.title}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
+              <AutocompleteSearchField
+                label="End track (optional)"
+                placeholder="Search tracks…"
+                value={endQuery}
+                onChange={setEndQuery}
+                suggestions={endResults}
+                suggestionsLabel="Tracks"
+                namespace="pathfinder-waypoints"
+                onSelect={(_val, option) => { if (option) handleTrackSelect(option, 'end'); }}
+              />
             )}
           </div>
         </div>
