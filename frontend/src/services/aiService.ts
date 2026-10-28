@@ -1,11 +1,12 @@
 /**
  * @file AI Reasoning Service
  * @description Analyzes track compatibility and generates dynamic DJ mixing notes
- * using client-direct provider execution (Claude, OpenAI, Gemini).
- * Gated by configured API keys via apiKeyService.
+ * through the server AI proxy (Claude, OpenAI, Gemini).
+ * Gated by API keys saved on the server via apiKeyService.
  */
 
 import { fetchExistingKeys } from './apiKeyService';
+import { aiProxyComplete } from './aiProxyClient';
 import type { APIKey } from '../types';
 
 export type AIProvider = 'claude' | 'openai' | 'gemini';
@@ -74,37 +75,6 @@ const PROVIDER_SERVICE_MAP: Record<string, AIProvider> = {
   'gemini-api': 'gemini',
 };
 
-/**
- * Get locally stored direct unmasked key if available
- */
-export const getLocalKey = (provider: AIProvider): string | null => {
-  try {
-    return (
-      localStorage.getItem(`songnodes_key_${provider}`) ||
-      localStorage.getItem(`ai_key_${provider}`) ||
-      localStorage.getItem(`apiKey_${provider}`) ||
-      null
-    );
-  } catch {
-    return null;
-  }
-};
-
-/**
- * Save locally stored direct unmasked key
- */
-export const setLocalKey = (provider: AIProvider, key: string): void => {
-  try {
-    if (key) {
-      localStorage.setItem(`songnodes_key_${provider}`, key.trim());
-    } else {
-      localStorage.removeItem(`songnodes_key_${provider}`);
-    }
-  } catch {
-    // ignore storage errors
-  }
-};
-
 export interface AvailabilityResult {
   available: boolean;
   configuredProviders: AIProvider[];
@@ -113,17 +83,10 @@ export interface AvailabilityResult {
 }
 
 /**
- * Gatekeeping check: verifies if any valid AI API key is configured via apiKeyService or local storage.
+ * Gatekeeping check: verifies if any valid AI API key is configured on the server.
  */
 export const checkAIAvailability = async (): Promise<AvailabilityResult> => {
   const configuredProviders: Set<AIProvider> = new Set();
-
-  // Check local storage for directly configured keys
-  (['claude', 'openai', 'gemini'] as AIProvider[]).forEach((p) => {
-    if (getLocalKey(p)) {
-      configuredProviders.add(p);
-    }
-  });
 
   // Check backend configured keys via apiKeyService
   try {
@@ -139,7 +102,7 @@ export const checkAIAvailability = async (): Promise<AvailabilityResult> => {
       }
     });
   } catch {
-    // If backend endpoint fails, rely on local storage check
+    // Backend unreachable: no provider can be used through the proxy
   }
 
   const providers = Array.from(configuredProviders);
@@ -195,110 +158,40 @@ Keep the tone concise, punchy, and actionable for live DJ performance.`;
 };
 
 /**
- * Execute direct client request to Claude Messages API
+ * Transition notes go through the server AI proxy (POST /api/v1/ai/complete);
+ * the provider key is read on the server and never reaches the browser.
  */
-const executeClaude = async (prompt: string, apiKey?: string): Promise<string> => {
-  const key = apiKey || getLocalKey('claude');
-  if (!key) {
-    throw new Error('Claude API key missing. Please provide or store key.');
-  }
-
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': key,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 1000,
-      messages: [{ role: 'user', content: prompt }],
-    }),
+const executeClaude = async (prompt: string): Promise<string> => {
+  const res = await aiProxyComplete({
+    provider: 'claude',
+    model: 'claude-3-5-sonnet-20241022',
+    max_tokens: 1000,
+    prompt,
   });
+  return res.text || 'No response text received from Claude.';
+};
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error?.message || `Claude API returned status ${response.status}`);
-  }
+const executeOpenAI = async (prompt: string): Promise<string> => {
+  const res = await aiProxyComplete({
+    provider: 'openai',
+    model: 'gpt-4o-mini',
+    system: 'You are an expert DJ assistant specializing in setlist transitions and harmonic mixing.',
+    prompt,
+  });
+  return res.text || 'No response text received from OpenAI.';
+};
 
-  const data = await response.json();
-  const textContent = data.content?.find((c: { type: string; text?: string }) => c.type === 'text');
-  return textContent?.text || 'No response text received from Claude.';
+const executeGemini = async (prompt: string): Promise<string> => {
+  const res = await aiProxyComplete({
+    provider: 'gemini',
+    model: 'gemini-1.5-flash',
+    prompt,
+  });
+  return res.text || 'No response text received from Gemini.';
 };
 
 /**
- * Execute direct client request to OpenAI Chat Completions API
- */
-const executeOpenAI = async (prompt: string, apiKey?: string): Promise<string> => {
-  const key = apiKey || getLocalKey('openai');
-  if (!key) {
-    throw new Error('OpenAI API key missing. Please provide or store key.');
-  }
-
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${key}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: 'You are an expert DJ assistant specializing in setlist transitions and harmonic mixing.' },
-        { role: 'user', content: prompt },
-      ],
-      temperature: 0.7,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error?.message || `OpenAI API returned status ${response.status}`);
-  }
-
-  const data = await response.json();
-  return data.choices?.[0]?.message?.content || 'No response text received from OpenAI.';
-};
-
-/**
- * Execute direct client request to Gemini GenerateContent API
- */
-const executeGemini = async (prompt: string, apiKey?: string): Promise<string> => {
-  const key = apiKey || getLocalKey('gemini');
-  if (!key) {
-    throw new Error('Gemini API key missing. Please provide or store key.');
-  }
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(key)}`;
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      contents: [
-        {
-          parts: [{ text: prompt }],
-        },
-      ],
-    }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error?.message || `Gemini API returned status ${response.status}`);
-  }
-
-  const data = await response.json();
-  const candidate = data.candidates?.[0];
-  const partText = candidate?.content?.parts?.[0]?.text;
-  return partText || 'No response text received from Gemini.';
-};
-
-/**
- * Rule-based analytical fallback for mixing guidance when client-direct key is stored in backend
+ * Rule-based analytical fallback for mixing guidance when the AI proxy call fails
  */
 const generateAlgorithmicNotes = (source: TrackSummary, target: TrackSummary, provider: AIProvider): string => {
   const sBpm = Number(source.bpm) || 120;
@@ -410,19 +303,12 @@ export const generateTransitionNotes = async (
 
   try {
     let rawResult = '';
-    const directKey = getLocalKey(provider);
-
-    if (directKey) {
-      if (provider === 'claude') {
-        rawResult = await executeClaude(prompt, directKey);
-      } else if (provider === 'openai') {
-        rawResult = await executeOpenAI(prompt, directKey);
-      } else if (provider === 'gemini') {
-        rawResult = await executeGemini(prompt, directKey);
-      }
+    if (provider === 'claude') {
+      rawResult = await executeClaude(prompt);
+    } else if (provider === 'openai') {
+      rawResult = await executeOpenAI(prompt);
     } else {
-      // Key configured on backend; run algorithmic DJ analysis
-      rawResult = generateAlgorithmicNotes(params.sourceTrack, params.targetTrack, provider);
+      rawResult = await executeGemini(prompt);
     }
 
     const analysis = parseTransitionAnalysis(rawResult);
@@ -457,7 +343,7 @@ export const generateTransitionNotes = async (
     const result: AITransitionResponse = {
       status: 'success',
       provider,
-      content: `${fallbackText}\n\n[Note: Direct API request encounter: ${errorMsg}. Displaying local DJ analysis.]`,
+      content: `${fallbackText}\n\n[Note: AI request failed (${errorMsg}). Showing local DJ analysis.]`,
       analysis: fallbackAnalysis,
       promptUsed: prompt,
       timestamp,

@@ -155,23 +155,64 @@ export const getMaskedKey = (key?: string): string | null => {
 };
 
 /**
+ * AI provider keys live on the server only, under the service and key names the
+ * AI proxy reads (services/rest_api/routers/ai_proxy.py). The browser keeps the
+ * server's masked value for display, never the key itself.
+ */
+export const AI_KEY_SERVICE: Record<AIProvider, string> = {
+  claude: 'anthropic',
+  openai: 'openai',
+  gemini: 'google',
+};
+export const AI_KEY_NAME = 'api_key';
+
+const AI_PROVIDERS: AIProvider[] = ['claude', 'openai', 'gemini'];
+const RAW_KEY_PREFIXES = ['songnodes_key_', 'ai_key_', 'apiKey_'];
+const STORAGE_KEY_AI_MIGRATED = 'songnodes_ai_keys_server_v1';
+
+const defaultAIKeyConfig = (): AIKeyConfig => ({
+  preferredProvider: 'claude',
+  claudeStatus: 'unconfigured',
+  openaiStatus: 'unconfigured',
+  geminiStatus: 'unconfigured',
+});
+
+/**
+ * One-off clean-up: earlier builds kept raw AI keys in localStorage. Drop them;
+ * the masked value comes back from the server on the next save.
+ */
+const purgeRawAIKeys = (config: AIKeyConfig): AIKeyConfig => {
+  const cleaned: AIKeyConfig = { ...config };
+  for (const provider of AI_PROVIDERS) {
+    const keyProp = `${provider}ApiKey` as const;
+    if (cleaned[keyProp]) {
+      delete cleaned[keyProp];
+      cleaned[`${provider}Status`] = 'unconfigured';
+    }
+    for (const prefix of RAW_KEY_PREFIXES) {
+      localStorage.removeItem(`${prefix}${provider}`);
+    }
+  }
+  return cleaned;
+};
+
+/**
  * Retrieves the AI Key configuration from local storage.
  */
 export const getAIKeyConfig = (): AIKeyConfig => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_AI_CONFIG);
-    if (raw) {
-      return JSON.parse(raw);
+    let config: AIKeyConfig = raw ? JSON.parse(raw) : defaultAIKeyConfig();
+    if (!localStorage.getItem(STORAGE_KEY_AI_MIGRATED)) {
+      config = purgeRawAIKeys(config);
+      if (raw) localStorage.setItem(STORAGE_KEY_AI_CONFIG, JSON.stringify(config));
+      localStorage.setItem(STORAGE_KEY_AI_MIGRATED, '1');
     }
+    return config;
   } catch (e) {
     console.error('Failed to read AI key config from localStorage:', e);
   }
-  return {
-    preferredProvider: 'claude',
-    claudeStatus: 'unconfigured',
-    openaiStatus: 'unconfigured',
-    geminiStatus: 'unconfigured',
-  };
+  return defaultAIKeyConfig();
 };
 
 /**
@@ -186,8 +227,8 @@ export const saveAIKeyConfig = (config: AIKeyConfig): void => {
 };
 
 /**
- * Saves an AI key for a specific provider.
- * Performs format validation and syncs both local storage and backend if available.
+ * Saves an AI key for a provider on the server. Throws when the server save
+ * fails; only the server's masked value is kept locally.
  */
 export const saveAIKey = async (provider: AIProvider, key: string): Promise<AIKeyConfig> => {
   const formatCheck = validateKeyFormat(provider, key);
@@ -195,122 +236,64 @@ export const saveAIKey = async (provider: AIProvider, key: string): Promise<AIKe
     throw new Error(formatCheck.message || 'Invalid key format.');
   }
 
-  const current = getAIKeyConfig();
-  const keyProp = `${provider}ApiKey` as keyof AIKeyConfig;
-  const statusProp = `${provider}Status` as keyof AIKeyConfig;
+  const saved = await saveKey(AI_KEY_SERVICE[provider], AI_KEY_NAME, key.trim());
 
   const updated: AIKeyConfig = {
-    ...current,
-    [keyProp]: key.trim(),
-    [statusProp]: 'valid',
+    ...getAIKeyConfig(),
+    [`${provider}ApiKey`]: saved.masked_value || '****',
+    [`${provider}Status`]: saved.is_valid === false ? 'invalid' : 'valid',
   };
-
   saveAIKeyConfig(updated);
-
-  // Attempt backend persistence (best-effort)
-  try {
-    await saveKey('ai-providers', `${provider}_api_key`, key.trim());
-  } catch (e) {
-    console.warn(`Backend save for ${provider} key failed, kept in local storage:`, e);
-  }
-
   return updated;
 };
 
 /**
- * Clears an AI key for a specific provider.
+ * Clears an AI key for a provider on the server and locally.
  */
 export const clearAIKey = async (provider: AIProvider): Promise<AIKeyConfig> => {
-  const current = getAIKeyConfig();
-  const updated: AIKeyConfig = { ...current };
+  await deleteKey(AI_KEY_SERVICE[provider], AI_KEY_NAME);
 
-  if (provider === 'claude') {
-    delete updated.claudeApiKey;
-    updated.claudeStatus = 'unconfigured';
-  } else if (provider === 'openai') {
-    delete updated.openaiApiKey;
-    updated.openaiStatus = 'unconfigured';
-  } else if (provider === 'gemini') {
-    delete updated.geminiApiKey;
-    updated.geminiStatus = 'unconfigured';
-  }
-
+  const updated: AIKeyConfig = { ...getAIKeyConfig() };
+  delete updated[`${provider}ApiKey` as const];
+  updated[`${provider}Status` as const] = 'unconfigured';
   saveAIKeyConfig(updated);
-
-  // Attempt backend delete (best-effort)
-  try {
-    await deleteKey('ai-providers', `${provider}_api_key`);
-  } catch (e) {
-    console.warn(`Backend delete for ${provider} key failed:`, e);
-  }
-
   return updated;
 };
 
 /**
- * Validates / tests an AI key (lightweight pre-flight ping check or format validation).
+ * Tests the provider key stored on the server. A key passed in is only
+ * format-checked; the server always tests the key it holds.
  */
 export const validateAIKey = async (provider: AIProvider, key?: string): Promise<AIKeyValidationResult> => {
   const testedAt = new Date().toISOString();
   const config = getAIKeyConfig();
-  const targetKey = key || config[`${provider}ApiKey` as keyof AIKeyConfig] as string | undefined;
+  const statusProp = `${provider}Status` as const;
 
-  if (!targetKey) {
-    return {
-      ok: false,
-      message: 'No key provided to test.',
-      testedAt,
-    };
+  if (key) {
+    const formatCheck = validateKeyFormat(provider, key);
+    if (!formatCheck.valid) {
+      saveAIKeyConfig({ ...config, [statusProp]: 'invalid' });
+      return { ok: false, message: formatCheck.message, testedAt };
+    }
   }
 
-  const formatCheck = validateKeyFormat(provider, targetKey);
-  if (!formatCheck.valid) {
-    // Update local status to invalid
-    const statusProp = `${provider}Status` as keyof AIKeyConfig;
-    saveAIKeyConfig({ ...config, [statusProp]: 'invalid' });
-    return {
-      ok: false,
-      message: formatCheck.message,
-      testedAt,
-    };
-  }
-
-  // Try backend test if applicable
   try {
-    const res = await testKey('ai-providers', `${provider}_api_key`);
+    const res = await testKey(AI_KEY_SERVICE[provider], AI_KEY_NAME);
     const isOk = !!res.valid;
-    const statusProp = `${provider}Status` as keyof AIKeyConfig;
-    const updatedConfig = {
+    saveAIKeyConfig({
       ...config,
-      [statusProp]: (isOk ? 'valid' : 'invalid') as 'valid' | 'invalid',
-      lastTestedAt: {
-        ...config.lastTestedAt,
-        [provider]: testedAt,
-      },
-    };
-    saveAIKeyConfig(updatedConfig);
-
+      [statusProp]: isOk ? 'valid' : 'invalid',
+      lastTestedAt: { ...config.lastTestedAt, [provider]: testedAt },
+    });
     return {
       ok: isOk,
-      message: res.message || (isOk ? 'Key format and pre-flight check passed.' : 'Key test failed.'),
+      message: res.message || (isOk ? 'Key works.' : 'Key test failed.'),
       testedAt,
     };
   } catch (e) {
-    // Fallback: format check passed, set valid
-    const statusProp = `${provider}Status` as keyof AIKeyConfig;
-    const updatedConfig = {
-      ...config,
-      [statusProp]: 'valid' as const,
-      lastTestedAt: {
-        ...config.lastTestedAt,
-        [provider]: testedAt,
-      },
-    };
-    saveAIKeyConfig(updatedConfig);
-
     return {
-      ok: true,
-      message: `${provider.toUpperCase()} API key format verified successfully (${formatCheck.message || 'format valid'}).`,
+      ok: false,
+      message: e instanceof Error ? e.message : 'Could not test the key.',
       testedAt,
     };
   }
