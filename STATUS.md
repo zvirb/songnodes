@@ -1455,3 +1455,15 @@ Ended 2026-10-26 22:29: Audited Pathfinder (DS7). Fixed CSS typography variables
 - PR: [⚡ Bolt: pre-compile regexes and memoize artist name cleaning](https://github.com/zvirb/songnodes/pull/NEW)
 - End: 2026-10-27
 <!-- SLOT:BOLT END -->
+
+<!-- SLOT:WP1 BEGIN -->
+### WP1: Fix TIDAL v2 and Deezer search queries in providers
+- Start: 2026-10-28
+- One job: Fix provider search queries so Celery worker can resolve track metadata (BPM, ISRC, TIDAL/Deezer IDs, labels) without 400 errors or 0-result false negatives.
+- Scope:
+  - `services/common/providers/tidal.py`: Use OpenAPI v2 search query endpoint `GET /v2/searchResults?filter[query]=<text>&countryCode=AU&include=tracks` instead of invalid resource path `GET /searchResults/{query}/relationships/tracks` (which caused HTTP 400 INVALID_RESOURCE_ID).
+  - `services/common/providers/deezer.py`: Use plain text search `f"{artist} {title}"` instead of strict `artist:"..." track:"..."` syntax (which returned 0 results on Deezer for club tracks).
+  - `services/common/tests/test_providers.py`: Update unit tests to reflect v2 search query parameter and plain-text searches.
+- Checks: `python -m pytest common/tests` (all 120 tests pass).
+- End: 2026-10-28
+<!-- SLOT:WP1 END -->
