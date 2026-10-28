@@ -1,0 +1,42 @@
+/* -- DragDrop (1.4.0, imported from BeanAlliance DragDrop v4.17) ---------------------------------------
+   Reordering SetSlots in the running order and dragging crate tracks into a slot. A handle starts a drag,
+   a name-only ghost follows the pointer, the target is outlined dashed in brand and says the outcome, an
+   insertion line shows where order matters, a locked target turns the ghost into "Locked: can't drop here".
+   Behaviour lives in the component (pointer + keyboard); these are the looks. Tokens only. */
+
+/* Handle: grip-vertical, 24px (44px on touch); only the handle starts a drag. */
+.sn-drag-handle { display: inline-grid; place-items: center; flex: none; width: var(--space-6); height: var(--space-6); padding: 0; margin: 0; border: 0; border-radius: var(--radius-chip); background: transparent; color: var(--fg-2); font: inherit; cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; }
+.sn-drag-handle .sn-icon { width: 16px; height: 16px; }
+@media (hover: hover) { .sn-drag-handle:hover { color: var(--fg); background: var(--hover-bg); } }
+.sn-drag-handle[aria-pressed="true"] { color: var(--fg); background: var(--brand-soft); cursor: grabbing; }
+@media (pointer: coarse) { .sn-drag-handle { width: var(--touch-min); height: var(--touch-min); } }
+
+/* The item left behind while it is held (a move; a copy from the crate leaves its row as it is). */
+.sn-drag-origin { opacity: var(--opacity-disabled); }
+
+/* Ghost: the item's name only ("Bicep – Glue"), on surface, 1px brand border, shadow-2 (it floats). */
+.sn-drag-ghost { position: fixed; z-index: var(--z-tooltip); left: 0; top: 0; display: inline-flex; align-items: center; gap: var(--space-2); max-width: min(20rem, calc(100vw - var(--space-8))); min-height: var(--control-sm); padding: 0 var(--space-3); border: 1px solid var(--brand); border-radius: var(--radius-control); background: var(--surface-1); color: var(--fg); box-shadow: var(--shadow-2); font: 600 0.8125rem/1.2 var(--font-body); white-space: nowrap; pointer-events: none; transition: none; }
+.sn-drag-ghost__name { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.sn-drag-ghost .sn-icon { flex: none; width: 16px; height: 16px; color: var(--fg-2); }
+/* Over a target that refuses it: lock + "Locked: can't drop here"; nothing is dropped. */
+.sn-drag-ghost[data-locked] { border-color: var(--line-strong); color: var(--fg-2); }
+/* Documentation only (previews): the ghost drawn in place instead of following the pointer. */
+.sn-drag-ghost--static { position: relative; z-index: auto; max-width: 100%; }
+
+/* Target: the lane or slot under the pointer. Dashed brand outline inside its edge; the target itself does not change size. */
+.sn-drop-target { outline: 2px dashed var(--brand); outline-offset: -2px; }
+
+/* What a drop will do, in words: "Drop to move to slot 7". The ghost does not repeat it. */
+.sn-drop-text { display: inline-flex; align-items: center; min-height: var(--space-6); padding: 0 var(--space-2); border-radius: var(--radius-chip); background: var(--brand-soft); box-shadow: inset 0 0 0 1px var(--brand); color: var(--fg); font: 600 0.75rem/1.2 var(--font-body); white-space: nowrap; }
+
+/* Insertion line where order matters (the running order): 2px brand with a dot; takes no space, so nothing moves under the pointer. */
+.sn-drop-line { position: relative; display: block; height: 2px; margin: -1px 0; background: var(--brand); pointer-events: none; z-index: 1; }
+.sn-drop-line::before { content: ""; position: absolute; left: var(--space-2); top: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--brand); }
+.sn-drop-line > .sn-drop-text { position: absolute; right: var(--space-3); top: 50%; transform: translateY(-50%); }
+
+/* A running order whose slots carry handles: the handle sits before the slot number. */
+.sn-set-slot-list--drag { --sn-set-slot-n: calc(var(--space-6) + var(--space-1) + 1.5rem); --sn-set-slot-n-sm: calc(var(--space-6) + var(--space-1) + 1.25rem); }
+@media (pointer: coarse) { .sn-set-slot-list--drag { --sn-set-slot-n: calc(var(--touch-min) + var(--space-1) + 1.5rem); --sn-set-slot-n-sm: calc(var(--touch-min) + var(--space-1) + 1.25rem); } }
+.sn-set-slot-list--drag .sn-set-slot__n { display: flex; align-items: center; justify-content: space-between; gap: var(--space-1); }
+.sn-set-slot[data-locked] .sn-drag-handle { visibility: hidden; }
+@media (max-width: 767px) { .sn-set-slot-list--drag .sn-set-slot__n { padding-top: var(--space-1); } }

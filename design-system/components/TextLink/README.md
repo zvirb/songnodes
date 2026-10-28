@@ -3,7 +3,7 @@
 A link takes the colour of the module it opens, is always underlined (1px, offset 3px) and set in weight 600, so colour tells you where you will land and the underline tells you it is a link.
 
 ## When to use / not use
-Use for navigation: to another module, a detail page, an external source (1001tracklists, MixesDB, Spotify) or a file path. Don't use a link to run an action (use Button), and don't style plain text as a link.
+Use for navigation: to another module, a detail page, an external source (1001tracklists, MixesDB, Spotify) or a file, named by its file name (never its path; 01-writing). Don't use a link to run an action (use Button), and don't style plain text as a link.
 
 ## Anatomy & markup
 ```html
@@ -18,7 +18,7 @@ Use for navigation: to another module, a detail page, an external source (1001tr
 | Class | Use |
 |---|---|
 | `sn-text-link--on-tonal` | Any link inside a `sn-card--tonal`. Text takes the destination `--m-ink` (always passes on a tonal fill); the 2px underline keeps the destination hue. |
-| `sn-text-link--path` | File paths and IDs: `font-data`, breaks anywhere. |
+| `sn-text-link--path` | File names and IDs: `font-data`, breaks anywhere. Never a file or folder path (01-writing, 1.4.0); the class keeps its name. |
 | `sn-text-link--break` | Long URLs in prose: `overflow-wrap: anywhere`, never horizontal scroll. |
 | `sn-text-link-list` | A vertical list of related links. |
 
@@ -32,7 +32,7 @@ Link text names the destination: "Open running order", "PBS Soul Time", "Get an 
 Destination colour is never the only cue: the underline is always present and the text names the place. Module hues pass 4.5:1 on `bg` and `surface-1`; on tonal cards use `--on-tonal`. External links announce that they open a new tab.
 
 ## Responsive
-Inline in prose at every width. Long paths wrap rather than overflow; on phones keep links at least 24px tall when they stand alone (WCAG 2.2 target size), for example in a `sn-text-link-list` with `gap: space-2`.
+Inline in prose at every width. Long file names and URLs wrap rather than overflow; on phones keep links at least 24px tall when they stand alone (WCAG 2.2 target size), for example in a `sn-text-link-list` with `gap: space-2`.
 
 ## Do / don't
 - Do colour by destination, not by the page you are on.
@@ -40,4 +40,4 @@ Inline in prose at every width. Long paths wrap rather than overflow; on phones 
 - Don't use status colours for links.
 
 ## In SongNodes / in the music library
-Track and artist names in the library table linking to Graph, source names linking to Sources, the external "Open on …" links in the track details modal, file paths in the Pipeline audio-analysis view. In the Naarm Set Builder: the TIDAL/Deezer/Beatport links column and the "Heard on" show names.
+Track and artist names in the library table linking to Graph, source names linking to Sources, the external "Open on …" links in the track details modal, file names in the Pipeline audio-analysis view. In the Naarm Set Builder: the TIDAL/Deezer/Beatport links column and the "Heard on" show names.

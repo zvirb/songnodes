@@ -59,3 +59,6 @@ To further rectify and standardize navigation flow and accessibility across sett
 
 ## Replaces
 `SettingsPanel` and `APIKeyManager` overlays, the "Spotify" and "TIDAL" tabs used for connecting, and the `confirm()` used for destructive actions.
+
+## Locations (1.4.0)
+Exports and imports name the place in words ("Saved to your Downloads folder", "Pipeline output folder"), never a path. A setting whose value is a location (the pipeline output folder on the server) is a `TextField` showing the value being edited, with no copy button; a folder chosen on this device uses the system picker ("Choose folder…"). See 01-writing, *File paths and system locations*.

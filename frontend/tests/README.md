@@ -83,3 +83,10 @@ to clear a failure that has another cause.
 | `design-rules.spec.ts` | Per route: at most one primary button, no horizontal scroll at 390 px or at text size XL, no "N/A"/"Unknown", `lang="en-AU"` |
 | `accessibility.spec.ts` | axe WCAG 2.2 AA per route in dark and light, and the open NavDrawer |
 | `visual.spec.ts` | Screenshot baselines (above) |
+
+## In CI
+
+The canonical run (above) is executed in GitHub Actions (`e2e.yml`) using the
+development Compose stack. The workflow runs the Chromium suite on pull requests
+and the full multi-browser suite on pushes to `main`. The Playwright report is
+uploaded as an artifact on the job's run page.

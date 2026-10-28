@@ -34,3 +34,6 @@ Print.
 
 ## Replaces
 `SetlistBuilder` export-to-print hacks and printing the dark app screen; nothing printed before carried its URL or data freshness.
+
+## Locations (1.4.0)
+The traceability footer prints the web address of the SongNodes view, so the paper leads back to the screen; it never prints a file or folder path. Where a file was saved, say the place in words ("Saved to the Pipeline output folder"). (01-writing, 1.4.0; Q22)
