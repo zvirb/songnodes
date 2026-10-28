@@ -23,7 +23,7 @@ def _fold_bpm(bpm: float) -> float:
     # "Fold half- and double-time readings into a genre range (house 100-140, techno 115-160, UKG/bass 120-150, d&b 160-180)."
     # If the reading is 87, and we are expecting 174 (d&b), 87 is typically considered half-time for d&b.
     # Let's adjust the simple fold loop to prioritize the 100-180 range.
-    while bpm < 90: # Using 90 to ensure 87 folds to 174
+    while bpm < 100: # 100 is the lowest end of the dance-music prior (house)
         bpm *= 2
     while bpm > 180:
         bpm /= 2
@@ -46,7 +46,7 @@ def analyse(samples: np.ndarray, sample_rate: float) -> dict:
     # Guard against silence or very short audio
     if len(samples) == 0 or np.all(samples == 0):
         return {
-            'bpm': None, 'bpm_confidence': None, 'key_camelot': None,
+            'bpm': None, 'raw_bpm': None, 'bpm_confidence': None, 'key_camelot': None,
             'key_name': None, 'key_confidence': None,
             'method': 'essentia_edma_rhythm2013', 'method_version': '1.0'
         }
@@ -65,7 +65,7 @@ def analyse(samples: np.ndarray, sample_rate: float) -> dict:
         samples = resample(samples)
 
     result = {
-        'bpm': None, 'bpm_confidence': None, 'key_camelot': None,
+        'bpm': None, 'raw_bpm': None, 'bpm_confidence': None, 'key_camelot': None,
         'key_name': None, 'key_confidence': None,
         'method': 'essentia_edma_rhythm2013', 'method_version': '1.0'
     }
@@ -95,6 +95,7 @@ def analyse(samples: np.ndarray, sample_rate: float) -> dict:
 
         if bpm > 0:
             folded_bpm = _fold_bpm(float(bpm))
+            result['raw_bpm'] = float(bpm)
             result['bpm'] = folded_bpm
             result['bpm_confidence'] = float(confidence) if not low_confidence else min(0.2, float(confidence))
     except Exception as e:
@@ -119,7 +120,7 @@ def analyse_file(filepath: str) -> dict:
     except Exception as e:
         logger.error(f"Error loading file {filepath}: {e}")
         return {
-            'bpm': None, 'bpm_confidence': None, 'key_camelot': None,
+            'bpm': None, 'raw_bpm': None, 'bpm_confidence': None, 'key_camelot': None,
             'key_name': None, 'key_confidence': None,
             'method': 'essentia_edma_rhythm2013', 'method_version': '1.0'
         }

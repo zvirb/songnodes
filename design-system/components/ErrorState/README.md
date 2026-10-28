@@ -28,6 +28,13 @@ Explains a failed load in a panel: what happened, what it affects, whether retry
 | Not found | scan-search · info | "This set was deleted" (+ when) | `data-helps="no"` | Link back to the list |
 | Server 5xx | server · bad | "SongNodes couldn’t load the graph" | "Try again in a few minutes…" | Try again + copyable `__ref` reference ID |
 | Validation | circle-alert · bad | "Fix 2 fields to save the set" | – | `__fields` list linking to each field |
+| Stalled staged load (1.4.0) | timer · warn | Names the step: "Looking up key and BPM stopped" | "Try again carries on from track 1,205; the 1,204 already looked up are kept." | Try again (resumes from that step) |
+
+## Stalled loads (1.4.0, imported from BeanAlliance AsyncState v4.15)
+- A staged load (StagedProgress) is never failed by elapsed time. It stops only when the current step sends **no progress for 60 s**; that is shown first as the step's `stalled` state inside StagedProgress, with the done steps kept as evidence.
+- Use the ErrorState *Stalled* variant only where the region cannot keep its step list (a compact card, a tile): it is `warn`, the title names the stalled step, the text says what was kept, and **Try again** resumes from that step, never from the start.
+- A single request (not a staged load) keeps the 15 s read / 30 s write timeout and the *Timeout* variant.
+- A refresh that fails never becomes an ErrorState while data is on screen: the data stays and the `FreshnessStamp` turns ▲ ("Couldn’t refresh, showing 24 Oct, 06:00 AEDT") with Retry (07-feedback-status).
 
 ## Content rules
 Say what happened, what is safe, what to do next. No apologies, no "Oops", no exclamation marks, no raw codes as the title (the code goes in the text or reference). Reference IDs in `data-s` mono: "ref 7f3a-92c1".

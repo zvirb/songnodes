@@ -42,3 +42,6 @@ On phones the zone is just the button and the accepted-types line (no drag hint)
 
 ## In SongNodes / in the music library
 Replaces the JSON import in `TargetTracksManager.tsx` and set import in `SetlistBuilder`. In the music library: importing saved sets and weekly radio tracklists.
+
+## Locations (1.4.0)
+Files show their file name only (`peak-time-friday.json`), never a path; browsers do not reveal it, and the rule is the same where they could (01-writing, 1.4.0).

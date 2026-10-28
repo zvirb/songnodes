@@ -68,6 +68,25 @@ The music library uses `music-library-<what>-…`. This replaces `songnodes-stat
 - UTF-8 with BOM (Excel opens en dashes and ♭ correctly), comma separated, CRLF line ends, RFC 4180 quoting, header row in sentence case.
 - Set columns: `Slot,Artist,Title,BPM,Key,Key name,Energy,Duration,Time in,Transition,Locked,Spotify ID,TIDAL ID,ISRC`.
 - Library columns follow the visible table order, plus IDs. Values raw, not decorated: BPM `124.5`, key `8A`, energy integer `7` (legacy converted values exported as converted integers with an `Energy source` column `legacy_0_1`), durations `m:ss`, times ISO 8601 with offset (`2026-10-24T21:30:00+11:00`), missing values empty (not "–").
+- **Formula guard** (OWASP CSV injection; imported from BeanAlliance v4.17.1 in 1.4.0, DR-033). A text cell whose first character is `=`, `+`, `-`, `@`, a tab or a carriage return is written with a leading apostrophe, so Excel, Numbers and Sheets show it as text and never run it. The guard runs **before** RFC 4180 quoting, so a guarded cell that also holds a comma is still quoted. It applies to every text field that was typed or scraped: track titles, artists, mix names, set names, notes, tags, source names, tracklist lines. It does **not** apply to numbers the export writes itself (BPM, energy, slot, durations, counts, a key or BPM shift such as `-1` written as a number): those stay numbers so a spreadsheet can sum and sort them. The rest of the convention is unchanged (BOM, sentence-case headers, timestamped names, DR-033).
+- Write every CSV through `SongNodes.csv` so the guard and quoting cannot be skipped: `csv.cell(value, {numeric})` for one field (a JS number, or a string passed with `{numeric: true}` that is a plain number, is never guarded; a "numeric" string that is not a plain number, such as `-1+1`, is guarded), `csv.row(values)` for one record (an item may be `{value, numeric}`), `csv.file(header, rows)` for the whole file (BOM, header, rows, each record ending in CRLF). The React app's `lib/csv.ts` mirrors it.
+
+| Field | Value in the library | Written to the file |
+|---|---|---|
+| Artist (typed) | `-Ki` | `'-Ki` |
+| Title (scraped) | `=Hello` | `'=Hello` |
+| Notes (typed) | `=1+2, then the drop` | `"'=1+2, then the drop"` (guarded, then quoted for the comma) |
+| Tag (typed) | `@peak` | `'@peak` |
+| Title | `Glue` | `Glue` |
+| Key shift (number the export writes) | −1 | `-1` |
+| BPM | 124.5 | `124.5` |
+
+```
+Slot,Artist,Title,BPM,Key,Energy,Notes
+1,'-Ki,Ten,124,8A,6,
+2,Bicep,'=Hello,128,8A,7,"'=1+2, then the drop"
+```
+(The file starts with the BOM and every line ends in CRLF.)
 
 ### JSON
 

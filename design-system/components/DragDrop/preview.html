@@ -1,0 +1,267 @@
+<!-- @dsCard group="Inputs" height=1180 subtitle="Reorder the running order and drag crate tracks into it: grip handle, 4px threshold, name-only ghost, dashed target with the outcome in words, insertion line, locked slot refuses, full keyboard path, Undo toast; static held, target and locked states" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>DragDrop — preview</title>
+<style>
+  .pv-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr); gap: var(--space-4); align-items: start; }
+  .pv-col { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+  .pv-states { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: var(--space-4); align-items: start; }
+  .pv-crate td:first-child, .pv-crate th:first-child { width: 1%; }
+  @media (max-width: 1099px) { .pv-two { grid-template-columns: minmax(0, 1fr); } }
+</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Try it: drag a handle, or focus a handle and press Space (Up and Down choose the slot, Enter or Space drops, Escape cancels)</div>
+  <div class="pv-two">
+    <div class="pv-col">
+      <h3 class="sn-title title-s" id="crate-t"><span class="sn-lead">Crate:</span> 3 tracks</h3>
+      <div class="sn-card">
+        <div class="sn-tablebox"><table class="sn-table pv-crate" aria-labelledby="crate-t">
+          <thead><tr><th scope="col"><span class="sn-sr">Drag</span></th><th scope="col">Track</th><th scope="col" class="sn-num">BPM</th><th scope="col">Key</th></tr></thead>
+          <tbody id="crate"></tbody>
+        </table></div>
+      </div>
+    </div>
+    <div class="pv-col">
+      <h3 class="sn-title title-s" id="ro-t"><span class="sn-lead">Running order:</span> Peak time Friday</h3>
+      <ol class="sn-set-slot-list sn-set-slot-list--drag" id="list" aria-labelledby="ro-t"></ol>
+    </div>
+  </div>
+  <p class="sn-sr" id="dd-help">Press Space to pick up. Up and Down choose the slot, Enter or Space drops, Escape cancels. Move up and Move down do the same one step at a time.</p>
+  <div class="sn-sr" aria-live="polite" id="say"></div>
+
+  <div class="sn-preview__label">States (static)</div>
+  <div class="pv-states" inert>
+    <div class="pv-col">
+      <span class="body-s">Held: the ghost carries the name only</span>
+      <div><span class="sn-drag-ghost sn-drag-ghost--static"><span class="sn-drag-ghost__name">Bicep – Glue</span></span></div>
+    </div>
+    <div class="pv-col">
+      <span class="body-s">Over a locked slot: nothing will drop</span>
+      <div><span class="sn-drag-ghost sn-drag-ghost--static" data-locked><span id="lockicon"></span><span class="sn-drag-ghost__name">Locked: can’t drop here</span></span></div>
+    </div>
+    <div class="pv-col">
+      <span class="body-s">Target: dashed outline, insertion line and the outcome; the item left behind is dimmed</span>
+      <ol class="sn-set-slot-list sn-set-slot-list--drag sn-drop-target" id="static-list" aria-label="Running order while dragging"></ol>
+    </div>
+  </div>
+</div>
+<div class="sn-toast__region" role="status" aria-live="polite" aria-label="Notifications" id="toasts"></div>
+<script>
+(function () {
+  var S = window.SongNodes;
+  var slots = [
+    { a: "Josh Baker", t: "Lost In Muzik", b: 126, k: "8A", e: 6 },
+    { a: "Peggy Gou", t: "(It Goes Like) Nanana", b: 124, k: "8A", e: 7 },
+    { a: "Interplanetary Criminal", t: "Slow Burner", b: 128, k: "9A", e: 7, locked: true },
+    { a: "Bicep", t: "Glue", b: 128, k: "8A", e: 6 },
+    { a: "Sammy Virji", t: "If U Need It", b: 130, k: "9A", e: 8 }
+  ];
+  var crate = [
+    { a: "Overmono", t: "So U Kno", b: 130, k: "9A", e: 7 },
+    { a: "Chaos In The CBD", t: "Midnight In Peckham", b: 122, k: "4A", e: 5 },
+    { a: "Fred again..", t: "Delilah (pull me out of this)", b: 128, k: "11B", e: 8 }
+  ];
+  var listEl = document.getElementById("list"), crateEl = document.getElementById("crate"), sayEl = document.getElementById("say");
+  function nm(x) { return x.a + " – " + x.t; }
+  function say(t) { sayEl.textContent = ""; setTimeout(function () { sayEl.textContent = t; }, 30); }
+  function handle(label, attrs) {
+    return '<button class="sn-drag-handle" type="button" aria-label="' + S.esc(label) + '" aria-describedby="dd-help"' + attrs + '>' + S.icon("grip-vertical", { size: 16 }) + "</button>";
+  }
+  function btn(icon, label, extra) { return '<button class="sn-btn sn-btn--quiet sn-btn--sm sn-btn--icon" type="button" aria-label="' + S.esc(label) + '"' + (extra || "") + ">" + S.icon(icon) + "</button>"; }
+  function trackCell(x) {
+    return '<div class="sn-track-cell"><span class="sn-track-cell__title"><span class="sn-track-cell__name" title="' + S.esc(nm(x)) + '"><span class="sn-track-cell__artist">' + S.esc(x.a) + " –</span> " + S.esc(x.t) + "</span></span></div>";
+  }
+  function slotHTML(s, i, n, opts) {
+    opts = opts || {};
+    var num = i + 1, name = nm(s);
+    return '<li class="sn-set-slot' + (opts.origin ? " sn-drag-origin" : "") + '" data-i="' + i + '"' + (s.locked ? " data-locked" : "") + ' aria-label="Slot ' + num + ": " + S.esc(name) + (s.locked ? ", locked" : "") + '">' +
+      '<span class="sn-set-slot__n">' + handle("Drag " + name + ", slot " + num, ' data-from="slot" data-i="' + i + '"') + num + "</span>" +
+      '<span class="sn-set-slot__energy">' + S.html.energy(s.e) + "</span>" +
+      '<span class="sn-set-slot__track">' + trackCell(s) + "</span>" +
+      '<span class="sn-set-slot__data"><span class="sn-bpm"><b>' + s.b + "</b></span>" + S.html.key(s.k) + "</span>" +
+      '<span class="sn-set-slot__act">' + btn(s.locked ? "lock" : "lock-open", "Lock slot " + num, ' aria-pressed="' + !!s.locked + '" data-act="lock" data-i="' + i + '"') +
+      btn("arrow-up", "Move slot " + num + " up", ' data-act="up" data-i="' + i + '"' + (i === 0 || s.locked ? " disabled" : "")) +
+      btn("arrow-down", "Move slot " + num + " down", ' data-act="down" data-i="' + i + '"' + (i === n - 1 || s.locked ? " disabled" : "")) + "</span></li>";
+  }
+  function render() {
+    listEl.innerHTML = slots.map(function (s, i) { return slotHTML(s, i, slots.length); }).join("");
+    crateEl.innerHTML = crate.map(function (x, i) {
+      return '<tr data-c="' + i + '"><td>' + handle("Drag " + nm(x) + " into the running order", ' data-from="crate" data-i="' + i + '"') + "</td><td>" + trackCell(x) + '</td><td class="sn-num"><span class="sn-bpm"><b>' + x.b + "</b></span></td><td>" + S.html.key(x.k) + "</td></tr>";
+    }).join("");
+  }
+
+  /* ---- placing an item: locked slots are fixed points; the others close up around them ---- */
+  function place(arr, item, to, copy, from) {
+    var n = copy ? arr.length + 1 : arr.length, out = new Array(n), free = [], rest = [], i;
+    arr.forEach(function (s, j) { if (s.locked) out[j] = s; else if (copy || j !== from) rest.push(s); });
+    for (i = 0; i < n; i++) if (!out[i]) free.push(i);
+    var k = free.indexOf(to); if (k < 0) return null;
+    rest.splice(k, 0, item);
+    free.forEach(function (p, q) { out[p] = rest[q]; });
+    return out;
+  }
+  function isFree(arr, to, copy) { var n = copy ? arr.length + 1 : arr.length; return to >= 0 && to < n && !(arr[to] && arr[to].locked); }
+
+  /* ---- shared drag state (pointer and keyboard) ---- */
+  var D = null; // { copy, from, item, name, to, locked, ghost, kb, handle }
+  function clearTarget() {
+    listEl.classList.remove("sn-drop-target");
+    var l = listEl.querySelector(".sn-drop-line"); if (l) l.remove();
+  }
+  function showTarget() {
+    clearTarget();
+    if (D.to == null || (!D.copy && D.to === D.from)) return;
+    listEl.classList.add("sn-drop-target");
+    var line = document.createElement("li");
+    line.className = "sn-drop-line"; line.setAttribute("aria-hidden", "true");
+    line.innerHTML = '<span class="sn-drop-text">' + (D.copy ? "Drop to add as slot " : "Drop to move to slot ") + (D.to + 1) + "</span>";
+    var rows = listEl.querySelectorAll(".sn-set-slot"), after = !D.copy && D.to > D.from;
+    if (D.copy && D.to >= rows.length) listEl.appendChild(line);
+    else if (after) rows[D.to].after(line); else rows[D.to].before(line);
+  }
+  function setGhost(locked) {
+    if (!D.ghost) return;
+    D.locked = locked;
+    if (locked) { D.ghost.setAttribute("data-locked", ""); D.ghost.innerHTML = S.icon("lock", { size: 16 }) + '<span class="sn-drag-ghost__name">Locked: can’t drop here</span>'; }
+    else { D.ghost.removeAttribute("data-locked"); D.ghost.innerHTML = '<span class="sn-drag-ghost__name">' + S.esc(D.name) + "</span>"; }
+  }
+  function begin(h, kb) {
+    var copy = h.getAttribute("data-from") === "crate", i = +h.getAttribute("data-i");
+    D = { copy: copy, from: copy ? -1 : i, item: copy ? crate[i] : slots[i], kb: kb, handle: h, to: null };
+    D.name = nm(D.item);
+    if (!copy) { var row = h.closest(".sn-set-slot"); row.classList.add("sn-drag-origin"); }
+    h.setAttribute("aria-pressed", "true");
+  }
+  function end() {
+    if (!D) return;
+    clearTarget();
+    if (D.ghost) D.ghost.remove();
+    var o = listEl.querySelector(".sn-drag-origin"); if (o) o.classList.remove("sn-drag-origin");
+    if (D.handle) D.handle.removeAttribute("aria-pressed");
+    stopScroll(); D = null;
+  }
+  function drop() {
+    var d = D, before = slots.slice(), to = d.to;
+    if (to == null || d.locked || (!d.copy && to === d.from)) { end(); if (d.kb) say("Cancelled. " + d.name + (d.copy ? " stays in the crate." : " stays in slot " + (d.from + 1) + ".")); return; }
+    var next = place(slots, d.copy ? { a: d.item.a, t: d.item.t, b: d.item.b, k: d.item.k, e: d.item.e } : d.item, to, d.copy, d.from);
+    end(); if (!next) return;
+    slots = next; render();
+    var at = slots.indexOf(d.copy ? next[to] : d.item);
+    var msg = (d.copy ? "Added " + d.name + " as slot " : "Moved " + d.name + " to slot ") + (at + 1);
+    toast(msg, function () { slots = before; render(); say("Undone. " + d.name + (d.copy ? " taken out of the running order." : " is back in slot " + (d.from + 1) + ".")); });
+    var h = listEl.querySelector('.sn-drag-handle[data-i="' + at + '"]'); if (h && d.kb) h.focus();
+  }
+
+  /* ---- pointer: 4px threshold, ghost follows, hit-test the slot under the pointer, edge auto-scroll ---- */
+  var P = null;
+  document.addEventListener("pointerdown", function (e) {
+    var h = e.target.closest(".sn-drag-handle"); if (!h || e.button !== 0 || D) return;
+    P = { h: h, x: e.clientX, y: e.clientY, id: e.pointerId }; h.setPointerCapture(e.pointerId); e.preventDefault();
+  });
+  document.addEventListener("pointermove", function (e) {
+    if (!P || e.pointerId !== P.id) return;
+    if (!D) { if (Math.abs(e.clientX - P.x) < 4 && Math.abs(e.clientY - P.y) < 4) return; begin(P.h, false); D.ghost = document.createElement("div"); D.ghost.className = "sn-drag-ghost"; D.ghost.setAttribute("aria-hidden", "true"); document.body.appendChild(D.ghost); setGhost(false); }
+    D.ghost.style.transform = "translate(" + (e.clientX + 12) + "px," + (e.clientY + 8) + "px)";
+    P.cx = e.clientX; P.cy = e.clientY; hit(e.clientX, e.clientY); edge(e.clientY);
+  });
+  function hit(x, y) {
+    var el = document.elementFromPoint(x, y), row = el && el.closest(".sn-set-slot");
+    if (!row || !listEl.contains(row)) { D.to = null; setGhost(false); clearTarget(); return; }
+    var i = +row.getAttribute("data-i");
+    if (slots[i].locked) { D.to = null; setGhost(true); clearTarget(); return; }
+    setGhost(false);
+    if (D.copy) { var r = row.getBoundingClientRect(), to = y > r.top + r.height / 2 ? i + 1 : i; while (to <= slots.length && !isFree(slots, to, true)) to++; D.to = to; }
+    else D.to = i;
+    showTarget();
+  }
+  function finishPointer(e, cancel) {
+    if (!P || e.pointerId !== P.id) return;
+    P = null; if (!D) return;
+    if (cancel) end(); else drop();
+  }
+  document.addEventListener("pointerup", function (e) { finishPointer(e, false); });
+  document.addEventListener("pointercancel", function (e) { finishPointer(e, true); });
+  var scrollRaf = 0, scrollV = 0;
+  function edge(y) {
+    var band = 48; scrollV = y < band ? -(band - y) / 3 : y > window.innerHeight - band ? (y - (window.innerHeight - band)) / 3 : 0;
+    if (scrollV && !scrollRaf) scrollRaf = requestAnimationFrame(tick);
+  }
+  function tick() { scrollRaf = 0; if (!D || !scrollV) return; window.scrollBy(0, scrollV); if (P && P.cx != null) hit(P.cx, P.cy); scrollRaf = requestAnimationFrame(tick); }
+  function stopScroll() { scrollV = 0; if (scrollRaf) cancelAnimationFrame(scrollRaf); scrollRaf = 0; }
+
+  /* ---- keyboard: Space picks up, Up/Down move, Enter or Space drops, Escape cancels; every step announced ---- */
+  function step(dir) {
+    var n = D.copy ? slots.length + 1 : slots.length, to = D.to == null ? (D.copy ? n - 1 : D.from) : D.to, skipped = [];
+    do { to += dir; if (to >= 0 && to < n && !isFree(slots, to, D.copy)) skipped.push(to + 1); } while (to >= 0 && to < n && !isFree(slots, to, D.copy));
+    if (to < 0 || to >= n) { say(D.name + " is already at the " + (dir < 0 ? "top." : "end.")); return; }
+    D.to = to; showTarget();
+    say(D.name + ", " + (D.copy ? "to be slot " : "over slot ") + (to + 1) + (skipped.length ? " (slot " + skipped.join(", ") + " is locked)" : "") + ". Enter or Space to drop, Escape to cancel.");
+  }
+  document.addEventListener("keydown", function (e) {
+    var h = e.target.closest && e.target.closest(".sn-drag-handle");
+    if (h && (e.key === " " || e.key === "Enter")) {
+      e.preventDefault();
+      if (D && D.kb) { drop(); return; }
+      if (e.key === " " && !D) {
+        begin(h, true);
+        if (D.copy) { var t = slots.length; while (t > 0 && !isFree(slots, t, true)) t--; D.to = t; showTarget(); }
+        say(D.name + ", picked up from " + (D.copy ? "the crate" : "slot " + (D.from + 1)) + ". Up and Down choose the slot, Enter or Space to drop, Escape to cancel.");
+      }
+      return;
+    }
+    if (D && D.kb && (e.key === "ArrowUp" || e.key === "ArrowDown")) { e.preventDefault(); step(e.key === "ArrowUp" ? -1 : 1); return; }
+    if (D && e.key === "Escape") { e.preventDefault(); var d = D; end(); P = null; say("Cancelled. " + d.name + (d.copy ? " stays in the crate." : " stays in slot " + (d.from + 1) + ".")); return; }
+    // Alt+Up / Alt+Down on a focused slot: the single-step path SetSlot already had
+    var row = e.target.closest && e.target.closest(".sn-set-slot");
+    if (!D && row && listEl.contains(row) && e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) { e.preventDefault(); nudge(+row.getAttribute("data-i"), e.key === "ArrowUp" ? -1 : 1, "kbd"); }
+  });
+  document.addEventListener("focusout", function (e) { if (D && D.kb && e.target === D.handle && !e.relatedTarget) return; if (D && D.kb && e.target === D.handle) { var d = D; end(); say("Cancelled. " + d.name + (d.copy ? " stays in the crate." : " stays in slot " + (d.from + 1) + ".")); } });
+
+  /* ---- Move up / Move down (WCAG 2.5.7): swap with the neighbour unless it is locked; announced, no toast ---- */
+  function nudge(i, dir, how) {
+    var j = i + dir, s = slots[i];
+    if (j < 0 || j >= slots.length || s.locked) return;
+    if (slots[j].locked) { say("Slot " + (j + 1) + " is locked."); return; }
+    slots[i] = slots[j]; slots[j] = s; render();
+    say(nm(s) + " moved to slot " + (j + 1) + ".");
+    var f = listEl.querySelector(how === "kbd" ? '.sn-drag-handle[data-i="' + j + '"]' : '[data-act="' + (dir < 0 ? "up" : "down") + '"][data-i="' + j + '"]');
+    if (f && f.disabled) f = listEl.querySelector('.sn-drag-handle[data-i="' + j + '"]');
+    if (f) f.focus();
+  }
+  listEl.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-act]"); if (!b || b.disabled) return;
+    var i = +b.getAttribute("data-i"), a = b.getAttribute("data-act");
+    if (a === "lock") { slots[i].locked = !slots[i].locked; render(); say("Slot " + (i + 1) + (slots[i].locked ? " locked." : " unlocked.")); var f = listEl.querySelector('[data-act="lock"][data-i="' + i + '"]'); if (f) f.focus(); return; }
+    nudge(i, a === "up" ? -1 : 1, "btn");
+  });
+
+  /* ---- Toast with Undo: one at a time, 8 s with an action, paused on hover and focus ---- */
+  var region = document.getElementById("toasts"), tt = 0;
+  function toast(text, undo) {
+    region.innerHTML = '<div class="sn-toast"><span class="sn-toast__icon">' + S.icon("circle-check") + '</span><span class="sn-toast__text">' + S.esc(text) + '</span><button class="sn-btn sn-btn--sm sn-toast__action" type="button">Undo</button><button class="sn-btn sn-btn--sm sn-btn--icon sn-btn--quiet sn-toast__close" type="button" aria-label="Dismiss notification">' + S.icon("x") + "</button></div>";
+    var t = region.firstChild;
+    function close() { clearTimeout(tt); region.innerHTML = ""; }
+    function arm() { clearTimeout(tt); tt = setTimeout(close, 8000); }
+    t.querySelector(".sn-toast__action").addEventListener("click", function () { close(); undo(); });
+    t.querySelector(".sn-toast__close").addEventListener("click", close);
+    t.addEventListener("mouseenter", function () { clearTimeout(tt); }); t.addEventListener("mouseleave", arm);
+    t.addEventListener("focusin", function () { clearTimeout(tt); }); t.addEventListener("focusout", arm);
+    arm();
+  }
+
+  render();
+
+  /* ---- static states ---- */
+  document.getElementById("lockicon").outerHTML = S.icon("lock", { size: 16 });
+  var st = [slots[0], slots[3], slots[1]];
+  var sl = document.getElementById("static-list");
+  sl.innerHTML = st.map(function (s, i) { return slotHTML(s, i, 3, { origin: i === 0 }); }).join("");
+  var line = document.createElement("li"); line.className = "sn-drop-line"; line.setAttribute("aria-hidden", "true");
+  line.innerHTML = '<span class="sn-drop-text">Drop to move to slot 3</span>';
+  sl.appendChild(line);
+})();
+</script>
+</body>
+</html>

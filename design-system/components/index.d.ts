@@ -625,6 +625,55 @@ export interface DateRangeFieldProps {
   presets?: { id: string; label: string; range: () => [string, string] }[];
   /** "Today" for presets, in Melbourne; defaults to the current date. */
   today?: string;
+  /** Show the icon-only calendar button ("Pick the dates on the calendar") that opens DateRange with focus on the grid. Default true. */
+  calendar?: boolean;
+  /** DateRange options for the calendar (title, outcome, marks, extra presets). */
+  calendarProps?: Partial<Pick<DateRangeProps, "title" | "outcome" | "marks" | "presets">>;
+  /** Called when the calendar opens (for analytics or lazy-loading marks). */
+  onPickOnCalendar?: () => void;
+}
+
+/** A day mark the page passes to DateRange (not a built-in calendar). */
+export interface DateRangeMark {
+  /** ISO date "2026-11-03". Date-only: no time zone. */
+  date: string;
+  /** Short code shown under the number ("PH", "RUN"); omit for a plain data dot ("this day has records"). */
+  code?: string;
+  /** The day's own name, in `title` and the announced name ("Melbourne Cup"). */
+  name: string;
+  /** What kind of mark, for the key and the announced name ("Public holiday", "Weekly library run", "Plays heard"). */
+  kind: string;
+}
+/** Built-in DateRange presets (Monday–Sunday weeks, Melbourne dates). */
+export type DateRangePresetId = "last-7-days" | "last-30-days" | "this-year" | "last-week" | "this-week" | "next-week";
+/** A page's own named span ("Summer 2026–27"). */
+export interface DateRangePreset {
+  id: string;
+  label: string;
+  /** [from, to] ISO dates, or a function giving them (evaluated when pressed). */
+  range: [string, string] | (() => [string, string]);
+}
+export interface DateRangeProps {
+  /** [from, to] ISO dates; to is null while only From is picked. */
+  value: [string | null, string | null];
+  /** Called after each pick, preset or Clear; presetId is the pressed preset, or null. */
+  onChange: (value: [string | null, string | null], presetId: string | null) => void;
+  /** The outcome button: called with the range when pressed (To defaults to From). */
+  onApply: (value: [string, string]) => void;
+  /** Escape or the close button; return focus to the control that opened it. */
+  onClose: () => void;
+  /** Popover title naming what the span is for ("Plays to export"). Default "Pick the dates". */
+  title?: string;
+  /** Outcome button label, named for what it does: "Use these dates" (default), "Download CSV", "Print". */
+  outcome?: string;
+  /** Presets in this order; default ["last-7-days", "last-30-days", "this-year"]; week presets are optional. Then the page's own spans. */
+  presets?: (DateRangePresetId | DateRangePreset)[];
+  /** Day marks; the key lists only the kinds used here. */
+  marks?: DateRangeMark[];
+  /** "Today" as a Melbourne ISO date; defaults to SongNodes.calendar.today(). */
+  today?: string;
+  /** Show the pressed preset (for a value that came from one). */
+  presetId?: string | null;
 }
 
 export interface SecretFieldProps {
@@ -1405,8 +1454,8 @@ export interface LoadingStateProps {
 export interface StagedProgressStep {
   /** Step name, verb first: "Match plays to tracks". */
   name: string;
-  /** done ●, running ↻, waiting –, failed ✕, cancelled –. */
-  state: "done" | "running" | "waiting" | "failed" | "cancelled";
+  /** done ●, running ↻, waiting –, failed ✕, cancelled –, stalled ▲ (1.4.0: the running step sent no progress for `stallSeconds`; status-warn until the person tries again or cancels, never failed by elapsed time). */
+  state: "done" | "running" | "waiting" | "failed" | "cancelled" | "stalled";
   /** Current detail: "Matching 312 of 500 tracks", or the failure reason. */
   detail?: string;
   /** Items done and total for the running step; shows a neutral progress bar when both are known. */
@@ -1415,8 +1464,10 @@ export interface StagedProgressStep {
   total?: number;
   /** Seconds the step took (done/failed). */
   seconds?: number;
-  /** Step-level actions after a failure ("Retry this step", "Skip MixesDB"). */
+  /** Step-level actions after a failure or a stall ("Try again", which resumes from this step; "Skip MixesDB"). */
   actions?: ReactNode;
+  /** Seconds since this step last reported progress; the page turns a running step into `stalled` at `stallSeconds`. */
+  secondsSinceProgress?: number;
 }
 
 export interface StagedProgressProps {
@@ -1434,11 +1485,15 @@ export interface StagedProgressProps {
   onCancel?: () => void;
   /** True when the job runs on the server and survives navigation; shows the "You can leave this page" notice. */
   runsInBackground?: boolean;
+  /** Seconds without progress from the current step before it turns `stalled`. Default 60; elapsed time alone never stalls or fails a job. */
+  stallSeconds?: number;
+  /** Resumes from the stalled step (the step's "Try again"); done steps are kept. */
+  onResume?: (stepIndex: number) => void;
 }
 
 export interface ErrorStateProps {
-  /** Cause; picks icon, status colour and default retry guidance. */
-  kind: "offline" | "timeout" | "auth-expired" | "not-found" | "server" | "validation";
+  /** Cause; picks icon, status colour and default retry guidance. "stalled" (1.4.0): a staged load whose current step sent no progress for 60 s, warn, Try again resumes from that step. */
+  kind: "offline" | "timeout" | "auth-expired" | "not-found" | "server" | "validation" | "stalled";
   /** What happened, in plain words: "TIDAL is slow right now". */
   title: string;
   /** What it affects and what to do next. */
@@ -1993,13 +2048,19 @@ export interface SongNodesHelpers {
   version: string; locale: "en-AU"; timeZone: "Australia/Melbourne";
   modules: { key: ModuleKey; label: string; icon: string; summary: string }[];
   icon(name: string, opts?: { size?: number; label?: string; cls?: string }): string;
+  /** The 109 icon names in the set. An unknown name draws circle-help and logs one console warning (1.3.0). */
+  iconNames: string[];
   camelot(input: string | null | undefined): string | null;
   keyName(code: string): string | null;
   compat(a: string, b: string): { level: CompatLevel; label: string };
   tier(energy: number): "low" | "building" | "high" | null;
   energyStep(prev: number, next: number, before?: number): { level: CompatLevel; label: string };
   bpmStep(a: number, b: number): { level: CompatLevel; label: string };
-  format: { date(d: Date | string): string; day(d: Date | string): string; month(d: Date | string): string; time(d: Date | string): string; dateTime(d: Date | string): string; zone(d: Date | string): string; stamp(d: Date | string): string; relative(d: Date | string, now?: Date): string; duration(seconds: number): string; span(seconds: number): string; count(n: number): string; bpm(b: number): string; percent(x: number, digits?: number): string; dateOnly(isoDate: string): string };
+  format: { date(d: Date | string): string; day(d: Date | string): string; month(d: Date | string): string; time(d: Date | string): string; dateTime(d: Date | string): string; zone(d: Date | string): string; stamp(d: Date | string): string; relative(d: Date | string, now?: Date): string; duration(seconds: number): string; span(seconds: number): string; count(n: number): string; bpm(b: number): string; percent(x: number, digits?: number): string; dateOnly(isoDate: string): string; dayLong(d: Date | string): string; range(from: string, to: string): string };
+  calendar: { today(now?: Date): string; iso(y: number, m: number, d: number): string; month(y: number, m: number): ({ iso: string; y: number; m: number; d: number; wd: number } | null)[][]; addDays(iso: string, n: number): string; addMonths(iso: string, n: number): string; compare(a: string, b: string): -1 | 0 | 1; days(a: string, b: string): number; weekStart(iso: string): string; preset(id: DateRangePresetId, today?: string): [string, string] | null; PRESET_LABELS: Record<DateRangePresetId, string>; MONTHS_LONG: string[]; WDAYS_LONG: string[] };
+  dateRange(el: HTMLElement, opts?: { from?: string | null; to?: string | null; today?: string; title?: string; outcome?: string; preset?: string | null; presets?: (DateRangePresetId | { id: string; label: string; range: [string, string] | (() => [string, string]) })[]; marks?: DateRangeMark[]; onChange?(from: string | null, to: string | null, presetId: string | null): void; onApply?(from: string, to: string): void; onClear?(): void; onClose?(): void }): { el: HTMLElement; get(): { from: string | null; to: string | null; preset: string | null }; set(from: string | null, to: string | null, presetId?: string | null): void; focus(): void; show(iso: string): void };
+  /** CSV writer (15-print-export, 1.4.0): UTF-8 with BOM, CRLF, RFC 4180 quoting, and the formula guard (a text cell starting with = + - @, tab or CR gets a leading apostrophe; numbers the export writes are never guarded). */
+  csv: { BOM: "﻿"; EOL: "\r\n"; guarded(text: string): boolean; cell(value: string | number | null | undefined, opts?: { numeric?: boolean }): string; row(values: (string | number | null | undefined | { value: string | number | null | undefined; numeric?: boolean })[]): string; file(header: string[], rows: (string | number | null | undefined | { value: string | number | null | undefined; numeric?: boolean })[][]): string };
   status(raw: string, domain?: "confidence" | "priority"): { status: DesignStatus; label: string; glyph: string };
   html: { energy(e: number): string; key(k: string, withName?: boolean): string; pill(raw: string, label?: string): string; compat(level: CompatLevel, label?: string): string; link(mod: ModuleKey, href: string, text: string): string; title(lead: string, title: string, size?: "title-l" | "title-m" | "title-s"): string };
   prefs: { init(): void; setTheme(t: "dark" | "light" | "booth" | "system"): void; setTextSize(s: "s" | "m" | "l" | "xl"): void; setDensity(d: "comfortable" | "compact"): void; setMotion(m: "system" | "reduce" | "full"): void; get(): { theme: string; textSize: string; density: string; motion: string } };

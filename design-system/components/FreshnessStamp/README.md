@@ -18,6 +18,7 @@ Says how current the data on screen is: an absolute Melbourne stamp, a relative 
 - Stale: after `staleAfterDays` (default 8 for weekly data; set per source, for example 2 for daily radio plays) the relative age is replaced by the warning, with ▲ and the age in days.
 - Refreshing: spinner and "Updating…". The old stamp stays until new data lands, then everything swaps in one step.
 - Never loaded: "–" and "not loaded yet".
+- After a staged first load (1.4.0): a "How this was read" `Disclosure` directly under the stamp holds the finished step counts and timings that `StagedProgress` showed ("Read the library · 2,410 tracks · 0:09"), so they stay available after the step list has gone.
 - Short form: "Updated 30 min ago" with the absolute stamp in `title`, for headers and card footers.
 
 ## Content rules
