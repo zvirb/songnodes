@@ -635,16 +635,15 @@ cd frontend && npm run test:e2e -- --workers=1
 
 ```html
 <div class="sn-launcher-card__grid">
-  <a class="sn-card sn-card--tonal sn-launcher-card sn-m-pipeline" href="/pipeline"
-     aria-labelledby="lc-t" aria-describedby="lc-s lc-f lc-p">
+  <div class="sn-card sn-card--tonal sn-launcher-card sn-m-pipeline">
     <div class="sn-card__head"><span class="sn-launcher-card__icon">…activity…</span>
       <span class="sn-pill" data-status="bad" id="lc-p">2 paused after errors</span></div>
-    <h3 class="sn-title title-s" id="lc-t"><span class="sn-lead">Pipeline:</span> 9 scrapers</h3>
+    <h3 class="sn-title title-s" id="lc-t"><a class="sn-launcher-card__link" href="/pipeline" aria-describedby="lc-s lc-f lc-p"><span class="sn-lead">Pipeline:</span> 9 scrapers</a></h3>
     <p class="sn-launcher-card__summary" id="lc-s">MixesDB and Setlist.fm paused after repeated errors.</p>
     <dl class="sn-launcher-card__figures" id="lc-f">
       <div class="sn-launcher-card__figure"><dt>running</dt><dd>7</dd></div>
       <div class="sn-launcher-card__figure"><dt>paused</dt><dd>2</dd></div></dl>
-  </a></div>
+  </div></div>
 ```
 
 #### NavDrawer

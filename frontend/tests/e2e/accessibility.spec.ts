@@ -11,10 +11,7 @@ const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
  * named rule on the named element; any other node or rule still fails the test.
  */
 const EXCEPTIONS: { id: string; rule: string; matches: (html: string) => boolean }[] = [
-  // design-system exception EX-001: the wordmark is a logotype (WCAG 1.4.3 exemption)
-  { id: 'EX-001', rule: 'color-contrast', matches: (html) => html.includes('sn-app-header__wordmark') },
-  // design-system exception EX-002: LauncherCard is named from its title, as the design system specifies
-  { id: 'EX-002', rule: 'label-content-name-mismatch', matches: (html) => html.includes('sn-launcher-card') },
+  // EX-001 and EX-002 were closed in design system 1.2.0 (fixed); none are open.
 ];
 
 function blocking(violations: Result[]): string[] {
@@ -51,9 +48,13 @@ test('the open NavDrawer has no serious or critical axe violations', async ({ pa
   expect(blocking(results.violations)).toEqual([]);
 });
 
-test('the exceptions only cover elements that exist', async ({ page }) => {
-  // Keeps EX-001/EX-002 honest: if the markup changes, revisit the register.
+test('the fixes that closed EX-001 and EX-002 stay in place', async ({ page }) => {
   await openRoute(page, '/');
+  // EX-002: each launcher card's link is its title, so the accessible name is the visible text.
+  const links = page.locator('.sn-launcher-card .sn-launcher-card__link');
+  expect(await links.count()).toBeGreaterThan(0);
+  const first = links.first();
+  await expect(first).toHaveAccessibleName((await first.innerText()).replace(/\s+/g, ' ').trim());
+  // EX-001: the wordmark is present and checked by axe like any other text (no exception).
   await expect(page.locator('.sn-app-header__wordmark')).toHaveCount(1);
-  expect(await page.locator('a.sn-launcher-card').count()).toBeGreaterThan(0);
 });

@@ -79,17 +79,20 @@ export const LauncherCard: React.FC<{ mod: ModuleKey; title: string; summary: st
   const m = moduleOf(mod);
   const id = `lc-${mod}`;
   return (
-    <Link
-      className={`sn-card sn-card--tonal sn-launcher-card sn-m-${mod}`}
-      to={to ?? MODULE_ROUTES[mod]}
-      aria-labelledby={`${id}-t`}
-      aria-describedby={`${id}-s${figures.length ? ` ${id}-f` : ''}${pill ? ` ${id}-p` : ''}`}
-    >
+    <div className={`sn-card sn-card--tonal sn-launcher-card sn-m-${mod}`}>
       <div className="sn-card__head">
         <span className="sn-launcher-card__icon"><SnIcon name={m.icon} /></span>
         {pill ? <span id={`${id}-p`}>{pill}</span> : null}
       </div>
-      <h3 className="sn-title title-s" id={`${id}-t`}><span className="sn-lead">{m.label}:</span> {title}</h3>
+      <h3 className="sn-title title-s" id={`${id}-t`}>
+        <Link
+          className="sn-launcher-card__link"
+          to={to ?? MODULE_ROUTES[mod]}
+          aria-describedby={`${id}-s${figures.length ? ` ${id}-f` : ''}${pill ? ` ${id}-p` : ''}`}
+        >
+          <span className="sn-lead">{m.label}:</span> {title}
+        </Link>
+      </h3>
       <p className="sn-launcher-card__summary" id={`${id}-s`}>{summary}</p>
       {figures.length ? (
         <dl className="sn-launcher-card__figures" id={`${id}-f`}>
@@ -98,6 +101,6 @@ export const LauncherCard: React.FC<{ mod: ModuleKey; title: string; summary: st
           ))}
         </dl>
       ) : null}
-    </Link>
+    </div>
   );
 };

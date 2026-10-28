@@ -16,6 +16,8 @@
 .sn-app-header__bar { display: flex; align-items: center; gap: var(--space-2); height: var(--header-h); padding: 0 var(--space-3); min-width: 0; }
 .sn-app-header__start { display: flex; align-items: center; gap: var(--space-2); flex: none; }
 .sn-app-header__wordmark { font: 800 1.125rem/1 var(--font-display); color: var(--brand); letter-spacing: -0.01em; white-space: nowrap; }
+/* 1.2.0 (closes EX-001): in dark, brand #9b85cb is 4.33:1 on surface-1; the wordmark uses brand-strong like dark links (DR-022). */
+:root:not([data-theme="light"]):not([data-theme="booth"]) .sn-app-header__wordmark { color: var(--brand-strong); }
 .sn-app-header__divider { width: 1px; height: 20px; background: var(--line-strong); flex: none; }
 .sn-app-header__title { flex: 1 1 auto; min-width: 0; margin: 0; font: 700 0.9375rem/1.2 var(--font-display); color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sn-app-header__title .sn-lead { font-weight: 400; color: var(--fg-3); }
@@ -176,7 +178,14 @@
 
 /* ===== LauncherCard (extends core a.sn-card.sn-card--tonal) =========== */
 .sn-launcher-card__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: var(--space-4); }
-.sn-launcher-card { min-height: 188px; }
+.sn-launcher-card { position: relative; min-height: 188px; transition: border-color var(--duration-fast) var(--ease-standard); }
+/* 1.2.0 (closes EX-002): the title is the link and stretches over the card, so the link's name is its visible text. */
+.sn-launcher-card__link { color: inherit; text-decoration: none; }
+.sn-launcher-card__link::after { content: ""; position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
+.sn-launcher-card__link:focus-visible { outline: none; }
+.sn-launcher-card:has(.sn-launcher-card__link:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
+[data-theme="booth"] .sn-launcher-card:has(.sn-launcher-card__link:focus-visible) { outline-width: 3px; }
+.sn-launcher-card:has(.sn-launcher-card__link:hover) { border-color: var(--m, var(--line-strong)); }
 .sn-launcher-card .sn-card__head { justify-content: space-between; }
 .sn-launcher-card__icon { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: var(--radius-control); background: var(--m-raised); color: var(--m-ink); }
 .sn-launcher-card__icon .sn-icon { width: 1.25rem; height: 1.25rem; }
