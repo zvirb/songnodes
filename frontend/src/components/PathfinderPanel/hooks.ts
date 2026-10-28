@@ -11,6 +11,8 @@ import { PathfinderContext, WizardStep } from './types';
 import { Track } from '../../types';
 import { adaptServerPath } from '../../utils/serverPath';
 import { SN } from '../../lib/songnodes';
+import { routeTracksFromNodes } from '../../utils/trackMetadata';
+import { useState } from 'react';
 
 /**
  * Main pathfinder hook - integrates XState machine with Zustand store
@@ -86,6 +88,37 @@ export function usePathfinder() {
     }
   }, [state.context.announcement, send]);
 
+  const [skippedCount, setSkippedCount] = useState(0);
+
+  const calculate = useCallback(() => {
+    if (graphData.nodes.length === 0) {
+      send({ type: 'PATH_ERROR', error: 'The graph has not loaded yet.' } as any);
+      return;
+    }
+
+    let skipCount = 0;
+    const validNodes = graphData.nodes.filter((node) => {
+      const durationMs = node.track?.duration_ms ?? node.duration_ms ?? (node.metadata as any)?.duration_ms;
+      if (!durationMs || durationMs <= 0) {
+        skipCount++;
+        return false;
+      }
+      return true;
+    });
+
+    setSkippedCount(skipCount);
+
+    const tracksData = routeTracksFromNodes(validNodes);
+    const edgesData = graphData.edges.map(edge => ({
+      from_id: edge.source,
+      to_id: edge.target,
+      weight: edge.weight || 1.0,
+      connection_type: edge.type || 'sequential'
+    }));
+
+    send({ type: 'CALCULATE_PATH', tracks: tracksData, edges: edgesData } as any);
+  }, [graphData.nodes, graphData.edges, send]);
+
   return {
     state: state.context,
     machineState: state.value,
@@ -95,6 +128,8 @@ export function usePathfinder() {
     isCalculating: state.matches('calculating'),
     hasResult: state.matches('success'),
     hasError: state.matches('error'),
+    calculate,
+    skippedCount,
   };
 }
 

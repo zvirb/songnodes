@@ -25,6 +25,8 @@ const initialContext: PathfinderContext = {
   currentStep: 'selectStart',
   completedSteps: new Set(),
   announcement: '',
+  tracks: [],
+  edges: [],
 };
 
 async function calculatePath(context: PathfinderContext): Promise<PathfinderResult> {
@@ -38,11 +40,8 @@ async function calculatePath(context: PathfinderContext): Promise<PathfinderResu
     tolerance_ms: context.constraints.tolerance * 60 * 1000,
     waypoint_track_ids: context.waypoints.map((w) => w.track.id),
     prefer_key_matching: context.constraints.preferKeyMatching,
-    // Additional constraints if needed
-    min_bpm: context.constraints.minBpm,
-    max_bpm: context.constraints.maxBpm,
-    allowed_keys: context.constraints.allowedKeys,
-    max_energy_change: context.constraints.maxEnergyChange,
+    tracks: context.tracks,
+    edges: context.edges,
   };
 
   const response = await fetch(`${REST_API_BASE}/api/v1/pathfinder/find-path`, {
@@ -54,8 +53,14 @@ async function calculatePath(context: PathfinderContext): Promise<PathfinderResu
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ detail: 'Pathfinding failed' }));
-    throw new Error(errorData.detail || 'Pathfinding failed');
+    const errorData = await response.json().catch(() => ({ detail: `Pathfinding failed (HTTP ${response.status})` }));
+    let msg = errorData.detail || `Pathfinding failed (HTTP ${response.status})`;
+    if (Array.isArray(errorData.detail)) {
+      msg = errorData.detail.map((e: any) => e.msg).join('; ');
+    } else if (typeof errorData.detail !== 'string') {
+      msg = `Pathfinding failed (HTTP ${response.status})`;
+    }
+    throw new Error(msg);
   }
 
   return await response.json();
@@ -239,6 +244,8 @@ export const pathfinderMachine = setup({
           target: 'calculating',
           guard: ({ context }) => context.startTrack !== null,
           actions: assign({
+            tracks: ({ event }) => event.tracks,
+            edges: ({ event }) => event.edges,
             error: null,
             announcement: () => 'Calculating optimal path…',
           }),
