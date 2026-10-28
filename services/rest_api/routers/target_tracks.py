@@ -2,7 +2,8 @@
 from typing import List, Literal, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException
+import time
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field, field_validator
 
 router = APIRouter(prefix="/api/v1/target-tracks", tags=["target-tracks"])
@@ -101,3 +102,35 @@ async def delete_target(track_id: UUID):
         deleted = await conn.fetchval('DELETE FROM target_tracks WHERE track_id = $1 RETURNING track_id', track_id)
     if deleted is None:
         raise HTTPException(status_code=404, detail="Target track not found")
+
+
+@router.post('/{track_id}/search', status_code=202)
+async def search_target(track_id: UUID, source: str = Query('1001tracklists', min_length=1, max_length=100)):
+    async with get_pool().acquire() as conn:
+        row = await conn.fetchrow("""
+            UPDATE target_tracks
+            SET last_searched = NOW(), updated_at = NOW()
+            WHERE track_id = $1
+            RETURNING *
+        """, track_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Target track not found")
+
+        search_query = f"{row['artist']} {row['title']}".strip()
+        payload = {
+            'source': source,
+            'search_query': search_query,
+            'target_track_id': str(track_id),
+        }
+        idempotency_key = f"target-search:{track_id}:{int(time.time())}"
+        from common.datalayer import jobs as domain
+        job_row, created = await domain.enqueue(conn, 'scrape', idempotency_key, payload)
+
+    return {
+        'status': 'queued',
+        'job_id': str(job_row['id']),
+        'track_id': str(track_id),
+        'search_query': search_query,
+        'source': source,
+        'created': created,
+    }

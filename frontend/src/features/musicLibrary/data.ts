@@ -105,24 +105,29 @@ export function mapApiToLibraryTrack(row: any): LibraryTrack {
   };
 }
 
-export function loadLibrary(): Promise<LibraryFile> {
+export function loadLibrary(forceRefresh = false): Promise<LibraryFile> {
+  if (forceRefresh) {
+    cache = null;
+  }
   if (!cache) {
     cache = (async () => {
       try {
         const res = await fetch('/api/v1/library/search?limit=5000');
         if (res.ok) {
-          /* eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-type-assertion */
+          /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
           const json = await res.json() as any[];
-          const tracks = json.map(mapApiToLibraryTrack);
-          return {
-            generated: new Date().toISOString(),
-            ledger_updated: new Date().toISOString(),
-            counts: { tracks: tracks.length, pending: 0, rejected: 0, beatport_check: 0 },
-            sources: [],
-            runs: [],
-            tracks,
-            _source: 'backend' as const
-          };
+          if (json.length > 0) {
+            const tracks = json.map(mapApiToLibraryTrack);
+            return {
+              generated: new Date().toISOString(),
+              ledger_updated: new Date().toISOString(),
+              counts: { tracks: tracks.length, pending: 0, rejected: 0, beatport_check: 0 },
+              sources: [],
+              runs: [],
+              tracks,
+              _source: 'backend' as const
+            };
+          }
         }
       } catch (e) {
         console.warn('API library search error, falling back to static JSON', e);
