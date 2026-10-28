@@ -1446,9 +1446,13 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 
 <!-- SLOT:FL2 BEGIN -->
 ### FL2: Set builder: harmonic and energy transition suggestions
-- Start: _not started_
-- End: _not finished_
-- Note (28 Oct): PR #267 merged with 0 changed files, so FL2 was never delivered; re-sent 28 Oct.
+- Start: 2026-10-28
+- Built: Created `findCompatibleTracks` utility in `transitions.ts` to score Camelot key, BPM, and energy progression. Added a 'Suggest next' button in `SetBuilderPage.tsx` for empty slots and below the last track to display a compact popover with top 5 compatible tracks from the crate, allowing easy appending or swapping directly into the set.
+- Checks run: `cd frontend && npm ci && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build`. Tests for transitions utility pass.
+- Checks not run: Playwright E2E suite due to environment constraints.
+- Reviewer Check: On /sets with a track in slot 1: clicking 'Suggest next' lists harmonically compatible crate tracks; clicking one adds it to slot 2.
+- End: 2026-10-28
+- PR: Pending
 <!-- SLOT:FL2 END -->
 
 <!-- SLOT:FL3 BEGIN -->
