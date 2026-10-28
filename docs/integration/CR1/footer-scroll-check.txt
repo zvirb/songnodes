@@ -1,0 +1,4 @@
+The layout of the `/graph` (GraphExplorerPage) requires a full height canvas without vertical scrolling according to `05-layout.md`.
+Since mounting a footer would introduce a scrollbar and shift content, the footer is skipped on this route by explicitly checking `location.pathname === '/graph'`.
+
+Additionally, the Design System does not currently have a footer component (design-system/06-interaction-accessibility.md:38 only allows a `footer` landmark "where there is one"). We have followed the traceabiliy footer layout (body-s, fg-3, margin) from `15-print-export.md:35`. We propose that a standard `Footer` component gets added to the design system upstream (`design-system/17-governance.md`).
