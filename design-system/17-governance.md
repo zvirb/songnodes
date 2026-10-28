@@ -25,6 +25,8 @@ Newest first. Each entry: version, date (Melbourne), one line per change, prefix
 - Added `MiniAudioPreview` (Music): a 32px preview player with paused, loading, playing and unavailable states and one-at-a-time playback (`.sn-mini-preview`, `__btn`, `__track`, `__fill`, `__time`; `--sn-mini-preview-pct`). Needed by FL4 and the Space action of FL1.
 - Added the FilterChip preset variant: a saved filter view as an apply chip joined to a delete button (`.sn-filter-chip-preset`, `__remove`), in a "Presets" group with "Save current filters". Needed by FL3.
 - Added DataTable keyboard row navigation: `tr[data-active]` (2px `focus` outline, separate from selection) and the focusable box `.sn-data-table__box[data-keyboard]`, with J/K, arrows, Enter, Space, T and X. Needed by FL1. New optional DataTable props: `keyboard`, `activeRowId`, `onActiveRowChange`, `onRowOpen`, `rowShortcuts`.
+- Fixed (closes EX-001): in dark the AppHeader wordmark uses `brand-strong` (#b4a2dc, as dark links do, DR-022) instead of `brand` (4.33:1 on `surface-1`). Light and booth keep `brand`. Decided by Markus, 28 Oct 2026.
+- Changed (closes EX-002): LauncherCard is a `div.sn-card` whose title holds the link `.sn-launcher-card__link`, stretched over the card with `::after`; focus and hover show on the card via `:has()`. The link's name is its visible title (WCAG 2.5.3). Decided by Markus, 28 Oct 2026.
 - No token changed; every new class uses existing tokens.
 
 **1.1.4 — 28 Oct 2026: settings cards and sub-routes**
@@ -139,8 +141,8 @@ All questions raised at the 1.0.0 release were answered on 24 Oct 2026 (DR-018 r
 
 | # | Rule | Why | Scope | Approved | Expires |
 |---|---|---|---|---|---|
-| EX-001 | WCAG 1.4.3 text contrast (axe `color-contrast`) | The AppHeader wordmark is the SongNodes logotype (section 14: the identity is the wordmark), and WCAG 1.4.3 exempts logotypes. Dark `brand` #9b85cb on `surface-1` #2d2d2d measures 4.33:1. | `.sn-app-header__wordmark`, all themes; SongNodes checks it in `frontend/tests/e2e/accessibility.spec.ts` | Markus, 25 Oct 2026 | 1.2.0 |
-| EX-002 | WCAG 2.5.3 label in name (axe `label-content-name-mismatch`) | `LauncherCard` names its link from the title only (`aria-labelledby="lc-t"`), so the visible module label is not part of the accessible name. Kept as specified until the markup is decided. | `.sn-launcher-card` links (HomePage); same test file | Markus, 25 Oct 2026 | 1.2.0 |
+| EX-001 | WCAG 1.4.3 text contrast (axe `color-contrast`) | The AppHeader wordmark is the SongNodes logotype (section 14: the identity is the wordmark), and WCAG 1.4.3 exempts logotypes. Dark `brand` #9b85cb on `surface-1` #2d2d2d measures 4.33:1. | `.sn-app-header__wordmark`, all themes; SongNodes checks it in `frontend/tests/e2e/accessibility.spec.ts` | Markus, 25 Oct 2026 | Closed in 1.2.0 (fixed) |
+| EX-002 | WCAG 2.5.3 label in name (axe `label-content-name-mismatch`) | `LauncherCard` names its link from the title only (`aria-labelledby="lc-t"`), so the visible module label is not part of the accessible name. Kept as specified until the markup is decided. | `.sn-launcher-card` links (HomePage); same test file | Markus, 25 Oct 2026 | Closed in 1.2.0 (fixed) |
 
 ## The sn- namespace
 
