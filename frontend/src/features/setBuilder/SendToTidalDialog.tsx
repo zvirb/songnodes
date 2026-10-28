@@ -36,8 +36,8 @@ export const SendToTidalDialog: React.FC<SendToTidalDialogProps> = ({ open, set,
         onClose();
         setNote('');
       }
-    } catch (e: any) {
-      toast('Failed to send to TIDAL. Please connect TIDAL in Settings if not connected.');
+    } catch (e: unknown) {
+      toast(e instanceof Error && e.message ? e.message : 'Could not send the set to TIDAL. Check the TIDAL connection in Settings.');
     } finally {
       setBusy(false);
     }
