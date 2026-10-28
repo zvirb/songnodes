@@ -409,6 +409,34 @@
   }
   dateRange.n = 0;
 
+  /* ---------- CSV (15-print-export: UTF-8 with BOM, CRLF, RFC 4180 quoting, formula guard) ---------- */
+  /* Formula-injection guard (OWASP CSV injection, imported from BeanAlliance v4.17.1 in 1.4.0): a text cell that
+     starts with = + - @, a tab or a carriage return gets a leading apostrophe, so a spreadsheet shows it as text.
+     The guard runs before quoting. Numbers the export writes itself (a JS number, or a string passed with
+     {numeric: true} that really is a plain number: BPM "124.5", key shift "-1") are never guarded. */
+  var CSV_GUARD = /^[=+\-@\t\r]/;
+  var CSV_NUMBER = /^[-+]?(\d+\.?\d*|\.\d+)$/;
+  var csv = {
+    BOM: "﻿", EOL: "\r\n",
+    /** True when a text cell would be guarded. */
+    guarded: function (s) { return CSV_GUARD.test(String(s)); },
+    /** One field: guard, then quote when it holds a comma, a quote or a line break. null/undefined/NaN → empty. */
+    cell: function (value, opts) {
+      if (value == null || (typeof value === "number" && !isFinite(value))) return "";
+      var s = String(value), numeric = typeof value === "number" || !!(opts && opts.numeric && CSV_NUMBER.test(s));
+      if (!numeric && CSV_GUARD.test(s)) s = "'" + s;
+      return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    },
+    /** One record: values (or {value, numeric} objects) joined by commas, no line end. */
+    row: function (values) {
+      return values.map(function (v) { return v !== null && typeof v === "object" && "value" in v ? csv.cell(v.value, v) : csv.cell(v); }).join(",");
+    },
+    /** A whole file: BOM, the sentence-case header row, then each row, every record ending in CRLF. */
+    file: function (header, rows) {
+      return csv.BOM + [csv.row(header)].concat((rows || []).map(csv.row)).join(csv.EOL) + csv.EOL;
+    }
+  };
+
   /* ---------- preferences (theme, text size, density) ---------- */
   var PREF_KEYS = { theme: "sn-theme", textSize: "sn-text-size", density: "sn-density" };
   function store(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
@@ -427,13 +455,13 @@
   };
 
   window.SongNodes = {
-    version: "1.3.0", DOMAIN_MAP: DOMAIN_MAP,
+    version: "1.4.0", DOMAIN_MAP: DOMAIN_MAP,
     locale: LOCALE, timeZone: TZ,
     modules: MODULES, module: function (k) { for (var i = 0; i < MODULES.length; i++) if (MODULES[i].key === k) return MODULES[i]; return null; },
     icons: ICONS, icon: icon, iconNames: Object.keys(ICONS),
     camelot: camelot, keyName: keyName, compat: compat, KEY_NAMES: KEY_NAMES,
     tier: tier, TIER_LABEL: TIER_LABEL, energyStep: energyStep, bpmStep: bpmStep,
-    format: format, calendar: calendar, dateRange: dateRange, status: status, GLYPH: GLYPH,
+    format: format, calendar: calendar, dateRange: dateRange, csv: csv, status: status, GLYPH: GLYPH,
     html: html, prefs: prefs, esc: esc
   };
 })();

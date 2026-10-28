@@ -62,10 +62,14 @@
 .sn-staged-progress__step[data-state="failed"] .sn-staged-progress__glyph { background: var(--status-bad-bg); color: var(--status-bad); box-shadow: inset 0 0 0 1px var(--status-bad); }
 .sn-staged-progress__step[data-state="failed"] .sn-staged-progress__glyph::before { content: "✕"; }
 .sn-staged-progress__step[data-state="cancelled"] .sn-staged-progress__glyph::before { content: "–"; }
+/* stalled (1.4.0, from BeanAlliance AsyncState v4.15): the current step sent no progress for 60 s. A warning, not a failure, until the person tries again or cancels. */
+.sn-staged-progress__step[data-state="stalled"] .sn-staged-progress__glyph { background: var(--status-warn-bg); color: var(--status-warn); box-shadow: inset 0 0 0 1px var(--status-warn); }
+.sn-staged-progress__step[data-state="stalled"] .sn-staged-progress__glyph::before { content: "▲"; font-size: 0.625rem; }
 .sn-staged-progress__name { font-weight: 600; color: var(--fg); line-height: 24px; min-width: 0; }
 .sn-staged-progress__step[data-state="waiting"] .sn-staged-progress__name, .sn-staged-progress__step[data-state="cancelled"] .sn-staged-progress__name { color: var(--fg-3); font-weight: 500; }
 .sn-staged-progress__state { font: 400 0.75rem/24px var(--font-data); color: var(--fg-3); white-space: nowrap; text-align: right; }
 .sn-staged-progress__step[data-state="failed"] .sn-staged-progress__state { color: var(--status-bad); }
+.sn-staged-progress__step[data-state="stalled"] .sn-staged-progress__state { color: var(--status-warn); font-weight: 600; }
 .sn-staged-progress__detail { grid-column: 2 / -1; margin: 0; font-size: 0.8125rem; line-height: 1.4; color: var(--fg-2); }
 .sn-staged-progress__meter { grid-column: 2 / -1; height: 6px; margin-top: var(--space-1); border-radius: var(--radius-pill); background: var(--progress-track); overflow: hidden; }
 .sn-staged-progress__meter > i { display: block; height: 100%; width: var(--p, 0%); background: var(--progress-fill); border-radius: inherit; transition: width var(--duration-base) var(--ease-standard); }
@@ -233,7 +237,7 @@ fieldset.sn-side-sheet__section { border: 0; padding: 0; margin: 0; }
 .sn-tooltip { position: absolute; z-index: var(--z-tooltip); max-width: 16rem; padding: 5px var(--space-2); border-radius: var(--radius-chip); background: var(--fg); color: var(--bg); box-shadow: var(--shadow-2); font: 500 0.75rem/1.35 var(--font-body); white-space: normal; text-align: left; pointer-events: auto; }
 .sn-tooltip[hidden] { display: none; }
 .sn-tooltip::before { content: ""; position: absolute; inset: -8px; z-index: -1; }
-.sn-tooltip__data { font-family: var(--font-data); }
+.sn-tooltip__data { font-family: var(--font-data); overflow-wrap: anywhere; }
 .sn-tooltip__kbd { margin-left: var(--space-2); padding: 0 var(--space-2); border-radius: 3px; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bg) 45%, transparent); font: 500 0.6875rem/1.4 var(--font-data); }
 .sn-tooltip--static { position: relative; display: inline-block; }
 
