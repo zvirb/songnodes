@@ -1639,3 +1639,10 @@ Ended 2026-10-26 22:29: Audited Pathfinder (DS7). Fixed CSS typography variables
 - Start: 2026-10-28
 - End: 2026-10-28 - design-system/ mirrored to 1.3.0 from the artifact and re-synced (VERSION 1.3.0). Added DateRange (calendar range popover) and the DateField calendar button, SongNodes.calendar / format.range / format.dayLong / dateRange / iconNames, the menu icon-gap part, and the text-inset fixes from a browser audit of all previews (05-layout "Text inset"). Q10–Q18 in 17-governance wait for Markus. Checks: sync --check and check_design_system.py --check pass; frontend checks in the PR body.
 <!-- SLOT:DS18 END -->
+
+<!-- SLOT:DS19 BEGIN -->
+### DS19: React DateRange, FileDrop and StagedProgress
+- Start: 2026-10-28 (branch ds19-react-daterange-filedrop-staged; started stacked on DS18, rebased on main after #356 merged)
+- End: 2026-10-28. Added `frontend/src/components/ds/{FileDrop,StagedProgress,DateRange}.tsx` with tests, exported from `ds/index.tsx`. DateRange mirrors `SongNodes.dateRange` (table role=grid, roving tabindex, APG keys, live region) using `SN.calendar` and `SN.format.range/dayLong`. Checks: tsc, oxlint (0 errors; +9 warnings, all spec-mandated ARIA roles), vitest 248/248, vite build, sync --check, check_design_system --check, scope guard. Over the ~400-line budget (three components, Markus asked for all three).
+- Next: adopt in TargetTracksManager / SetlistBuilder (FileDrop), TracklistImporter / ScraperProgressPage (StagedProgress), DateField calendar button and scrape-history export (DateRange).
+<!-- SLOT:DS19 END -->

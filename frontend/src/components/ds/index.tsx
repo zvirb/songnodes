@@ -1672,3 +1672,9 @@ KeyCompat.displayName = 'KeyCompat';
 
 export { AutocompleteSearchField } from './AutocompleteSearchField';
 export type { AutocompleteOption, AutocompleteSearchFieldProps } from './AutocompleteSearchField';
+export { FileDrop } from './FileDrop';
+export type { FileDropFile, FileDropProps } from './FileDrop';
+export { StagedProgress } from './StagedProgress';
+export type { StagedProgressProps, StagedProgressStep } from './StagedProgress';
+export { DateRange } from './DateRange';
+export type { DateRangeMark, DateRangeModifier, DateRangePreset, DateRangePresetId, DateRangeProps } from './DateRange';
