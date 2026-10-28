@@ -1359,8 +1359,13 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 
 <!-- SLOT:TV1 BEGIN -->
 ### TV1: TIDAL: use only the official API
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-28
+- Built: Moved TIDAL playlist router to the official TIDAL API v2 (`openapi.tidal.com`) in `TidalUserApi` client using `GET /v2/searchResults`, `GET /v2/tracks`, `POST /v2/playlists`, and `POST /v2/playlists/{id}/relationships/items` mapping to Bearer token, mapping errors (401, 429), and ISO duration parsed to seconds. Ignored `parent_folder_id` as v2 doesn't support folder targets yet. Removed `client_secret` from Query parameters in `music_auth.py` router. Added unit tests for HTTP mock interactions.
+- Checks run: `python3 -m pytest tests/rest_api/test_tidal_playlists.py tests/rest_api/test_tidal_auth_no_query_secret.py tests/rest_api/test_router_registry.py -q` passed.
+- Checks not run: Full integration due to missing live API tokens in sandbox.
+- Reviewer Check: Signed in with TIDAL, POST /api/v1/tidal/playlists/create {"name":"SongNodes test"} returns an id, POST /api/v1/tidal/playlists/{id}/tracks with three track ids adds them in that order in the TIDAL app, and `git grep api.tidal.com services/rest_api` is empty.
+- Follow-ups: Send a set to TIDAL as a dated playlist.
+- End: 2026-10-28
 <!-- SLOT:TV1 END -->
 
 ## Scheduled run
