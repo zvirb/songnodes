@@ -5,10 +5,6 @@ import { readSavedSetsAsync, writeSavedSetsAsync, readSavedSets, writeSavedSets,
 describe('loadLibrary', () => {
     beforeEach(() => {
         vi.stubGlobal('fetch', vi.fn());
-        // Reset cache in module (it's let cache, not strictly reseteable, but we simulate by reloading or it being null if failed)
-        // Since cache is module level and not exposed, we might not be able to clear it easily if it successfully resolves.
-        // Wait, cache is set to null if it throws.
-        // We won't test multiple success calls in one test file if cache is not reset.
     });
 
     afterEach(() => {
@@ -34,24 +30,51 @@ describe('loadLibrary', () => {
             json: async () => ({ tracks: [], counts: { tracks: 0 } })
         });
 
-        const data = await loadLibrary();
+        const data = await loadLibrary(true);
         expect(data._source).toBe('library-fixture');
         expect(fetchMock).toHaveBeenCalledTimes(2); // one for API, one for fallback
     });
 
-    it('uses API with empty array when API returns []', async () => {
-        vi.resetModules();
-        const { loadLibrary } = await import('./data');
-        const fetchMock = vi.fn().mockResolvedValueOnce({
+    it('falls back to static json when API returns empty array', async () => {
+        const fetchMock = fetch as Mock;
+        // API returns 200 OK with empty array
+        fetchMock.mockResolvedValueOnce({
             ok: true,
-            json: async () => ([])
+            json: async () => []
         });
-        vi.stubGlobal('fetch', fetchMock);
+        // Fallback static JSON
+        const staticPayload = {
+            generated: '2026-10-28T00:00:00Z',
+            ledger_updated: '2026-10-28T00:00:00Z',
+            counts: { tracks: 1, pending: 0, rejected: 0, beatport_check: 0 },
+            sources: [],
+            runs: [],
+            tracks: [{ id: 'static-1', a: 'Artist', t: 'Track', m: null, d: 300, bpm: 125, k: '8A', e: 5, p: 'House', rot: 1, tags: [], src: ['pbs'], first: null, last: null, g: 'House', lbl: null, sync: null, tidal: null, dz: null, bp: null, chart: null, rev: false, ovr: false, local: false }]
+        };
+        fetchMock.mockResolvedValueOnce({
+            ok: true,
+            json: async () => staticPayload
+        });
 
-        const data = await loadLibrary();
-        expect(data._source).toBe('backend');
-        expect(data.tracks).toEqual([]);
-        expect(fetchMock).toHaveBeenCalledTimes(1);
+        const lib = await loadLibrary(true);
+        expect(fetchMock).toHaveBeenCalledWith('/api/v1/library/search?limit=5000');
+        expect(fetchMock).toHaveBeenCalledWith('/data/music-library.json', { cache: 'no-cache' });
+        expect(lib.tracks).toHaveLength(1);
+        expect(lib.tracks[0].id).toBe('static-1');
+    });
+
+    it('uses API results when API returns tracks', async () => {
+        const fetchMock = fetch as Mock;
+        const apiTracks = [{ id: 'api-1', a: 'Api Artist', t: 'Api Track', m: null, d: 250, bpm: 128, k: '9A', e: 7, p: 'Techno', rot: 1, tags: [], src: [], first: null, last: null, g: null, lbl: null, sync: null, tidal: null, dz: null, bp: null, chart: null, rev: false, ovr: false, local: false }];
+        fetchMock.mockResolvedValueOnce({
+            ok: true,
+            json: async () => apiTracks
+        });
+
+        const lib = await loadLibrary(true);
+        expect(fetchMock).toHaveBeenCalledWith('/api/v1/library/search?limit=5000');
+        expect(lib.tracks).toHaveLength(1);
+        expect(lib.tracks[0].id).toBe('api-1');
     });
 });
 
@@ -139,57 +162,5 @@ describe('SavedSets', () => {
         // Ensure local storage still works despite API error
         expect(readSavedSets()).toHaveLength(1);
         expect(readSavedSets()[0].id).toBe('999');
-    });
-});
-
-describe('loadLibrary', () => {
-    beforeEach(() => {
-        vi.stubGlobal('fetch', vi.fn());
-    });
-
-    afterEach(() => {
-        vi.restoreAllMocks();
-    });
-
-    it('falls back to static json when API returns empty array', async () => {
-        const fetchMock = fetch as Mock;
-        // API returns 200 OK with empty array
-        fetchMock.mockResolvedValueOnce({
-            ok: true,
-            json: async () => []
-        });
-        // Fallback static JSON
-        const staticPayload = {
-            generated: '2026-10-28T00:00:00Z',
-            ledger_updated: '2026-10-28T00:00:00Z',
-            counts: { tracks: 1, pending: 0, rejected: 0, beatport_check: 0 },
-            sources: [],
-            runs: [],
-            tracks: [{ id: 'static-1', a: 'Artist', t: 'Track', m: null, d: 300, bpm: 125, k: '8A', e: 5, p: 'House', rot: 1, tags: [], src: ['pbs'], first: null, last: null, g: 'House', lbl: null, sync: null, tidal: null, dz: null, bp: null, chart: null, rev: false, ovr: false, local: false }]
-        };
-        fetchMock.mockResolvedValueOnce({
-            ok: true,
-            json: async () => staticPayload
-        });
-
-        const lib = await loadLibrary(true);
-        expect(fetchMock).toHaveBeenCalledWith('/api/v1/library/search?limit=5000');
-        expect(fetchMock).toHaveBeenCalledWith('/data/music-library.json', { cache: 'no-cache' });
-        expect(lib.tracks).toHaveLength(1);
-        expect(lib.tracks[0].id).toBe('static-1');
-    });
-
-    it('uses API results when API returns tracks', async () => {
-        const fetchMock = fetch as Mock;
-        const apiTracks = [{ id: 'api-1', a: 'Api Artist', t: 'Api Track', m: null, d: 250, bpm: 128, k: '9A', e: 7, p: 'Techno', rot: 1, tags: [], src: [], first: null, last: null, g: null, lbl: null, sync: null, tidal: null, dz: null, bp: null, chart: null, rev: false, ovr: false, local: false }];
-        fetchMock.mockResolvedValueOnce({
-            ok: true,
-            json: async () => apiTracks
-        });
-
-        const lib = await loadLibrary(true);
-        expect(fetchMock).toHaveBeenCalledWith('/api/v1/library/search?limit=5000');
-        expect(lib.tracks).toHaveLength(1);
-        expect(lib.tracks[0].id).toBe('api-1');
     });
 });
