@@ -30,8 +30,26 @@ async def load(conn: asyncpg.Connection, secret: str) -> Dict[str, str]:
                 if val and not val.upper().startswith('CHANGE_ME'):
                     results[env_key] = val
         except Exception as e:
-            logger.warning(f"failed to load saved key for {service}: {e}")
+            # Log only the service and exception type: the message may echo the secret or DSN.
+            logger.warning("failed to load saved key for %s: %s", service, e.__class__.__name__)
     return results
+
+_SQLALCHEMY_SCHEMES = (
+    'postgresql+asyncpg://',
+    'postgresql+psycopg2://',
+    'postgresql+psycopg://',
+    'postgresql+pg8000://',
+    'postgres+asyncpg://',
+)
+
+
+def normalise_dsn(dsn: str) -> str:
+    """Turn a SQLAlchemy URL (postgresql+asyncpg://...) into a plain one asyncpg accepts."""
+    for scheme in _SQLALCHEMY_SCHEMES:
+        if dsn.startswith(scheme):
+            return 'postgresql://' + dsn[len(scheme):]
+    return dsn
+
 
 def load_sync(dsn: str, secret: str) -> Dict[str, str]:
     """
@@ -40,6 +58,7 @@ def load_sync(dsn: str, secret: str) -> Dict[str, str]:
     """
     if not dsn:
         return {}
+    dsn = normalise_dsn(dsn)
 
     def _run() -> Dict[str, str]:
         loop = asyncio.new_event_loop()

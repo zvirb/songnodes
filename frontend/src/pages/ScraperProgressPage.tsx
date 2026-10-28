@@ -99,6 +99,17 @@ const ScraperProgressPage: React.FC = () => {
         },
       });
 
+      if (!response.ok) {
+        let detail: unknown;
+        try {
+          detail = (await response.json())?.detail;
+        } catch {
+          detail = undefined;
+        }
+        showToast(typeof detail === 'string' ? detail : `Could not queue the scrape (HTTP ${response.status})`);
+        return;
+      }
+
       const data = await response.json();
 
       if (response.status === 202) {
@@ -289,7 +300,7 @@ const ScraperProgressPage: React.FC = () => {
                     <td className="body-strong" >
                       {r.query || <span className="sn-none">–</span>}
                     </td>
-                    <td >{r.source}</td>
+                    <td>{r.source || <span className="sn-none">–</span>}</td>
                     <td>
                       <StatusPill
                         raw={RUN_PILL[r.state]?.[0] || 'idle'}
@@ -301,13 +312,13 @@ const ScraperProgressPage: React.FC = () => {
                       {SN.format.dateTime(r.createdAt)}
                     </td>
                     <td className="num data" >
-                      {r.seconds !== null ? SN.format.duration(r.seconds) : '—'}
+                      {r.seconds != null ? SN.format.duration(r.seconds) : <span className="sn-none">–</span>}
                     </td>
                     <td className="num data" >
-                      {r.playlists !== null ? SN.format.count(r.playlists) : '—'}
+                      {r.playlists != null ? SN.format.count(r.playlists) : <span className="sn-none">–</span>}
                     </td>
                     <td className="num data" >
-                      {r.tracks !== null ? SN.format.count(r.tracks) : '—'}
+                      {r.tracks != null ? SN.format.count(r.tracks) : <span className="sn-none">–</span>}
                     </td>
                   </tr>
                 ))}
@@ -315,7 +326,7 @@ const ScraperProgressPage: React.FC = () => {
             </table>
           </div>
         ) : (
-          <p className="body" >No scrapes have been requested yet.</p>
+          <p className="body" style={{ color: 'var(--fg-2)' }}>No scrape has run yet. Queue one from the target tracks below.</p>
         )}
       </section>
 
@@ -324,17 +335,17 @@ const ScraperProgressPage: React.FC = () => {
         <SectionHeading title="System health" count="Last 15 minutes" />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
 
-          {/* Tile 1: Active Jobs */}
+          {/* Tile 1: Scrapes running */}
           <div className="sn-card" style={{ border: '1px solid var(--line)', padding: 'var(--space-4)', backgroundColor: 'var(--surface-1)', borderRadius: 'var(--radius-card)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
-              <span className="label" style={{ flex: 1 }}>Active workers</span>
+              <span className="label" style={{ flex: 1 }}>Scrapes running</span>
               <Activity size={18} color="var(--brand)" />
             </div>
             <div className="figure data" >
-              {telemetry.activeWorkers}
+              {SN.format.count(runningScrapes.length)}
             </div>
             <div className="caption" style={{ color: 'var(--fg-2)', marginTop: 'var(--space-1)' }}>
-              Processing {SN.format.count(activeJobs.length)} active jobs
+              {runningScrapes.length > 0 ? runningScrapes.map(r => r.query || r.source).join(', ') : 'None at the moment'}
             </div>
           </div>
 

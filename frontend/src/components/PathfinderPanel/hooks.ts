@@ -11,7 +11,7 @@ import { PathfinderContext, WizardStep } from './types';
 import { Track } from '../../types';
 import { adaptServerPath } from '../../utils/serverPath';
 import { SN } from '../../lib/songnodes';
-import { routeTracksFromNodes } from '../../utils/trackMetadata';
+import { routeTracksFromNodes, trackFromNode } from '../../utils/trackMetadata';
 import { useState } from 'react';
 
 /**
@@ -92,14 +92,16 @@ export function usePathfinder() {
 
   const calculate = useCallback(() => {
     if (graphData.nodes.length === 0) {
-      send({ type: 'PATH_ERROR', error: 'The graph has not loaded yet.' } as any);
+      send({ type: 'PATH_ERROR', error: 'The graph has not loaded yet.' });
       return;
     }
 
     let skipCount = 0;
     const validNodes = graphData.nodes.filter((node) => {
-      const durationMs = node.track?.duration_ms ?? node.duration_ms ?? (node.metadata as any)?.duration_ms;
-      if (!durationMs || durationMs <= 0) {
+      // trackFromNode reads duration_ms, duration and duration_seconds, so
+      // seconds-only nodes are kept.
+      const durationMs = trackFromNode(node).duration_ms;
+      if (durationMs === undefined || !(durationMs > 0)) {
         skipCount++;
         return false;
       }
@@ -108,7 +110,16 @@ export function usePathfinder() {
 
     setSkippedCount(skipCount);
 
-    const tracksData = routeTracksFromNodes(validNodes);
+    let tracksData: ReturnType<typeof routeTracksFromNodes>;
+    try {
+      tracksData = routeTracksFromNodes(validNodes);
+    } catch (err) {
+      send({
+        type: 'PATH_ERROR',
+        error: err instanceof Error && err.message ? err.message : 'Could not prepare the tracks for routing.',
+      });
+      return;
+    }
     const edgesData = graphData.edges.map(edge => ({
       from_id: edge.source,
       to_id: edge.target,

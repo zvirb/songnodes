@@ -70,10 +70,15 @@ const SetBuilderPage: React.FC = () => {
   const setDraft = useCallback((u: Draft | ((d: Draft) => Draft)) => {
     setDraftState((d) => { const next = typeof u === 'function' ? (u as (d: Draft) => Draft)(d) : u; writeDraft(next); return next; });
   }, []);
+  // Each save (and the initial load) takes a number; only the latest one may replace the list,
+  // so an older save that resolves late cannot overwrite newer state.
+  const savedSeq = useRef(0);
   const setSaved = useCallback((s: SavedSet[], docIdToUpdate?: string) => {
+    const seq = ++savedSeq.current;
     setSavedState(s);
     writeSavedSetsAsync(s).then(resolved => {
-      setSavedState(resolved);
+      if (seq === savedSeq.current) setSavedState(resolved);
+      // The id remap is safe from any save: it only touches a draft still holding the local id.
       if (docIdToUpdate) {
         const found = resolved.find(r => r.id === docIdToUpdate || r.name === s.find(x => x.id === docIdToUpdate)?.name && r.updated === s.find(x => x.id === docIdToUpdate)?.updated);
         if (found && found.id !== docIdToUpdate) {
@@ -84,8 +89,9 @@ const SetBuilderPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    const seq = ++savedSeq.current;
     readSavedSetsAsync().then(({ sets, source }) => {
-      setSavedState(sets);
+      if (seq === savedSeq.current) setSavedState(sets);
       setSavedSource(source);
       setSavedLoaded(true);
     });
@@ -601,7 +607,7 @@ const SetBuilderPage: React.FC = () => {
           </div>
           {savedSource === 'device' && (
             <div style={{ marginBottom: 'var(--space-3)' }}>
-              <div className="sn-inline-message" data-status="info" role="status"><span>Saved sets are from this device; the server did not answer.</span></div>
+              <InlineMessage status="info">Saved sets are from this device; the server did not answer.</InlineMessage>
             </div>
           )}
           {saved.length ? (

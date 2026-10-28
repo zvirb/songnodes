@@ -3,6 +3,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, beforeEach, afterEach, it, expect } from 'vitest';
 import ScraperProgressPage from './ScraperProgressPage';
+import { showToast } from '../components/ds';
 
 // Mock the telemetry hook
 vi.mock('../features/pipeline/usePipelineTelemetry', () => ({
@@ -105,6 +106,7 @@ describe('ScraperProgressPage', () => {
 
   it('calls the trigger API with source, search_query and Idempotency-Key on valid submission', async () => {
     fetchMock.mockResolvedValueOnce({
+      ok: true,
       status: 202,
       json: async () => ({ created: true }),
     });
@@ -144,6 +146,24 @@ describe('ScraperProgressPage', () => {
     await waitFor(() => {
       expect((artistInput as HTMLInputElement).value).toBe('');
       expect((titleInput as HTMLInputElement).value).toBe('');
+    });
+  });
+
+  it('shows the HTTP status when the trigger answers with a non-JSON error', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 502,
+      json: async () => { throw new SyntaxError('Unexpected token <'); },
+    });
+
+    render(<ScraperProgressPage />);
+    fireEvent.change(screen.getAllByLabelText('Artist')[0], { target: { value: 'Deadmau5' } });
+    fireEvent.change(screen.getAllByLabelText('Title')[0], { target: { value: 'Strobe' } });
+    const formQueueBtn = screen.getAllByRole('button', { name: 'Queue scrape' }).find(b => b.getAttribute('type') === 'submit');
+    fireEvent.click(formQueueBtn);
+
+    await waitFor(() => {
+      expect(showToast).toHaveBeenCalledWith('Could not queue the scrape (HTTP 502)');
     });
   });
 

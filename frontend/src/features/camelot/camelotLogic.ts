@@ -2,6 +2,8 @@
  * FE5 Camelot Module - Core Logic
  */
 
+import { getModulationTargets } from '../../utils/camelotUtils';
+
 export type CamelotKey = string;
 
 /**
@@ -37,5 +39,30 @@ export function compatibleKeys(key: string | null): string[] {
     `${num}${otherLetter}`,
     `${plus1}${letter}`,
     `${minus1}${letter}`
+  ];
+}
+
+export interface MoveTarget {
+  id: string;
+  label: string;
+  hint: string;
+  key: string;
+}
+
+export function moveTargets(key: string | null): MoveTarget[] {
+  if (!key) return [];
+  const targets = getModulationTargets(key);
+  if (!targets) return [];
+
+  const isMinor = targets.exactMatch.endsWith('A');
+  const relativeLabel = isMinor ? 'Relative major' : 'Relative minor';
+
+  return [
+    { id: 'same', label: 'Same key', hint: '', key: targets.exactMatch },
+    { id: 'plus1', label: 'Up one', hint: '+1', key: targets.adjacentPlus1 },
+    { id: 'minus1', label: 'Down one', hint: '-1', key: targets.adjacentMinus1 },
+    { id: 'relative', label: relativeLabel, hint: '', key: targets.relative },
+    { id: 'boost', label: 'Energy boost +2', hint: '', key: targets.energyBoostPlus2 },
+    { id: 'lift', label: 'Energy lift +7 (one semitone up)', hint: '', key: targets.energyBoostPlus7 },
   ];
 }

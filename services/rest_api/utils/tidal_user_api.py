@@ -1,3 +1,4 @@
+import os
 import re
 import uuid
 import logging
@@ -25,11 +26,12 @@ def chunks(values: List[str], size: int) -> Iterable[List[str]]:
         yield values[start:start + size]
 
 class TidalUserApi:
-    def __init__(self, access_token: str, country_code: str = 'AU', client: Optional[httpx.AsyncClient] = None):
+    def __init__(self, access_token: str, country_code: Optional[str] = None, client: Optional[httpx.AsyncClient] = None):
         self.access_token = access_token
-        self.country_code = country_code
+        self.country_code = country_code or os.getenv('TIDAL_COUNTRY_CODE', 'AU') or 'AU'
         self._client = client
-        self._owns_client = False # Let FastAPI test client handle or we don't close
+        # We close only a client we created ourselves; an injected client belongs to the caller.
+        self._owns_client = client is None
 
     async def _get_client(self) -> httpx.AsyncClient:
         if self._client is None:
@@ -37,8 +39,15 @@ class TidalUserApi:
         return self._client
 
     async def close(self):
-        if self._owns_client and self._client:
+        if self._owns_client and self._client is not None:
             await self._client.aclose()
+            self._client = None
+
+    async def __aenter__(self) -> "TidalUserApi":
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb) -> None:
+        await self.close()
 
     def _headers(self) -> Dict[str, str]:
         return {
@@ -168,14 +177,15 @@ class TidalUserApi:
 
     async def list_playlists(self, limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
         client = await self._get_client()
-        # TIDAL v2 doesn't have an offset pagination in the same way, but we request /v2/playlists
-        # and filter by owner 'me'. Wait, according to docs:
-        # GET /v2/playlists?filter[owners.id]=me
-        # If no filter works, we can just GET /v2/playlists (it might default to me)
+        # GET /v2/playlists?filter[owners.id]=me lists the signed-in user's playlists.
         response = await client.get(
             "https://openapi.tidal.com/v2/playlists",
-            # We don't have limit/offset per se, but we can pass them or just fetch default page
-            params={"filter[owners.id]": "me", "countryCode": self.country_code},
+            params={
+                "filter[owners.id]": "me",
+                "countryCode": self.country_code,
+                "page[limit]": limit,
+                "page[offset]": offset,
+            },
             headers=self._headers()
         )
         self._handle_error(response)
@@ -210,6 +220,7 @@ class TidalUserApi:
 
         response = await client.post(
             "https://openapi.tidal.com/v2/playlists",
+            params={"countryCode": self.country_code},
             json=payload,
             headers=self._headers()
         )
@@ -241,6 +252,7 @@ class TidalUserApi:
 
             response = await client.post(
                 f"https://openapi.tidal.com/v2/playlists/{playlist_id}/relationships/items",
+                params={"countryCode": self.country_code},
                 json=payload,
                 headers=headers
             )

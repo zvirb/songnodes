@@ -130,7 +130,7 @@ export const SecretField: React.FC<SecretFieldProps> = ({
             target="_blank"
             rel="noopener noreferrer"
           >
-              {getKeyLabel} <SnIcon name="external-link" />
+              {getKeyLabel}
           </a>
         )}
       </div>

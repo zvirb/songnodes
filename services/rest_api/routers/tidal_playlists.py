@@ -265,6 +265,8 @@ async def check_track_availability(
                 "track": None
             }
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error checking track availability: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Availability check failed: {str(e)}")

@@ -4,13 +4,20 @@ import { GraphNode, GraphEdge } from '../types';
 import { graphNodeFromApi } from '../utils/trackMetadata';
 import { hasValidArtist } from '../utils/dataLoaderUtils';
 
-export const useDataLoader = () => {
+export interface DataLoaderOptions {
+  /** Skip the fetch when the graph store already holds nodes (a page visited after the graph). */
+  onlyIfEmpty?: boolean;
+}
+
+export const useDataLoader = ({ onlyIfEmpty = false }: DataLoaderOptions = {}) => {
   const setGraphData = useStore(state => state.graph.setGraphData);
   const applyFilters = useStore(state => state.search.applyFilters);
   const setLoading = useStore(state => state.general.setLoading);
   const setError = useStore(state => state.general.setError);
 
   useEffect(() => {
+    if (onlyIfEmpty && useStore.getState().graphData.nodes.length > 0) return;
+
     const loadData = async () => {
       setLoading(true);
       setError(null);
@@ -110,5 +117,5 @@ export const useDataLoader = () => {
     };
 
     loadData();
-  }, [setGraphData, applyFilters, setLoading, setError]);
+  }, [onlyIfEmpty, setGraphData, applyFilters, setLoading, setError]);
 };
