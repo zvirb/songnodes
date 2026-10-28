@@ -37,7 +37,7 @@ Any box that draws an edge (a border, a fill different from what is behind it, o
 - Inline (left/right): at least `space-2` (8px) for chips, tags, badges, counts and key caps; `space-3` for table cells, menu items and inputs; card and panel padding per the table above. 4–7px counts as tight; under `space-1` (4px) is a defect.
 - Block (top/bottom): at least `space-0.5` (2px) of clear space above and below the glyphs. Table cells pad `space-1` top and bottom so wrapped text never sits on the row rule.
 - Small labelled objects (tags, pills, counts, key caps, badges) never wrap; a group of them wraps instead.
-- On a phone no text runs closer than the 16px gutter to the screen edge, unless it is inside a box that scrolls sideways.
+- On a phone no text runs closer than the 16px gutter to the screen edge, unless it is inside a box that scrolls sideways. One exception: the AppHeader bar pads `space-2` (8px) under a 560px container so its actions fit (DR-032).
 - A control that cannot fit its segments wraps them (`SegmentedControl --block`) rather than letting text spill past its track.
 - A card whose only content is a table, or a lone `EmptyState`, `LoadingState` or `ErrorState`, is flush (no card padding): the cells or the panel carry the inset. Don't add an inner wrapper with padding to compensate.
 

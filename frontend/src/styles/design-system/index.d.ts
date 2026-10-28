@@ -1454,8 +1454,8 @@ export interface LoadingStateProps {
 export interface StagedProgressStep {
   /** Step name, verb first: "Match plays to tracks". */
   name: string;
-  /** done ●, running ↻, waiting –, failed ✕, cancelled –. */
-  state: "done" | "running" | "waiting" | "failed" | "cancelled";
+  /** done ●, running ↻, waiting –, failed ✕, cancelled –, stalled ▲ (1.4.0: the running step sent no progress for `stallSeconds`; status-warn until the person tries again or cancels, never failed by elapsed time). */
+  state: "done" | "running" | "waiting" | "failed" | "cancelled" | "stalled";
   /** Current detail: "Matching 312 of 500 tracks", or the failure reason. */
   detail?: string;
   /** Items done and total for the running step; shows a neutral progress bar when both are known. */
@@ -1464,8 +1464,10 @@ export interface StagedProgressStep {
   total?: number;
   /** Seconds the step took (done/failed). */
   seconds?: number;
-  /** Step-level actions after a failure ("Retry this step", "Skip MixesDB"). */
+  /** Step-level actions after a failure or a stall ("Try again", which resumes from this step; "Skip MixesDB"). */
   actions?: ReactNode;
+  /** Seconds since this step last reported progress; the page turns a running step into `stalled` at `stallSeconds`. */
+  secondsSinceProgress?: number;
 }
 
 export interface StagedProgressProps {
@@ -1483,11 +1485,15 @@ export interface StagedProgressProps {
   onCancel?: () => void;
   /** True when the job runs on the server and survives navigation; shows the "You can leave this page" notice. */
   runsInBackground?: boolean;
+  /** Seconds without progress from the current step before it turns `stalled`. Default 60; elapsed time alone never stalls or fails a job. */
+  stallSeconds?: number;
+  /** Resumes from the stalled step (the step's "Try again"); done steps are kept. */
+  onResume?: (stepIndex: number) => void;
 }
 
 export interface ErrorStateProps {
-  /** Cause; picks icon, status colour and default retry guidance. */
-  kind: "offline" | "timeout" | "auth-expired" | "not-found" | "server" | "validation";
+  /** Cause; picks icon, status colour and default retry guidance. "stalled" (1.4.0): a staged load whose current step sent no progress for 60 s, warn, Try again resumes from that step. */
+  kind: "offline" | "timeout" | "auth-expired" | "not-found" | "server" | "validation" | "stalled";
   /** What happened, in plain words: "TIDAL is slow right now". */
   title: string;
   /** What it affects and what to do next. */
@@ -2053,6 +2059,8 @@ export interface SongNodesHelpers {
   format: { date(d: Date | string): string; day(d: Date | string): string; month(d: Date | string): string; time(d: Date | string): string; dateTime(d: Date | string): string; zone(d: Date | string): string; stamp(d: Date | string): string; relative(d: Date | string, now?: Date): string; duration(seconds: number): string; span(seconds: number): string; count(n: number): string; bpm(b: number): string; percent(x: number, digits?: number): string; dateOnly(isoDate: string): string; dayLong(d: Date | string): string; range(from: string, to: string): string };
   calendar: { today(now?: Date): string; iso(y: number, m: number, d: number): string; month(y: number, m: number): ({ iso: string; y: number; m: number; d: number; wd: number } | null)[][]; addDays(iso: string, n: number): string; addMonths(iso: string, n: number): string; compare(a: string, b: string): -1 | 0 | 1; days(a: string, b: string): number; weekStart(iso: string): string; preset(id: DateRangePresetId, today?: string): [string, string] | null; PRESET_LABELS: Record<DateRangePresetId, string>; MONTHS_LONG: string[]; WDAYS_LONG: string[] };
   dateRange(el: HTMLElement, opts?: { from?: string | null; to?: string | null; today?: string; title?: string; outcome?: string; preset?: string | null; presets?: (DateRangePresetId | { id: string; label: string; range: [string, string] | (() => [string, string]) })[]; marks?: DateRangeMark[]; onChange?(from: string | null, to: string | null, presetId: string | null): void; onApply?(from: string, to: string): void; onClear?(): void; onClose?(): void }): { el: HTMLElement; get(): { from: string | null; to: string | null; preset: string | null }; set(from: string | null, to: string | null, presetId?: string | null): void; focus(): void; show(iso: string): void };
+  /** CSV writer (15-print-export, 1.4.0): UTF-8 with BOM, CRLF, RFC 4180 quoting, and the formula guard (a text cell starting with = + - @, tab or CR gets a leading apostrophe; numbers the export writes are never guarded). */
+  csv: { BOM: "﻿"; EOL: "\r\n"; guarded(text: string): boolean; cell(value: string | number | null | undefined, opts?: { numeric?: boolean }): string; row(values: (string | number | null | undefined | { value: string | number | null | undefined; numeric?: boolean })[]): string; file(header: string[], rows: (string | number | null | undefined | { value: string | number | null | undefined; numeric?: boolean })[][]): string };
   status(raw: string, domain?: "confidence" | "priority"): { status: DesignStatus; label: string; glyph: string };
   html: { energy(e: number): string; key(k: string, withName?: boolean): string; pill(raw: string, label?: string): string; compat(level: CompatLevel, label?: string): string; link(mod: ModuleKey, href: string, text: string): string; title(lead: string, title: string, size?: "title-l" | "title-m" | "title-s"): string };
   prefs: { init(): void; setTheme(t: "dark" | "light" | "booth" | "system"): void; setTextSize(s: "s" | "m" | "l" | "xl"): void; setDensity(d: "comfortable" | "compact"): void; setMotion(m: "system" | "reduce" | "full"): void; get(): { theme: string; textSize: string; density: string; motion: string } };
