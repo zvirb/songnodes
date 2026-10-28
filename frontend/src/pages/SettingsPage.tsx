@@ -20,6 +20,7 @@ import {
   EmptyPanel,
   LoadingPanel,
   showToast,
+  TextLink,
 } from '../components/ds';
 import { SecretField } from '../components/APIKeyManager';
 import useStore from '../store/useStore';
@@ -405,7 +406,11 @@ export const SettingsPage: React.FC = () => {
                 {setup.fields.map((f) => (
                   <React.Fragment key={f.label}>
                     <dt>{f.label}</dt>
-                    <dd className={f.value.startsWith('http') ? 'sn-mono' : undefined}>{f.value}</dd>
+                    <dd>
+                      {f.value.startsWith('https://') ? (
+                        <TextLink href={f.value} external path breakAnywhere>{f.value}</TextLink>
+                      ) : f.value}
+                    </dd>
                   </React.Fragment>
                 ))}
               </dl>
