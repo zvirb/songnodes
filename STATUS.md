@@ -1347,8 +1347,13 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 
 <!-- SLOT:ST1 BEGIN -->
 ### ST1: Settings: one card per service, coloured by kind
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-28
+- Built: Updated `SettingMeta` interface with `kind: 'api' | 'display' | 'login' | 'about'`. Assigned modules appropriately (paths, harmony, library, neutral). Dropped Beatport from the frontend using `HIDDEN_SERVICES`. Created dynamically generated service cards in `filteredSettings` based on backend requirements using `SERVICE_LABEL_MAP`. Sorted the view systematically by kind (api -> display -> login -> about). Updated tests to assert presence and modules of individual dynamic cards (Spotify, Discogs, 1001Tracklists, etc) and exclusion of Beatport. Fixed sentence casing in Leads and removed misleading "API status" mention.
+- Checks run: `npm ci && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build` and `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check`. All passed.
+- Checks not run: Playwright E2E suite due to environment constraints.
+- Reviewer Check: Open http://127.0.0.1:3006/settings: cards come in coloured groups (pink API keys incl. one card each for Spotify, Discogs, Last.fm …; teal theme, text size, row density, reduce motion; gold TIDAL, Spotify connection, 1001Tracklists, saved data); About is neutral and says nothing about API status; Beatport appears nowhere. Open the Discogs card's page: only the Discogs token field. /settings/scraper-keys still loads.
+- PR Link: https://github.com/zvirb/songnodes/pull/NEW
+- End: 2026-10-28
 <!-- SLOT:ST1 END -->
 
 <!-- SLOT:SV1 BEGIN -->
