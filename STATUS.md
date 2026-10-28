@@ -1298,7 +1298,7 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 - Checks run: `python -m pytest tests/ai_proxy tests/rest_api/test_api_keys_ai_services.py tests/security/test_api_keys_security.py -q`, `cd frontend && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build`, `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check`. All passed.
 - Checks not run: Playwright E2E suite could not be run in the sandbox.
 - Reviewer Check: Save a Claude key in Settings, reload: the mask shows and `SELECT service_name FROM api_keys` lists 'anthropic'; localStorage has no raw key. Run AI setlists: the browser network panel shows only /api/v1/ai/complete, never api.anthropic.com.
-- PR: https://github.com/zvirb/songnodes/pull/NEW
+- PR: (pending)
 - End: 2026-10-28
 <!-- SLOT:AK1 END -->
 
