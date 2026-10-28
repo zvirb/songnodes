@@ -5,6 +5,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { SN, SnIcon, MODULE_ROUTES, moduleOf, type ModuleKey } from '../lib/songnodes';
+import { ToastRegion } from '../components/ds';
 
 interface HeaderState {
   lead: string;
@@ -178,6 +179,8 @@ export const AppShell: React.FC = () => {
         <Outlet />
       </div>
       <NavDrawer open={drawerOpen} onClose={closeDrawer} current={state.current} />
+      {/* One toast region for the whole app, mounted at start (design-system Toast). */}
+      <ToastRegion />
     </HeaderCtx.Provider>
   );
 };

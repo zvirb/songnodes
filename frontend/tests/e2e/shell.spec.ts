@@ -83,12 +83,12 @@ test('the header search and Ctrl+K go to the library search field', async ({ pag
   await openRoute(page, '/');
   await page.getByRole('button', { name: /Search/ }).click();
   await expect(page).toHaveURL(/\/library/);
-  await expect(page.getByRole('searchbox', { name: 'Search tracks' })).toBeFocused();
+  await expect(page.getByRole('combobox', { name: 'Search tracks' })).toBeFocused();
 
   await openRoute(page, '/settings');
   await page.keyboard.press('Control+k');
   await expect(page).toHaveURL(/\/library/);
-  await expect(page.getByRole('searchbox', { name: 'Search tracks' })).toBeFocused();
+  await expect(page.getByRole('combobox', { name: 'Search tracks' })).toBeFocused();
 });
 
 test('the skip link moves focus to the main content', async ({ page }) => {
