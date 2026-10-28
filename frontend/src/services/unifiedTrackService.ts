@@ -1,5 +1,5 @@
 import { UnifiedTrack, TargetPriority } from '../types/unifiedTrack';
-import { LibraryTrack, LibraryFile } from '../features/musicLibrary/data';
+import { LibraryTrack, loadLibrary } from '../features/musicLibrary/data';
 import { SN } from '../lib/songnodes'; // .tsx extension is not needed in import
 
 const BASE_URL = import.meta.env.BASE_URL;
@@ -28,13 +28,13 @@ export async function fetchTargetTracks(): Promise<UnifiedTrack[]> {
   }));
 }
 
-export async function fetchLibraryFixture(): Promise<UnifiedTrack[]> {
-  const dataPath = BASE_URL.endsWith('/') ? `${BASE_URL}data/music-library.json` : `${BASE_URL}/data/music-library.json`;
-  const res = await fetch(dataPath);
-  if (!res.ok) throw new Error('Failed to fetch library fixture');
-  const file: LibraryFile = await res.json();
-
-  return file.tracks.map(fromLibraryRow);
+export async function fetchLibraryTracks(): Promise<{ tracks: UnifiedTrack[], source: 'backend' | 'library-fixture' }> {
+  const file = await loadLibrary();
+  const source = file._source || 'library-fixture';
+  return {
+    tracks: file.tracks.map(fromLibraryRow),
+    source
+  };
 }
 
 export function fromLibraryRow(track: LibraryTrack): UnifiedTrack {

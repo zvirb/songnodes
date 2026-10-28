@@ -66,6 +66,7 @@ export interface LibraryFile {
   sources: LibrarySource[];
   runs: LibraryRun[];
   tracks: LibraryTrack[];
+  _source?: 'backend' | 'library-fixture';
 }
 
 let cache: Promise<LibraryFile> | null = null;
@@ -74,6 +75,41 @@ export function loadLibrary(forceRefresh = false): Promise<LibraryFile> {
   if (forceRefresh) {
     cache = null;
   }
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export function mapApiToLibraryTrack(row: any): LibraryTrack {
+  return {
+    id: row.id,
+    a: row.a,
+    t: row.t,
+    m: row.m ?? null,
+    d: row.d ?? null,
+    bpm: row.bpm ?? null,
+    k: row.k ?? null,
+    e: row.e ?? null,
+    p: row.p ?? null,
+    rot: row.rot ?? null,
+    tags: row.tags ?? [],
+    src: row.src ?? [],
+    first: row.first ?? null,
+    last: row.last ?? null,
+    g: row.g ?? null,
+    lbl: row.lbl ?? null,
+    sync: row.sync ?? null,
+    tidal: row.tidal ?? null,
+    dz: row.dz ?? null,
+    bp: row.bp ?? null,
+    chart: row.chart ?? null,
+    rev: row.rev ?? false,
+    ovr: row.ovr ?? false,
+    local: row.local ?? false,
+    mbid: row.mbid ?? undefined,
+    mbconf: row.mbconf ?? undefined,
+    mbdump: row.mbdump ?? undefined,
+    source_url: row.source_url ?? undefined,
+  };
+}
+
+export function loadLibrary(): Promise<LibraryFile> {
   if (!cache) {
     cache = (async () => {
       try {
@@ -91,6 +127,17 @@ export function loadLibrary(forceRefresh = false): Promise<LibraryFile> {
               tracks
             };
           }
+          const json = await res.json() as any[];
+          const tracks = json.map(mapApiToLibraryTrack);
+          return {
+            generated: new Date().toISOString(),
+            ledger_updated: new Date().toISOString(),
+            counts: { tracks: tracks.length, pending: 0, rejected: 0, beatport_check: 0 },
+            sources: [],
+            runs: [],
+            tracks,
+            _source: 'backend' as const
+          };
         }
       } catch (e) {
         console.warn('API library search error, falling back to static JSON', e);
@@ -99,7 +146,9 @@ export function loadLibrary(forceRefresh = false): Promise<LibraryFile> {
       const r = await fetch('/data/music-library.json', { cache: 'no-cache' });
       if (!r.ok) throw new Error(`Library file returned ${r.status}`);
       /* eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-type-assertion */
-      return r.json() as Promise<LibraryFile>;
+      const data = await r.json() as LibraryFile;
+      data._source = 'library-fixture';
+      return data;
     })().catch((err) => {
       cache = null;
       throw err;

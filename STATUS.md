@@ -1230,8 +1230,11 @@ PR: https://github.com/zvirb/songnodes/pull/LY2
 
 <!-- SLOT:L7 BEGIN -->
 ### L7: Library ingest: accept musicLibrary run rows
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-28
+- Built: Updated the library importer (`services/library/importer/import_library.py`) to handle both the canonical `run_date`/`status`/`metrics` format and the flat `date`/`added`... export format from musicLibrary. Timezones default to `Australia/Melbourne`. Missing dates are skipped, logged, and increment the `skipped` counter. Added tests in `tests/library_importer/test_import_library.py` and updated documentation in `contracts/library_ingest.md`.
+- Checks run: `PYTHONPATH=.:services python -m pytest tests/library_importer tests/contracts -q` passes with the 3 new tests. `ruff check --fix services/library/importer tests/library_importer` applied cleanly.
+- Reviewer Check: Rebuild and restart rest-api and worker, re-post the export with a new Idempotency-Key, then `SELECT count(*) FROM library.runs;` returns 2 and library.tracks returns 339.
+- End: 2026-10-28
 <!-- SLOT:L7 END -->
 
 <!-- SLOT:FL5 BEGIN -->
@@ -1242,14 +1245,24 @@ PR: https://github.com/zvirb/songnodes/pull/LY2
 
 <!-- SLOT:DB1 BEGIN -->
 ### DB1: One track source: every page reads the library from the database
-- Start: _not started_
-- End: _not finished_
+- Start: 2023-11-20
+- Built: Replaced static json fetching with API endpoint `/api/v1/library/search`. Added mapping function `mapApiToLibraryTrack` to explicitly handle missing fields (`sync`, `bp`, `chart` not supplied by API). Fallback to json on network errors. Updated hooks and services to correctly infer data modes from the API outcome. Updated Vitest suites to reflect explicit data flow logic.
+- Checks run: `vitest run src` (passed, covering logic fallback and API data handling). `tsc --noEmit -p .`, `oxlint src`.
+- Checks not run: Playwright E2E testing cannot be run in the sandbox.
+- Reviewer Check: With the stack running and library.tracks empty, /paths shows the empty state instead of 294 old tracks; after the library import (L7) /library and /paths show the same count.
+- PR Link: https://github.com/zvirb/songnodes/pull/NEW
+- End: 2023-11-20
 <!-- SLOT:DB1 END -->
 
 <!-- SLOT:SC2 BEGIN -->
-### SC2: Scrape target tracks on a schedule
-- Start: _not started_
-- End: _not finished_
+Started: 2024-11-20
+Ended: 2024-11-20
+Built: Added scrape_targets handler and recurring celery job to automatically search target tracks on a schedule. Tested via test_target_scrape.py.
+Checks run: cd services && python -m unittest common/tests/test_target_scrape.py, python scripts/scope_guard.py.
+Checks not run: UI checks (not applicable).
+Reviewer check: With stack running, add target track on /sources/targets; set SCRAPE_TARGETS_INTERVAL_SECONDS=60, GET /api/v1/jobs?kind=scrape lists 2 jobs, target's last_searched is set.
+Follow-ups: Updating playlists_found after a scrape.
+PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 <!-- SLOT:SC2 END -->
 
 <!-- SLOT:L8 BEGIN -->
@@ -1257,6 +1270,18 @@ PR: https://github.com/zvirb/songnodes/pull/LY2
 - Start: _not started_
 - End: _not finished_
 <!-- SLOT:L8 END -->
+
+<!-- SLOT:AA1 BEGIN -->
+### AA1: Audio analysis: key and BPM from audio, proven on synthetic test audio
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:AA1 END -->
+
+<!-- SLOT:AA2 BEGIN -->
+### AA2: Audio analysis: fill missing key and BPM from Deezer previews
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:AA2 END -->
 
 ## Scheduled run
 
