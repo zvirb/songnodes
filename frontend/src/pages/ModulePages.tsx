@@ -13,14 +13,7 @@ export const SourcesPage: React.FC = () => {
   usePageHeader({ lead: 'Sources', title: 'Target tracks', current: 'sources' });
   return (
     <main className="sn-page__main" id="main" tabIndex={-1}>
-      <PageHeader
-        mod="sources"
-        here="Target tracks"
-        lead="Sources"
-        title="Target tracks"
-        desc="Tracks SongNodes is hunting for in tracklists, with their priority and search state."
-        actions={<Link className="sn-link sn-m-sources" to="/sources/import"><SnIcon name="file-input" /> Import a tracklist with AI</Link>}
-      />
+      <PageHeader mod="sources" here="Target tracks" lead="Sources" title="Target tracks" desc="Tracks SongNodes is hunting for in tracklists, with their priority and search state." />
       <React.Suspense fallback={<div className="sn-card" aria-busy="true"><span className="sn-spinner" aria-hidden="true" /> Loading target tracks…</div>}>
         <TargetTracksManager />
       </React.Suspense>
