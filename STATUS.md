@@ -1348,8 +1348,12 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 
 <!-- SLOT:NV1 BEGIN -->
 ### NV1: Link to AI setlists and refresh the Home text
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-28
+- Built: Added a link to the AI Setlists import page from the SourcesPage header. Updated the Home page pipeline card to correctly indicate live job telemetry and the sources card to mention imports. Created tests to verify text changes. Recorded decision in docs/integration/NV1/decisions.md.
+- Checks run: `cd frontend && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build`, `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check`.
+- Checks not run: Playwright E2E suite due to environment constraints.
+- Reviewer Check: Open / (Home), menu -> Sources -> Target tracks page shows "Import a tracklist with AI"; following it opens Import tracklist page with Sources marked current in the drawer. Back on Home, Pipeline card no longer says telemetry is not connected.
+- End: 2026-10-28
 <!-- SLOT:NV1 END -->
 
 <!-- SLOT:PF1 BEGIN -->
