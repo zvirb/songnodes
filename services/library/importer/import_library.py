@@ -1,17 +1,18 @@
 import json
 import logging
-from typing import Dict, Any
-from common.datalayer.ingest import upsert_track
+from typing import Any
+
 from common.datalayer.evidence import record as record_evidence
+from common.datalayer.ingest import upsert_track
 from common.datalayer.outbox import append as append_outbox
 
 logger = logging.getLogger(__name__)
 
-async def process_payload(conn, payload: Dict[str, Any]) -> Dict[str, Any]:
+async def process_payload(conn, payload: dict[str, Any]) -> dict[str, Any]:
     async with conn.transaction():
         return await _process_payload(conn, payload)
 
-async def _process_payload(conn, payload: Dict[str, Any]) -> Dict[str, Any]:
+async def _process_payload(conn, payload: dict[str, Any]) -> dict[str, Any]:
     """Processes the library ingest payload safely."""
     stats = {
         'tracks': {'inserted': 0, 'updated': 0, 'unchanged': 0, 'skipped': 0},
@@ -22,7 +23,7 @@ async def _process_payload(conn, payload: Dict[str, Any]) -> Dict[str, Any]:
         'rejected': {'inserted': 0, 'updated': 0, 'unchanged': 0},
         'beatport_check': {'inserted': 0, 'updated': 0, 'unchanged': 0},
         'sources': {'inserted': 0, 'updated': 0, 'unchanged': 0},
-        'runs': {'inserted': 0, 'updated': 0, 'unchanged': 0},
+        'runs': {'inserted': 0, 'updated': 0, 'unchanged': 0, 'skipped': 0},
         'sets': {'inserted': 0, 'updated': 0, 'unchanged': 0}
     }
 
@@ -139,14 +140,35 @@ async def _process_payload(conn, payload: Dict[str, Any]) -> Dict[str, Any]:
             if inserted: stats['rejected']['inserted'] += 1
             else: stats['rejected']['unchanged'] += 1
 
-    for run in payload.get('runs', []):
+    for idx, run in enumerate(payload.get('runs', [])):
+        run_date_val = run.get('run_date')
+        if not run_date_val and run.get('date'):
+            from datetime import datetime
+            from zoneinfo import ZoneInfo
+            try:
+                run_date_val = datetime.strptime(run['date'], "%Y-%m-%d").replace(tzinfo=ZoneInfo('Australia/Melbourne')).isoformat()
+            except ValueError:
+                pass
+
+        if not run_date_val:
+            logger.warning(f"Skipping run at index {idx} due to missing valid date.")
+            stats['runs']['skipped'] += 1
+            continue
+
+        status = run.get('status', 'completed')
+
+        metrics = run.get('metrics')
+        if metrics is None:
+            exclude_keys = {'date', 'run_date', 'status', 'metrics', 'created_at'}
+            metrics = {k: v for k, v in run.items() if k not in exclude_keys}
+
         inserted = await conn.fetchval("""
             INSERT INTO library.runs (run_date, status, metrics, created_at)
             SELECT $1::timestamptz, $2, $3::jsonb, COALESCE($4::timestamptz, NOW())
             WHERE NOT EXISTS (
                 SELECT 1 FROM library.runs WHERE run_date = $1::timestamptz
             ) RETURNING id
-        """, run.get('run_date'), run.get('status'), json.dumps(run.get('metrics', {})), run.get('created_at'))
+        """, run_date_val, status, json.dumps(metrics), run.get('created_at'))
         if inserted: stats['runs']['inserted'] += 1
         else: stats['runs']['unchanged'] += 1
 

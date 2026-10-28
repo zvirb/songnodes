@@ -1230,8 +1230,11 @@ PR: https://github.com/zvirb/songnodes/pull/LY2
 
 <!-- SLOT:L7 BEGIN -->
 ### L7: Library ingest: accept musicLibrary run rows
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-28
+- Built: Updated the library importer (`services/library/importer/import_library.py`) to handle both the canonical `run_date`/`status`/`metrics` format and the flat `date`/`added`... export format from musicLibrary. Timezones default to `Australia/Melbourne`. Missing dates are skipped, logged, and increment the `skipped` counter. Added tests in `tests/library_importer/test_import_library.py` and updated documentation in `contracts/library_ingest.md`.
+- Checks run: `PYTHONPATH=.:services python -m pytest tests/library_importer tests/contracts -q` passes with the 3 new tests. `ruff check --fix services/library/importer tests/library_importer` applied cleanly.
+- Reviewer Check: Rebuild and restart rest-api and worker, re-post the export with a new Idempotency-Key, then `SELECT count(*) FROM library.runs;` returns 2 and library.tracks returns 339.
+- End: 2026-10-28
 <!-- SLOT:L7 END -->
 
 <!-- SLOT:FL5 BEGIN -->
