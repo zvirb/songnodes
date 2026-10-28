@@ -20,7 +20,8 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
   const { send } = pf;
   const uid = useId().replace(/:/g, '');
 
-  useDataLoader();
+  // The graph view may already have loaded the graph; only fetch it when the store is empty.
+  useDataLoader({ onlyIfEmpty: true });
 
   // Use local state for queries and max hops as they are specific to this page
   const [startQuery, setStartQuery] = useState('');
