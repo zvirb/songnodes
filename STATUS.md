@@ -1228,6 +1228,18 @@ PR: https://github.com/zvirb/songnodes/pull/LY2
 - End: 2026-10-27
 <!-- SLOT:LY5 END -->
 
+<!-- SLOT:L7 BEGIN -->
+### L7: Library ingest: accept musicLibrary run rows
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:L7 END -->
+
+<!-- SLOT:FL5 BEGIN -->
+### FL5: Library crate: keyboard row navigation
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:FL5 END -->
+
 ## Scheduled run
 
 ### 2026-10-26 15:10 AEDT (Claude, scheduled run on tuf-boi)
@@ -1270,8 +1282,8 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 
 <!-- SLOT:L6 BEGIN -->
 ### L6: Script: import the musicLibrary SQLite into the running stack
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-26
+- End: 2026-10-27, merged as https://github.com/zvirb/songnodes/pull/228 (slot filled in by the 28 Oct scheduled run)
 <!-- SLOT:L6 END -->
 
 <!-- SLOT:SB4 BEGIN -->
@@ -1416,8 +1428,8 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 
 <!-- SLOT:FL2 BEGIN -->
 ### FL2: Set builder: harmonic and energy transition suggestions
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-27
+- End: 2026-10-27, merged as https://github.com/zvirb/songnodes/pull/267 (slot filled in by the 28 Oct scheduled run)
 <!-- SLOT:FL2 END -->
 
 <!-- SLOT:FL3 BEGIN -->
