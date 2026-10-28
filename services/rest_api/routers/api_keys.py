@@ -999,16 +999,18 @@ async def _test_getsongbpm_key(api_key: str) -> Dict[str, Any]:
     """Test GetSongBPM API key"""
     try:
         # Test with a well-known song (Daft Punk - One More Time)
+        # Same host, query and header as the enrichment provider (services/common/providers/getsongbpm.py);
+        # the key goes in a header, never in the URL.
         params = {
-            'api_key': api_key,
-            'artist': 'Daft Punk',
-            'title': 'One More Time'
+            'type': 'both',
+            'lookup': 'song:One More Time artist:Daft Punk'
         }
 
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                'https://api.getsongbpm.com/search/',
+                'https://api.getsong.co/search/',
                 params=params,
+                headers={'X-API-KEY': api_key},
                 timeout=aiohttp.ClientTimeout(total=10)
             ) as response:
                 if response.status == 200:
@@ -1036,7 +1038,7 @@ async def _test_getsongbpm_key(api_key: str) -> Dict[str, Any]:
                     return {
                         'valid': False,
                         'message': 'Invalid GetSongBPM API key',
-                        'error': 'Authentication failed - check your API key'
+                        'error': 'Key refused. Check the key, and that the backlink page given at sign-up still links to getsongbpm.com.'
                     }
                 elif response.status == 403:
                     return {
