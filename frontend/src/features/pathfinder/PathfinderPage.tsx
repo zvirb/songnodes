@@ -2,7 +2,7 @@
 /* eslint-disable jsx-a11y/no-noninteractive-element-to-interactive-role, jsx-a11y/click-events-have-key-events */
 /* eslint-disable @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-unnecessary-type-assertion */
 import React, { useState, useId, useEffect } from 'react';
-import { Route, Search, ServerCrash, X } from 'lucide-react';
+import { ServerCrash, X } from 'lucide-react';
 import { Title, Bpm, KeyBadge, EnergyBar, SN } from '../../lib/songnodes';
 import { CompatibilityBadge, ErrorPanel, LoadingPanel, AutocompleteSearchField, AutocompleteOption } from '../../components/ds';
 import { EmptyState, PageHeader } from '../../shell/PageParts';
@@ -10,7 +10,6 @@ import { usePageHeader } from '../../shell/AppShell';
 import { Link } from 'react-router-dom';
 import { usePathfinder } from '../../components/PathfinderPanel/hooks';
 import { useUnifiedTracks } from '../../hooks/useUnifiedTracks';
-import { UnifiedTrack } from '../../types/unifiedTrack';
 import '../../components/PathfinderPanel.css';
 
 export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds: string[]) => void }) {
@@ -58,9 +57,10 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
     });
 
     return matches.slice(0, 8).map(t => {
-      const metaParts = [];
-      if (t.key) metaParts.push(t.key);
-      if (t.bpm) metaParts.push(Math.round(t.bpm));
+      const metaParts: string[] = [];
+      const camelot = t.key ? SN.camelot(t.key) : null;
+      if (camelot) metaParts.push(camelot);
+      if (t.bpm) metaParts.push(SN.format.bpm(t.bpm));
 
       return {
         id: t.id,
@@ -133,7 +133,7 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
         <div className="pf__facts" style={{ marginTop: 'var(--space-4)' }}>
           {/* Start Track Picker */}
           <div className="sn-field">
-            <label htmlFor={`${uid}-start`}>Start track</label>
+            <span className="sn-field__label" aria-hidden="true">Start track</span>
 
             {pf.state.startTrack ? (
               <div className="pf__selected">
@@ -158,7 +158,7 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
 
           {/* End Track Picker */}
           <div className="sn-field">
-            <label htmlFor={`${uid}-end`}>End track (optional)</label>
+            <span className="sn-field__label" aria-hidden="true">End track (optional)</span>
 
             {pf.state.endTrack ? (
               <div className="pf__selected">

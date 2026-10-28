@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeAll } from 'vitest';
+import { describe, it, expect, vi, beforeAll, afterEach } from 'vitest';
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
 // Setup basic window.SongNodes for vitest before any imports
@@ -55,15 +55,25 @@ vi.mock('../../components/PathfinderPanel/hooks', () => ({
 }));
 
 describe('PathfinderPage', () => {
+  afterEach(cleanup);
+
   it('renders title and found path', () => {
     render(<MemoryRouter><PathfinderPage /></MemoryRouter>);
     expect(screen.getByText('Pathfinder')).toBeTruthy();
     expect(screen.getByText('Found path')).toBeTruthy();
   });
 
-  // Adding test for the Autocomplete fields rendering as per brief
-  it('renders autocomplete fields for start and end tracks', () => {
+  it('suggests matching routeable tracks and sets the waypoint on selection', () => {
+    mockSend.mockClear();
     render(<MemoryRouter><PathfinderPage /></MemoryRouter>);
-    expect(screen.getAllByLabelText('End track (optional): suggestions')).toBeTruthy();
+    const input = screen.getByRole('combobox', { name: 'End track (optional)' });
+    fireEvent.change(input, { target: { value: 'Track' } });
+    const options = screen.getAllByRole('option');
+    // Track 2 has no key, so it cannot be routed and is not suggested.
+    expect(options).toHaveLength(1);
+    expect(options[0].textContent).toContain('Artist 1 – Track 1');
+    expect(options[0].textContent).toContain('8A');
+    fireEvent.mouseDown(options[0]);
+    expect(mockSend).toHaveBeenCalledWith(expect.objectContaining({ type: 'SET_END_TRACK', track: expect.objectContaining({ id: '1' }) }));
   });
 });
