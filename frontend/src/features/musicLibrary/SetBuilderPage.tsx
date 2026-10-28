@@ -302,7 +302,7 @@ const SetBuilderPage: React.FC = () => {
           <span className="sn-set-slot__empty">
             No track in the pool fits energy {s.tgt} here. Widen the pool, or add one from the library.
             {canSuggest && (
-              <button className="sn-btn sn-btn--quiet sn-btn--sm sn-m-l-3" type="button" aria-expanded={isSuggestOpen} onClick={() => setSuggestOpen(o => o === i ? null : i)} style={{ marginLeft: 'var(--space-4)' }}>
+              <button className="sn-btn sn-btn--quiet sn-btn--sm" type="button" aria-expanded={isSuggestOpen} onClick={() => setSuggestOpen(o => o === i ? null : i)} style={{ marginLeft: 'var(--space-4)' }}>
                 <SnIcon name="wand-sparkles" /> Suggest next
               </button>
             )}
@@ -322,8 +322,8 @@ const SetBuilderPage: React.FC = () => {
                   <span>{m.track.a} – {m.track.t}</span>
                   <span className="sn-mono sn-dim">{m.track.e ?? '–'}</span>
                   <KeyBadge value={m.track.k} />
-                  <span className="sn-mono sn-dim" style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
-                    {m.badges.map((b, bi) => <span key={bi} className="sn-compat-pill" data-level="compatible">{b}</span>)}
+                  <span className="sn-mono sn-dim" style={{ marginLeft: 'auto', display: 'flex', gap: 'var(--space-2)' }}>
+                    {m.badges.map((b, bi) => <CompatPill key={bi} level="compatible" label={b} />)}
                   </span>
                 </button>
               ))}
@@ -390,8 +390,8 @@ const SetBuilderPage: React.FC = () => {
                   <span>{m.track.a} – {m.track.t}</span>
                   <span className="sn-mono sn-dim">{m.track.e ?? '–'}</span>
                   <KeyBadge value={m.track.k} />
-                  <span className="sn-mono sn-dim" style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
-                    {m.badges.map((b, bi) => <span key={bi} className="sn-compat-pill" data-level="compatible">{b}</span>)}
+                  <span className="sn-mono sn-dim" style={{ marginLeft: 'auto', display: 'flex', gap: 'var(--space-2)' }}>
+                    {m.badges.map((b, bi) => <CompatPill key={bi} level="compatible" label={b} />)}
                   </span>
                 </button>
               ))}

@@ -67,17 +67,17 @@ async def library_search(
                pt.bpm,
                pt.camelot_key as k,
                pt.energy_canonical as e,
-               pt.genre as p,
+               pt.genre[1] as p,
                (SELECT r.rotation::int FROM library.rotation_history r WHERE r.track_id = pt.track_id ORDER BY changed_at DESC LIMIT 1) as rot,
                ARRAY(SELECT tag FROM library.track_tags WHERE track_id = pt.track_id) as tags,
-               ARRAY(SELECT source FROM library.appearances WHERE track_id = pt.track_id) as src,
-               (SELECT min(date)::text FROM library.appearances WHERE track_id = pt.track_id) as first,
-               (SELECT max(date)::text FROM library.appearances WHERE track_id = pt.track_id) as last,
-               pt.genre as g,
+               ARRAY(SELECT DISTINCT source FROM library.appearances WHERE track_id = pt.track_id) as src,
+               (SELECT to_char(min(date) AT TIME ZONE 'Australia/Melbourne', 'YYYY-MM-DD') FROM library.appearances WHERE track_id = pt.track_id) as first,
+               (SELECT to_char(max(date) AT TIME ZONE 'Australia/Melbourne', 'YYYY-MM-DD') FROM library.appearances WHERE track_id = pt.track_id) as last,
+               array_to_string(pt.genre, ', ') as g,
                pt.record_label as lbl,
                NULL as sync,
-               pt.tidal_id as tidal,
-               pt.deezer_id as dz,
+               CASE WHEN pt.tidal_id ~ '^[0-9]+$' THEN 'https://tidal.com/browse/track/' || pt.tidal_id ELSE pt.tidal_id END as tidal,
+               CASE WHEN pt.deezer_id ~ '^[0-9]+$' THEN 'https://www.deezer.com/track/' || pt.deezer_id ELSE pt.deezer_id END as dz,
                NULL as bp,
                NULL as chart,
                pt.metadata_review as rev,
@@ -131,7 +131,7 @@ async def library_search(
     if pillar:
         params.append(pillar)
         idx = len(params)
-        where_clauses.append(f"pt.genre = ${idx}")
+        where_clauses.append(f"${idx} = ANY(pt.genre)")
 
     if source:
         params.append(source)
