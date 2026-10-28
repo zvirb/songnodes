@@ -1396,6 +1396,30 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 - End: 2026-10-28
 <!-- SLOT:TV1 END -->
 
+<!-- SLOT:SC3 BEGIN -->
+### SC3: MixesDB: keep every track of a mix
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:SC3 END -->
+
+<!-- SLOT:SC4 BEGIN -->
+### SC4: 1001Tracklists spider starts on current Scrapy
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:SC4 END -->
+
+<!-- SLOT:TX1 BEGIN -->
+### TX1: Send a set to TIDAL as a new dated playlist
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:TX1 END -->
+
+<!-- SLOT:AX1 BEGIN -->
+### AX1: Accessibility fixes on Target tracks and Pipeline
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:AX1 END -->
+
 ## Scheduled run
 
 ### 2026-10-26 15:10 AEDT (Claude, scheduled run on tuf-boi)
