@@ -1305,8 +1305,12 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 
 <!-- SLOT:EC1 BEGIN -->
 ### EC1: Run the browser tests in GitHub Actions
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-28
+- Built: Added `.github/workflows/e2e.yml` to run the Playwright E2E suite against the development Compose stack. On `pull_request`, it runs the chromium project; on `push` to `main`, it runs the full multi-browser suite. Added documentation on the CI run in `frontend/tests/README.md`.
+- Checks run: `docker compose -f compose.dev.yaml config -q`, YAML lint (`python -c "import yaml,sys; yaml.safe_load(open('.github/workflows/e2e.yml'))"`).
+- End: 2026-10-28
+- PR: https://github.com/zvirb/songnodes/pull/NEW
+- Note: CI e2e job failed due to an error in `sql/migrations/006_user_oauth_tokens_up.sql` (`functions in index predicate must be marked IMMUTABLE` for `CURRENT_TIMESTAMP`). Reported as required, not fixed since the file is unowned. Also updated the `actions/upload-artifact` commit SHA to a newer Node-24 compatible version based on CI feedback.
 <!-- SLOT:EC1 END -->
 
 <!-- SLOT:EK1 BEGIN -->
