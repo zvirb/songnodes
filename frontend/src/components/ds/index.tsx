@@ -1669,3 +1669,6 @@ export const KeyCompat = React.forwardRef<HTMLSpanElement, KeyCompatProps>(({
   return <CompatibilityBadge ref={ref} level={c.level} label={c.label} outline={outline} {...props} />;
 });
 KeyCompat.displayName = 'KeyCompat';
+
+export { AutocompleteSearchField } from './AutocompleteSearchField';
+export type { AutocompleteOption, AutocompleteSearchFieldProps } from './AutocompleteSearchField';

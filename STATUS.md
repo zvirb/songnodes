@@ -1316,8 +1316,10 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 
 <!-- SLOT:UX4 BEGIN -->
 ### UX4: Design system: AutocompleteSearchField component
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-28
+- Built: `frontend/src/components/ds/AutocompleteSearchField.tsx` (design system 1.2.0 `.sn-autocomplete`): SearchField plus WAI-ARIA combobox with grouped listbox (recent searches via `utils/recentSearches` when `namespace` is set, suggestions from the caller), ArrowDown/ArrowUp wrap, Enter chooses or searches the typed text, Escape closes then clears, Tab closes, pointer chooses without losing focus, prefix marked bold, never an empty popup. Exported from `components/ds/index.tsx`. 10 tests.
+- Checks run: tsc, vitest (ds 15/15, full 188), oxlint (5 role-over-tag notices inherent to the combobox pattern), design checker. Playwright E2E not run here (no page uses it yet; UX5/UX6 mount it).
+- End: 2026-10-28 (Claude, built directly at Markus's request)
 <!-- SLOT:UX4 END -->
 
 <!-- SLOT:UX5 BEGIN -->
