@@ -1,0 +1,44 @@
+<!-- @dsCard group="Music" height=330 subtitle="Paused, loading, playing, unavailable; live: one preview at a time (playback simulated in this preview)" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>MiniAudioPreview — preview</title>
+<style>.pv-row { display: flex; align-items: center; gap: var(--space-4); min-height: 44px; } .pv-row > span:first-child { width: 120px; flex: none; font-size: 0.8125rem; color: var(--fg-2); }</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">States</div>
+  <div id="states"></div>
+  <div class="sn-preview__label">Live: press play on one, then the other; only one plays (playback is simulated here)</div>
+  <div id="live"></div>
+</div>
+<script>
+  var S = window.SongNodes;
+  function player(o) {
+    var st = o.state || "paused", busy = st === "loading", off = st === "unavailable";
+    var icon = busy ? '<span class="sn-spinner" aria-hidden="true"></span>' : S.icon(st === "playing" ? "pause" : "play");
+    var name = (st === "playing" ? "Pause" : "Play") + " preview of " + o.title;
+    var time = off ? "No preview" : S.format.duration(o.at || 0) + " / " + S.format.duration(o.len || 30);
+    return '<div class="sn-mini-preview" data-state="' + st + '" style="--sn-mini-preview-pct:' + Math.round(100 * (o.at || 0) / (o.len || 30)) + '%"' + (o.id ? ' id="' + o.id + '"' : "") + '>' +
+      '<button class="sn-mini-preview__btn" type="button" aria-pressed="' + (st === "playing") + '"' + (busy ? ' aria-busy="true"' : "") + (off ? " disabled" : "") + ' aria-label="' + S.esc(off ? "No preview for " + o.title : name) + '">' + icon + '</button>' +
+      '<span class="sn-mini-preview__track" aria-hidden="true"><span class="sn-mini-preview__fill"></span></span>' +
+      '<span class="sn-mini-preview__time">' + time + '</span></div>';
+  }
+  function row(label, html) { return '<div class="pv-row"><span>' + label + '</span>' + html + '</div>'; }
+  document.getElementById("states").innerHTML =
+    row("Paused", player({ title: "Bicep – Glue" })) +
+    row("Loading", player({ title: "Bicep – Glue", state: "loading" })) +
+    row("Playing", player({ title: "Bicep – Glue", state: "playing", at: 12 })) +
+    row("Unavailable", player({ title: "Overmono – So U Kno", state: "unavailable" }));
+
+  var tracks = [{ id: "lv1", title: "Bicep – Glue" }, { id: "lv2", title: "Overmono – So U Kno" }], playing = null, at = { lv1: 0, lv2: 0 }, timer = null;
+  function draw() { document.getElementById("live").innerHTML = tracks.map(function (t) { return row(S.esc(t.title), player({ id: t.id, title: t.title, state: playing === t.id ? "playing" : "paused", at: at[t.id] })); }).join(""); }
+  draw();
+  document.getElementById("live").addEventListener("click", function (e) {
+    var b = e.target.closest(".sn-mini-preview__btn"); if (!b) return;
+    var id = b.parentNode.id; playing = playing === id ? null : id; clearInterval(timer);
+    if (playing) timer = setInterval(function () { at[playing] = at[playing] + 1; if (at[playing] >= 30) { at[playing] = 0; playing = null; clearInterval(timer); } draw(); document.querySelector("#" + id + " button") && document.querySelector("#" + id + " button").focus(); }, 1000);
+    draw(); document.querySelector("#" + id + " button").focus();
+  });
+</script>
+</body>
+</html>

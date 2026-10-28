@@ -387,3 +387,23 @@
   .sn-set-slot--empty .sn-set-slot__empty { grid-column: 2 / 3; grid-row: 1; padding: var(--space-2) var(--space-3); }
   .sn-set-slot__spares, .sn-set-slot-list .sn-transition-note { padding-left: calc(var(--space-3) + 2rem); }
 }
+
+/* DataTable keyboard row navigation (1.2.0): the active row (J/K, arrow keys) is outlined, separate from selection. */
+.sn-table tr[data-active] { outline: 2px solid var(--focus); outline-offset: -2px; }
+.sn-data-table__box[data-keyboard]:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* MiniAudioPreview (1.2.0): a 32px inline preview player: play/pause, progress, time. */
+.sn-mini-preview { display: inline-flex; align-items: center; gap: var(--space-2); height: var(--control-sm); min-width: 0; max-width: 100%; }
+.sn-mini-preview__btn { display: inline-grid; place-items: center; flex: none; width: var(--control-sm); height: var(--control-sm); padding: 0; border: 1px solid var(--line-strong); border-radius: var(--radius-pill); background: var(--surface-1); color: var(--fg); cursor: pointer; }
+.sn-mini-preview__btn .sn-icon { width: 14px; height: 14px; }
+.sn-mini-preview__btn:hover { background: var(--hover-bg); }
+.sn-mini-preview[data-state="playing"] .sn-mini-preview__btn { background: var(--fg); border-color: var(--fg); color: var(--bg); }
+.sn-mini-preview__btn .sn-spinner { width: 14px; height: 14px; border-width: 2px; }
+.sn-mini-preview__btn:disabled { cursor: not-allowed; color: var(--fg-disabled); border-style: dashed; background: transparent; }
+.sn-mini-preview__track { position: relative; flex: 1 1 64px; min-width: 40px; max-width: 160px; height: 4px; border-radius: var(--radius-pill); background: var(--progress-track); overflow: hidden; }
+.sn-mini-preview__fill { position: absolute; inset: 0 auto 0 0; width: var(--sn-mini-preview-pct, 0%); background: var(--progress-fill); border-radius: inherit; }
+.sn-mini-preview[data-state="playing"] .sn-mini-preview__fill { background: var(--fg); }
+.sn-mini-preview__time { flex: none; min-width: 9ch; font: 400 0.75rem/1 var(--font-data); font-variant-numeric: tabular-nums; color: var(--fg-2); white-space: nowrap; }
+.sn-mini-preview[data-state="unavailable"] .sn-mini-preview__time { color: var(--fg-3); min-width: 0; }
+.sn-mini-preview[data-state="unavailable"] .sn-mini-preview__track { display: none; }
+@media (pointer: coarse) { .sn-mini-preview { height: var(--touch-min); } .sn-mini-preview__btn { width: var(--touch-min); height: var(--touch-min); } }

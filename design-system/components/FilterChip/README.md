@@ -24,6 +24,14 @@ Use for short sets of categories (2–10 options) that people combine. For long 
 - Energy tier: `data-tier="low|building|high"` with `<span class="sn-filter-chip__tier" aria-hidden="true"><i></i><i></i><i></i></span>`: a mini 3-segment bar (4px segments rising 6/9/12px) showing the tier's range, so it reads as a slice of the `EnergyBar`, not a single colour. Low = `energy-1`, `energy-3`, `energy-4` (1–4 compressed into three marks); Building = `energy-5`, `energy-6`, `energy-7`; High = `energy-8`, `energy-9`, `energy-10`. A mark, never a fill; the label carries the range. Labels come from `TIER_LABEL`: "Low 1–4", "Building 5–7", "High 8–10".
 - Emphasis: `sn-filter-chip--emph` gives Rotation High a `brand-soft` tint while off.
 - Empty: `data-empty` (dashed border, dim) when the count is 0. Keep it operable; selecting it shows the empty state.
+- Preset (1.2.0): a saved filter view. `li.sn-filter-chip-preset` joins the apply chip to a delete button:
+  ```html
+  <li class="sn-filter-chip-preset">
+    <button class="sn-chip sn-filter-chip" type="button" aria-pressed="false">Warmup 118–122</button>
+    <button class="sn-filter-chip-preset__remove" type="button" aria-label="Delete preset Warmup 118–122"><svg class="sn-icon">x</svg></button>
+  </li>
+  ```
+  Presets sit in their own group (legend "Presets") at the top of the FilterRail, followed by a quiet small button "Save current filters" (`sn-btn sn-btn--quiet sn-btn--sm` with the `save` icon, disabled while no filter is set) that asks for a name in a TextField. Pressing a preset applies all its filters at once (and updates the URL); it shows pressed while the current filters equal it exactly. Delete removes it at once and offers Undo in a Toast. Names are the person's own, sentence case, at most 40 characters.
 
 ## States
 Off: outline. On: `fg` fill with ✓ (from `sn-chip`), so state never relies on colour. Hover: `hover-bg`. Focus: `focus` ring.
