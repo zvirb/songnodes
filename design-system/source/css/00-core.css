@@ -94,6 +94,13 @@ html[data-motion="reduce"] *, html[data-motion="reduce"] *::before, html[data-mo
 a.sn-card, button.sn-card { text-align: left; font: inherit; cursor: pointer; text-decoration: none; transition: border-color var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard); }
 a.sn-card:hover, button.sn-card:hover { border-color: var(--m, var(--line-strong)); }
 .sn-card__head { display: flex; align-items: center; gap: var(--space-2); }
+/* A card whose only content is a table or a lone Empty/Loading/Error state stays flush: the table cells (or the
+   state panel) carry the inset, so the content is not double-inset. :where() keeps this at .sn-card specificity,
+   so it beats the base padding by order and a page's own card padding still wins. */
+.sn-card:where(:has(> :is(.sn-tablebox, .sn-data-table, .sn-empty-state, .sn-loading-state, .sn-error-state):only-child)) { padding: 0; overflow: hidden; }
+.sn-card:where(:has(> .sn-tablebox:only-child)) > .sn-tablebox, .sn-card:where(:has(> .sn-data-table:only-child)) .sn-data-table__box { border: 0; border-radius: 0; }
+.sn-card:where(:has(> .sn-data-table:only-child)) .sn-data-table__bar { padding: var(--space-3) var(--space-3) 0; }
+.sn-card:where(:has(> .sn-error-state:only-child)) > .sn-error-state { border: 0; border-radius: 0; }
 .sn-card__foot { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; margin-top: auto; padding-top: var(--space-3); border-top: 1px solid var(--line); }
 .sn-card--tonal .sn-card__foot { border-top-color: var(--m-line); }
 
@@ -144,7 +151,7 @@ a.sn-card:hover, button.sn-card:hover { border-color: var(--m, var(--line-strong
 .sn-tab:hover { color: var(--fg); }
 .sn-tab[aria-selected="true"] { color: var(--fg); }
 .sn-tab[aria-selected="true"]::after { content: ""; position: absolute; left: var(--space-2); right: var(--space-2); bottom: -1px; height: 2px; border-radius: 2px; background: var(--m, var(--brand)); }
-.sn-tab__badge { min-width: 18px; padding: 0 5px; border-radius: var(--radius-pill); background: var(--surface-3); color: var(--fg); font: 600 0.6875rem/18px var(--font-data); text-align: center; }
+.sn-tab__badge { min-width: 18px; padding: 0 var(--space-2); white-space: nowrap; border-radius: var(--radius-pill); background: var(--surface-3); color: var(--fg); font: 600 0.6875rem/18px var(--font-data); text-align: center; }
 .sn-tab__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--brand); }
 
 /* -- segmented control (mode switch) ---------------------------------- */
@@ -162,11 +169,15 @@ a.sn-card:hover, button.sn-card:hover { border-color: var(--m, var(--line-strong
 .sn-table th button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .sn-table th[aria-sort="ascending"] button::after { content: "↑"; color: var(--brand); }
 .sn-table th[aria-sort="descending"] button::after { content: "↓"; color: var(--brand); }
-.sn-table td { height: var(--row-h); padding: 0 var(--space-3); border-bottom: 1px solid var(--line); vertical-align: middle; }
-.sn-table tbody tr:last-child td { border-bottom: 0; }
-.sn-table tbody tr:hover td { background: var(--hover-bg); }
-.sn-table tr[aria-selected="true"] td { background: var(--brand-soft); }
-.sn-table tr[data-flag] td { background: var(--flag-bg); }
+.sn-table td { height: var(--row-h); padding: var(--space-1) var(--space-3); border-bottom: 1px solid var(--line); vertical-align: middle; }
+/* Row headers (tbody th scope=row) and footer labels (tfoot th) take the BODY cell's box, not the column-header style.
+   :where() keeps it at .sn-table th specificity, so page grids (WeeklyGrid, Matrix) can still restyle them. */
+.sn-table :where(tbody, tfoot) th { position: static; z-index: auto; height: var(--row-h); padding: var(--space-1) var(--space-3); background: transparent; font: inherit; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--fg); white-space: normal; vertical-align: middle; }
+.sn-table tfoot :is(th, td) { border-top: 1px solid var(--line-strong); border-bottom: 0; }
+.sn-table tbody tr:last-child :is(td, th) { border-bottom: 0; }
+.sn-table tbody tr:hover :is(td, th) { background: var(--hover-bg); }
+.sn-table tr[aria-selected="true"] :is(td, th) { background: var(--brand-soft); }
+.sn-table tr[data-flag] :is(td, th) { background: var(--flag-bg); }
 .sn-table tr[data-now] td:first-child { box-shadow: inset 3px 0 0 var(--now); }
 .sn-table td.num, .sn-table th.num { text-align: right; font-family: var(--font-data); font-variant-numeric: tabular-nums; font-size: 0.8125rem; }
 .sn-table .sn-group td { background: var(--sunk); height: 32px; font: 600 0.75rem/1.2 var(--font-body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-3); }

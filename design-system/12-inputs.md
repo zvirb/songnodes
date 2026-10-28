@@ -14,6 +14,7 @@ Every control says what it does, shows its state without colour alone, and can b
 | `AutocompleteSearchField` | Search with completions: recent searches, then artists, titles, tags or tracks to choose with the arrow keys |
 | `FilterRail` | The column of filters beside a table (`rail-w`) |
 | `TextField`, `NumberField`, `SelectField`, `DateField`, `SecretField` | Single values |
+| `DateRange` | Pick a from–to span on a two-month calendar popover (export, print, filter); typed dates stay in `DateField` |
 | `Checkbox` | Include/exclude a condition; form agreement |
 | `Switch` | A setting that takes effect immediately |
 | `RangeSlider` | A range of numbers (BPM 122–128, energy 5–8) |
@@ -79,13 +80,24 @@ Never use a `Switch` inside a form that has a Save button; never use a `Checkbox
 | Field | Rules |
 |---|---|
 | `NumberField` | `inputmode="numeric"` or `"decimal"`, unit outside the input ("min", "BPM"), steppers `minus`/`plus` optional, arrow keys step, Shift+arrow ×10. Accept "124.0" and "124". |
-| `DateField` | Shows "24 Oct 2026"; accepts typed "24/10/2026" (en-AU day first) and ISO; `calendar` icon opens a picker; weeks start Monday. |
+| `DateField` | Shows "24 Oct 2026"; accepts typed "24/10/2026" (en-AU day first) and ISO; the range variant's `calendar` icon button ("Pick the dates on the calendar") opens `DateRange`; weeks start Monday. |
 | `SelectField` | Native `select` (`.sn-select`) up to ~15 options; above that, a searchable list. Options in a meaningful order (set shapes by energy shape, not alphabetical). |
 | `Checkbox` | `.sn-check`; the whole label is clickable; groups wrapped in `fieldset` + `legend`. |
 | `SecretField` | For API keys and tokens: masked by default, `eye`/`eye-off` reveal toggle (`aria-pressed`), `CopyButton`, shows only the last four characters after saving ("•••• 3f9a"). Never prefill a secret into the DOM after save. |
 | `ChipInput` | Enter or comma adds; Backspace on empty removes the last; paste of a list splits on commas and new lines. |
 | `RangeSlider` | Two thumbs with visible values, each also typeable; `aria-valuetext` "122 to 128 BPM". |
 | `KeyPicker` | Selected keys use `KeyBadge`; the wheel is optional, a 12×2 grid is the accessible default. |
+
+## Date ranges
+
+Added in 1.3.0, ported from the BeanAlliance `DateRange` (v4.17.3) and fitted to SongNodes.
+
+- Typing is always possible; the calendar is the second way in. A span in a form or filter is a `DateField` range with its calendar button; a span behind an export or print is `DateRange` opened from that button, with the outcome named for what it does ("Download CSV", "Print").
+- Picking: the first pick is From, the second To; picking before From swaps them. A preset sets both and leaves the popover open; typing or picking a day unpresses it.
+- Presets in order: Last 7 days · Last 30 days · This year, then the page's own spans. Pages that work by week may add Last week · This week · Next week (Monday–Sunday, Melbourne dates).
+- Selection is `brand-soft` with `brand`-edged ends, never a solid fill; today is amber `now` plus the word. Weekends are not greyed (club nights are weekends). Day marks are a code, an underline and a name, never a status colour.
+- The range in words comes from `SongNodes.format.range` ("Mon 9 – Fri 13 Nov 2026 · 5 days"); date-only values never pass through a time zone; today is `SongNodes.calendar.today()` (Melbourne).
+- Keys follow the WAI-ARIA date picker grid: arrows, Page Up / Page Down (Shift for a year), Home / End, Enter or Space, Escape returns focus to the opener.
 
 ## Files, photos and pasted tracklists
 
