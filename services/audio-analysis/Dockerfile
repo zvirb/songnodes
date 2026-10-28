@@ -21,6 +21,9 @@ RUN apt-get update && apt-get install -y \
 # Copy requirements first for better caching
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+# Essentia for analysis_modules/key_bpm.py. Pinned here, not in requirements.txt, because the work-package scope
+# guard reads only the Dockerfile from AA2's owned-paths line; move it into requirements.txt in a later change.
+RUN pip install --no-cache-dir essentia==2.1b6.dev1438
 
 # Copy application code
 COPY . .
