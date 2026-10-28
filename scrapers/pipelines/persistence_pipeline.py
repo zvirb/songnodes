@@ -839,7 +839,7 @@ class PersistencePipeline:
         table_map = {
             'bronze_tracks': 'bronze_scraped_tracks',
             'bronze_playlists': 'bronze_scraped_playlists',
-            'artists': 'artists',
+            'artists': 'bronze_scraped_artists',
             'tracks': 'silver_enriched_tracks',
             'playlists': 'silver_enriched_playlists',
             'playlist_tracks': 'silver_playlist_tracks',
@@ -1135,29 +1135,32 @@ class PersistencePipeline:
         return results
 
     async def _insert_artists_batch(self, conn, batch: List[Dict[str, Any]]):
-        """Insert artists batch with upsert logic."""
+        """Insert artists batch to bronze_scraped_artists (medallion architecture)."""
+        import json
+
+        records = []
+        for item in batch:
+            source = item.get('data_source') or item.get('source') or item.get('platform') or 'unknown'
+            source_url = item.get('source_url', 'unknown')
+            source_artist_id = item.get('source_artist_id') or item.get('spotify_id') or item.get('apple_music_id') or item.get('soundcloud_id') or item.get('name')
+            scraper_version = item.get('scraper_version', 'v1.0.0')
+            raw_json = json.dumps(item, default=str)
+            artist_name = item.get('name', '')
+            records.append((source, source_url, source_artist_id, scraper_version, raw_json, artist_name))
+
         await conn.executemany("""
-            INSERT INTO artists (name, genres, country, popularity_score, spotify_id, apple_music_id, soundcloud_id)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
-            ON CONFLICT (name) DO UPDATE SET
-                genres = COALESCE(EXCLUDED.genres, artists.genres),
-                country = COALESCE(EXCLUDED.country, artists.country),
-                popularity_score = COALESCE(EXCLUDED.popularity_score, artists.popularity_score),
-                spotify_id = COALESCE(EXCLUDED.spotify_id, artists.spotify_id),
-                apple_music_id = COALESCE(EXCLUDED.apple_music_id, artists.apple_music_id),
-                soundcloud_id = COALESCE(EXCLUDED.soundcloud_id, artists.soundcloud_id),
-                updated_at = CURRENT_TIMESTAMP
-        """, [
-            (
-                item['name'],
-                [item['genre']] if item.get('genre') else None,
-                item.get('country'),
-                item.get('popularity_score'),
-                item.get('spotify_id'),
-                item.get('apple_music_id'),
-                item.get('soundcloud_id')
-            ) for item in batch
-        ])
+            INSERT INTO bronze_scraped_artists (
+                source, source_url, source_artist_id, scraper_version,
+                raw_json, artist_name
+            )
+            VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (source, source_artist_id) DO UPDATE SET
+                source_url = EXCLUDED.source_url,
+                scraper_version = EXCLUDED.scraper_version,
+                raw_json = EXCLUDED.raw_json,
+                artist_name = EXCLUDED.artist_name,
+                scraped_at = NOW()
+        """, records)
 
     async def _insert_songs_batch(self, conn, batch: List[Dict[str, Any]]):
         """
@@ -1682,54 +1685,24 @@ class PersistencePipeline:
         """
         Clean up when spider closes and log persistence statistics.
 
-        Uses separate thread with event loop to avoid Twisted/asyncio conflicts.
+        Flushes remaining batches and closes connection pool directly on the event loop.
 
         Args:
             spider: Spider instance
         """
         self.logger.info("=" * 80)
-        self.logger.info("🔄 close_spider called - flushing remaining batches before stopping thread...")
+        self.logger.info("🔄 close_spider called - stopping flush thread and performing final cleanup...")
         self.logger.info("=" * 80)
         try:
             # Log batch sizes before flushing
             with self._flushing_lock:
-                total_pending = 0
+                total_pending = sum(len(batch) for batch in self.item_batches.values())
                 for batch_type, batch in self.item_batches.items():
                     if batch:
                         self.logger.info(f"  📦 Pending {batch_type}: {len(batch)} items")
-                        total_pending += len(batch)
-                    else:
-                        self.logger.debug(f"  📭 Empty batch: {batch_type}")
                 self.logger.info(f"  📊 Total pending items across all batches: {total_pending}")
 
-            # CRITICAL: Do final flush BEFORE stopping the thread
-            # The persistent thread's event loop must still be running to execute the flush
-            if self._persistent_loop and self.connection_pool and self.flush_thread and self.flush_thread.is_alive():
-                try:
-                    # Use asyncio.run_coroutine_threadsafe to schedule in the persistent thread's loop
-                    import concurrent.futures
-                    import time
-                    self.logger.info("Scheduling final flush_all_batches() in persistent loop...")
-                    future = asyncio.run_coroutine_threadsafe(
-                        self.flush_all_batches(),
-                        self._persistent_loop
-                    )
-                    # Wait for completion with MUCH longer timeout to handle large batches
-                    self.logger.info("Waiting for flush completion (timeout: 300s)...")
-                    future.result(timeout=300)
-                    # Give extra time for database commits to fully complete
-                    time.sleep(0.5)
-                    self.logger.info("✓ All batches flushed successfully")
-                except concurrent.futures.TimeoutError:
-                    self.logger.error("❌ Timeout waiting for final batch flush")
-                except Exception as e:
-                    self.logger.error(f"❌ Error during final flush: {e}")
-                    import traceback
-                    self.logger.error(traceback.format_exc())
-            else:
-                self.logger.warning("⚠️ No persistent loop or connection pool - skipping final flush")
-
-            # NOW stop the periodic flushing thread
+            # 1. Signal periodic flush thread to stop and join it first
             if self.flush_thread and self.flush_thread.is_alive():
                 self.logger.info("Stopping periodic flush thread...")
                 self._stop_flushing.set()
@@ -1738,6 +1711,30 @@ class PersistencePipeline:
                     self.logger.warning("Periodic flush thread did not stop gracefully")
                 else:
                     self.logger.info("✓ Periodic flush thread stopped")
+
+            # 2. Run final batch flush directly on the event loop
+            if self._persistent_loop and not self._persistent_loop.is_closed():
+                if self.connection_pool:
+                    try:
+                        self.logger.info("Flushing remaining batches in persistent event loop...")
+                        self._persistent_loop.run_until_complete(self.flush_all_batches())
+                        self.logger.info("✓ All batches flushed successfully")
+                    except Exception as e:
+                        self.logger.error(f"❌ Error during final flush: {e}")
+
+                    # 3. Safely close asyncpg connection pool on loop
+                    try:
+                        self.logger.info("Closing database connection pool...")
+                        self._persistent_loop.run_until_complete(self.connection_pool.close())
+                        self.logger.info("✓ Database connection pool closed successfully")
+                    except Exception as e:
+                        self.logger.error(f"Error closing connection pool: {e}")
+
+                # 4. Close event loop without producing unawaited coroutine warnings
+                self._persistent_loop.close()
+                self.logger.info("✓ Persistent event loop closed")
+            else:
+                self.logger.warning("⚠️ No active persistent loop - skipping final flush")
 
             # Log persistence statistics
             self.logger.info("=" * 80)
@@ -1762,53 +1759,6 @@ class PersistencePipeline:
                     self.logger.info(f"    {item_type}: {count}")
 
             self.logger.info("=" * 80)
-
-            # Close connection pool using the persistent thread's event loop
-            if self.connection_pool and self._persistent_loop:
-                try:
-                    import concurrent.futures
-                    future = asyncio.run_coroutine_threadsafe(
-                        self.connection_pool.close(),
-                        self._persistent_loop
-                    )
-                    future.result(timeout=10)
-                    self.logger.info("✓ Database connection pool closed successfully")
-                except Exception as e:
-                    self.logger.error(f"Error closing connection pool: {e}")
-
-            # Gracefully shutdown the persistent event loop
-            if self._persistent_loop:
-                try:
-                    # Cancel all pending tasks in the loop
-                    def cancel_pending_tasks():
-                        pending = asyncio.all_tasks(loop=self._persistent_loop)
-                        if pending:
-                            self.logger.info(f"Cancelling {len(pending)} pending asyncio tasks...")
-                            for task in pending:
-                                task.cancel()
-                            # Wait for tasks to finish cancellation
-                            return asyncio.gather(*pending, return_exceptions=True)
-                        return None
-
-                    # Schedule task cancellation in the persistent loop
-                    import concurrent.futures
-                    future = asyncio.run_coroutine_threadsafe(
-                        cancel_pending_tasks() or asyncio.sleep(0),
-                        self._persistent_loop
-                    )
-                    # Wait for cancellation to complete (with short timeout)
-                    try:
-                        future.result(timeout=2.0)
-                        self.logger.info("✓ All pending tasks cancelled")
-                    except concurrent.futures.TimeoutError:
-                        self.logger.warning("⚠️ Timeout cancelling tasks, forcing shutdown")
-
-                    # Now stop the event loop
-                    self._persistent_loop.call_soon_threadsafe(self._persistent_loop.stop)
-                    self.logger.info("✓ Persistent event loop stopped")
-                except Exception as e:
-                    self.logger.error(f"Error shutting down event loop: {e}")
-
             self.logger.info("✓ Persistence pipeline closed successfully")
 
         except Exception as e:
