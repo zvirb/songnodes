@@ -1,4 +1,3 @@
-import essentia.standard as es
 import numpy as np
 import logging
 
@@ -8,6 +7,13 @@ except ImportError:
     # Fallback for testing standalone if needed, though we expect sys.path to be set
     def to_camelot(key_str):
         return None
+
+try:
+    import essentia.standard as es
+    HAS_ESSENTIA = True
+except ImportError:
+    import librosa
+    HAS_ESSENTIA = False
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +79,66 @@ def analyse(samples: np.ndarray, sample_rate: float) -> dict:
     # If clip is very short (< 5 seconds), confidence should be low
     low_confidence = len(samples) < 5 * 44100
 
+    if not HAS_ESSENTIA:
+        # LIBROSA FALLBACK
+        try:
+            # Resample to 22050 for Librosa standard if needed
+            if sample_rate != 22050:
+                samples = librosa.resample(samples, orig_sr=sample_rate, target_sr=22050)
+                sample_rate = 22050
+
+            # Key extraction (CQT chroma with Krumhansl-Schmuckler)
+            chroma = librosa.feature.chroma_cqt(y=samples, sr=sample_rate)
+            chroma_vals = np.sum(chroma, axis=1)
+
+            # Simple Krumhansl profiles
+            maj_profile = [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88] # Using Krumhansl as simple baseline, but for 'EDM-weighted' one might boost the bass. We'll leave K-S.
+            min_profile = [6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17]
+
+            best_corr = -1
+            best_key = ""
+            pitch_classes = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B']
+
+            for i in range(12):
+                # Major
+                corr_maj = np.corrcoef(chroma_vals, np.roll(maj_profile, i))[0, 1]
+                if corr_maj > best_corr:
+                    best_corr = corr_maj
+                    best_key = f"{pitch_classes[i]} major"
+
+                # Minor
+                corr_min = np.corrcoef(chroma_vals, np.roll(min_profile, i))[0, 1]
+                if corr_min > best_corr:
+                    best_corr = corr_min
+                    best_key = f"{pitch_classes[i]} minor"
+
+            if best_key:
+                result['key_name'] = best_key
+                result['key_camelot'] = to_camelot(best_key)
+                result['key_confidence'] = float(best_corr) if not low_confidence else min(0.2, float(best_corr))
+
+        except Exception as e:
+            logger.error(f"Librosa key error: {e}")
+
+        try:
+            # BPM extraction
+            onset_env = librosa.onset.onset_strength(y=samples, sr=sample_rate)
+            # Apply tempo prior for dance music using beat_track
+            bpm, _ = librosa.beat.beat_track(onset_envelope=onset_env, sr=sample_rate, start_bpm=128.0)
+            if isinstance(bpm, np.ndarray):
+                bpm = bpm[0]
+
+            if bpm > 0:
+                folded_bpm = _fold_bpm(float(bpm))
+                result['raw_bpm'] = float(bpm)
+                result['bpm'] = folded_bpm
+                result['bpm_confidence'] = 0.5 if not low_confidence else 0.2
+        except Exception as e:
+            logger.error(f"Librosa BPM error: {e}")
+
+        result['method'] = 'librosa_fallback'
+        return result
+
     try:
         # Key extraction
         key_extractor = es.KeyExtractor(profileType='edma')
@@ -114,8 +180,11 @@ def analyse_file(filepath: str) -> dict:
         Same dict as `analyse`
     """
     try:
-        loader = es.MonoLoader(filename=filepath, sampleRate=44100)
-        samples = loader()
+        if HAS_ESSENTIA:
+            loader = es.MonoLoader(filename=filepath, sampleRate=44100)
+            samples = loader()
+        else:
+            samples, _ = librosa.load(filepath, sr=44100, mono=True)
         return analyse(samples, 44100)
     except Exception as e:
         logger.error(f"Error loading file {filepath}: {e}")
