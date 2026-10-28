@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { useEffect, useCallback } from 'react';
 import { UnifiedTrack, UseUnifiedTracks, TargetPriority } from '../types/unifiedTrack';
-import { fetchTargetTracks, fetchLibraryFixture } from '../services/unifiedTrackService';
+import { fetchTargetTracks, fetchLibraryTracks } from '../services/unifiedTrackService';
 import { getLocalTargets, syncTargetTrack } from '../services/trackSyncAdapter';
 
 interface UnifiedTracksStore {
@@ -69,7 +69,7 @@ export function useUnifiedTracks(): UseUnifiedTracks {
     try {
       let targets: UnifiedTrack[] = [];
       let libTracks: UnifiedTrack[] = [];
-      let dataMode: 'backend' | 'library-fixture' | 'mixed' = 'mixed';
+      let dataMode: 'backend' | 'library-fixture' | 'mixed' = 'backend';
 
       try {
         targets = await fetchTargetTracks();
@@ -78,7 +78,9 @@ export function useUnifiedTracks(): UseUnifiedTracks {
       }
 
       try {
-        libTracks = await fetchLibraryFixture();
+        const result = await fetchLibraryTracks();
+        libTracks = result.tracks;
+        dataMode = result.source;
       } catch (err) {
         throw new Error('Failed to load library data: ' + (err instanceof Error ? err.message : String(err)), { cause: err });
       }
@@ -126,10 +128,6 @@ export function useUnifiedTracks(): UseUnifiedTracks {
           }
         }
       });
-
-      if (targets.length === 0) {
-        dataMode = 'library-fixture';
-      }
 
       setTracks(hydratedTracks, Array.from(allTargetsMap.values()), dataMode);
     } catch (err) {

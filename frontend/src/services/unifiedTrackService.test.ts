@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fetchTargetTracks, fetchLibraryFixture, fromLibraryRow } from './unifiedTrackService';
+import { fetchTargetTracks, fetchLibraryTracks, fromLibraryRow } from './unifiedTrackService';
 import { LibraryTrack } from '../features/musicLibrary/data';
+import * as dataModule from '../features/musicLibrary/data';
 
 // Mock the SN utility for camelot normalisation
 vi.mock('../lib/songnodes', () => ({
@@ -41,8 +42,8 @@ describe('unifiedTrackService', () => {
     });
   });
 
-  describe('fetchLibraryFixture', () => {
-    it('fetches and maps library fixture', async () => {
+  describe('fetchLibraryTracks', () => {
+    it('fetches and maps library tracks', async () => {
       const mockLibraryTrack = {
         id: 'lib-1', a: 'Artist', t: 'Title', m: 'Mix', d: 120, bpm: 125.123,
         k: '8A', e: 7, p: null, rot: null, tags: [], src: [],
@@ -51,16 +52,22 @@ describe('unifiedTrackService', () => {
         chart: null, rev: false, ovr: false, local: false
       };
 
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({ tracks: [mockLibraryTrack] })
+      vi.spyOn(dataModule, 'loadLibrary').mockResolvedValue({
+        generated: '2023',
+        ledger_updated: '2023',
+        counts: { tracks: 1, pending: 0, rejected: 0, beatport_check: 0 },
+        sources: [],
+        runs: [],
+        tracks: [mockLibraryTrack],
+        _source: 'backend'
       });
 
-      const tracks = await fetchLibraryFixture();
+      const { tracks, source } = await fetchLibraryTracks();
 
       expect(tracks.length).toBe(1);
       expect(tracks[0].id).toBe('lib-1');
       expect(tracks[0].bpm).toBe(125.1); // One decimal
+      expect(source).toBe('backend');
     });
   });
 
