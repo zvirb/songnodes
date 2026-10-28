@@ -4,10 +4,10 @@ name: python-tests
 
 on:
   pull_request:
-    paths: ["services/**", "scrapers/**", "tests/**", "pytest.ini", ".github/workflows/python-tests.yml"]
+    paths: ["services/**", "scrapers/**", "pipeline/**", "tests/**", "pytest.ini", ".github/workflows/python-tests.yml"]
   push:
     branches: [main, develop]
-    paths: ["services/**", "scrapers/**", "tests/**", "pytest.ini"]
+    paths: ["services/**", "scrapers/**", "pipeline/**", "tests/**", "pytest.ini"]
 
 permissions:
   contents: read

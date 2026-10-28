@@ -13,7 +13,9 @@ DEFAULT_HOST = os.getenv("REF_MB_HOST", os.getenv("MB_LOCAL_HOST", "127.0.0.1"))
 DEFAULT_PORT = int(os.getenv("REF_MB_PORT", os.getenv("MB_LOCAL_PORT", "55433")))
 DEFAULT_DB = os.getenv("REF_MB_DB", os.getenv("MB_LOCAL_DATABASE", "ref_mb"))
 DEFAULT_USER = os.getenv("REF_MB_USER", os.getenv("MB_LOCAL_USER", "ref_mb_admin"))
-DEFAULT_PASSWORD_FILE = os.getenv("REF_MB_PASSWORD_FILE")
+# Where the ref_mb setup writes the admin password (a file path, not a secret).
+_PASSWORD_FILE_PATH = os.path.join("ref_mb", "secrets", "ref_mb_admin_password.txt")
+DEFAULT_PASSWORD_FILE = os.getenv("REF_MB_PASSWORD_FILE") or _PASSWORD_FILE_PATH
 
 _pool: Optional[SimpleConnectionPool] = None
 
