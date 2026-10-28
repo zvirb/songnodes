@@ -2,14 +2,15 @@ name: songnodes-dev
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     environment:
       POSTGRES_USER: songnodes
       POSTGRES_DB: songnodes
+      PGDATA: /var/lib/postgresql/data/pgdata
       # Local development only; no database port is exposed to the host.
       POSTGRES_HOST_AUTH_METHOD: trust
     volumes:
-      - dev-postgres:/var/lib/postgresql/data
+      - dev-postgres-18:/var/lib/postgresql/data
       - ./sql/migrations/medallion/001_bronze_layer_up.sql:/docker-entrypoint-initdb.d/001-bronze.sql:ro
       - ./sql/migrations/medallion/002_silver_layer_up.sql:/docker-entrypoint-initdb.d/002-silver.sql:ro
       - ./sql/migrations/medallion/006_track_adjacency_edges_up.sql:/docker-entrypoint-initdb.d/006-transitions.sql:ro
@@ -185,4 +186,5 @@ services:
 
 volumes:
   dev-postgres:
+  dev-postgres-18:
   dev-rabbitmq-4:
