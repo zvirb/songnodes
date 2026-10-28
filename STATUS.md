@@ -1406,8 +1406,10 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 
 <!-- SLOT:FL4 BEGIN -->
 ### FL4: Design system: MiniAudioPreview component
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-28
+- Built: `frontend/src/components/ds/MiniAudioPreview.tsx` (design system 1.2.0 `.sn-mini-preview`): 32px play/pause, progress fill, mono time; paused, loading, playing, unavailable (no clip, error or rejected play); shared `previewAudioManager` keeps one preview playing app-wide; unmount and clip change stop and release audio. 7 tests with a fake Audio.
+- Checks run: tsc, vitest (7/7), oxlint (0 findings in these files), design checker. Playwright E2E not run here (no page uses it yet; FL1 wires Space).
+- End: 2026-10-28 (Claude, built directly at Markus's request)
 <!-- SLOT:FL4 END -->
 
 <!-- SLOT:DS7 BEGIN -->
