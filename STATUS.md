@@ -1616,3 +1616,9 @@ Ended 2026-10-26 22:29: Audited Pathfinder (DS7). Fixed CSS typography variables
 - PR: [ART3-DB: Persist Artwork in SQLite and Set Builder JSON Export](https://github.com/zvirb/songnodes/pull/NEW)
 - End: 2026-10-29
 <!-- SLOT:ART3 END -->
+
+<!-- SLOT:DS18 BEGIN -->
+### DS18: Design system 1.3.0: calendar and text inset from LedgerSchedule
+- Start: 2026-10-28
+- End: 2026-10-28 - design-system/ mirrored to 1.3.0 from the artifact and re-synced (VERSION 1.3.0). Added DateRange (calendar range popover) and the DateField calendar button, SongNodes.calendar / format.range / format.dayLong / dateRange / iconNames, the menu icon-gap part, and the text-inset fixes from a browser audit of all previews (05-layout "Text inset"). Q10–Q18 in 17-governance wait for Markus. Checks: sync --check and check_design_system.py --check pass; frontend checks in the PR body.
+<!-- SLOT:DS18 END -->
