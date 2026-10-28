@@ -74,6 +74,21 @@ def test_upstream_error_is_502(monkeypatch, client):
 def test_only_allowed_hosts_and_schemes(client):
     assert client.post('/analyze-url', json={'url': 'http://169.254.169.254/latest'}).status_code == 422
     assert client.post('/analyze-url', json={'url': 'file:///etc/passwd'}).status_code == 422
+    for url in ('https://evil.dzcdn.net.example.com/a.mp3', 'https://deezer.com/a.mp3',
+                'https://cdnt-preview.dzcdn.net:8443/a.mp3', 'https://user@cdnt-preview.dzcdn.net/a.mp3'):
+        assert client.post('/analyze-url', json={'url': url}).status_code == 422, url
+
+
+def test_download_goes_to_https_on_the_preview_host(monkeypatch, client):
+    seen = []
+
+    def handler(request):
+        seen.append(str(request.url))
+        return httpx.Response(403, text='expired')
+
+    serve(monkeypatch, handler)
+    client.post('/analyze-url', json={'url': PREVIEW.replace('https://', 'http://')})
+    assert seen == [PREVIEW]
 
 
 @pytest.mark.skipif(not main.key_bpm.HAS_ESSENTIA, reason='Essentia not installed')

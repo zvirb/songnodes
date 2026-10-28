@@ -13,7 +13,7 @@ import os
 import logging
 import asyncio
 import tempfile
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 from datetime import datetime
 from typing import Dict, Any, Optional
 from contextlib import asynccontextmanager
@@ -299,8 +299,15 @@ async def metrics():
 # temporary file for the length of the request.
 ANALYZE_URL_MAX_BYTES = int(os.getenv('ANALYZE_URL_MAX_BYTES', str(5 * 1024 * 1024)))
 ANALYZE_URL_TIMEOUT_SECONDS = float(os.getenv('ANALYZE_URL_TIMEOUT_SECONDS', '20'))
-# Hosts the service downloads from (suffix match); Deezer serves previews from *.dzcdn.net.
-ANALYZE_URL_HOSTS = tuple(h.strip().lower() for h in os.getenv('ANALYZE_URL_HOSTS', 'dzcdn.net,deezer.com').split(',') if h.strip())
+# The only hosts the service downloads from: Deezer's preview CDN. Fixed in code (no environment override), and
+# the request URL is rebuilt on the matched constant host, so a caller cannot point the service anywhere else.
+PREVIEW_HOSTS = (
+    'cdnt-preview.dzcdn.net',
+    'cdns-preview-0.dzcdn.net', 'cdns-preview-1.dzcdn.net', 'cdns-preview-2.dzcdn.net', 'cdns-preview-3.dzcdn.net',
+    'cdns-preview-4.dzcdn.net', 'cdns-preview-5.dzcdn.net', 'cdns-preview-6.dzcdn.net', 'cdns-preview-7.dzcdn.net',
+    'cdns-preview-8.dzcdn.net', 'cdns-preview-9.dzcdn.net', 'cdns-preview-a.dzcdn.net', 'cdns-preview-b.dzcdn.net',
+    'cdns-preview-c.dzcdn.net', 'cdns-preview-d.dzcdn.net', 'cdns-preview-e.dzcdn.net', 'cdns-preview-f.dzcdn.net',
+)
 AUDIO_SUFFIXES = {'audio/mpeg': '.mp3', 'audio/mp3': '.mp3', 'audio/mp4': '.m4a', 'audio/aac': '.aac',
                   'audio/ogg': '.ogg', 'audio/flac': '.flac', 'audio/wav': '.wav', 'audio/x-wav': '.wav'}
 
@@ -314,12 +321,16 @@ def analyze_url_client() -> httpx.AsyncClient:
     return httpx.AsyncClient(timeout=ANALYZE_URL_TIMEOUT_SECONDS, follow_redirects=False)
 
 
-def _allowed_url(url: str) -> bool:
+def _preview_url(url: str) -> Optional[str]:
+    """The URL rebuilt as https on the matching PREVIEW_HOSTS entry, or None when the host is not a preview host."""
     parsed = urlparse(url)
+    if parsed.scheme not in ('http', 'https') or parsed.port is not None or parsed.username or parsed.password:
+        return None
     host = (parsed.hostname or '').lower()
-    if parsed.scheme not in ('http', 'https') or not host:
-        return False
-    return not ANALYZE_URL_HOSTS or any(host == h or host.endswith('.' + h) for h in ANALYZE_URL_HOSTS)
+    for allowed in PREVIEW_HOSTS:
+        if host == allowed:
+            return urlunparse(('https', allowed, parsed.path or '/', '', parsed.query, ''))
+    return None
 
 
 async def _download(url: str, path_holder: list) -> int:
@@ -353,12 +364,13 @@ async def analyze_url(request: AnalyzeUrlRequest) -> Dict[str, Any]:
     Returns AA1's result dict: bpm, raw_bpm, bpm_confidence, key_camelot, key_name, key_confidence, method,
     method_version. Nothing is kept on disk after the request.
     """
-    if not _allowed_url(request.url):
-        raise HTTPException(status_code=422, detail='url must be http(s) on an allowed host')
+    url = _preview_url(request.url)
+    if url is None:
+        raise HTTPException(status_code=422, detail='url must be a Deezer preview address')
     paths: list = []
     try:
         try:
-            size = await asyncio.wait_for(_download(request.url, paths), timeout=ANALYZE_URL_TIMEOUT_SECONDS)
+            size = await asyncio.wait_for(_download(url, paths), timeout=ANALYZE_URL_TIMEOUT_SECONDS)
         except asyncio.TimeoutError:
             raise HTTPException(status_code=504, detail='clip download timed out')
         except httpx.HTTPError as error:
