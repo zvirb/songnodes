@@ -67,9 +67,10 @@ class APIKeyCreate(BaseModel):
     @validator('service_name')
     def validate_service_name(cls, v):
         allowed_services = [
-            'spotify', 'discogs', 'lastfm', 'beatport',
+            'spotify', 'discogs', 'lastfm',
             'musicbrainz', 'youtube', 'setlistfm', 'reddit',
-            '1001tracklists', 'getsongbpm'
+            '1001tracklists', 'getsongbpm',
+            'anthropic', 'openai', 'google'
         ]
         if v.lower() not in allowed_services:
             raise ValueError(f'Service must be one of: {", ".join(allowed_services)}')
@@ -132,6 +133,7 @@ async def get_api_key_requirements(pool = Depends(get_db_pool)):
             SELECT service_name, key_name, display_name, description,
                    required, documentation_url, display_order
             FROM api_key_requirements
+            WHERE service_name <> 'beatport'
             ORDER BY display_order
             """
             rows = await conn.fetch(query)
@@ -374,12 +376,6 @@ async def _test_api_key_by_service(
         return await _test_lastfm_key(key_value, key_name)
     elif service_name == 'musicbrainz':
         return await _test_musicbrainz_user_agent(key_value)
-    elif service_name == 'beatport':
-        return {
-            'valid': True,
-            'message': 'Beatport API key saved (testing not available)',
-            'details': {'note': 'Beatport does not have a public API for testing'}
-        }
     elif service_name == 'setlistfm':
         return await _test_setlistfm_key(key_value)
     elif service_name == 'reddit':
@@ -388,6 +384,12 @@ async def _test_api_key_by_service(
         return await _test_1001tracklists_key(key_value, key_name, conn)
     elif service_name == 'getsongbpm':
         return await _test_getsongbpm_key(key_value)
+    elif service_name == 'anthropic':
+        return await _test_anthropic_key(key_value)
+    elif service_name == 'openai':
+        return await _test_openai_key(key_value)
+    elif service_name == 'google':
+        return await _test_google_key(key_value)
     else:
         return {
             'valid': False,
@@ -1064,6 +1066,18 @@ async def _test_getsongbpm_key(api_key: str) -> Dict[str, Any]:
             'message': f'GetSongBPM test failed: {str(e)}',
             'error': str(e)
         }
+_ERROR_MAX_CHARS = 200
+
+
+def _safe_error(text: str, api_key: str) -> str:
+    """Bound a provider error for storage/response and make sure it never echoes the key."""
+    text = text or ""
+    if api_key:
+        text = text.replace(api_key, "[redacted]")
+    # Redact before truncating so a key can never survive half-cut at the limit.
+    return text[:_ERROR_MAX_CHARS]
+
+
 async def _test_anthropic_key(api_key: str) -> Dict[str, Any]:
     try:
         async with aiohttp.ClientSession() as session:
@@ -1091,13 +1105,13 @@ async def _test_anthropic_key(api_key: str) -> Dict[str, Any]:
                     return {
                         'valid': False,
                         'message': f'Anthropic API error: {response.status}',
-                        'error': await response.text()
+                        'error': _safe_error(await response.text(), api_key)
                     }
     except Exception as e:
         return {
             'valid': False,
-            'message': f'Anthropic test failed: {str(e)}',
-            'error': str(e)
+            'message': f'Anthropic test failed: {_safe_error(str(e), api_key)}',
+            'error': _safe_error(str(e), api_key)
         }
 
 async def _test_openai_key(api_key: str) -> Dict[str, Any]:
@@ -1126,13 +1140,13 @@ async def _test_openai_key(api_key: str) -> Dict[str, Any]:
                     return {
                         'valid': False,
                         'message': f'OpenAI API error: {response.status}',
-                        'error': await response.text()
+                        'error': _safe_error(await response.text(), api_key)
                     }
     except Exception as e:
         return {
             'valid': False,
-            'message': f'OpenAI test failed: {str(e)}',
-            'error': str(e)
+            'message': f'OpenAI test failed: {_safe_error(str(e), api_key)}',
+            'error': _safe_error(str(e), api_key)
         }
 
 async def _test_google_key(api_key: str) -> Dict[str, Any]:
@@ -1161,11 +1175,11 @@ async def _test_google_key(api_key: str) -> Dict[str, Any]:
                     return {
                         'valid': False,
                         'message': f'Google API error: {response.status}',
-                        'error': await response.text()
+                        'error': _safe_error(await response.text(), api_key)
                     }
     except Exception as e:
         return {
             'valid': False,
-            'message': f'Google test failed: {str(e)}',
-            'error': str(e)
+            'message': f'Google test failed: {_safe_error(str(e), api_key)}',
+            'error': _safe_error(str(e), api_key)
         }
