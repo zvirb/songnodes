@@ -34,7 +34,7 @@ cd design-system && python3 source/build_tokens.py . && python3 source/build_bun
 ## Tokens
 
 <!-- BEGIN GENERATED: tokens -->
-<!-- tokens.json 1.1.1; themes: dark (Dark), light (Light), booth (Booth) -->
+<!-- tokens.json 1.2.0; themes: dark (Dark), light (Light), booth (Booth) -->
 
 ### Colour (`var(--name)`; value per theme where they differ)
 
@@ -1503,7 +1503,7 @@ cd frontend && npm run test:e2e -- --workers=1
 </div>
 ```
 
-### Music (11)
+### Music (12)
 
 #### BpmReadout
 
@@ -1559,6 +1559,18 @@ cd frontend && npm run test:e2e -- --workers=1
 <span class="sn-key" data-key="8A" title="A minor">8A</span>
 <span class="sn-key sn-key-badge--lg" data-key="8A">8A <span class="sn-key__name">A minor</span></span>
 <span class="sn-key" data-unknown>–<span class="sn-sr">Key not set</span></span>
+```
+
+#### MiniAudioPreview
+
+```html
+<div class="sn-mini-preview" data-state="playing" style="--sn-mini-preview-pct: 40%">
+  <button class="sn-mini-preview__btn" type="button" aria-pressed="true" aria-label="Pause preview of Bicep – Glue">
+    <svg class="sn-icon">pause</svg>
+  </button>
+  <span class="sn-mini-preview__track" aria-hidden="true"><span class="sn-mini-preview__fill"></span></span>
+  <span class="sn-mini-preview__time">0:12 / 0:30</span>
+</div>
 ```
 
 #### SetCard
@@ -1889,7 +1901,49 @@ cd frontend && npm run test:e2e -- --workers=1
 </span>
 ```
 
-### Inputs (16)
+### Inputs (17)
+
+#### AutocompleteSearchField
+
+```html
+<form class="sn-search-field sn-autocomplete" role="search">
+  <label class="sn-sr" for="q">Search tracks</label>
+  <div class="sn-search-field__box">
+    <span class="sn-search-field__icon"><svg class="sn-icon">search</svg></span>
+    <input class="sn-input sn-search-field__input" type="search" id="q" role="combobox"
+           aria-autocomplete="list" aria-expanded="true" aria-controls="q-list"
+           aria-activedescendant="q-opt-s1" aria-describedby="q-meta" autocomplete="off" spellcheck="false">
+    <span class="sn-search-field__end">
+      <button class="sn-search-field__clear" type="button" aria-label="Clear search">…</button>
+    </span>
+    <div class="sn-autocomplete__popup">
+      <div class="sn-autocomplete__list" role="listbox" id="q-list" aria-label="Search tracks: suggestions">
+        <div class="sn-autocomplete__group" role="group" aria-labelledby="q-g-recent">
+          <span class="sn-autocomplete__group-label" id="q-g-recent">Recent searches</span>
+          <div class="sn-autocomplete__options">
+            <div class="sn-autocomplete__option" role="option" id="q-opt-r1" tabindex="-1" aria-selected="false">
+              <span class="sn-autocomplete__icon" aria-hidden="true"><svg class="sn-icon">history</svg></span>
+              <span class="sn-autocomplete__text"><mark>bic</mark>ep glue</span>
+            </div>
+          </div>
+        </div>
+        <div class="sn-autocomplete__group" role="group" aria-labelledby="q-g-sugg">
+          <span class="sn-autocomplete__group-label" id="q-g-sugg">Suggestions</span>
+          <div class="sn-autocomplete__options">
+            <div class="sn-autocomplete__option" role="option" id="q-opt-s1" tabindex="-1" aria-selected="true">
+              <span class="sn-autocomplete__icon" aria-hidden="true"><svg class="sn-icon">search</svg></span>
+              <span class="sn-autocomplete__text"><mark>Bic</mark>ep</span>
+              <span class="sn-autocomplete__meta">Artist · 41</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sn-autocomplete__foot"><button class="sn-autocomplete__clear" type="button">Clear recent searches</button></div>
+    </div>
+  </div>
+  <div class="sn-search-field__meta" id="q-meta">…count, as SearchField…</div>
+</form>
+```
 
 #### Checkbox
 

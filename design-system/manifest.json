@@ -24,6 +24,7 @@
     "assets/Icons/README.md",
     "components/AppHeader/README.md",
     "components/AuthCallbackPage/README.md",
+    "components/AutocompleteSearchField/README.md",
     "components/Banner/README.md",
     "components/BpmReadout/README.md",
     "components/Breadcrumbs/README.md",
@@ -71,6 +72,7 @@
     "components/LogPage/README.md",
     "components/MatrixPage/README.md",
     "components/MediaViewer/README.md",
+    "components/MiniAudioPreview/README.md",
     "components/MonitoringPage/README.md",
     "components/NavDrawer/README.md",
     "components/NumberField/README.md",
@@ -199,6 +201,11 @@
       "name": "AuthCallbackPage",
       "group": "Pages",
       "summary": "The page Spotify and TIDAL send you back to after sign-in: it shows progress, then says you are connected or what went wrong."
+    },
+    {
+      "name": "AutocompleteSearchField",
+      "group": "Inputs",
+      "summary": "A SearchField that offers completions as you type: recent searches when the field is empty, then artists, titles, tags and keys that start with what you typed, ch…"
     },
     {
       "name": "Banner",
@@ -434,6 +441,11 @@
       "name": "MediaViewer",
       "group": "Surfaces",
       "summary": "A full-screen viewer for artwork, photos and track waveforms with zoom and pan, caption with source and alt text, previous/next, and close."
+    },
+    {
+      "name": "MiniAudioPreview",
+      "group": "Music",
+      "summary": "A 32px inline player for a track's preview clip: one play/pause button, a thin progress line and the time in mono, with only one preview playing anywhere in…"
     },
     {
       "name": "MonitoringPage",

@@ -35,6 +35,16 @@ Toggle chips that narrow a list: pick any number in a group (pillars, energy tie
 | `tier` | `"low" \| "building" \| "high"` | Energy tier swatch for tier chips. |
 | `emphasis` | `boolean` | Brand-soft emphasis while off (Rotation High). |
 
+## FilterPresetsProps (preset variant)
+
+| prop | type | note |
+| --- | --- | --- |
+| `presets` * | `FilterPreset[]` | Saved presets ({ id, label }) in the order they were saved. |
+| `activeId` | `string` | Id of the preset that matches the current filters exactly, if any (rendered pressed). |
+| `onApply` * | `(id: string) => void` | Apply a preset. |
+| `onDelete` * | `(id: string) => void` | Delete a preset (show a Toast with Undo). |
+| `onSave` * | `(label: string) => void` | Save the current filters under a name; disabled when no filter is set. |
+
 ## More
 
 Long-form usage: `components/FilterChip/README.md`.

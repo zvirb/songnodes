@@ -16,6 +16,7 @@ The table for every list of records: sortable headers, sticky header, right-alig
 - Flagged rows `data-flag` (`flag-bg`) always pair with a TrackCell flag word. The now row `data-now` gets the 3px amber `--now` bar (now is its own amber token; selection stays `brand-soft`).
 - Density: comfortable 40px or compact 32px via `data-density`, saved per person with `SongNodes.prefs.setDensity`.
 - Column chooser: a disclosure button with `aria-expanded`. "Shown by default" (crate: Energy, Track, BPM, Key, Pillar, Rotation, Heard) and "Optional" (Last heard, Links, Label, Duration, Year, Sources). Track can't be hidden. "Reset to default"; Escape closes and returns focus. Save choices per person.
+- Keyboard row navigation (1.2.0, opt-in): the scroll box takes focus (`tabindex="0"`, `data-keyboard`, `aria-keyshortcuts="J K Enter Space T"`). J or ArrowDown moves to the next row, K or ArrowUp to the previous; the active row gets `data-active` (a 2px `focus` outline, separate from selection) and scrolls into view. Enter opens the active track, Space plays or pauses its MiniAudioPreview, T adds it to target tracks, X toggles its checkbox. Shortcuts are ignored while focus is in a text field, a select or a dialog. A polite live region names the active row ("4 of 120: Bicep – Glue"). List the keys in the ShortcutSheet.
 - States: loading (5 skeleton rows, `aria-busy`), empty (why nothing matched and how to widen it), error (what failed and what to do, Try again, `role="alert"`). The header stays visible in all three; select-all is disabled.
 
 ## Alignment

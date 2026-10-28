@@ -40,6 +40,11 @@ The table for every list of records: sortable headers, sticky header, right-alig
 | `emptyMessage` | `{ title: string; body: string; action?: ReactNode }` | Empty and error copy plus their single action. |
 | `errorMessage` | `{ title: string; body: string; action?: ReactNode }` | Error copy: what happened and what to do next. |
 | `maxHeight` | `string` | Max height of the scroll box before the sticky header takes over (default 480px). |
+| `keyboard` | `boolean` | Keyboard row navigation (J/K, arrows, Enter, Space, T): the scroll box takes focus; default false. |
+| `activeRowId` | `string` | Id of the keyboard-active row (outlined, not selected). |
+| `onActiveRowChange` | `(id: string) => void` | Called when J/K or the arrow keys move the active row. |
+| `onRowOpen` | `(row: T) => void` | Enter on the active row (open the track). |
+| `rowShortcuts` | `Record<string, (row: T) => void>` | Single-letter quick actions on the active row, e.g. { t: addToTargets, " ": togglePreview }. |
 
 ### DataTableColumn
 

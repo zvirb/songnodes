@@ -1,4 +1,4 @@
-<!-- @dsCard group="Inputs" height=367 subtitle="Pillar, energy tier (mini 3-segment bar), rotation and tag chips with counts; multi-select with Clear; empty count" -->
+<!-- @dsCard group="Inputs" height=440 subtitle="Saved presets with delete; pillar, energy tier (mini 3-segment bar), rotation and tag chips with counts; multi-select with Clear; empty count" -->
 <!doctype html>
 <html>
 <head><meta charset="utf-8"><title>FilterChip — preview</title></head>
@@ -29,15 +29,27 @@
       '<button type="button" class="sn-filter-chip-group__clear" hidden>Clear</button></div>' +
       '<ul class="sn-filter-chip-group__list">' + g.chips.map(function (c) { return chip(g, c); }).join("") + '</ul></div>';
   }).join("");
+  var PRESETS = [["p1", "Warmup 118–122", false], ["p2", "Peak acid techno", true], ["p3", "Closing vocals", false]];
+  document.getElementById("groups").insertAdjacentHTML("afterbegin",
+    '<div class="sn-filter-chip-group" role="group" aria-labelledby="lg-presets"><div class="sn-filter-chip-group__head"><span class="sn-filter-chip-group__legend" id="lg-presets">Presets</span>' +
+    '<button type="button" class="sn-btn sn-btn--quiet sn-btn--sm">' + S.icon("save") + 'Save current filters</button></div>' +
+    '<ul class="sn-filter-chip-group__list" id="preset-list">' + PRESETS.map(function (p) {
+      return '<li class="sn-filter-chip-preset"><button type="button" class="sn-chip sn-filter-chip" data-preset="' + p[0] + '" aria-pressed="' + p[2] + '">' + S.esc(p[1]) + '</button>' +
+        '<button type="button" class="sn-filter-chip-preset__remove" aria-label="Delete preset ' + S.esc(p[1]) + '">' + S.icon("x") + '</button></li>';
+    }).join("") + '</ul></div>');
 
   var live = document.getElementById("live");
   function sync(grp) {
     var on = grp.querySelectorAll('.sn-filter-chip[aria-pressed="true"]').length, clr = grp.querySelector(".sn-filter-chip-group__clear");
+    if (!clr) return;
     clr.hidden = on === 0; clr.textContent = "Clear (" + on + ")";
     clr.setAttribute("aria-label", "Clear " + on + " " + grp.dataset.group.toLowerCase() + " filter" + (on === 1 ? "" : "s"));
   }
   document.querySelectorAll(".sn-filter-chip-group").forEach(sync);
   document.addEventListener("click", function (e) {
+    var pr = e.target.closest("[data-preset]"), rm = e.target.closest(".sn-filter-chip-preset__remove");
+    if (rm) { var li = rm.closest("li"), nm = li.querySelector("[data-preset]").textContent; li.remove(); live.textContent = "Preset " + nm + " deleted"; return; }
+    if (pr) { document.querySelectorAll("[data-preset]").forEach(function (x) { x.setAttribute("aria-pressed", x === pr ? "true" : "false"); }); live.textContent = "Applied preset " + pr.textContent; return; }
     var c = e.target.closest(".sn-filter-chip"), grp;
     if (c) { var on = c.getAttribute("aria-pressed") !== "true"; c.setAttribute("aria-pressed", on); grp = c.closest(".sn-filter-chip-group"); sync(grp); live.textContent = c.dataset.label + (on ? " on" : " off"); return; }
     var clr = e.target.closest(".sn-filter-chip-group__clear");

@@ -17,7 +17,8 @@ Data is the product. Show the value, its unit and its meaning in that order, in 
 | `SourceBadge` | Where a track or play came from | Heard on, links, imports | Service connection status (`ServiceStatus`) |
 | `FigureTile` | One headline figure + label + change | Stats rows, launcher figures | Long lists of numbers (`KeyValueGrid`) |
 | `KeyValueGrid` | Label/value pairs | Track detail, job detail | Comparisons across rows (`DataTable`) |
-| `DataTable` | Sortable, selectable rows | Crate, jobs, imports, history | Fewer than 4 items (use a list) |
+| `DataTable` | Sortable, selectable rows, optional J/K keyboard navigation | Crate, jobs, imports, history | Fewer than 4 items (use a list) |
+| `MiniAudioPreview` | 32px play/pause, progress and time for a preview clip; one plays at a time | Crate rows, set slots, suggestions | Full playback or analysis (`WaveformStrip`) |
 | `Heatmap` | Counts over two dimensions | Keys × energy, shows × days | Exact values (pair with a table) |
 | `Card`, `SetCard`, `SetSlot` | Grouped objects; a saved set; one running-order row | Indexes, set building | Page layout boxes |
 | `ChartFrame` + `EnergyWave`, `Sparkline`, `WaveformStrip`, `CamelotWheel` | Charts with title, legend, table fallback | Shapes over time or space | Single numbers |
@@ -151,6 +152,7 @@ This replaces `getScoreColor` in `components/IntelligentBrowser/utils.ts` (#7ED3
 - Crate default columns: Energy, Track, BPM, Key, Pillar, Rotation, Heard (plus the row's add-to-set action). "Last heard", Links and the IDs are optional columns, added from the column chooser.
 - Row states: hover `hover-bg`, selected `brand-soft` (`aria-selected`), flagged `flag-bg` + warn marker (`data-flag`), now playing amber `--now` inset bar (`data-now`), never `brand`.
 - Comfortable 40px rows by default; compact 32px via `data-density="compact"`.
+- Keyboard-active row (J/K): `data-active`, a 2px `focus` outline, separate from selection; see DataTable "Keyboard row navigation".
 - Empty table: `EmptyState` inside the box, the header row stays.
 
 ## Key-value grids

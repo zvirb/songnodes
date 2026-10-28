@@ -1,0 +1,98 @@
+<!-- @dsCard group="Inputs" height=560 subtitle="Live: recent searches on focus, completions as you type, arrow keys and Enter; states: recent only, suggestions with active option, no match" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>AutocompleteSearchField — preview</title>
+<style>.pv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-5) var(--space-6); align-items: start; } .pv-static { margin-bottom: 300px; } .pv-static .sn-autocomplete__popup { animation: none; }</style>
+</head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-preview__label">Live: focus to see recent searches, type “bi”, “ov” or “8a”, use ↓ ↑ and Enter, Escape to close</div>
+  <div style="max-width: 440px; min-height: 360px" id="live-slot"></div>
+  <div class="sn-preview__label">States</div>
+  <div class="pv-grid" id="states"></div>
+</div>
+<script>
+  var S = window.SongNodes;
+  var VOCAB = [
+    { v: "Bicep", meta: "Artist · 41" }, { v: "Bicep – Glue", meta: "Track · 5A" }, { v: "Bicep – Atlas", meta: "Track · 8A" },
+    { v: "Big Beat", meta: "Tag · 23" }, { v: "Overmono", meta: "Artist · 18" }, { v: "Overmono – So U Kno", meta: "Track · 4A" },
+    { v: "8A", meta: "Key · 112" }, { v: "8B", meta: "Key · 97" }, { v: "Breaks", meta: "Tag · 64" },
+    { v: "Ross From Friends", meta: "Artist · 12" }, { v: "Interplanetary Criminal", meta: "Artist · 9" }
+  ];
+  var recent = ["bicep glue", "overmono", "peak acid"];
+  var n = 0;
+  function mark(text, q) { var t = S.esc(text); if (!q) return t; var i = text.toLowerCase().indexOf(q.toLowerCase()); if (i !== 0) return t; return "<mark>" + S.esc(text.slice(0, q.length)) + "</mark>" + S.esc(text.slice(q.length)); }
+  function opt(id, icon, text, q, meta, active) {
+    return '<div class="sn-autocomplete__option" role="option" id="' + id + '" tabindex="-1" aria-selected="' + (active ? "true" : "false") + '">' +
+      '<span class="sn-autocomplete__icon" aria-hidden="true">' + S.icon(icon) + '</span>' +
+      '<span class="sn-autocomplete__text">' + mark(text, q) + '</span>' + (meta ? '<span class="sn-autocomplete__meta">' + S.esc(meta) + '</span>' : "") + '</div>';
+  }
+  function group(id, label, items) { return items ? '<div class="sn-autocomplete__group" role="group" aria-labelledby="' + id + '"><span class="sn-autocomplete__group-label" id="' + id + '">' + label + '</span><div class="sn-autocomplete__options">' + items + '</div></div>' : ""; }
+  function model(q) {
+    var rq = recent.filter(function (r) { return !q || r.indexOf(q.toLowerCase()) === 0; }).slice(0, 5);
+    var sq = q ? VOCAB.filter(function (w) { return w.v.toLowerCase().indexOf(q.toLowerCase()) === 0; }).slice(0, 8) : [];
+    return { recent: rq, sugg: sq };
+  }
+  function popupHtml(base, q, m, activeIdx) {
+    var k = 0, r = "", s = "";
+    m.recent.forEach(function (x) { r += opt(base + "-o" + k, "history", x, q, "", activeIdx === k); k++; });
+    m.sugg.forEach(function (x) { s += opt(base + "-o" + k, "search", x.v, q, x.meta, activeIdx === k); k++; });
+    return '<div class="sn-autocomplete__list" role="listbox" id="' + base + '-list" aria-label="Search tracks: suggestions">' + group(base + "-gr", "Recent searches", r) + group(base + "-gs", "Suggestions", s) + '</div>' +
+      (m.recent.length ? '<div class="sn-autocomplete__foot"><button class="sn-autocomplete__clear" type="button">Clear recent searches</button></div>' : "");
+  }
+  function field(o) {
+    var id = "ac" + (++n);
+    return '<form class="sn-search-field sn-autocomplete' + (o.cls ? " " + o.cls : "") + '" role="search" onsubmit="return false"' + (o.value ? "" : " data-empty") + '>' +
+      '<label class="sn-sr" for="' + id + '">Search tracks</label>' +
+      '<div class="sn-search-field__box"><span class="sn-search-field__icon">' + S.icon("search") + '</span>' +
+      '<input class="sn-input sn-search-field__input" type="search" id="' + id + '" role="combobox" aria-autocomplete="list" aria-expanded="' + (o.popup ? "true" : "false") + '" aria-controls="' + id + '-list" placeholder="Search artist, title, tag or key" autocomplete="off" spellcheck="false" aria-describedby="' + id + '-meta" value="' + S.esc(o.value || "") + '"' + (o.active != null ? ' aria-activedescendant="' + id + '-o' + o.active + '"' : "") + '>' +
+      '<span class="sn-search-field__end"><button type="button" class="sn-search-field__clear" aria-label="Clear search">' + S.icon("x") + '</button></span>' +
+      '<div class="sn-autocomplete__popup"' + (o.popup ? "" : " hidden") + '>' + (o.popup ? popupHtml(id, o.value || "", o.popup, o.active) : "") + '</div></div>' +
+      '<div class="sn-search-field__meta" id="' + id + '-meta">' + (o.meta || "") + '</div></form>';
+  }
+  function count(k) { return '<span class="sn-search-field__count" role="status"><b>' + S.format.count(k) + '</b> of ' + S.format.count(1284) + ' tracks</span>'; }
+
+  var states = document.getElementById("states");
+  states.innerHTML =
+    '<div><div class="sn-preview__label">Focused, empty: recent searches</div>' + field({ cls: "pv-static", popup: model(""), meta: count(1284) }) + '</div>' +
+    '<div><div class="sn-preview__label">Typing “bi”, second option active</div>' + field({ cls: "pv-static", value: "bi", popup: model("bi"), active: 1, meta: count(52) }) + '</div>' +
+    '<div><div class="sn-preview__label">No match: popup closed, count explains</div>' + field({ value: "zzq", meta: count(0) + '<span>No tracks match “zzq”. Check the spelling or clear filters.</span>' }) + '</div>';
+
+  // Live field
+  var slot = document.getElementById("live-slot");
+  slot.innerHTML = field({ meta: count(1284) });
+  var form = slot.querySelector("form"), input = form.querySelector("input"), pop = form.querySelector(".sn-autocomplete__popup"), metaEl = form.querySelector(".sn-search-field__meta");
+  var base = input.id, active = -1, cur = { recent: [], sugg: [] };
+  function total() { return cur.recent.length + cur.sugg.length; }
+  function render() {
+    var q = input.value; cur = model(q);
+    form.toggleAttribute("data-empty", !q);
+    var open = document.activeElement === input && total() > 0;
+    if (active >= total()) active = total() - 1;
+    pop.hidden = !open; input.setAttribute("aria-expanded", open ? "true" : "false");
+    pop.innerHTML = open ? popupHtml(base, q, cur, active) : "";
+    if (open && active >= 0) input.setAttribute("aria-activedescendant", base + "-o" + active); else input.removeAttribute("aria-activedescendant");
+    var hits = q ? VOCAB.filter(function (w) { return w.v.toLowerCase().indexOf(q.toLowerCase()) >= 0; }).length * 5 : 1284;
+    metaEl.innerHTML = count(hits);
+    var a = pop.querySelector('[aria-selected="true"]'); if (a) a.scrollIntoView({ block: "nearest" });
+  }
+  function choose(i) {
+    var v = i < cur.recent.length ? cur.recent[i] : (i >= 0 ? cur.sugg[i - cur.recent.length].v : input.value);
+    if (!v) return; input.value = v; recent = [v.toLowerCase()].concat(recent.filter(function (r) { return r !== v.toLowerCase(); })).slice(0, 10);
+    active = -1; pop.hidden = true; input.setAttribute("aria-expanded", "false"); metaEl.innerHTML = count(17);
+  }
+  input.addEventListener("focus", function () { active = -1; render(); });
+  input.addEventListener("blur", function () { setTimeout(function () { pop.hidden = true; input.setAttribute("aria-expanded", "false"); }, 0); });
+  input.addEventListener("input", function () { active = -1; render(); });
+  input.addEventListener("keydown", function (e) {
+    var open = !pop.hidden;
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); if (!open) { render(); return; } var t = total(); active = e.key === "ArrowDown" ? (active + 1) % t : (active <= 0 ? t - 1 : active - 1); render(); }
+    else if (e.key === "Enter") { e.preventDefault(); choose(open ? active : -1); }
+    else if (e.key === "Escape") { if (open) { e.preventDefault(); pop.hidden = true; input.setAttribute("aria-expanded", "false"); } else { input.value = ""; render(); } }
+    else if (e.key === "Tab") { pop.hidden = true; }
+  });
+  pop.addEventListener("mousedown", function (e) { e.preventDefault(); var li = e.target.closest('[role="option"]'); if (li) { choose(Number(li.id.split("-o").pop())); } if (e.target.closest(".sn-autocomplete__clear")) { recent = []; render(); } });
+  form.querySelector(".sn-search-field__clear").addEventListener("click", function () { input.value = ""; input.focus(); render(); });
+</script>
+</body>
+</html>

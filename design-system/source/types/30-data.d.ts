@@ -195,6 +195,25 @@ export interface DataTableProps<T> {
   errorMessage?: { title: string; body: string; action?: ReactNode };
   /** Max height of the scroll box before the sticky header takes over (default 480px). */
   maxHeight?: string;
+  /** Keyboard row navigation (J/K, arrows, Enter, Space, T): the scroll box takes focus; default false. */
+  keyboard?: boolean;
+  /** Id of the keyboard-active row (outlined, not selected). */
+  activeRowId?: string;
+  /** Called when J/K or the arrow keys move the active row. */
+  onActiveRowChange?: (id: string) => void;
+  /** Enter on the active row (open the track). */
+  onRowOpen?: (row: T) => void;
+  /** Single-letter quick actions on the active row, e.g. { t: addToTargets, " ": togglePreview }. */
+  rowShortcuts?: Record<string, (row: T) => void>;
+}
+
+export interface MiniAudioPreviewProps {
+  /** Preview clip URL (about 30 seconds); missing or failing renders the unavailable state. */
+  src?: string | null;
+  /** Track named in the button label ("Bicep – Glue"). */
+  title: string;
+  /** Clip length in seconds when known before loading (default 30). */
+  duration?: number;
 }
 
 export interface KeyValueGridProps {

@@ -7,13 +7,13 @@ This folder explains how it works here. The system itself lives in [`design-syst
 | You want | Open |
 |---|---|
 | What it should look like, rendered live in every theme | [`reference.html`](reference.html) (serve the repo root, or open the file; the self-contained copy is `reference.standalone.html`) |
-| Code only: import order, every token, helper API, React exports, markup for all 92 components, rules, checks | [`CODE_REFERENCE.md`](CODE_REFERENCE.md) |
+| Code only: import order, every token, helper API, React exports, markup for all 94 components, rules, checks | [`CODE_REFERENCE.md`](CODE_REFERENCE.md) |
 | The brand book, component index and full rules | [`design-system/README.md`](../../design-system/README.md) and the 19 sections below |
 
 ## Where it lives
 
 - **Source:** `design-system/`. It mirrors the published design-system artifact. Treat it as read-only in this repo; it is not edited by hand downstream.
-- **What is in it:** `tokens.json` (every token, with the version), `tokens.css` (the tokens as CSS variables plus `@font-face`), `components/bundle.css` (every `sn-*` class), `components/bundle.js` (defines `window.SongNodes`), `components/<Comp>/README.md` and `preview.html` for 92 components, `components/index.d.ts` and `source/types/*.d.ts` (props and the helper API), `fonts/` (Sora, Inter, JetBrains Mono, self-hosted), and the generators in `source/`.
+- **What is in it:** `tokens.json` (every token, with the version), `tokens.css` (the tokens as CSS variables plus `@font-face`), `components/bundle.css` (every `sn-*` class), `components/bundle.js` (defines `window.SongNodes`), `components/<Comp>/README.md` and `preview.html` for 94 components, `components/index.d.ts` and `source/types/*.d.ts` (props and the helper API), `fonts/` (Sora, Inter, JetBrains Mono, self-hosted), and the generators in `source/`.
 - **Version:** one semver number in `tokens.json` and `SongNodes.version`; they must match. Currently 1.1.1.
 
 ## How it reaches the app

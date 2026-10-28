@@ -9,8 +9,9 @@ Every control says what it does, shows its state without colour alone, and can b
 | `Button` | Do something now (`.sn-btn` + variants) |
 | `TextLink` | Go somewhere (`.sn-link`, destination module colour, always underlined) |
 | `CopyButton` | Copy a value (ID, tracklist, link) and confirm in place |
-| `FilterChip` | Toggle one filter value on or off (`.sn-chip[aria-pressed]`) |
+| `FilterChip` | Toggle one filter value on or off (`.sn-chip[aria-pressed]`); the preset variant applies a saved filter view |
 | `SearchField` | Free-text search with clear button |
+| `AutocompleteSearchField` | Search with completions: recent searches, then artists, titles, tags or tracks to choose with the arrow keys |
 | `FilterRail` | The column of filters beside a table (`rail-w`) |
 | `TextField`, `NumberField`, `SelectField`, `DateField`, `SecretField` | Single values |
 | `Checkbox` | Include/exclude a condition; form agreement |

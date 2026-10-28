@@ -399,6 +399,51 @@ export interface SearchFieldProps {
   /** Register the "/" shortcut and show its hint; default false. */
   shortcut?: boolean;
 }
+/** One option in an AutocompleteSearchField popup. */
+export interface AutocompleteOption {
+  /** Stable id (unique within the field). */
+  id: string;
+  /** Text inserted into the field when chosen ("Bicep"). */
+  value: string;
+  /** Shown text if it differs from value ("Bicep – Glue"); the typed prefix is marked bold. */
+  label?: string;
+  /** Right-hand meta in mono ("Artist · 41 tracks", "8A · 124 BPM"). */
+  meta?: string;
+}
+export interface AutocompleteSearchFieldProps extends SearchFieldProps {
+  /** Completions for the current query, best first; at most 8 are shown. */
+  suggestions: AutocompleteOption[];
+  /** Recent queries, newest first; shown (at most 5) when the field is empty or they match the query. */
+  recent?: string[];
+  /** Called with the chosen option (or the typed text on Enter with no active option). */
+  onSelect: (value: string, option?: AutocompleteOption) => void;
+  /** Clears the recent list; shows "Clear recent searches" in the popup foot when given. */
+  onClearRecent?: () => void;
+  /** Group label for suggestions; default "Suggestions" ("Tracks" on the route finder). */
+  suggestionsLabel?: string;
+  /** Recent-search store key ("library-crate", "pathfinder-waypoints"): the field reads, saves and clears recent searches itself (utils/recentSearches) when `recent` is not given. */
+  namespace?: string;
+}
+
+/** A saved filter view shown as a preset chip (FilterChip preset variant). */
+export interface FilterPreset {
+  /** Stable id. */
+  id: string;
+  /** Name in sentence case ("Warmup 118–122"). */
+  label: string;
+}
+export interface FilterPresetsProps {
+  /** Saved presets in the order they were saved. */
+  presets: FilterPreset[];
+  /** Id of the preset that matches the current filters exactly, if any (rendered pressed). */
+  activeId?: string;
+  /** Apply a preset. */
+  onApply: (id: string) => void;
+  /** Delete a preset (show a Toast with Undo). */
+  onDelete: (id: string) => void;
+  /** Save the current filters under a name; disabled when no filter is set. */
+  onSave: (label: string) => void;
+}
 
 export interface FilterRailProps {
   /** Rail sections (SearchField, FilterChip groups, SelectField, Checkbox group) in order. */
@@ -882,6 +927,25 @@ export interface DataTableProps<T> {
   errorMessage?: { title: string; body: string; action?: ReactNode };
   /** Max height of the scroll box before the sticky header takes over (default 480px). */
   maxHeight?: string;
+  /** Keyboard row navigation (J/K, arrows, Enter, Space, T): the scroll box takes focus; default false. */
+  keyboard?: boolean;
+  /** Id of the keyboard-active row (outlined, not selected). */
+  activeRowId?: string;
+  /** Called when J/K or the arrow keys move the active row. */
+  onActiveRowChange?: (id: string) => void;
+  /** Enter on the active row (open the track). */
+  onRowOpen?: (row: T) => void;
+  /** Single-letter quick actions on the active row, e.g. { t: addToTargets, " ": togglePreview }. */
+  rowShortcuts?: Record<string, (row: T) => void>;
+}
+
+export interface MiniAudioPreviewProps {
+  /** Preview clip URL (about 30 seconds); missing or failing renders the unavailable state. */
+  src?: string | null;
+  /** Track named in the button label ("Bicep – Glue"). */
+  title: string;
+  /** Clip length in seconds when known before loading (default 30). */
+  duration?: number;
 }
 
 export interface KeyValueGridProps {

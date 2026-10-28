@@ -20,6 +20,13 @@ The design system has one version number, [semver](https://semver.org) `MAJOR.MI
 
 Newest first. Each entry: version, date (Melbourne), one line per change, prefixed Added / Changed / Deprecated / Removed / Fixed, with the decision record if any.
 
+**1.2.0 — 28 Oct 2026: completions, preview player, presets and keyboard rows**
+- Added `AutocompleteSearchField` (Inputs): a SearchField whose input is a WAI-ARIA combobox with a grouped listbox of recent searches and suggestions (`.sn-autocomplete`, `__popup`, `__list`, `__group`, `__group-label`, `__option`, `__icon`, `__text`, `__meta`, `__foot`, `__clear`). Needed by UX4, UX5, UX6.
+- Added `MiniAudioPreview` (Music): a 32px preview player with paused, loading, playing and unavailable states and one-at-a-time playback (`.sn-mini-preview`, `__btn`, `__track`, `__fill`, `__time`; `--sn-mini-preview-pct`). Needed by FL4 and the Space action of FL1.
+- Added the FilterChip preset variant: a saved filter view as an apply chip joined to a delete button (`.sn-filter-chip-preset`, `__remove`), in a "Presets" group with "Save current filters". Needed by FL3.
+- Added DataTable keyboard row navigation: `tr[data-active]` (2px `focus` outline, separate from selection) and the focusable box `.sn-data-table__box[data-keyboard]`, with J/K, arrows, Enter, Space, T and X. Needed by FL1. New optional DataTable props: `keyboard`, `activeRowId`, `onActiveRowChange`, `onRowOpen`, `rowShortcuts`.
+- No token changed; every new class uses existing tokens.
+
 **1.1.4 — 28 Oct 2026: settings cards and sub-routes**
 - Changed: SettingsPage is a card overview at `/settings` with a filter `SearchField`, plus one page per setting at `/settings/:settingId` (`streaming-services`, `api-keys`, `display-preferences`, `data-storage`, `about-system`), replacing the single page with anchors. 02, 10, 13 and the SettingsPage card updated.
 - Added: accessibility guidance for card overviews with detail sub-routes (focus return, live result count, two ways back) to 06. No token, class or helper changed.
