@@ -217,3 +217,56 @@ def test_oversized_body(client, mock_get_api_key):
 
     assert response.status_code == 413
     assert response.json()["detail"] == "Request body too large"
+
+
+def _ok_post(mock_aiohttp_session, body):
+    mock_resp = AsyncMock()
+    mock_resp.status = 200
+    mock_resp.json.return_value = body
+    mock_post = MagicMock()
+    mock_post.__aenter__.return_value = mock_resp
+    mock_aiohttp_session.post.return_value = mock_post
+
+
+def test_gemini_web_search_adds_google_search_tool(client, mock_get_api_key, mock_aiohttp_session):
+    _ok_post(mock_aiohttp_session, {"candidates": [{"content": {"parts": [{"text": "ok"}]}}]})
+
+    response = client.post("/api/v1/ai/complete", json={
+        "provider": "gemini",
+        "model": "gemini-2.5-flash",
+        "prompt": "Find recent sets",
+        "web_search": True,
+    })
+
+    assert response.status_code == 200, response.text
+    payload = mock_aiohttp_session.post.call_args[1]["json"]
+    assert payload["tools"] == [{"google_search": {}}]
+    url = mock_aiohttp_session.post.call_args[0][0]
+    assert "fake-secret-key-12345" not in url
+
+
+def test_gemini_without_web_search_has_no_tools(client, mock_get_api_key, mock_aiohttp_session):
+    _ok_post(mock_aiohttp_session, {"candidates": [{"content": {"parts": [{"text": "ok"}]}}]})
+
+    response = client.post("/api/v1/ai/complete", json={
+        "provider": "gemini",
+        "model": "gemini-2.5-flash",
+        "prompt": "Hello",
+    })
+
+    assert response.status_code == 200, response.text
+    assert "tools" not in mock_aiohttp_session.post.call_args[1]["json"]
+
+
+def test_claude_ignores_web_search(client, mock_get_api_key, mock_aiohttp_session):
+    _ok_post(mock_aiohttp_session, {"content": [{"type": "text", "text": "ok"}]})
+
+    response = client.post("/api/v1/ai/complete", json={
+        "provider": "claude",
+        "model": "claude-sonnet-4-5",
+        "prompt": "Hello",
+        "web_search": True,
+    })
+
+    assert response.status_code == 200, response.text
+    assert "tools" not in mock_aiohttp_session.post.call_args[1]["json"]
