@@ -46,9 +46,11 @@ export async function useLibraryFixture(page: Page) {
 
     const setMatch = path.match(/^\/api\/v1\/library\/sets\/(\d+)$/);
     if (setMatch) {
-      const setId = parseInt(setMatch[1], 10);
+      const requestedId = parseInt(setMatch[1], 10);
 
       if (method === 'PUT') {
+        // Like the REST API (save_set): PUT /sets/0 creates a set and returns its new id.
+        const setId = requestedId || nextSetId++;
         const body = request.postDataJSON();
         const existingIdx = sets.findIndex(s => s.id === setId);
         if (existingIdx >= 0) {
@@ -64,7 +66,7 @@ export async function useLibraryFixture(page: Page) {
       }
 
       if (method === 'DELETE') {
-        sets = sets.filter(s => s.id !== setId);
+        sets = sets.filter(s => s.id !== requestedId);
         return route.fulfill({
           status: 200,
           contentType: 'application/json',

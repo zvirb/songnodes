@@ -78,8 +78,14 @@ describe('loadLibrary', () => {
     });
 });
 
+/** A GET /api/v1/library/sets row: no shape, minutes or `updated`; tracks as { track_id, position }. */
+const serverRow = (id: number, name = 'New set', ids = ['h:aaa', 'h:bbb']) =>
+    ({ id, name, description: '', tracks: ids.map((track_id, position) => ({ track_id, position })) });
+
 describe('SavedSets', () => {
     let store: Record<string, string> = {};
+    type FetchStub = (...args: unknown[]) => Promise<unknown>;
+    let fetchStub: Mock<FetchStub> = vi.fn<FetchStub>();
 
     beforeEach(() => {
         store = {};
@@ -88,7 +94,8 @@ describe('SavedSets', () => {
             setItem: (k: string, v: string) => { store[k] = v; },
             clear: () => { store = {}; }
         });
-        vi.stubGlobal('fetch', vi.fn());
+        fetchStub = vi.fn<FetchStub>();
+        vi.stubGlobal('fetch', fetchStub);
     });
 
     afterEach(() => {
@@ -188,6 +195,89 @@ describe('SavedSets', () => {
         expect(loaded.sets.find(s => s.id === '1')?.name).toBe('Server Set 1 (Updated)');
         expect(loaded.sets.find(s => s.id === '2')?.name).toBe('Server Set 2');
         expect(loaded.sets.find(s => s.id === 'set-local')?.name).toBe('Local Only');
+    });
+
+    describe('a set saved on this device and on the server is listed once after a reload', () => {
+        const localSet: SavedSet = {
+            id: 'set-mh2x9k', name: 'New set', shape: 'journey', minutes: 90, mix: { house: 40 }, pool: 'active',
+            tidal: false, seed: 1, tracks: [{ id: 'h:aaa', tgt: 3 }, { id: 'h:bbb', tgt: 5 }],
+            updated: '2026-10-28T11:29:03.000Z', created: '2026-10-28T11:29:03.000Z',
+        };
+
+        it('a create answered without a new id keeps the local id and is not counted as saved', async () => {
+            const fetchMock = fetchStub;
+            fetchMock.mockResolvedValueOnce({ ok: true, json: async () => [] });
+            await readSavedSetsAsync();
+
+            fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ id: 0 }) });
+            const saved = await writeSavedSetsAsync([localSet]);
+            expect(saved.map(s => s.id)).toEqual(['set-mh2x9k']);
+            expect(readSavedSets().map(s => s.id)).toEqual(['set-mh2x9k']);
+        });
+
+        it('replaces the local copy with the server set, under the server id, in storage and the draft', async () => {
+            const fetchMock = fetchStub;
+            // Reload: storage still has the local id (the new id never came back) and the draft points at it
+            writeSavedSets([localSet]);
+            store['sn-set-draft'] = JSON.stringify({ id: 'set-mh2x9k', name: 'New set' });
+            fetchMock.mockResolvedValueOnce({ ok: true, json: async () => [serverRow(7)] });
+
+            const loaded = await readSavedSetsAsync();
+
+            expect(loaded.sets).toHaveLength(1);
+            expect(loaded.sets[0].id).toBe('7');
+            // Local fields the server does not keep survive the merge
+            expect(loaded.sets[0].updated).toBe(localSet.updated);
+            expect(loaded.sets[0].shape).toBe('journey');
+            expect(loaded.remapped).toEqual({ 'set-mh2x9k': '7' });
+            expect(readSavedSets().map(s => s.id)).toEqual(['7']);
+            expect(JSON.parse(store['sn-set-draft']).id).toBe('7');
+
+            // A second reload changes nothing
+            fetchMock.mockResolvedValueOnce({ ok: true, json: async () => [serverRow(7)] });
+            const again = await readSavedSetsAsync();
+            expect(again.sets.map(s => s.id)).toEqual(['7']);
+            expect(again.remapped).toEqual({});
+        });
+
+        it('keeps a local set whose name or running order differs from every server set', async () => {
+            const fetchMock = fetchStub;
+            writeSavedSets([localSet]);
+            fetchMock.mockResolvedValueOnce({
+                ok: true,
+                json: async () => [serverRow(7, 'Other set'), serverRow(8, 'New set', ['h:bbb', 'h:aaa'])],
+            });
+
+            const loaded = await readSavedSetsAsync();
+            expect(loaded.sets.map(s => s.id)).toEqual(['7', '8', 'set-mh2x9k']);
+            expect(loaded.remapped).toEqual({});
+        });
+
+        it('pairs each server set with at most one local copy', async () => {
+            const fetchMock = fetchStub;
+            const twin = { ...localSet, id: 'set-mh2xaa' };
+            writeSavedSets([localSet, twin]);
+            fetchMock.mockResolvedValueOnce({ ok: true, json: async () => [serverRow(7)] });
+
+            const loaded = await readSavedSetsAsync();
+            expect(loaded.sets.map(s => s.id)).toEqual(['7', 'set-mh2xaa']);
+        });
+
+        it('a create that returns the new id moves the stored draft to it', async () => {
+            const fetchMock = fetchStub;
+            fetchMock.mockResolvedValueOnce({ ok: true, json: async () => [] });
+            await readSavedSetsAsync();
+            store['sn-set-draft'] = JSON.stringify({ id: 'set-mh2x9k', name: 'New set' });
+
+            fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ id: 7 }) });
+            const saved = await writeSavedSetsAsync([localSet]);
+            expect(saved.map(s => s.id)).toEqual(['7']);
+            expect(JSON.parse(store['sn-set-draft']).id).toBe('7');
+
+            fetchMock.mockResolvedValueOnce({ ok: true, json: async () => [serverRow(7)] });
+            const loaded = await readSavedSetsAsync();
+            expect(loaded.sets.map(s => s.id)).toEqual(['7']);
+        });
     });
 
     it('deduplicates concurrent saves', async () => {
