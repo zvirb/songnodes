@@ -1298,9 +1298,9 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 <!-- SLOT:AK1 END -->
 
 <!-- SLOT:CR1 BEGIN -->
-### CR1: Data-source credits in the app footer
-- Start: _not started_
-- End: _not finished_
+- **Status:** Complete. Added `CreditsFooter.tsx` containing track metadata data source attributions according to DS rule 15-print-export.
+- **Checks run:** frontend unit tests, linting, build, DS sync check (all passed).
+- **PR Link:** TBD
 <!-- SLOT:CR1 END -->
 
 <!-- SLOT:EC1 BEGIN -->
