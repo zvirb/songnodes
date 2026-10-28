@@ -1398,8 +1398,11 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 
 <!-- SLOT:SC3 BEGIN -->
 ### SC3: MixesDB: keep every track of a mix
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-28
+- Built: Fixed gap in positions by changing MixesDB `parse_mix_page` to grab all `ol` tracks between headers and to handle unknown tracks with 'Unknown Artist' preserving their position slots. Modified persistence pipeline to append `#<position>` string to synthetic_track_id to eliminate bronze layer row collisions within and across mixes.
+- Checks run: `python -m pytest tests/unit/scrapers/test_mixesdb_spider.py -q` passed; `cd scrapers && python3 -m pytest -o addopts="" tests -q` passed; tests added via `git add -f`.
+- PR Link: PR pending.
+- End: 2026-10-28
 <!-- SLOT:SC3 END -->
 
 <!-- SLOT:SC4 BEGIN -->

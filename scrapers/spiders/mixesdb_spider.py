@@ -565,6 +565,7 @@ class MixesdbSpider(scrapy.Spider):
                         artist_name=track_info['track'].get('artist_name', ''),  # CRITICAL: Required for persistence pipeline lookup
                         track_order=track_info['track_order'],
                         start_time=track_info['track'].get('start_time'),
+                        source_url=response.url,
                         data_source=self.name,
                         scrape_timestamp=datetime.utcnow()
                     )
@@ -773,10 +774,15 @@ class MixesdbSpider(scrapy.Spider):
         track_elements = []
 
         if tracklist_heading:
-            # Pattern 1 (Primary): Direct sibling <ol> (most common structure)
-            # MediaWiki typically renders: <h2>Tracklist</h2><ol><li>...</li></ol>
-            track_elements = response.xpath('//h2[contains(., "Tracklist")]/following-sibling::ol[1]/li')
-            self.logger.info(f"🔍 Attempting XPath pattern 1 (direct sibling ol): Found {len(track_elements)} elements")
+            # Pattern 1 (Primary): Collect all <ol> elements between the Tracklist <h2> and the next <h2>
+            # We must be careful not to grab lists that appear after the NEXT <h2> element.
+            track_elements = response.xpath('//h2[contains(., "Tracklist")]/following-sibling::*[preceding-sibling::h2[1][contains(., "Tracklist")]]/descendant-or-self::ol/li')
+            self.logger.info(f"🔍 Attempting XPath pattern 1 (all ol until next h2): Found {len(track_elements)} elements")
+
+            if not track_elements:
+                # Pattern 1a (Fallback): Direct sibling <ol> (most common structure)
+                track_elements = response.xpath('//h2[contains(., "Tracklist")]/following-sibling::ol[1]/li')
+                self.logger.info(f"🔍 Attempting XPath pattern 1a (direct sibling ol): Found {len(track_elements)} elements")
 
             if not track_elements:
                 # Pattern 2 (Fallback): Using following axis to catch ol after any intervening elements
@@ -832,9 +838,16 @@ class MixesdbSpider(scrapy.Spider):
                 # Parse track information
                 parsed_track = parse_track_string(track_string)
 
-                # Skip unknown tracks instead of creating "Unknown Artist" entries
-                if parsed_track is None or parsed_track['track_name'].lower() in ['id', '?', 'unknown'] or not parsed_track['primary_artists']:
-                    continue
+                # Unidentified tracks must keep their slot to maintain continuous positions without gaps.
+                # If parse_track_string fails or it's identified as an ID, we keep the raw string
+                # as the title and use 'Unknown Artist'.
+                if parsed_track is None or parsed_track['track_name'].lower() in ['id', '?', 'unknown', 'id - id'] or not parsed_track['primary_artists']:
+                    parsed_track = {
+                        'track_name': track_string,
+                        'primary_artists': ['Unknown Artist'],
+                        'is_remix': False,
+                        'is_mashup': False
+                    }
 
                 # Extract timing information
                 start_time = self.extract_start_time_from_string(track_string)
