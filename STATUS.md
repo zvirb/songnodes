@@ -1404,8 +1404,11 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 
 <!-- SLOT:SC4 BEGIN -->
 ### SC4: 1001Tracklists spider starts on current Scrapy
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-28
+- Built: Renamed `start(self)` to `start_requests(self)` in `scrapers/spiders/1001tracklists_spider.py` so Scrapy engine's internal `start()` isn't overridden with a synchronous generator. Added `test_start_requests_search` and `test_start_requests_tracklist` in `tests/unit/scrapers/test_1001tracklists_spider.py`.
+- Checks run: `python3 -m pytest -o addopts="" tests/unit/scrapers/test_1001tracklists_spider.py -q`
+- PR: [SC4: 1001Tracklists spider starts on current Scrapy]
+- End: 2026-10-28
 <!-- SLOT:SC4 END -->
 
 <!-- SLOT:TX1 BEGIN -->
