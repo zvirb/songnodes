@@ -29,7 +29,8 @@ CREATE TABLE IF NOT EXISTS user_oauth_tokens (
 CREATE INDEX IF NOT EXISTS idx_user_oauth_tokens_service ON user_oauth_tokens(service);
 CREATE INDEX IF NOT EXISTS idx_user_oauth_tokens_user_id ON user_oauth_tokens(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_oauth_tokens_expires_at ON user_oauth_tokens(expires_at);
-CREATE INDEX IF NOT EXISTS idx_user_oauth_tokens_service_user ON user_oauth_tokens(service, user_id) WHERE expires_at > CURRENT_TIMESTAMP;
+-- No WHERE expires_at > CURRENT_TIMESTAMP here: Postgres only allows IMMUTABLE functions in an index predicate.
+CREATE INDEX IF NOT EXISTS idx_user_oauth_tokens_service_user ON user_oauth_tokens(service, user_id);
 
 -- Trigger to update the updated_at timestamp
 CREATE OR REPLACE FUNCTION update_user_oauth_tokens_updated_at()
