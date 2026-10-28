@@ -1240,6 +1240,18 @@ PR: https://github.com/zvirb/songnodes/pull/LY2
 - End: _not finished_
 <!-- SLOT:FL5 END -->
 
+<!-- SLOT:DB1 BEGIN -->
+### DB1: One track source: every page reads the library from the database
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:DB1 END -->
+
+<!-- SLOT:SC2 BEGIN -->
+### SC2: Scrape target tracks on a schedule
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:SC2 END -->
+
 ## Scheduled run
 
 ### 2026-10-26 15:10 AEDT (Claude, scheduled run on tuf-boi)
