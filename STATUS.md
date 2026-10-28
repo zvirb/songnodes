@@ -1272,8 +1272,14 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 
 <!-- SLOT:L8 BEGIN -->
 ### L8: Library page: import the library export from the browser
-- Start: _not started_
-- End: _not finished_
+- Start: 2024-10-28
+- End: 2024-10-28
+  - Added LibraryImportDialog component with FileDrop and StagedProgress using design system CSS classes and standard HTML tags.
+  - Implemented reading library.json, hash generation via crypto.subtle.digest, POST to /api/v1/library/ingest with idempotency key, and polling `/api/v1/jobs/{id}` for job status.
+  - Added 'Import library' action to LibraryPage header and empty state for when the DB has 0 tracks.
+  - Wrote comprehensive unit tests using vitest and testing-library/react with jsdom.
+  - Checks run: `cd frontend && npm ci && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build`, python scripts/check_design_system.py, bash scripts/sync-design-system.sh
+  - Note: Playwright E2E tests cannot be run in the sandbox environment.
 <!-- SLOT:L8 END -->
 
 <!-- SLOT:AA1 BEGIN -->
