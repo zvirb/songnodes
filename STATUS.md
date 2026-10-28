@@ -1543,3 +1543,11 @@ Ended 2026-10-26 22:29: Audited Pathfinder (DS7). Fixed CSS typography variables
 - Checks run: `PYTHONPATH=. pytest pipeline/test_deezer_art.py` (9/9 passed offline), `python scripts/scope_guard.py`.
 - End: 2026-10-28
 <!-- SLOT:ART1-DEEZER END -->
+<!-- SLOT:ART3 BEGIN -->
+### ART3: Persist Artwork in SQLite and Set Builder JSON Export
+- Start: 2026-10-29
+- Built: Created `pipeline/build_db.py` adding `artwork_url TEXT` column to `tracks` SQLite table and exporting `"art": r.get("artwork_url")` in Set Builder JSON artifact (`outputs/artifact/library.json`). Added unit tests in `pipeline/test_db_artwork.py`.
+- Checks: `pytest -o addopts="" pipeline/test_db_artwork.py` (4 passed), `pytest -o addopts="" pipeline/test_pipeline.py pipeline/test_normalise.py pipeline/test_db_artwork.py` (11 passed).
+- PR: [ART3-DB: Persist Artwork in SQLite and Set Builder JSON Export](https://github.com/zvirb/songnodes/pull/NEW)
+- End: 2026-10-29
+<!-- SLOT:ART3 END -->
