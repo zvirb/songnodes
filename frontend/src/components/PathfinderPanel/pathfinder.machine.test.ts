@@ -35,7 +35,7 @@ describe('pathfinder machine', () => {
     vi.stubGlobal('fetch', fetchMock);
     const actor = createActor(pathfinderMachine).start();
     actor.send({ type: 'SET_START_TRACK', track: track('a') });
-    actor.send({ type: 'CALCULATE_PATH' });
+    actor.send({ type: 'CALCULATE_PATH', tracks: [{ id: 'a' }], edges: [] });
     await vi.waitFor(() => expect(actor.getSnapshot().matches('success')).toBe(true));
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).start_track_id).toBe('a');
     expect(actor.getSnapshot().context.result).toEqual(pathResponse);
@@ -46,8 +46,20 @@ describe('pathfinder machine', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, json: async () => ({ detail: 'No route' }) }));
     const actor = createActor(pathfinderMachine).start();
     actor.send({ type: 'SET_START_TRACK', track: track('a') });
-    actor.send({ type: 'CALCULATE_PATH' });
+    actor.send({ type: 'CALCULATE_PATH', tracks: [], edges: [] });
     await vi.waitFor(() => expect(actor.getSnapshot().matches('error')).toBe(true));
     expect(actor.getSnapshot().context.error).toBe('No route');
+  });
+
+  it('surfaces validation errors correctly as text instead of object', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false, status: 422,
+      json: async () => ({ detail: [{ msg: 'Missing field tracks' }, { msg: 'Missing field edges' }] })
+    }));
+    const actor = createActor(pathfinderMachine).start();
+    actor.send({ type: 'SET_START_TRACK', track: track('a') });
+    actor.send({ type: 'CALCULATE_PATH', tracks: [], edges: [] });
+    await vi.waitFor(() => expect(actor.getSnapshot().matches('error')).toBe(true));
+    expect(actor.getSnapshot().context.error).toBe('Missing field tracks; Missing field edges');
   });
 });

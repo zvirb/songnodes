@@ -1335,8 +1335,10 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 
 <!-- SLOT:PF1 BEGIN -->
 ### PF1: Paths: make Find route work
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-28
+- Built: Updated the pathfinding algorithm event `CALCULATE_PATH` to send both graph nodes mapped to tracks and edges to the API, omitting unused attributes and properly validating nodes without duration. Updated UI to announce how many tracks were excluded, and mapped validation detail strings returned from server.
+- Checks run: `cd frontend && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build`, design system checker passed, scope guard passed. Playwright tests were skipped per sandbox limits.
+- End: 2026-10-28
 <!-- SLOT:PF1 END -->
 
 <!-- SLOT:SQ1 BEGIN -->
