@@ -207,3 +207,5 @@ songnodes/
 ## 9. Data sources and attribution
 
 This application uses data from **MusicBrainz** (MetaBrainz Foundation), made available under the **CC0 1.0 Universal Public Domain Dedication** (core and canonical data) and the **Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported Licence** (`CC BY-NC-SA 3.0`, derived and tag/genre datasets). Raw dumps and derived databases (`ref_mb`) are never committed to Git.
+
+BPM and key data provided by [GetSongBPM](https://getsongbpm.com). Their API is free on condition that this link stays here; this section is the backlink page given when registering for the key.

@@ -144,6 +144,23 @@ export const SETTINGS_LIST: SettingMeta[] = [
 
 
 const HIDDEN_SERVICES = new Set(['beatport']);
+/**
+ * What a service's sign-up form asks for, shown above that service's key fields.
+ * GetSongBPM only activates a key for a public page that links back to getsongbpm.com;
+ * the SongNodes README credits section is that page.
+ */
+const SERVICE_SETUP: Record<string, { intro: string; fields: { label: string; value: string }[]; note?: string }> = {
+  getsongbpm: {
+    intro: 'The sign-up form behind Get key asks for three things:',
+    fields: [
+      { label: 'Website URL', value: 'https://github.com/zvirb/songnodes' },
+      { label: 'Backlink URL', value: 'https://github.com/zvirb/songnodes#9-data-sources-and-attribution' },
+      { label: 'Email', value: 'Your email address (the activation link is sent there)' },
+    ],
+    note: 'The backlink is mandatory: GetSongBPM suspends keys whose page no longer links to getsongbpm.com, so keep the credits line in the README.',
+  },
+};
+
 const SERVICE_LABEL_MAP: Record<string, string> = {
   spotify: 'Spotify',
   discogs: 'Discogs',
@@ -374,9 +391,28 @@ export const SettingsPage: React.FC = () => {
     if (!visibleReqs.length) {
       return <p className="sn-muted">No scraper API key requirements configured.</p>;
     }
+    const shownSetup = new Set<string>();
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
         {visibleReqs.map((req) => {
+          const setup = SERVICE_SETUP[req.service_name];
+          const setupBlock = setup && !shownSetup.has(req.service_name) ? (
+            <div className="body-s">
+              <p style={{ margin: 0 }}>
+                {setup.intro}
+              </p>
+              <dl className="sn-key-value-grid">
+                {setup.fields.map((f) => (
+                  <React.Fragment key={f.label}>
+                    <dt>{f.label}</dt>
+                    <dd className={f.value.startsWith('http') ? 'sn-mono' : undefined}>{f.value}</dd>
+                  </React.Fragment>
+                ))}
+              </dl>
+              {setup.note ? <p className="sn-muted" style={{ margin: 0 }}>{setup.note}</p> : null}
+            </div>
+          ) : null;
+          if (setup) shownSetup.add(req.service_name);
           const existing = scraperKeys.find(
             (k) => k.service_name === req.service_name && k.key_name === req.key_name
           );
@@ -388,8 +424,9 @@ export const SettingsPage: React.FC = () => {
               : 'unconfigured';
 
           return (
+            <React.Fragment key={`${req.service_name}:${req.key_name}`}>
+            {setupBlock}
             <SecretField
-              key={`${req.service_name}:${req.key_name}`}
               label={req.display_name}
               savedMask={existing ? existing.masked_value : null}
               status={status}
@@ -416,6 +453,7 @@ export const SettingsPage: React.FC = () => {
                   : undefined
               }
             />
+            </React.Fragment>
           );
         })}
       </div>
