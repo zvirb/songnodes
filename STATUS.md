@@ -1341,8 +1341,8 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 
 <!-- SLOT:SQ1 BEGIN -->
 ### SQ1: Pipeline: Queue scrape job asks for search words
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-28
+- End: 2026-10-28 - Implemented queueing a scrape job with artist and title search terms. Updated ScraperProgressPage.tsx to use a form, validate fields, and send proper fetch with Idempotency-Key. Updated empty state. Wrote comprehensive tests for ScraperProgressPage validating UI, errors, and fetch parameters. Ran vitest, tsc, oxlint, build, and sync checks. Scope guard passed. PR to be raised.
 <!-- SLOT:SQ1 END -->
 
 <!-- SLOT:ST1 BEGIN -->
