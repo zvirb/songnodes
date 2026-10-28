@@ -15,9 +15,9 @@ Professional DJs use keyboard shortcuts for rapid library curation without reach
 (Complete list. Anything else is read-only for you. You may also add a dated note under docs/integration/FL1/ if you need to record a decision.)
 
 ## Do
-1. Create useTableKeyboardNav({ rowCount, onSelectRow, onAction }): handles J/Down (next), K/Up (prev), Enter (select/open), T (target action).
-2. Ignore shortcuts when focus is inside text fields, inputs, or dialogs.
-3. Maintain visual active row styling and ARIA active descendant.
+1. Read design-system/components/DataTable/README.md, 'Keyboard row navigation' (design system 1.2.0). Create useTableKeyboardNav({ rowIds, activeId, onActiveChange, onOpen, shortcuts, describe }): J/ArrowDown next, K/ArrowUp previous (clamped), Enter calls onOpen, single-letter shortcuts (' ' preview, 't' add to target, 'x' toggle selection) call shortcuts[key](id).
+2. Return props for the table scroll box ({ tabIndex: 0, 'data-keyboard': '', 'aria-keyshortcuts': 'J K Enter Space T X', onKeyDown }) and a polite announcement string ('4 of 120: Bicep – Glue', from describe(id)) for a live region. The caller marks the active row with data-active (2px focus outline, separate from selection) and scrolls it into view; a table is not a grid, so do not use aria-activedescendant.
+3. Ignore keys when focus is inside text fields, selects, contenteditable or dialogs, and when Ctrl/Meta/Alt are held.
 4. Tests: pressing J moves active index down; K moves up; input focus suppresses navigation.
 
 ## Done when (the reviewer's under-10-minute check; put it in the PR)

@@ -16,8 +16,8 @@ frontend/src/features/musicLibrary/components/CrateFilterRail.tsx renders a stan
 
 ## Do
 1. Build a local LexiconTrie from tracks: index artist names, track titles, tags, and source names whenever tracks change.
-2. Replace the raw input with AutocompleteSearchField using namespace 'library-crate'.
-3. Display recent queries on focus; show completed word suggestions as user types.
+2. Replace the raw input with AutocompleteSearchField from frontend/src/components/ds (design system 1.2.0; read design-system/components/AutocompleteSearchField/README.md and the props in frontend/src/components/ds/AutocompleteSearchField.tsx): namespace='library-crate' (it manages recent searches itself), suggestions from the trie as { id, value, meta } with meta such as 'Artist · 41' or 'Tag · 23', onSelect applying the query, resultCount for the live match count, shortcut for '/'.
+3. Recent queries show on focus and completions as the user types; never build a second popup or listbox.
 4. Preserve the existing debounce, keyboard shortcuts (/), and live match count.
 5. Tests: typing prefix displays matching artists and tags; selecting suggestion updates query; clear button resets.
 

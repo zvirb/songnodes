@@ -16,9 +16,9 @@ DJs need to save recurring filter combinations (e.g. 'Opening Warmup 118-122', '
 (Complete list. Anything else is read-only for you. You may also add a dated note under docs/integration/FL3/ if you need to record a decision.)
 
 ## Do
-1. FilterPresets component: displays saved preset chips using FilterChip component and a '+ Save current filters' button.
-2. Clicking a preset applies its CrateFilters state immediately and updates URL search params.
-3. Preset chips carry an overflow/delete action to remove saved presets.
+1. Read design-system/components/FilterChip/README.md, 'Preset' variant (design system 1.2.0). FilterPresets renders a 'Presets' sn-filter-chip-group: each preset is li.sn-filter-chip-preset with an apply chip (button.sn-chip.sn-filter-chip, aria-pressed when the current filters equal it) and button.sn-filter-chip-preset__remove ('Delete preset <name>', x icon); the group head has a quiet small 'Save current filters' button with the save icon, disabled while no filter is set, that asks for a name (TextField in the existing Dialog, at most 40 characters, sentence case).
+2. Store presets with utils/favoriteQueries under namespace 'library-crate-presets'. Clicking a preset applies its CrateFilters state at once and updates the URL search params.
+3. Delete removes the preset at once and offers Undo with showToast (components/ds); no confirm().
 4. Tests: saving current filters creates preset; clicking preset updates filters; deleting removes preset.
 
 ## Done when (the reviewer's under-10-minute check; put it in the PR)
