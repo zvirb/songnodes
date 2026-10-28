@@ -139,9 +139,15 @@ class TidalClient(HttpProvider):
         """Text search: searchResults relationship ids, then hydration with artists (<= 20 ids per request)."""
         if not query.strip():
             return []
-        document = await self._get(f'{API}/searchResults/{quote(query.strip(), safe="")}/relationships/tracks',
-                                   {'countryCode': self.country_code})
-        ids = [r['id'] for r in document.get('data', []) if r.get('type') == 'tracks'][:limit]
+        document = await self._get(f'{API}/searchResults',
+                                   {'filter[query]': query.strip(), 'countryCode': self.country_code, 'include': 'tracks'})
+        res = document.get('data') or {}
+        if isinstance(res, list):
+            res = res[0] if res else {}
+        track_data = (res.get('relationships') or {}).get('tracks', {}).get('data', [])
+        ids = [r['id'] for r in track_data if r.get('type') == 'tracks'][:limit]
+        if not ids:
+            ids = [o['id'] for o in document.get('included', []) if o.get('type') == 'tracks'][:limit]
         return await self.by_ids(ids) if ids else []
 
     async def lookup(self, target: Track, genres: Optional[List[str]] = None) -> List[ProviderTrack]:

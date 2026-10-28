@@ -169,15 +169,15 @@ class Tidal(unittest.IsolatedAsyncioTestCase):
             path = request.url.raw_path.decode()
             if request.url.path.endswith('/token'):
                 return httpx.Response(200, json=TidalFixtures.TOKEN)
-            if '/searchResults/' in path:
-                return httpx.Response(200, json={'data': [{'id': 't9', 'type': 'tracks'}, {'id': 'v1', 'type': 'videos'}]})
+            if '/searchResults' in path:
+                return httpx.Response(200, json={'data': [{'relationships': {'tracks': {'data': [{'id': 't9', 'type': 'tracks'}, {'id': 'v1', 'type': 'videos'}]}}}]})
             return httpx.Response(200, json={'data': [TidalFixtures.track('t9', 'Opus')], 'included': [TidalFixtures.ARTIST]})
 
         self.calls = []
         client = tidal.TidalClient('i', 's', client=mock_client(lambda r: (self.calls.append(r), handle(r))[1]), sleep=no_sleep)
         found = await client.search('Eric Prydz/Opus & More')
-        search_call = next(c for c in self.calls if '/searchResults/' in c.url.raw_path.decode())
-        self.assertIn('/searchResults/Eric%20Prydz%2FOpus%20%26%20More/relationships/tracks', search_call.url.raw_path.decode())
+        search_call = next(c for c in self.calls if '/searchResults' in c.url.raw_path.decode())
+        self.assertIn('filter%5Bquery%5D=Eric+Prydz%2FOpus+%26+More', search_call.url.raw_path.decode())
         self.assertEqual([t.track.ref for t in found], ['t9'])
         hydrate = next(c for c in self.calls if c.url.path == '/v2/tracks')
         self.assertEqual(query(hydrate)['filter[id]'], ['t9'])
@@ -190,8 +190,8 @@ class Tidal(unittest.IsolatedAsyncioTestCase):
         def handle(request):
             if request.url.path.endswith('/token'):
                 return httpx.Response(200, json=TidalFixtures.TOKEN)
-            if '/searchResults/' in request.url.raw_path.decode():
-                return httpx.Response(200, json={'data': [{'id': 't1', 'type': 'tracks'}]})
+            if '/searchResults' in request.url.raw_path.decode():
+                return httpx.Response(200, json={'data': [{'relationships': {'tracks': {'data': [{'id': 't1', 'type': 'tracks'}]}}}]})
             if 'filter[isrc]' in unquote(str(request.url)):
                 return httpx.Response(200, json={'data': []})
             return httpx.Response(200, json={'data': [TidalFixtures.track('t1', 'Strobe')], 'included': [TidalFixtures.ARTIST]})
@@ -258,7 +258,7 @@ class Deezer(unittest.IsolatedAsyncioTestCase):
         found = await client.lookup(Track('Strobe (Extended Mix)', 'deadmau5'))
         searches = [query(c)['q'][0] for c in self.calls if c.url.path == '/search/track']
         self.assertEqual(len(searches), 2)
-        self.assertIn('artist:"deadmau5" track:"strobe"', searches[0])
+        self.assertIn('deadmau5 strobe', searches[0])
         self.assertTrue(searches[1].endswith('extended'))
         self.assertEqual(sorted(p.track.ref for p in found), ['11', '12'], 'candidates are de-duplicated across queries')
 

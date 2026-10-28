@@ -79,7 +79,7 @@ class DeezerClient(HttpProvider):
         return self.parse(await self._json(f'/track/{track_id}') or {})
 
     async def search(self, artist: str, title: str, extended: bool = False) -> List[ProviderTrack]:
-        query = f'artist:"{artist}" track:"{title}"' if not extended else f'{artist} {title} extended'
+        query = f'{artist} {title}' if not extended else f'{artist} {title} extended'
         body = await self._json('/search/track', {'q': query, 'limit': MAX_CANDIDATES})
         ids = [str(item['id']) for item in (body or {}).get('data', []) if 'id' in item][:MAX_CANDIDATES]
         out: List[ProviderTrack] = []
