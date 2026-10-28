@@ -1417,6 +1417,7 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: Playwright E2E suite due to environment constraints.
 - Reviewer check: In /library: customize filters, click '+ Save preset', name it 'Warmup': chip appears; resetting filters and clicking 'Warmup' restores state.
 - End: 2026-10-28
+- PR: https://github.com/zvirb/songnodes/pull/321 (reviewer: save button sits under the preset list per the FilterChip README; Enter saves; the name field gets focus; Undo restores)
 <!-- SLOT:FL3 END -->
 
 <!-- SLOT:FL4 BEGIN -->
