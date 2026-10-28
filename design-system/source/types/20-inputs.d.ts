@@ -145,6 +145,8 @@ export interface AutocompleteSearchFieldProps extends SearchFieldProps {
   onClearRecent?: () => void;
   /** Group label for suggestions; default "Suggestions" ("Tracks" on the route finder). */
   suggestionsLabel?: string;
+  /** Recent-search store key ("library-crate", "pathfinder-waypoints"): the field reads, saves and clears recent searches itself (utils/recentSearches) when `recent` is not given. */
+  namespace?: string;
 }
 
 /** A saved filter view shown as a preset chip (FilterChip preset variant). */

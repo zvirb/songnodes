@@ -26,6 +26,7 @@ Every SearchFieldProps prop (`value`, `onChange`, `label`, `placeholder`, `resul
 | `onSelect` * | `(value: string, option?: AutocompleteOption) => void` | Called with the chosen option (or the typed text on Enter with no active option). |
 | `onClearRecent` | `() => void` | Clears the recent list; shows "Clear recent searches" in the popup foot when given. |
 | `suggestionsLabel` | `string` | Group label for suggestions; default "Suggestions" ("Tracks" on the route finder). |
+| `namespace` | `string` | Recent-search store key ("library-crate", "pathfinder-waypoints"): the field reads, saves and clears recent searches itself (utils/recentSearches) when `recent` is not given. |
 
 ## AutocompleteOption
 
