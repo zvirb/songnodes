@@ -15,9 +15,9 @@ frontend/src/features/pathfinder/PathfinderPage.tsx requires selecting start and
 (Complete list. Anything else is read-only for you. You may also add a dated note under docs/integration/UX6/ if you need to record a decision.)
 
 ## Do
-1. Replace raw text inputs for start and destination tracks with AutocompleteSearchField using namespace 'pathfinder-waypoints'.
-2. Populate suggestions from useUnifiedTracks() track catalogue.
-3. Selecting a track binds its track ID and updates the waypoint selection state.
+1. Replace the start and destination track inputs and their hand-built suggestion lists (sn-popover__list) with AutocompleteSearchField from frontend/src/components/ds (design system 1.2.0; read design-system/components/AutocompleteSearchField/README.md): namespace='pathfinder-waypoints', suggestionsLabel='Tracks'.
+2. Populate suggestions from useUnifiedTracks(): { id: track id, value: 'Artist – Title', meta: key and BPM, e.g. '8A · 124' }, best prefix matches first, at most 8.
+3. onSelect receives the option: bind option.id as the waypoint and update the waypoint selection state; keep the existing clear/change button for a chosen track.
 4. Tests: typing in start track input suggests matching library tracks; selecting a track sets the start point.
 
 ## Done when (the reviewer's under-10-minute check; put it in the PR)
