@@ -1411,8 +1411,12 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 
 <!-- SLOT:FL3 BEGIN -->
 ### FL3: Crate filter presets: save and recall favorite filter views
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-28
+- Built: Created `FilterPresets.tsx` component inside `frontend/src/features/musicLibrary/components` which mounts at the top of the body in `CrateFilterRail`. The component saves and recalls filter views by using `utils/favoriteQueries`. Created unit tests in `FilterPresets.test.tsx`.
+- Checks run: `npm ci`, `npx tsc --noEmit -p .`, `npx oxlint src`, `npx vitest run src`, `npx vite build`.
+- Checks not run: Playwright E2E suite due to environment constraints.
+- Reviewer check: In /library: customize filters, click '+ Save preset', name it 'Warmup': chip appears; resetting filters and clicking 'Warmup' restores state.
+- End: 2026-10-28
 <!-- SLOT:FL3 END -->
 
 <!-- SLOT:FL4 BEGIN -->
