@@ -505,6 +505,12 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 - Fixed raw exception message leakage (`detail=str(e)`) across five endpoints in `services/rest_api/routers/api_keys.py`. Replaced internal trace detail responses with generic sanitized error messages while preserving server-side logging.
 - Added security regression unit tests in `tests/security/test_api_keys_security.py`.
 - Checks: `PYTHONPATH=. python3 -m pytest tests/security/test_api_keys_security.py` passed (5/5).
+
+### SEC: Tidal Device Auth Exception Leakage Remediation (2026-10-28)
+- Start: 2026-10-28
+- End: 2026-10-28
+- Sanitized raw exception messages (`detail=str(e)`) in Tidal device code init and polling endpoints in `services/rest_api/routers/music_auth.py` to prevent potential exposure of internal backend state in HTTP responses.
+- Checks: `python3 -m py_compile` passed, code review passed.
 <!-- SLOT:SEC_SENTINEL END -->
 
 <!-- SLOT:QA1 BEGIN -->
