@@ -127,6 +127,19 @@ export const pathfinderMachine = setup({
     exportPath: ({ context, event }) => {
       if (event.type === 'EXPORT_PATH') exportPath(context, event);
     },
+    // Shared by idle, success and error so a recalculation always sends the latest graph.
+    assignCalculateInput: assign(({ event }) =>
+      event.type === 'CALCULATE_PATH'
+        ? { tracks: event.tracks, edges: event.edges, error: null, announcement: 'Calculating optimal path…' }
+        : {}),
+    // A failure before the request is sent (graph not loaded, durations missing).
+    assignPathError: assign(({ event }) =>
+      event.type === 'PATH_ERROR'
+        ? { error: event.error, result: null, announcement: `Error: ${event.error}` }
+        : {}),
+  },
+  guards: {
+    hasStartTrack: ({ context }) => context.startTrack !== null,
   },
 }).createMachine({
   id: 'pathfinder',
@@ -240,16 +253,8 @@ export const pathfinderMachine = setup({
             },
           }),
         },
-        CALCULATE_PATH: {
-          target: 'calculating',
-          guard: ({ context }) => context.startTrack !== null,
-          actions: assign({
-            tracks: ({ event }) => event.tracks,
-            edges: ({ event }) => event.edges,
-            error: null,
-            announcement: () => 'Calculating optimal path…',
-          }),
-        },
+        CALCULATE_PATH: { target: 'calculating', guard: 'hasStartTrack', actions: 'assignCalculateInput' },
+        PATH_ERROR: { target: 'error', actions: 'assignPathError' },
         RESET: {
           actions: assign(() => initialContext),
         },
@@ -307,7 +312,8 @@ export const pathfinderMachine = setup({
     },
     success: {
       on: {
-        CALCULATE_PATH: 'calculating',
+        CALCULATE_PATH: { target: 'calculating', guard: 'hasStartTrack', actions: 'assignCalculateInput' },
+        PATH_ERROR: { target: 'error', actions: 'assignPathError' },
         RESET: 'idle',
         EXPORT_PATH: {
           actions: 'exportPath',
@@ -335,7 +341,8 @@ export const pathfinderMachine = setup({
     },
     error: {
       on: {
-        CALCULATE_PATH: 'calculating',
+        CALCULATE_PATH: { target: 'calculating', guard: 'hasStartTrack', actions: 'assignCalculateInput' },
+        PATH_ERROR: { target: 'error', actions: 'assignPathError' },
         RESET: 'idle',
         PREVIOUS_STEP: {
           target: 'idle',
