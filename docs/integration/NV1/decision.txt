@@ -1,0 +1,1 @@
+A separate drawer row was not added because the NavDrawer rows are fixed module rows; a dedicated row would be a design-system change under design-system/17-governance.md.
