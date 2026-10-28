@@ -10,8 +10,17 @@ import {
   DEFAULT_FILTERS, PILLARS, ROT, TIERS, activeFilterCount, matchesFilters, sourceName, tierOf,
   type CrateFilters, type FilterGroup, type Tier,
 } from '../setBuilder';
+import { AutocompleteSearchField, type AutocompleteOption } from '../../../components/ds/AutocompleteSearchField';
+import { LexiconTrie } from '../../../utils/lexiconTrie';
 
 const TIER_LABEL: Record<Tier, string> = { low: 'Low 1–4', building: 'Building 5–7', high: 'High 8–10' };
+
+/** Suggestion kinds: artists and titles fill the query; tags and sources apply that filter. */
+type SuggestKind = 'artist' | 'track' | 'tag' | 'source';
+const KIND_LABEL: Record<SuggestKind, string> = { artist: 'Artist', track: 'Title', tag: 'Tag', source: 'Source' };
+interface Vocab { trie: LexiconTrie; counts: Map<string, number>; sourceIds: Map<string, string> }
+const vocabKey = (kind: string, word: string) => `${kind}\u0000${word}`;
+
 const SHEET_MQ = '(max-width: 1023.98px)';
 
 interface Props {
@@ -34,6 +43,61 @@ export const CrateFilterRail: React.FC<Props> = ({ tracks, filters: F, onChange,
   const triggerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const chipRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+  // Vocabulary for the search field, rebuilt when the tracks change.
+  const vocab = useMemo<Vocab>(() => {
+    const trie = new LexiconTrie();
+    const counts = new Map<string, number>();
+    const sourceIds = new Map<string, string>();
+    const words = new Map<string, { kind: SuggestKind; word: string }>();
+    const add = (kind: SuggestKind, word: string) => {
+      const k = vocabKey(kind, word);
+      words.set(k, { kind, word });
+      counts.set(k, (counts.get(k) ?? 0) + 1);
+    };
+    for (const track of tracks) {
+      if (track.a) add('artist', track.a);
+      if (track.t) add('track', track.t);
+      for (const tag of track.tags) add('tag', tag);
+      for (const s of track.src) { sourceIds.set(sourceName(s), s); add('source', sourceName(s)); }
+    }
+    const base: Record<SuggestKind, number> = { artist: 50, tag: 40, source: 30, track: 10 };
+    for (const [k, { kind, word }] of words) trie.insert(word, kind, base[kind] + (counts.get(k) ?? 0));
+    return { trie, counts, sourceIds };
+  }, [tracks]);
+
+  const suggestions = useMemo<AutocompleteOption[]>(() => {
+    const q = query.trim();
+    if (!q) return [];
+    // The trie also carries built-in keys and pillars; only offer what this crate can filter on.
+    return vocab.trie.searchPrefix(q, 32)
+      .filter((r): r is { word: string; category: SuggestKind } => !!r.category && r.category in KIND_LABEL)
+      .slice(0, 8)
+      .map((r) => ({
+        id: vocabKey(r.category, r.word),
+        value: r.word,
+        meta: `${KIND_LABEL[r.category]} · ${SN.format.count(vocab.counts.get(vocabKey(r.category, r.word)) ?? 0)}`,
+      }));
+  }, [vocab, query]);
+
+  const chooseSuggestion = (value: string, option?: AutocompleteOption) => {
+    const kind = option?.id.split('\u0000')[0];
+    if (kind === 'tag') {
+      onQuery('');
+      if (!F.tags.includes(value)) onChange({ ...F, tags: [...F.tags, value] });
+    } else if (kind === 'source') {
+      onQuery('');
+      onChange({ ...F, src: vocab.sourceIds.get(value) ?? '' });
+    } else {
+      onQuery(value);
+    }
+  };
+
+  // The field forwards its ref to the form; the page focuses and selects the input through searchRef.
+  const fieldRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    searchRef.current = fieldRef.current?.querySelector('input') ?? null;
+  });
 
   useEffect(() => {
     const mq = window.matchMedia?.(SHEET_MQ);
@@ -174,34 +238,19 @@ export const CrateFilterRail: React.FC<Props> = ({ tracks, filters: F, onChange,
         </div>
         <div className="sn-filter-rail__body">
           <div className="sn-filter-rail__section">
-            <form className="sn-search-field" role="search" onSubmit={(e) => e.preventDefault()} data-empty={query ? undefined : ''}>
-              <label className="sn-sr" htmlFor="crate-q">Search tracks</label>
-              <div className="sn-search-field__box">
-                <span className="sn-search-field__icon"><SnIcon name="search" /></span>
-                <input
-                  ref={searchRef}
-                  className="sn-input sn-search-field__input"
-                  type="search"
-                  id="crate-q"
-                  placeholder="Search artist, title or label"
-                  autoComplete="off"
-                  aria-keyshortcuts="/"
-                  aria-describedby="crate-q-meta"
-                  value={query}
-                  onChange={(e) => onQuery(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Escape' && query) { e.preventDefault(); e.stopPropagation(); onQuery(''); } }}
-                />
-                <span className="sn-search-field__end">
-                  <kbd className="sn-search-field__kbd" aria-hidden="true">/</kbd>
-                  <button type="button" className="sn-search-field__clear" aria-label="Clear search" onClick={() => { onQuery(''); searchRef.current?.focus(); }}>
-                    <SnIcon name="x" />
-                  </button>
-                </span>
-              </div>
-              <div className="sn-search-field__meta" id="crate-q-meta">
-                <span className="sn-search-field__count" role="status"><b>{SN.format.count(shown)}</b> of {SN.format.count(tracks.length)} tracks</span>
-              </div>
-            </form>
+            <AutocompleteSearchField
+              ref={fieldRef}
+              label="Search tracks"
+              placeholder="Search artist, title or label"
+              value={query}
+              onChange={onQuery}
+              namespace="library-crate"
+              shortcut
+              suggestions={suggestions}
+              suggestionsLabel="Matches"
+              onSelect={chooseSuggestion}
+              resultCount={{ shown, total: tracks.length, noun: 'tracks' }}
+            />
           </div>
           {group('pillar', 'Pillar', PILLARS.map((p) => ({ key: p.id, label: p.label, on: F.pillar.includes(p.id), n: count('pillar', (t) => t.p === p.id), toggle: () => toggle('pillar', p.id) })), () => onChange({ ...F, pillar: [] }))}
           {group('tier', 'Energy tier', TIERS.map((t) => ({ key: t, label: TIER_LABEL[t], tier: t, on: F.tier.includes(t), n: count('tier', (x) => tierOf(x.e) === t), toggle: () => toggle('tier', t) })), () => onChange({ ...F, tier: [] }))}
