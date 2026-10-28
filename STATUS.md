@@ -1329,6 +1329,7 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks run: `vitest run src/features/musicLibrary/components/CrateFilterRail.test.tsx`, `npx tsc --noEmit -p .`, `npx oxlint src`, `npx vitest run src`, `npx vite build`, design system check.
 - Checks not run: Playwright E2E suite due to environment constraints.
 - End: 2026-10-28
+- PR: https://github.com/zvirb/songnodes/pull/319 (reviewer: tag and source suggestions apply that filter; built-in keys and pillars are not offered; searchRef points at the input)
 <!-- SLOT:UX5 END -->
 
 <!-- SLOT:UX6 BEGIN -->

@@ -15,13 +15,11 @@ import { LexiconTrie } from '../../../utils/lexiconTrie';
 
 const TIER_LABEL: Record<Tier, string> = { low: 'Low 1–4', building: 'Building 5–7', high: 'High 8–10' };
 
-function artistsCount(tracks: LibraryTrack[], artist: string) {
-  return tracks.filter(t => t.a.toLowerCase() === artist.toLowerCase()).length;
-}
-
-function tagsCount(tracks: LibraryTrack[], tag: string) {
-  return tracks.filter(t => t.tags.some(x => x.toLowerCase() === tag.toLowerCase())).length;
-}
+/** Suggestion kinds: artists and titles fill the query; tags and sources apply that filter. */
+type SuggestKind = 'artist' | 'track' | 'tag' | 'source';
+const KIND_LABEL: Record<SuggestKind, string> = { artist: 'Artist', track: 'Title', tag: 'Tag', source: 'Source' };
+interface Vocab { trie: LexiconTrie; counts: Map<string, number>; sourceIds: Map<string, string> }
+const vocabKey = (kind: string, word: string) => `${kind}\u0000${word}`;
 
 const SHEET_MQ = '(max-width: 1023.98px)';
 
@@ -46,45 +44,60 @@ export const CrateFilterRail: React.FC<Props> = ({ tracks, filters: F, onChange,
   const closeRef = useRef<HTMLButtonElement>(null);
   const chipRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
-  const trie = useMemo(() => {
-    const t = new LexiconTrie();
-    const artists = new Map<string, number>();
-    const tags = new Map<string, number>();
-    const srcs = new Map<string, number>();
-
+  // Vocabulary for the search field, rebuilt when the tracks change.
+  const vocab = useMemo<Vocab>(() => {
+    const trie = new LexiconTrie();
+    const counts = new Map<string, number>();
+    const sourceIds = new Map<string, string>();
+    const words = new Map<string, { kind: SuggestKind; word: string }>();
+    const add = (kind: SuggestKind, word: string) => {
+      const k = vocabKey(kind, word);
+      words.set(k, { kind, word });
+      counts.set(k, (counts.get(k) ?? 0) + 1);
+    };
     for (const track of tracks) {
-      if (track.a) artists.set(track.a, (artists.get(track.a) || 0) + 1);
-      if (track.t) t.insert(track.t, 'track', 10);
-      for (const tag of track.tags) tags.set(tag, (tags.get(tag) || 0) + 1);
-      for (const s of track.src) srcs.set(s, (srcs.get(s) || 0) + 1);
+      if (track.a) add('artist', track.a);
+      if (track.t) add('track', track.t);
+      for (const tag of track.tags) add('tag', tag);
+      for (const s of track.src) { sourceIds.set(sourceName(s), s); add('source', sourceName(s)); }
     }
-
-    for (const [a, c] of artists) t.insert(a, 'artist', 50 + c);
-    for (const [tag, c] of tags) t.insert(tag, 'tag', 40 + c);
-    for (const [s, c] of srcs) t.insert(sourceName(s), 'source', 30 + c);
-
-    return t;
+    const base: Record<SuggestKind, number> = { artist: 50, tag: 40, source: 30, track: 10 };
+    for (const [k, { kind, word }] of words) trie.insert(word, kind, base[kind] + (counts.get(k) ?? 0));
+    return { trie, counts, sourceIds };
   }, [tracks]);
 
   const suggestions = useMemo<AutocompleteOption[]>(() => {
-    if (!query.trim()) return [];
-    const res = trie.searchPrefix(query.trim(), 8);
-    return res.map(r => {
-      let meta = '';
-      if (r.category === 'artist') meta = `Artist • ${artistsCount(tracks, r.word)}`;
-      else if (r.category === 'tag') meta = `Tag • ${tagsCount(tracks, r.word)}`;
-      else if (r.category === 'source') meta = 'Source';
-      else if (r.category === 'key') meta = 'Camelot key';
-      else if (r.category === 'pillar') meta = 'Pillar';
-
-      return {
-        id: `${r.category}-${r.word}`,
+    const q = query.trim();
+    if (!q) return [];
+    // The trie also carries built-in keys and pillars; only offer what this crate can filter on.
+    return vocab.trie.searchPrefix(q, 32)
+      .filter((r): r is { word: string; category: SuggestKind } => !!r.category && r.category in KIND_LABEL)
+      .slice(0, 8)
+      .map((r) => ({
+        id: vocabKey(r.category, r.word),
         value: r.word,
-        meta
-      };
-    });
-  }, [trie, query, tracks]);
+        meta: `${KIND_LABEL[r.category]} · ${SN.format.count(vocab.counts.get(vocabKey(r.category, r.word)) ?? 0)}`,
+      }));
+  }, [vocab, query]);
 
+  const chooseSuggestion = (value: string, option?: AutocompleteOption) => {
+    const kind = option?.id.split('\u0000')[0];
+    if (kind === 'tag') {
+      onQuery('');
+      if (!F.tags.includes(value)) onChange({ ...F, tags: [...F.tags, value] });
+    } else if (kind === 'source') {
+      onQuery('');
+      onChange({ ...F, src: vocab.sourceIds.get(value) ?? '' });
+    } else {
+      onQuery(value);
+    }
+  };
+
+  // The field forwards its ref to the form; the page focuses and selects the input through searchRef.
+  const fieldRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    searchRef.current = fieldRef.current?.querySelector('input') ?? null;
+  });
 
   useEffect(() => {
     const mq = window.matchMedia?.(SHEET_MQ);
@@ -226,15 +239,16 @@ export const CrateFilterRail: React.FC<Props> = ({ tracks, filters: F, onChange,
         <div className="sn-filter-rail__body">
           <div className="sn-filter-rail__section">
             <AutocompleteSearchField
-              ref={searchRef as any}
+              ref={fieldRef}
               label="Search tracks"
               placeholder="Search artist, title or label"
               value={query}
               onChange={onQuery}
               namespace="library-crate"
-              shortcut={true}
+              shortcut
               suggestions={suggestions}
-              onSelect={(val) => onQuery(val)}
+              suggestionsLabel="Matches"
+              onSelect={chooseSuggestion}
               resultCount={{ shown, total: tracks.length, noun: 'tracks' }}
             />
           </div>
