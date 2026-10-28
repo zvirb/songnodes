@@ -21,7 +21,7 @@ frontend/src/components/MultiSelect.tsx
 frontend/src/components/RadialMenu.tsx
 # migrated DS12: frontend/src/components/SetlistBuilder/AnalyticsPanel.tsx
 frontend/src/components/SmartTooltip.tsx
-frontend/src/components/TrackSearch.tsx
+# migrated: frontend/src/components/TrackSearch.tsx
 # migrated DS2B: frontend/src/components/TracklistImporter.css
 # migrated DS14: frontend/src/examples/spatialIndexUsage.example.tsx
 # migrated DS4: frontend/src/features/musicLibrary/SetBuilderPage.tsx
