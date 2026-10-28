@@ -1252,6 +1252,12 @@ PR: https://github.com/zvirb/songnodes/pull/LY2
 - End: _not finished_
 <!-- SLOT:SC2 END -->
 
+<!-- SLOT:L8 BEGIN -->
+### L8: Library page: import the library export from the browser
+- Start: _not started_
+- End: _not finished_
+<!-- SLOT:L8 END -->
+
 ## Scheduled run
 
 ### 2026-10-26 15:10 AEDT (Claude, scheduled run on tuf-boi)
@@ -1295,7 +1301,7 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 <!-- SLOT:L6 BEGIN -->
 ### L6: Script: import the musicLibrary SQLite into the running stack
 - Start: 2026-10-26
-- End: 2026-10-27, merged as https://github.com/zvirb/songnodes/pull/228 (slot filled in by the 28 Oct scheduled run)
+- End: 2026-10-28. PR #228 merged with 0 changed files; scripts/import-music-library.sh was then written by Claude in the 28 Oct scheduled run (posts library.json to /api/v1/library/ingest and waits for the job), replacing the SQLite plan.
 <!-- SLOT:L6 END -->
 
 <!-- SLOT:SB4 BEGIN -->
@@ -1440,8 +1446,9 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 
 <!-- SLOT:FL2 BEGIN -->
 ### FL2: Set builder: harmonic and energy transition suggestions
-- Start: 2026-10-27
-- End: 2026-10-27, merged as https://github.com/zvirb/songnodes/pull/267 (slot filled in by the 28 Oct scheduled run)
+- Start: _not started_
+- End: _not finished_
+- Note (28 Oct): PR #267 merged with 0 changed files, so FL2 was never delivered; re-sent 28 Oct.
 <!-- SLOT:FL2 END -->
 
 <!-- SLOT:FL3 BEGIN -->
