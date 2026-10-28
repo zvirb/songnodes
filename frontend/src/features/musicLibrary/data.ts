@@ -105,6 +105,10 @@ export function mapApiToLibraryTrack(row: any): LibraryTrack {
   };
 }
 
+export function resetLibraryCache(): void {
+  cache = null;
+}
+
 export function loadLibrary(): Promise<LibraryFile> {
   if (!cache) {
     cache = (async () => {

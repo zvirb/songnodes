@@ -18,6 +18,7 @@ import { FILTERS_KEY, bannerKey, lsGet, lsSet, melbourneStamp, normaliseTracks, 
 import { Banner, TrackCell, useAnnouncer, useToaster } from './components/ui';
 import { CrateFilterRail } from './components/CrateFilterRail';
 import { TargetActionButton } from './targetAction/TargetActionButton';
+import { LibraryImportDialog } from './components/LibraryImportDialog';
 import { DiscoveryBanner } from './targetAction/DiscoveryBanner';
 import { useTableKeyboardNav } from '../../hooks/useTableKeyboardNav';
 import './musicLibrary.css';
@@ -85,6 +86,7 @@ const LibraryPage: React.FC = () => {
   const [focusRow, setFocusRow] = useState<number | null>(null);
   const [newFrom, setNewFrom] = useState<number | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [bannerGone, setBannerGone] = useState<number | null>(() => lsGet<number | null>(bannerKey('library'), null));
   const [activeId, setActiveId] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -254,10 +256,23 @@ const LibraryPage: React.FC = () => {
         stampVerb="Built"
         stamp={generated}
         actions={
-          <button className="sn-btn sn-btn--primary" type="button" onClick={buildFromCrate} disabled={!lib}>
-            <SnIcon name="list-music" />Build set from crate
-          </button>
+          <>
+            <button className="sn-btn sn-btn--quiet" type="button" onClick={() => setImportOpen(true)}>
+              <SnIcon name="upload" />Import library
+            </button>
+            <button className="sn-btn sn-btn--primary" type="button" onClick={buildFromCrate} disabled={!lib || tracks.length === 0}>
+              <SnIcon name="list-music" />Build set from crate
+            </button>
+          </>
         }
+      />
+
+      <LibraryImportDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onReload={() => {
+          setAttempt(a => a + 1);
+        }}
       />
 
       {lib ? (
@@ -364,6 +379,18 @@ const LibraryPage: React.FC = () => {
                         <td />
                       </tr>
                     ))
+                  ) : tracks.length === 0 ? (
+                    <tr className="sn-data-table__state">
+                      <td colSpan={COLS.length + 1}>
+                        <EmptyState
+                          icon="list-music"
+                          title="The library has not been imported yet"
+                          actions={<button className="sn-btn sn-btn--primary" type="button" onClick={() => setImportOpen(true)}><SnIcon name="upload" />Import library</button>}
+                        >
+                          Import the weekly library export to fill the crate.
+                        </EmptyState>
+                      </td>
+                    </tr>
                   ) : visible.length === 0 ? (
                     <tr className="sn-data-table__state">
                       <td colSpan={COLS.length + 1}>

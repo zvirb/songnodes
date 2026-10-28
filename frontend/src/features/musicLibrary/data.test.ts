@@ -1,14 +1,11 @@
 /** @vitest-environment jsdom */
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
-import { readSavedSetsAsync, writeSavedSetsAsync, readSavedSets, writeSavedSets, SAVED_SETS_KEY, type SavedSet, loadLibrary, mapApiToLibraryTrack } from './data';
+import { readSavedSetsAsync, writeSavedSetsAsync, readSavedSets, writeSavedSets, SAVED_SETS_KEY, type SavedSet, loadLibrary, mapApiToLibraryTrack, resetLibraryCache } from './data';
 
 describe('loadLibrary', () => {
     beforeEach(() => {
         vi.stubGlobal('fetch', vi.fn());
-        // Reset cache in module (it's let cache, not strictly reseteable, but we simulate by reloading or it being null if failed)
-        // Since cache is module level and not exposed, we might not be able to clear it easily if it successfully resolves.
-        // Wait, cache is set to null if it throws.
-        // We won't test multiple success calls in one test file if cache is not reset.
+        resetLibraryCache();
     });
 
     afterEach(() => {
