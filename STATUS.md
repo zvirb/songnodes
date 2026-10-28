@@ -1352,9 +1352,11 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 <!-- SLOT:ST1 END -->
 
 <!-- SLOT:SV1 BEGIN -->
-### SV1: Set builder: load saved sets from the database
-- Start: _not started_
-- End: _not finished_
+* Started: 2026-10-28
+* Finished: 2026-10-28
+* Summary: Updated Set builder to load saved sets from the database on mount. Merges server and local sets, gracefully falls back to local data if the API fails, and prevents duplicates on saves by mapping server IDs back to local items using a pending creates map.
+* Checks: ran vitest tests for data.ts, oxlint, tsc, and sync-design-system.sh --check. All pass.
+* PR: (Pending)
 <!-- SLOT:SV1 END -->
 
 <!-- SLOT:TV1 BEGIN -->
