@@ -349,6 +349,55 @@ export interface DateRangeFieldProps {
   presets?: { id: string; label: string; range: () => [string, string] }[];
   /** "Today" for presets, in Melbourne; defaults to the current date. */
   today?: string;
+  /** Show the icon-only calendar button ("Pick the dates on the calendar") that opens DateRange with focus on the grid. Default true. */
+  calendar?: boolean;
+  /** DateRange options for the calendar (title, outcome, marks, extra presets). */
+  calendarProps?: Partial<Pick<DateRangeProps, "title" | "outcome" | "marks" | "presets">>;
+  /** Called when the calendar opens (for analytics or lazy-loading marks). */
+  onPickOnCalendar?: () => void;
+}
+
+/** A day mark the page passes to DateRange (not a built-in calendar). */
+export interface DateRangeMark {
+  /** ISO date "2026-11-03". Date-only: no time zone. */
+  date: string;
+  /** Short code shown under the number ("PH", "RUN"); omit for a plain data dot ("this day has records"). */
+  code?: string;
+  /** The day's own name, in `title` and the announced name ("Melbourne Cup"). */
+  name: string;
+  /** What kind of mark, for the key and the announced name ("Public holiday", "Weekly library run", "Plays heard"). */
+  kind: string;
+}
+/** Built-in DateRange presets (Monday–Sunday weeks, Melbourne dates). */
+export type DateRangePresetId = "last-7-days" | "last-30-days" | "this-year" | "last-week" | "this-week" | "next-week";
+/** A page's own named span ("Summer 2026–27"). */
+export interface DateRangePreset {
+  id: string;
+  label: string;
+  /** [from, to] ISO dates, or a function giving them (evaluated when pressed). */
+  range: [string, string] | (() => [string, string]);
+}
+export interface DateRangeProps {
+  /** [from, to] ISO dates; to is null while only From is picked. */
+  value: [string | null, string | null];
+  /** Called after each pick, preset or Clear; presetId is the pressed preset, or null. */
+  onChange: (value: [string | null, string | null], presetId: string | null) => void;
+  /** The outcome button: called with the range when pressed (To defaults to From). */
+  onApply: (value: [string, string]) => void;
+  /** Escape or the close button; return focus to the control that opened it. */
+  onClose: () => void;
+  /** Popover title naming what the span is for ("Plays to export"). Default "Pick the dates". */
+  title?: string;
+  /** Outcome button label, named for what it does: "Use these dates" (default), "Download CSV", "Print". */
+  outcome?: string;
+  /** Presets in this order; default ["last-7-days", "last-30-days", "this-year"]; week presets are optional. Then the page's own spans. */
+  presets?: (DateRangePresetId | DateRangePreset)[];
+  /** Day marks; the key lists only the kinds used here. */
+  marks?: DateRangeMark[];
+  /** "Today" as a Melbourne ISO date; defaults to SongNodes.calendar.today(). */
+  today?: string;
+  /** Show the pressed preset (for a value that came from one). */
+  presetId?: string | null;
 }
 
 export interface SecretFieldProps {

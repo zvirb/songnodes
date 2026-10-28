@@ -56,7 +56,7 @@ The full rules are in *Writing and content*.
 |---|---|---|
 | Writing | Writing and content | — |
 | Structure | Information architecture, Navigation, Page patterns | AppHeader, NavDrawer, PageHeader, Tabs, SegmentedControl, PeriodNav, Breadcrumbs, ShowMore, LauncherCard, OverflowMenu, ContextMenu, CommandPalette, ShortcutSheet, PreferencesPanel |
-| Inputs | Inputs | Button, TextLink, CopyButton, FilterChip, SearchField, AutocompleteSearchField, FilterRail, TextField, NumberField, SelectField, Checkbox, Switch, RangeSlider, DateField, SecretField, FileDrop, PhotoCapture, ChipInput, KeyPicker, TracklistPaste |
+| Inputs | Inputs | Button, TextLink, CopyButton, FilterChip, SearchField, AutocompleteSearchField, FilterRail, TextField, NumberField, SelectField, Checkbox, Switch, RangeSlider, DateField, DateRange, SecretField, FileDrop, PhotoCapture, ChipInput, KeyPicker, TracklistPaste |
 | Data and music | Data display, Music domain | FigureTile, StatusPill, CategoryTag, EnergyBar, KeyBadge, BpmReadout, CompatibilityBadge, TransitionNote, TrackCell, MiniAudioPreview, DataTable, KeyValueGrid, SourceBadge, ServiceStatus, FreshnessStamp, ConnectionStatus, Checklist, Disclosure, SectionHeading, Card, SetCard, SetSlot |
 | Charts and graph | Colour, Data display | ChartFrame, EnergyWave, ProgressBar, ProgressRing, Heatmap, CamelotWheel, GraphStyles, GraphControls, Sparkline, WaveformStrip |
 | Feedback | Feedback and system status, Motion | EmptyState, LoadingState, StagedProgress, ErrorState, Banner, InlineMessage, Toast, Dialog, ConfirmDialog, SideSheet, MediaViewer, Tooltip, Popover |
