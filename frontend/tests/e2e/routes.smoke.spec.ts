@@ -20,9 +20,12 @@ test('/harmony opens the Camelot explorer', async ({ page }) => {
 
 test('/pipeline opens the telemetry dashboard', async ({ page }) => {
   await openRoute(page, '/pipeline');
-  await expect(page.getByRole('heading', { name: 'Pipeline Telemetry' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Global Pipeline Health' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Medallion Pipeline Flow' })).toBeVisible();
+  // Sections that render on a fresh database (no scrape runs, workers or target tracks yet)
+  await expect(page.getByRole('heading', { level: 1, name: 'Pipeline telemetry' })).toBeVisible();
+  for (const section of ['Scrape runs', 'System health', 'Medallion pipeline flow', 'Workers']) {
+    await expect(page.getByRole('heading', { name: section })).toBeVisible();
+  }
+  await expect(page.getByText('No scrape has run yet. Queue one from the target tracks below.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Run Scrapers' })).toHaveCount(0);
 });
 
