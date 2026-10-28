@@ -175,7 +175,8 @@ export interface SavedSet {
 
 let serverSetsCache: SavedSet[] = [];
 
-export async function readSavedSetsAsync(): Promise<SavedSet[]> {
+export async function readSavedSetsAsync(): Promise<{ sets: SavedSet[], source: 'server' | 'device' }> {
+  const localSets = readSavedSets();
   try {
     const res = await fetch('/api/v1/library/sets');
     if (res.ok) {
@@ -188,17 +189,39 @@ export async function readSavedSetsAsync(): Promise<SavedSet[]> {
         /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
         tracks: (d.tracks || []).map((t: any) => ({ ...t, id: t.track_id || t.id }))
       })) as SavedSet[];
+
       serverSetsCache = JSON.parse(JSON.stringify(mapped));
-      writeSavedSets(mapped);
-      return mapped;
+
+      const merged: SavedSet[] = [];
+      const serverIds = new Set(mapped.map(s => s.id));
+
+      for (const serverSet of mapped) {
+        const local = localSets.find(s => s.id === serverSet.id);
+        if (local) {
+          merged.push({ ...local, ...serverSet, name: serverSet.name, description: serverSet.description, tracks: serverSet.tracks });
+        } else {
+          merged.push(serverSet);
+        }
+      }
+
+      for (const localSet of localSets) {
+        if (!serverIds.has(localSet.id) && !/^\d+$/.test(localSet.id)) {
+          merged.push(localSet);
+        }
+      }
+
+      writeSavedSets(merged);
+      return { sets: merged, source: 'server' };
     }
   } catch (e) {
     console.warn('API sets read failed, falling back to local storage', e);
   }
-  return readSavedSets();
+  return { sets: localSets, source: 'device' };
 }
 
-export async function writeSavedSetsAsync(sets: SavedSet[]): Promise<void> {
+const pendingCreates = new Map<string, Promise<string>>();
+
+export async function writeSavedSetsAsync(sets: SavedSet[]): Promise<SavedSet[]> {
   const currentIds = new Set(sets.map(s => s.id));
 
   const toDelete = serverSetsCache.filter(s => !currentIds.has(s.id));
@@ -219,38 +242,71 @@ export async function writeSavedSetsAsync(sets: SavedSet[]): Promise<void> {
     }
   }
 
+  const idMap = new Map<string, string>();
+
   for (const s of toSave) {
-    try {
-      const intId = /^\d+$/.test(s.id) ? parseInt(s.id, 10) : 0;
-      const res = await fetch(`/api/v1/library/sets/${intId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: s.name,
-          description: s.description || '',
-          tracks: s.tracks.map(t => ({ track_id: t.id }))
-        }),
-      });
-      if (res.ok) {
-        /* eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-type-assertion */
-        const data = await res.json() as { id: number };
-        if (intId === 0 && data.id) {
-          s.id = String(data.id);
-        }
-      } else {
+    const isNew = !/^\d+$/.test(s.id);
+    const intId = isNew ? 0 : parseInt(s.id, 10);
+
+    if (isNew && pendingCreates.has(s.id)) {
+      try {
+        const newId = await pendingCreates.get(s.id);
+        if (newId) idMap.set(s.id, newId);
+      } catch (e) {
         hasError = true;
       }
-    } catch (e) {
-      console.warn(`Failed to save set ${s.id}`, e);
-      hasError = true;
+      continue;
+    }
+
+    const savePromise = (async () => {
+      try {
+        const res = await fetch(`/api/v1/library/sets/${intId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: s.name,
+            description: s.description || '',
+            tracks: s.tracks.map(t => ({ track_id: t.id }))
+          }),
+        });
+        if (res.ok) {
+          /* eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-type-assertion */
+          const data = await res.json() as { id: number };
+          if (intId === 0 && data.id) {
+            return String(data.id);
+          }
+        } else {
+          hasError = true;
+        }
+      } catch (e) {
+        console.warn(`Failed to save set ${s.id}`, e);
+        hasError = true;
+      }
+      return null;
+    })();
+
+    if (isNew) {
+      pendingCreates.set(s.id, savePromise.then(id => id || ''));
+    }
+
+    const newId = await savePromise;
+    if (newId) {
+      idMap.set(s.id, newId);
+    }
+
+    if (isNew) {
+      pendingCreates.delete(s.id);
     }
   }
 
+  const updatedSets = sets.map(s => idMap.has(s.id) ? { ...s, id: idMap.get(s.id)! } : s);
+
   if (!hasError) {
-    serverSetsCache = JSON.parse(JSON.stringify(sets));
+    serverSetsCache = JSON.parse(JSON.stringify(updatedSets));
   }
 
-  writeSavedSets(sets);
+  writeSavedSets(updatedSets);
+  return updatedSets;
 }
 
 export function readSavedSets(): SavedSet[] {

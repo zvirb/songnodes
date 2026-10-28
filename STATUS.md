@@ -1316,8 +1316,14 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 
 <!-- SLOT:EK1 BEGIN -->
 ### EK1: Enrichment uses keys saved in Settings
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-28
+- End: 2026-10-28
+  - Implemented saved key retrieval from the database, falling back to environment variables.
+  - Implemented async-safe synchronisation wrapper `load_sync` to operate within existing worker loops safely.
+  - Adapted `build_providers` to query saved keys using the database connection strings, falling back where necessary, and logging source properly.
+  - Checks run: Scope guard, shared domain unit tests (`python -m pytest common/tests/test_provider_saved_keys.py common/tests/test_providers.py -q`).
+  - The reviewer's check check passes.
+  - PR: TODO
 <!-- SLOT:EK1 END -->
 
 <!-- SLOT:HM1 BEGIN -->
@@ -1362,9 +1368,11 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 <!-- SLOT:ST1 END -->
 
 <!-- SLOT:SV1 BEGIN -->
-### SV1: Set builder: load saved sets from the database
-- Start: _not started_
-- End: _not finished_
+* Started: 2026-10-28
+* Finished: 2026-10-28
+* Summary: Updated Set builder to load saved sets from the database on mount. Merges server and local sets, gracefully falls back to local data if the API fails, and prevents duplicates on saves by mapping server IDs back to local items using a pending creates map.
+* Checks: ran vitest tests for data.ts, oxlint, tsc, and sync-design-system.sh --check. All pass.
+* PR: (Pending)
 <!-- SLOT:SV1 END -->
 
 <!-- SLOT:TV1 BEGIN -->
@@ -1645,3 +1653,9 @@ Ended 2026-10-26 22:29: Audited Pathfinder (DS7). Fixed CSS typography variables
 - Start: 2026-10-28
 - End: 2026-10-28 - design-system/ mirrored to 1.4.0 and re-synced: DragDrop, StagedProgress stalled state, SongNodes.csv formula guard, never print file paths; DR-031 to DR-033. Checks: sync --check, check_design_system.py --check.
 <!-- SLOT:DS20 END -->
+<!-- SLOT:DS19 BEGIN -->
+### DS19: React DateRange, FileDrop and StagedProgress
+- Start: 2026-10-28 (branch ds19-react-daterange-filedrop-staged; started stacked on DS18, rebased on main after #356 merged)
+- End: 2026-10-28. Added `frontend/src/components/ds/{FileDrop,StagedProgress,DateRange}.tsx` with tests, exported from `ds/index.tsx`. DateRange mirrors `SongNodes.dateRange` (table role=grid, roving tabindex, APG keys, live region) using `SN.calendar` and `SN.format.range/dayLong`. Checks: tsc, oxlint (0 errors; +9 warnings, all spec-mandated ARIA roles), vitest 248/248, vite build, sync --check, check_design_system --check, scope guard. Over the ~400-line budget (three components, Markus asked for all three).
+- Next: adopt in TargetTracksManager / SetlistBuilder (FileDrop), TracklistImporter / ScraperProgressPage (StagedProgress), DateField calendar button and scrape-history export (DateRange).
+<!-- SLOT:DS19 END -->
