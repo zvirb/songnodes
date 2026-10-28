@@ -23,11 +23,11 @@
   var n = 0;
   function mark(text, q) { var t = S.esc(text); if (!q) return t; var i = text.toLowerCase().indexOf(q.toLowerCase()); if (i !== 0) return t; return "<mark>" + S.esc(text.slice(0, q.length)) + "</mark>" + S.esc(text.slice(q.length)); }
   function opt(id, icon, text, q, meta, active) {
-    return '<li class="sn-autocomplete__option" role="option" id="' + id + '" aria-selected="' + (active ? "true" : "false") + '">' +
+    return '<div class="sn-autocomplete__option" role="option" id="' + id + '" tabindex="-1" aria-selected="' + (active ? "true" : "false") + '">' +
       '<span class="sn-autocomplete__icon" aria-hidden="true">' + S.icon(icon) + '</span>' +
-      '<span class="sn-autocomplete__text">' + mark(text, q) + '</span>' + (meta ? '<span class="sn-autocomplete__meta">' + S.esc(meta) + '</span>' : "") + '</li>';
+      '<span class="sn-autocomplete__text">' + mark(text, q) + '</span>' + (meta ? '<span class="sn-autocomplete__meta">' + S.esc(meta) + '</span>' : "") + '</div>';
   }
-  function group(id, label, items) { return items ? '<li class="sn-autocomplete__group" role="group" aria-labelledby="' + id + '"><span class="sn-autocomplete__group-label" id="' + id + '">' + label + '</span><ul class="sn-autocomplete__options" role="none">' + items + '</ul></li>' : ""; }
+  function group(id, label, items) { return items ? '<div class="sn-autocomplete__group" role="group" aria-labelledby="' + id + '"><span class="sn-autocomplete__group-label" id="' + id + '">' + label + '</span><div class="sn-autocomplete__options">' + items + '</div></div>' : ""; }
   function model(q) {
     var rq = recent.filter(function (r) { return !q || r.indexOf(q.toLowerCase()) === 0; }).slice(0, 5);
     var sq = q ? VOCAB.filter(function (w) { return w.v.toLowerCase().indexOf(q.toLowerCase()) === 0; }).slice(0, 8) : [];
@@ -37,7 +37,7 @@
     var k = 0, r = "", s = "";
     m.recent.forEach(function (x) { r += opt(base + "-o" + k, "history", x, q, "", activeIdx === k); k++; });
     m.sugg.forEach(function (x) { s += opt(base + "-o" + k, "search", x.v, q, x.meta, activeIdx === k); k++; });
-    return '<ul class="sn-autocomplete__list" role="listbox" id="' + base + '-list" aria-label="Search suggestions">' + group(base + "-gr", "Recent searches", r) + group(base + "-gs", "Suggestions", s) + '</ul>' +
+    return '<div class="sn-autocomplete__list" role="listbox" id="' + base + '-list" aria-label="Search tracks: suggestions">' + group(base + "-gr", "Recent searches", r) + group(base + "-gs", "Suggestions", s) + '</div>' +
       (m.recent.length ? '<div class="sn-autocomplete__foot"><button class="sn-autocomplete__clear" type="button">Clear recent searches</button></div>' : "");
   }
   function field(o) {
