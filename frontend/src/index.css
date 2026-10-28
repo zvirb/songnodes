@@ -17,8 +17,8 @@
 @import './styles/globals.css';
 
 /* Tailwind CSS layers */
-@import "tailwindcss";
-@config "../tailwind.config.js";
+
+
 
 /* Legacy global.css for backward compatibility */
 @import './styles/global.css';
@@ -62,20 +62,25 @@
 
   /* Accessible skip link */
   .skip-to-content {
-    @apply absolute -top-24 left-4 z-tooltip;
-    @apply px-4 py-2 rounded-control;
-    @apply bg-brand text-on-brand;
-    @apply font-semibold;
+    position: absolute;
+    top: -6rem;
+    left: 1rem;
+    z-index: var(--z-tooltip, 1000);
+    padding: var(--space-2, 0.5rem) var(--space-4, 1rem);
+    border-radius: var(--radius-control, 4px);
+    background-color: var(--brand);
+    color: var(--on-brand);
+    font-weight: 600;
     transition: all var(--duration-base) var(--ease-standard);
   }
 
   .skip-to-content:focus {
-    @apply top-4;
+    top: 1rem;
   }
 
   /* Focus ring for accessibility */
   .focus-ring {
-    @apply focus-visible:outline-none;
+
     outline: 2px solid var(--focus);
     outline-offset: 2px;
   }
