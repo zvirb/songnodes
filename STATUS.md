@@ -1236,8 +1236,13 @@ PR: https://github.com/zvirb/songnodes/pull/LY2
 
 <!-- SLOT:FL5 BEGIN -->
 ### FL5: Library crate: keyboard row navigation
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-28
+- Built: Wired `useTableKeyboardNav` hook into `LibraryPage.tsx` crate table so J/K and arrow keys move through rows. Spread the box properties on `.sn-data-table__box`. Added tests for keyboard interaction in `LibraryPage.keyboard.test.tsx` checking next/prev logic and interaction invoking active row target actions.
+- Checks run: `npm ci`, `npx tsc --noEmit -p .`, `npx oxlint src`, `npx vitest run src`, `npx vite build` on Node 26. Design system checks. All pass.
+- Checks not run: Playwright E2E suite could not be run as per sandbox limitations.
+- Reviewer Check: Open /library, click the table (or Tab to it), press J three times: the third row has the focus outline and a screen reader hears '3 of N: Artist – Title'; press T: the row's target button shows it was added.
+- PR Link: https://github.com/zvirb/songnodes/pull/NEW
+- End: 2026-10-28
 <!-- SLOT:FL5 END -->
 
 ## Scheduled run
