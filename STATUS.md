@@ -1311,8 +1311,14 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 
 <!-- SLOT:EK1 BEGIN -->
 ### EK1: Enrichment uses keys saved in Settings
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-28
+- End: 2026-10-28
+  - Implemented saved key retrieval from the database, falling back to environment variables.
+  - Implemented async-safe synchronisation wrapper `load_sync` to operate within existing worker loops safely.
+  - Adapted `build_providers` to query saved keys using the database connection strings, falling back where necessary, and logging source properly.
+  - Checks run: Scope guard, shared domain unit tests (`python -m pytest common/tests/test_provider_saved_keys.py common/tests/test_providers.py -q`).
+  - The reviewer's check check passes.
+  - PR: TODO
 <!-- SLOT:EK1 END -->
 
 <!-- SLOT:HM1 BEGIN -->
