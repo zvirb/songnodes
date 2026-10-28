@@ -1917,27 +1917,27 @@ cd frontend && npm run test:e2e -- --workers=1
       <button class="sn-search-field__clear" type="button" aria-label="Clear search">…</button>
     </span>
     <div class="sn-autocomplete__popup">
-      <ul class="sn-autocomplete__list" role="listbox" id="q-list" aria-label="Search suggestions">
-        <li class="sn-autocomplete__group" role="group" aria-labelledby="q-g-recent">
+      <div class="sn-autocomplete__list" role="listbox" id="q-list" aria-label="Search tracks: suggestions">
+        <div class="sn-autocomplete__group" role="group" aria-labelledby="q-g-recent">
           <span class="sn-autocomplete__group-label" id="q-g-recent">Recent searches</span>
-          <ul class="sn-autocomplete__options" role="none">
-            <li class="sn-autocomplete__option" role="option" id="q-opt-r1" aria-selected="false">
+          <div class="sn-autocomplete__options">
+            <div class="sn-autocomplete__option" role="option" id="q-opt-r1" tabindex="-1" aria-selected="false">
               <span class="sn-autocomplete__icon" aria-hidden="true"><svg class="sn-icon">history</svg></span>
               <span class="sn-autocomplete__text"><mark>bic</mark>ep glue</span>
-            </li>
-          </ul>
-        </li>
-        <li class="sn-autocomplete__group" role="group" aria-labelledby="q-g-sugg">
+            </div>
+          </div>
+        </div>
+        <div class="sn-autocomplete__group" role="group" aria-labelledby="q-g-sugg">
           <span class="sn-autocomplete__group-label" id="q-g-sugg">Suggestions</span>
-          <ul class="sn-autocomplete__options" role="none">
-            <li class="sn-autocomplete__option" role="option" id="q-opt-s1" aria-selected="true">
+          <div class="sn-autocomplete__options">
+            <div class="sn-autocomplete__option" role="option" id="q-opt-s1" tabindex="-1" aria-selected="true">
               <span class="sn-autocomplete__icon" aria-hidden="true"><svg class="sn-icon">search</svg></span>
               <span class="sn-autocomplete__text"><mark>Bic</mark>ep</span>
               <span class="sn-autocomplete__meta">Artist · 41</span>
-            </li>
-          </ul>
-        </li>
-      </ul>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="sn-autocomplete__foot"><button class="sn-autocomplete__clear" type="button">Clear recent searches</button></div>
     </div>
   </div>
