@@ -20,15 +20,6 @@ The design system has one version number, [semver](https://semver.org) `MAJOR.MI
 
 Newest first. Each entry: version, date (Melbourne), one line per change, prefixed Added / Changed / Deprecated / Removed / Fixed, with the decision record if any.
 
-**1.3.0 — 28 Oct 2026: date ranges on a calendar, text inset (imported from BeanAlliance v4.17–v4.17.3)**
-- Added `DateRange` (Inputs): the from–to calendar popover, ported from BeanAlliance DateRange and fitted to SongNodes (`.sn-date-range` and parts `__body`, `__months`, `__month`, `__head`, `__title`, `__spacer`, `__next`, `__grid`, `__dow`, `__day` with `[data-range=start|end|in|single]`, `[data-today]`, `[data-mark]`, `__n`, `__mark`, `__dot`, `__presets`, `__key`, `__code`, `__now-bar`, `__foot`, `__sum`; modifiers `--static`, `--stacked`, `--one`, `--sheet`) in the new `source/css/25-date-range.css`. Fitted, Markus to confirm (Q10–Q16): lavender selection, amber today, weekends not greyed, marks passed in by the page, calendar-day count, DateField's presets first with optional week presets, outcome as a default button.
-- Added `SongNodes.calendar` (`today`, `iso`, `month`, `addDays`, `addMonths`, `compare`, `days`, `weekStart`, `preset`, `PRESET_LABELS`), `SongNodes.format.range` and `format.dayLong`, and `SongNodes.dateRange(el, opts)`, which renders and runs the popover. Types `DateRangeProps`, `DateRangeMark`, `DateRangePreset`, `DateRangePresetId`.
-- Changed `DateField`: the range variant gains an icon-only calendar button (`.sn-date-field__pick`, `calendar` icon, "Pick the dates on the calendar") that opens DateRange with focus on the grid; typed and picked dates show in both (`.sn-date-field--calendar`; props `calendar`, `calendarProps`, `onPickOnCalendar`).
-- Added `SongNodes.iconNames`; `SongNodes.icon()` now logs one console warning for a name outside the set instead of silently drawing `circle-help` (BeanAlliance found a step glyph that drew nothing).
-- Added `.sn-overflow-menu__icon-gap`: a menu item with no icon keeps an empty icon column so labels line up; previews no longer use `circle-dot` as a placeholder. Menu and command-palette groups are separated by a rule.
-- Changed (text inset, from a browser audit of every preview at 1440 and 390px in dark, light and booth: 315 cramped and 26 overflowing text boxes before, 0 after): a card holding only a table or a lone empty, loading or error state is flush and its cells carry the inset (`:where`, so a page's padding wins); table row headers and footer labels (`tbody th`, `tfoot th`) take the body cell's box instead of the column-header style; table cells get `space-1` block padding; key caps, tab badges, drawer counts, source-badge "+N" and error-state ref codes pad `space-2` and never wrap; KeyPicker keys, segmented controls, graph legend and recommendation reasons wrap instead of spilling. Rules written into 05-layout "Text inset" and 11-data-display Tables.
-- No token changed; every new class uses existing tokens.
-
 **1.2.0 — 28 Oct 2026: completions, preview player, presets and keyboard rows**
 - Added `AutocompleteSearchField` (Inputs): a SearchField whose input is a WAI-ARIA combobox with a grouped listbox of recent searches and suggestions (`.sn-autocomplete`, `__popup`, `__list`, `__group`, `__group-label`, `__option`, `__icon`, `__text`, `__meta`, `__foot`, `__clear`). Needed by UX4, UX5, UX6.
 - Added `MiniAudioPreview` (Music): a 32px preview player with paused, loading, playing and unavailable states and one-at-a-time playback (`.sn-mini-preview`, `__btn`, `__track`, `__fill`, `__time`; `--sn-mini-preview-pct`). Needed by FL4 and the Space action of FL1.
@@ -140,20 +131,11 @@ Consequences: brand lavender has one meaning. If Markus prefers lavender for Key
 
 ## Open questions
 
-All questions raised at the 1.0.0 release were answered on 24 Oct 2026 (DR-018 revised, DR-021 to DR-030). Q9 remains open; Q10–Q18 were fitted in 1.3.0 and wait for Markus:
+All questions raised at the 1.0.0 release were answered on 24 Oct 2026 (DR-018 revised, DR-021 to DR-030). One remains open:
 
 | # | Question | Options | Default until answered |
 |---|---|---|---|
 | Q9 | Score bands for recommendations | 80/60/40 (current code) · fit to Markus's accepted picks | 80/60/40 until enough accepted picks exist to fit, then fitted from his own picks |
-| Q10 | DateRange day count wording | Calendar days "5 days" · add nights for gig spans · page chooses | Calendar days |
-| Q11 | DateRange outcome button weight | Default button · primary when the picker is the whole view · always primary | Default button (one primary per view) |
-| Q12 | When the DateRange popover closes | Stays open until the outcome button · closes on the second pick in DateField | Stays open |
-| Q13 | Week presets in DateField's chip row | Popover only · mirrored in the field when enabled | Popover only |
-| Q14 | More than one mark on a day | One code, extra marks in the name · two stacked codes · "+1" | One code |
-| Q15 | DateRange on phones | Bottom sheet below 480px · full-screen Dialog sheet (DR-029) | Bottom sheet |
-| Q16 | Limit future days in exports | None · `max` greys days after the last data with a reason | None |
-| Q17 | AppHeader side padding on phones | Keep `space-2` and document it · `space-4` like the page gutter | `space-2` |
-| Q18 | "Tight" text inset (4–7px) | Warn only · fail the check | Warn only |
 
 ### Approved exceptions
 

@@ -10,7 +10,7 @@ Per-device display preferences, applied live as you choose: theme (System, Dark,
 Panel (`radius-sheet`, `shadow-2`) → head → four sets → footer ("Saved on this device only", Reset to defaults).
 ```html
 <section class="sn-preferences-panel" aria-labelledby="pp-title">
-  <div class="sn-preferences-panel__head"><h2 class="sn-title title-m" id="pp-title">Preferences</h2>…x…</div>
+  <div class="sn-preferences-panel__head"><h2 class="sn-title title-m" id="pp-title">Preferences</h2>…close…</div>
   <div class="sn-preferences-panel__body">
     <div class="sn-preferences-panel__set"><span class="sn-field__label" id="lbl-theme">Theme</span>
       <div class="sn-preferences-panel__themes" role="radiogroup" aria-labelledby="lbl-theme">

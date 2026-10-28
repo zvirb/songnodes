@@ -1,9 +1,9 @@
 """Weekly run pipeline processing module."""
 
-import json
-import logging
 import os
 import sys
+import json
+import logging
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
@@ -40,79 +40,12 @@ def choose_version(tv: Optional[Dict[str, Any]], dz: Optional[Dict[str, Any]]) -
     return None
 
 
-def _preview_url(track: Dict[str, Any]) -> Optional[str]:
-    dz = track.get("dz")
-    return (
-        track.get("preview")
-        or track.get("preview_url")
-        or track.get("deezer_preview")
-        or (dz.get("preview") if isinstance(dz, dict) else None)
-    )
-
-
-def cmd_resolve(tracks: Any, deezer: Any = None, *args: Any, **kwargs: Any) -> Any:
-    """
-    Resolve tracks:
-    1. With a Deezer client, capture each track's artwork URL.
-    2. If `bpm` or `key`/`camelot_key` is missing and a Deezer preview URL is known,
-       fill them from `dsp_analyzer.analyze_preview`.
-    3. Attach the canonical MusicBrainz `mbid` from the local ISRC resolver.
-    Tracks are updated in place and the same list is returned.
-    """
-    if not tracks:
-        return tracks
-
-    track_list = tracks if isinstance(tracks, list) else [tracks]
-
-    for t in track_list:
-        if not isinstance(t, dict):
-            continue
-
-        if deezer is not None:
-            track_id = t.get("deezer_id") or t.get("id")
-            if track_id:
-                det = deezer.detail(track_id)
-                if det is not None:
-                    if hasattr(det, "get"):
-                        t["artwork_url"] = det.get("artwork_url") or None
-                    elif hasattr(det, "artwork_url"):
-                        t["artwork_url"] = getattr(det, "artwork_url", None) or None
-
-        preview_url = _preview_url(t)
-        missing_bpm = t.get("bpm") in (None, 0)
-        missing_key = not (t.get("camelot_key") or t.get("key"))
-        if (missing_bpm or missing_key) and preview_url and callable(analyze_preview):
-            try:
-                dsp_result = analyze_preview(preview_url)
-                if dsp_result:
-                    if missing_bpm and dsp_result.get("bpm"):
-                        t["bpm"] = dsp_result["bpm"]
-                    if missing_key and dsp_result.get("camelot_key"):
-                        t["camelot_key"] = dsp_result["camelot_key"]
-                        if not t.get("key"):
-                            t["key"] = dsp_result.get("musical_key") or dsp_result["camelot_key"]
-            except Exception as e:
-                logger.warning(f"DSP analysis failed for track {t.get('title')}: {e}")
-
-        isrc = t.get("isrc")
-        if isrc and callable(resolve_isrc_local) and not t.get("mbid"):
-            try:
-                mb_result = resolve_isrc_local(isrc)
-                if mb_result and mb_result.get("mbid"):
-                    t["mbid"] = mb_result["mbid"]
-            except Exception as e:
-                logger.warning(f"ISRC resolution failed for ISRC {isrc}: {e}")
-
-    return tracks
-
-
 def build_record(tv: Optional[Dict[str, Any]], dz: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
     """
     Build a track record using choose_version.
 
     If the selected version's BPM is null or 0, fallback to inheriting a valid non-zero
-    BPM from the Deezer version if available. Extract artwork_url from chosen version
-    (or Deezer twin if TIDAL was chosen).
+    BPM from the Deezer version if available.
     """
     v = choose_version(tv, dz)
     if v is None:
@@ -137,17 +70,64 @@ def build_record(tv: Optional[Dict[str, Any]], dz: Optional[Dict[str, Any]]) -> 
         else:
             v["bpm"] = None
 
-    artwork_url = v.get("artwork_url")
-    if not artwork_url and dz:
-        artwork_url = dz.get("artwork_url")
-
-    v["artwork_url"] = artwork_url if artwork_url else None
-
     # Also extract Deezer preview URL if available
     if dz and dz.get("preview"):
         v["preview"] = dz.get("preview")
 
     return v
+
+
+def cmd_resolve(to_resolve: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Processes a list of tracks in `to_resolve`:
+    1. Extracts the Deezer `preview` URL.
+    2. If `bpm` or `key`/`camelot_key` is missing, calls `dsp_analyzer.analyze_preview`.
+    3. Queries `ref_mb_resolver.resolve_isrc_local` to attach canonical `mbid`.
+    """
+    resolved_tracks = []
+    for track_item in to_resolve:
+        track = dict(track_item)
+
+        # 1. Extract preview URL
+        preview_url = (
+            track.get("preview")
+            or track.get("preview_url")
+            or track.get("deezer_preview")
+            or (track.get("dz") or {}).get("preview")
+        )
+
+        # 2. DSP Analysis for missing BPM or key
+        bpm = track.get("bpm")
+        camelot_key = track.get("camelot_key") or track.get("key")
+        missing_bpm = bpm is None or bpm == 0
+        missing_key = not camelot_key
+
+        if (missing_bpm or missing_key) and preview_url and callable(analyze_preview):
+            try:
+                dsp_result = analyze_preview(preview_url)
+                if dsp_result:
+                    if missing_bpm and dsp_result.get("bpm"):
+                        track["bpm"] = dsp_result["bpm"]
+                    if missing_key and dsp_result.get("camelot_key"):
+                        track["camelot_key"] = dsp_result["camelot_key"]
+                        if not track.get("key"):
+                            track["key"] = dsp_result.get("musical_key") or dsp_result["camelot_key"]
+            except Exception as e:
+                logger.warning(f"DSP analysis failed for track {track.get('title')}: {e}")
+
+        # 3. Local MusicBrainz ISRC resolution
+        isrc = track.get("isrc")
+        if isrc and callable(resolve_isrc_local) and not track.get("mbid"):
+            try:
+                mb_result = resolve_isrc_local(isrc)
+                if mb_result and mb_result.get("mbid"):
+                    track["mbid"] = mb_result["mbid"]
+            except Exception as e:
+                logger.warning(f"ISRC resolution failed for ISRC {isrc}: {e}")
+
+        resolved_tracks.append(track)
+
+    return resolved_tracks
 
 
 def export_library_json(tracks: List[Dict[str, Any]], output_path: str = "outputs/artifact/library.json") -> str:
@@ -178,25 +158,47 @@ def export_library_json(tracks: List[Dict[str, Any]], output_path: str = "output
     return output_path
 
 
-def run_pipeline(tracks: List[Dict[str, Any]], db_path: Optional[str] = None,
-                 output_path: Optional[str] = None) -> List[Dict[str, Any]]:
-    """Resolve the given tracks, store them in the SQLite library and export library.json."""
+def run_pipeline(tracks: Optional[List[Dict[str, Any]]] = None, db_path: str = "dj_library.sqlite") -> List[Dict[str, Any]]:
+    """Runs resolution, builds database, and exports library JSON artifact."""
     try:
-        from pipeline.build_db import DEFAULT_ARTIFACT_PATH, DEFAULT_DB_PATH, build_database, export_artifact_library, insert_track
+        from pipeline.build_db import build_database
     except ImportError:
-        from build_db import DEFAULT_ARTIFACT_PATH, DEFAULT_DB_PATH, build_database, export_artifact_library, insert_track
+        from build_db import build_database
 
-    resolved = cmd_resolve(list(tracks))
-    conn = build_database(db_path or DEFAULT_DB_PATH)
-    try:
-        for record in resolved:
-            insert_track(conn, record)
-        export_artifact_library(conn, output_path or DEFAULT_ARTIFACT_PATH)
-    finally:
-        conn.close()
+    if tracks is None:
+        # Provide sample default tracks for weekly run if none supplied
+        tracks = [
+            {
+                "id": "1",
+                "title": "Plan 9",
+                "artist": "808 State",
+                "isrc": "DEAZ30809510",
+                "preview": "https://cdnt-preview.dzcdn.net/api/1/1/2/3/0/0/230e8063fdb7d9cc93908dcab672c36c.mp3",
+                "bpm": 124.0,
+                "camelot_key": "10A"
+            },
+            {
+                "id": "2",
+                "title": "Pacific State",
+                "artist": "808 State",
+                "isrc": "GBARL8900001",
+                "preview": None,
+                "bpm": 128.0,
+                "camelot_key": "4A"
+            }
+        ]
+
+    resolved = cmd_resolve(tracks)
+    build_database(resolved, db_path=db_path)
+    export_library_json(resolved)
     return resolved
 
 
 if __name__ == "__main__":
-    print("run_weekly: pipeline module loaded.")
+    logging.basicConfig(level=logging.INFO)
+    if len(sys.argv) > 1 and sys.argv[1] == "db":
+        run_pipeline()
+        print("Weekly run pipeline completed successfully.")
+    else:
+        print("run_weekly: pipeline module loaded.")
     sys.exit(0)

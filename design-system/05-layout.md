@@ -30,19 +30,6 @@ Pages are built from a small set of regions on a 4px grid. These rules decide wi
 - Related things sit closer than unrelated things: the gap inside a group is always smaller than the gap between groups.
 - Never use odd values (10px, 15px). If nothing fits, the design is wrong, not the scale.
 
-### Text inset (no text touching an edge)
-
-Any box that draws an edge (a border, a fill different from what is behind it, or an inset ring) keeps its text off that edge:
-
-- Inline (left/right): at least `space-2` (8px) for chips, tags, badges, counts and key caps; `space-3` for table cells, menu items and inputs; card and panel padding per the table above. 4–7px counts as tight; under `space-1` (4px) is a defect.
-- Block (top/bottom): at least `space-0.5` (2px) of clear space above and below the glyphs. Table cells pad `space-1` top and bottom so wrapped text never sits on the row rule.
-- Small labelled objects (tags, pills, counts, key caps, badges) never wrap; a group of them wraps instead.
-- On a phone no text runs closer than the 16px gutter to the screen edge, unless it is inside a box that scrolls sideways.
-- A control that cannot fit its segments wraps them (`SegmentedControl --block`) rather than letting text spill past its track.
-- A card whose only content is a table, or a lone `EmptyState`, `LoadingState` or `ErrorState`, is flush (no card padding): the cells or the panel carry the inset. Don't add an inner wrapper with padding to compensate.
-
-`tools/padding-audit.js` measures this in every preview (dark, light, booth; 1440 and 390).
-
 ## Density
 
 - Comfortable (default): rows `row-comfortable` 40px, controls `control-md` 40px.

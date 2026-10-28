@@ -142,7 +142,7 @@ th.sn-page-matrix__rowhead { position: static; text-transform: none; letter-spac
 .sn-page-print__table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
 .sn-page-print__table thead { display: table-header-group; }
 .sn-page-print__table th { text-align: left; font: 600 0.625rem/1.2 var(--font-body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-2); padding: 1.5mm 1.5mm; border-bottom: 1px solid var(--fg); white-space: nowrap; }
-.sn-page-print__table td { height: 9mm; padding: var(--space-1) 1.5mm; border-bottom: 0.5px solid var(--line-strong); vertical-align: middle; break-inside: avoid; }
+.sn-page-print__table td { height: 9mm; padding: 0 1.5mm; border-bottom: 0.5px solid var(--line-strong); vertical-align: middle; break-inside: avoid; }
 .sn-page-print__table tr { break-inside: avoid; }
 .sn-page-print__table .num { text-align: right; font-family: var(--font-data); font-variant-numeric: tabular-nums; }
 .sn-page-print__slot { font: 600 0.8125rem/1 var(--font-data); white-space: nowrap; }
