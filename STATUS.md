@@ -1333,8 +1333,11 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 
 <!-- SLOT:UX6 BEGIN -->
 ### UX6: Pathfinder: waypoint autocompletion for start and end tracks
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-28
+- End: 2026-10-28
+- What: Replaced start and destination track inputs in `PathfinderPage.tsx` with `AutocompleteSearchField` from the design system, populating suggestions using `useUnifiedTracks()` with prioritizing prefix matches. Also updated tests.
+- Checks: `npm ci`, `npx tsc --noEmit -p .`, `npx oxlint src`, `npx vitest run src`, `npx vite build` (all run successfully except e2e tests due to lack of local playwright installation)
+- PR: https://github.com/zvirb/songnodes/pull/315
 <!-- SLOT:UX6 END -->
 
 <!-- SLOT:UX7 BEGIN -->
@@ -1391,8 +1394,12 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 
 <!-- SLOT:FL1 BEGIN -->
 ### FL1: Keyboard navigation: table row selection and quick actions
-- Start: _not started_
-- End: _not finished_
+- Start: 2026-10-28
+- Built: Created `useTableKeyboardNav` hook in `frontend/src/hooks/useTableKeyboardNav.ts` and its test suite. It handles J/ArrowDown (next), K/ArrowUp (prev), Space (preview via shortcuts[' ']), Enter (open via onOpen), T (target via shortcuts['t']), X (toggle selection via shortcuts['x']). Ignores navigation inside text inputs, dialogs, selects or with modifier keys. Returns an announcement string for live region and correct `boxProps` adhering to design system.
+- Checks run: `npm ci && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build`. Vitest unit tests for the hook pass completely. Check design system pass.
+- Checks not run: Playwright E2E suite cannot be run in the sandbox.
+- End: 2026-10-28
+- PR: https://github.com/zvirb/songnodes/pull/316
 <!-- SLOT:FL1 END -->
 
 <!-- SLOT:FL2 BEGIN -->
