@@ -154,7 +154,8 @@ const CamelotPage: React.FC = () => {
               : `${SN.format.count(displayedTracks.length)} tracks total`}
           </h2>
 
-          <div className="sn-tablebox">
+          {/* The table can scroll sideways, so its box takes focus and has a name (axe scrollable-region-focusable). */}
+          <section className="sn-tablebox" tabIndex={0} aria-label="Tracks by key">
             <table className="sn-table">
               <thead>
                 <tr>
@@ -195,7 +196,7 @@ const CamelotPage: React.FC = () => {
                 )}
               </tbody>
             </table>
-          </div>
+          </section>
         </section>
       </div>
 

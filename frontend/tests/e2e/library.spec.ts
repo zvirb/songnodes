@@ -19,7 +19,7 @@ test('the crate lists every track in the library file', async ({ page }) => {
 });
 
 test('search narrows the crate and clearing it restores every track', async ({ page }) => {
-  const search = page.getByRole('searchbox', { name: 'Search tracks' });
+  const search = page.getByRole('combobox', { name: 'Search tracks' });
   await search.fill(sample.t);
   await expect(page.locator('.sn-data-table__count')).not.toContainText(`${TOTAL} of ${TOTAL}`);
   await expect(page.locator('table.sn-table tbody')).toContainText(sample.t);
@@ -29,7 +29,7 @@ test('search narrows the crate and clearing it restores every track', async ({ p
 });
 
 test('a search with no match shows the empty state', async ({ page }) => {
-  await page.getByRole('searchbox', { name: 'Search tracks' }).fill('zzzz no such track zzzz');
+  await page.getByRole('combobox', { name: 'Search tracks' }).fill('zzzz no such track zzzz');
   await expect(page.getByText('No tracks match these filters')).toBeVisible();
   await page.getByRole('button', { name: 'Clear filters' }).click();
   await expect(page.locator('.sn-data-table__count')).toContainText(`${TOTAL} of ${TOTAL}`);

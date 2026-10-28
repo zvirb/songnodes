@@ -26,7 +26,7 @@ import { useDataLoader } from '../hooks/useDataLoader';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { SN, StatusPill, KeyBadge, Bpm } from '../lib/songnodes';
 import {
-  SegmentedControl, Tabs, TabPanel, OverflowMenu, ConfirmDialog, ToastRegion, showToast,
+  SegmentedControl, Tabs, TabPanel, OverflowMenu, ConfirmDialog, showToast,
   EmptyPanel, ErrorPanel, LoadingPanel, TrackEnergy,
 } from './ds';
 import './DJInterface.graph.css';
@@ -795,7 +795,6 @@ export const DJInterface: React.FC<DJInterfaceProps> = ({ initialMode = 'play' }
         Scrapers stop working through the queued searches. This can’t be undone.
       </ConfirmDialog>
 
-      <ToastRegion />
     </div>
   );
 };

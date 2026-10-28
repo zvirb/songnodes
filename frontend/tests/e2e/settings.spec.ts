@@ -4,7 +4,7 @@ import { test, expect, openRoute } from './fixtures';
 /** The design-system version the frontend synced (scripts/sync-design-system.sh). */
 const DS_VERSION = readFileSync(new URL('../../src/styles/design-system/VERSION', import.meta.url), 'utf-8').trim();
 
-/** Settings and the PreferencesPanel: preferences apply live and persist on this device. */
+/** Settings (/settings and /settings/:settingId): preferences apply live, confirm with a toast and persist on this device. */
 
 test.beforeEach(async ({ page }) => {
   await openRoute(page, '/settings');
@@ -16,7 +16,7 @@ test('choosing a theme applies it and survives a reload', async ({ page }) => {
     await themes.getByRole('radio', { name: label }).click();
     await expect(themes.getByRole('radio', { name: label })).toHaveAttribute('aria-checked', 'true');
     await expect(page.locator('html')).toHaveAttribute('data-theme', value);
-    await expect(page.getByRole('status').filter({ hasText: `Theme set to ${label}` })).toBeAttached();
+    await expect(page.getByRole('status', { name: 'Notifications' })).toContainText(`Theme set to ${label}`);
   }
 
   await page.reload();
@@ -25,7 +25,7 @@ test('choosing a theme applies it and survives a reload', async ({ page }) => {
 });
 
 test('text size and density apply to the document', async ({ page }) => {
-  await page.getByRole('radiogroup', { name: 'Text size' }).getByRole('radio', { name: 'XL' }).click();
+  await page.getByRole('radiogroup', { name: 'Text size' }).getByRole('radio', { name: 'Extra large' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-text-size', 'xl');
 
   await page.getByRole('radiogroup', { name: 'Row density' }).getByRole('radio', { name: 'Compact' }).click();
@@ -34,10 +34,10 @@ test('text size and density apply to the document', async ({ page }) => {
 
 test('arrow keys move through a segmented control', async ({ page }) => {
   const size = page.getByRole('radiogroup', { name: 'Text size' });
-  await size.getByRole('radio', { name: 'M', exact: true }).click();
+  await size.getByRole('radio', { name: 'Medium' }).click();
   await page.keyboard.press('ArrowRight');
-  await expect(size.getByRole('radio', { name: 'L', exact: true })).toHaveAttribute('aria-checked', 'true');
-  await expect(size.getByRole('radio', { name: 'L', exact: true })).toBeFocused();
+  await expect(size.getByRole('radio', { name: 'Large', exact: true })).toHaveAttribute('aria-checked', 'true');
+  await expect(size.getByRole('radio', { name: 'Large', exact: true })).toBeFocused();
 });
 
 test('reduce motion can be forced on', async ({ page }) => {
@@ -47,18 +47,20 @@ test('reduce motion can be forced on', async ({ page }) => {
 
 test('reset restores the defaults', async ({ page }) => {
   await page.getByRole('radiogroup', { name: 'Theme' }).getByRole('radio', { name: 'Light' }).click();
-  await page.getByRole('radiogroup', { name: 'Text size' }).getByRole('radio', { name: 'XL' }).click();
-  await page.getByRole('button', { name: 'Reset to defaults' }).click();
+  await page.getByRole('radiogroup', { name: 'Text size' }).getByRole('radio', { name: 'Extra large' }).click();
+  await page.getByRole('button', { name: 'Reset preferences to defaults' }).click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Reset preferences', exact: true }).click();
 
   await expect(page.getByRole('radiogroup', { name: 'Theme' }).getByRole('radio', { name: 'System' })).toHaveAttribute('aria-checked', 'true');
-  await expect(page.getByRole('radiogroup', { name: 'Text size' }).getByRole('radio', { name: 'M', exact: true })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByRole('radiogroup', { name: 'Text size' }).getByRole('radio', { name: 'Medium' })).toHaveAttribute('aria-checked', 'true');
   // The default size is the absence of the attribute
   await expect(page.locator('html')).not.toHaveAttribute('data-text-size', /./);
   await expect(page.locator('html')).toHaveAttribute('data-density', 'comfortable');
 });
 
-test('the About section shows the design-system version and locale', async ({ page }) => {
-  const about = page.locator('#about');
+test('the About page shows the design-system version and locale', async ({ page }) => {
+  await openRoute(page, '/settings/about-system');
+  const about = page.locator('main#main');
   await expect(about).toContainText(DS_VERSION);
   await expect(about).toContainText('en-AU');
   await expect(about).toContainText('Australia/Melbourne');
