@@ -72,3 +72,25 @@ describe('compatibleKeys', () => {
     expect(result).toContain('7A');
   });
 });
+
+import { moveTargets } from './camelotLogic';
+
+describe('moveTargets', () => {
+  it('returns correctly mapped targets for 8A', () => {
+    const targets = moveTargets('8A');
+    expect(targets.map(t => t.key)).toEqual(['8A', '9A', '7A', '8B', '10A', '3A']);
+    expect(targets.find(t => t.id === 'relative')?.label).toBe('Relative major');
+  });
+
+  it('returns correctly mapped targets for 12B', () => {
+    const targets = moveTargets('12B');
+    expect(targets.map(t => t.key)).toEqual(['12B', '1B', '11B', '12A', '2B', '7B']);
+    expect(targets.find(t => t.id === 'relative')?.label).toBe('Relative minor');
+  });
+
+  it('returns empty array for invalid input', () => {
+    expect(moveTargets(null)).toEqual([]);
+    expect(moveTargets('invalid')).toEqual([]);
+    expect(moveTargets('')).toEqual([]);
+  });
+});

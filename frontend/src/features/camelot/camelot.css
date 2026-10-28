@@ -23,3 +23,26 @@
   color: var(--fg-2);
   text-align: center;
 }
+
+.sn-camelot-page__moves-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-4);
+}
+
+.sn-camelot-page__move-btn {
+  appearance: none;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.sn-camelot-page__move-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2);
+}
