@@ -32,6 +32,8 @@ vi.mock('../../hooks/useUnifiedTracks', () => ({
 
 const mockSend = vi.fn<(...args: unknown[]) => void>();
 
+const mockCalculate = vi.fn();
+
 vi.mock('../../components/PathfinderPanel/hooks', () => ({
   usePathfinder: () => ({
     state: {
@@ -50,8 +52,14 @@ vi.mock('../../components/PathfinderPanel/hooks', () => ({
     isCalculating: false,
     hasResult: true,
     hasError: false,
-    send: mockSend
+    send: mockSend,
+    calculate: mockCalculate,
+    skippedCount: 12,
   })
+}));
+
+vi.mock('../../hooks/useDataLoader', () => ({
+  useDataLoader: vi.fn()
 }));
 
 describe('PathfinderPage', () => {
@@ -75,5 +83,15 @@ describe('PathfinderPage', () => {
     expect(options[0].textContent).toContain('8A');
     fireEvent.mouseDown(options[0]);
     expect(mockSend).toHaveBeenCalledWith(expect.objectContaining({ type: 'SET_END_TRACK', track: expect.objectContaining({ id: '1' }) }));
+  });
+
+  it('shows skipped tracks count and uses calculate function', () => {
+    mockCalculate.mockClear();
+    render(<MemoryRouter><PathfinderPage /></MemoryRouter>);
+    expect(screen.getByText(/12 tracks left out: no duration\./, { exact: false })).toBeTruthy();
+
+    const findRouteBtn = screen.getByRole('button', { name: 'Find path' });
+    fireEvent.click(findRouteBtn);
+    expect(mockCalculate).toHaveBeenCalled();
   });
 });
