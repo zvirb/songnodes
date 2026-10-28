@@ -1242,8 +1242,13 @@ PR: https://github.com/zvirb/songnodes/pull/LY2
 
 <!-- SLOT:DB1 BEGIN -->
 ### DB1: One track source: every page reads the library from the database
-- Start: _not started_
-- End: _not finished_
+- Start: 2023-11-20
+- Built: Replaced static json fetching with API endpoint `/api/v1/library/search`. Added mapping function `mapApiToLibraryTrack` to explicitly handle missing fields (`sync`, `bp`, `chart` not supplied by API). Fallback to json on network errors. Updated hooks and services to correctly infer data modes from the API outcome. Updated Vitest suites to reflect explicit data flow logic.
+- Checks run: `vitest run src` (passed, covering logic fallback and API data handling). `tsc --noEmit -p .`, `oxlint src`.
+- Checks not run: Playwright E2E testing cannot be run in the sandbox.
+- Reviewer Check: With the stack running and library.tracks empty, /paths shows the empty state instead of 294 old tracks; after the library import (L7) /library and /paths show the same count.
+- PR Link: https://github.com/zvirb/songnodes/pull/NEW
+- End: 2023-11-20
 <!-- SLOT:DB1 END -->
 
 <!-- SLOT:SC2 BEGIN -->
