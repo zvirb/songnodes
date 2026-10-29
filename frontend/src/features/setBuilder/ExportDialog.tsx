@@ -1,10 +1,9 @@
-import React, { useEffect, useId, useRef, useState } from 'react';
+import React, { useId, useState } from 'react';
 import { SnIcon } from '../../lib/songnodes';
 import type { LibraryTrack, SavedSet } from '../musicLibrary/data';
-import { exportM3U8, exportRekordbox, exportTidal, getMissingFieldsSummary, formatMissingFieldsSummary } from './exporters';
+import { exportM3U8, exportRekordbox, getMissingFieldsSummary, formatMissingFieldsSummary } from './exporters';
 import { CopyButton } from '../musicLibrary/components/ui';
 import { Dialog, SelectField } from '../../components/ds';
-
 
 interface ExportDialogProps {
   open: boolean;
@@ -13,17 +12,52 @@ interface ExportDialogProps {
   onClose: () => void;
 }
 
-type Format = 'm3u8' | 'rekordbox' | 'tidal' | 'tracklist';
+type Format = 'm3u8' | 'csv' | 'json' | 'rekordbox';
+
+function escapeCsv(val: string | number): string {
+  return `"${String(val).replace(/"/g, '""')}"`;
+}
+
+function exportCsv(set: SavedSet, byId: Map<string, LibraryTrack>): string {
+  const header = ['Position', 'Artist', 'Title', 'BPM', 'Key', 'Duration'];
+  const rows = set.tracks.map((track, i) => {
+    const t = byId.get(track.id);
+    const artist = t ? t.a : (track.a || '');
+    const title = t ? t.t : (track.t || '');
+    const bpm = t && t.bpm !== null ? t.bpm : (track.bpm ?? '');
+    const key = t && t.k ? t.k : (track.k ?? '');
+    const duration = t && t.d !== null ? Math.round(t.d) : '';
+    return [i + 1, artist, title, bpm, key, duration].map(escapeCsv).join(',');
+  });
+  return [header.join(','), ...rows].join('\n');
+}
+
+function exportJson(set: SavedSet, byId: Map<string, LibraryTrack>): string {
+  const enrichedTracks = set.tracks.map((track, i) => {
+    const t = byId.get(track.id);
+    return {
+      position: i + 1,
+      id: track.id,
+      artist: t ? t.a : (track.a || ''),
+      title: t ? t.t : (track.t || ''),
+      bpm: t && t.bpm !== null ? t.bpm : (track.bpm ?? null),
+      key: t && t.k ? t.k : (track.k ?? null),
+      duration: t && t.d !== null ? t.d : null,
+      tidal: t ? t.tidal : (track.tidal ?? null),
+    };
+  });
+  return JSON.stringify({ ...set, tracks: enrichedTracks }, null, 2);
+}
 
 export const ExportDialog: React.FC<ExportDialogProps> = ({ open, set, byId, onClose }) => {
   const id = useId();
-
   const [format, setFormat] = useState<Format>('m3u8');
 
   if (!set) return null;
 
   const summary = getMissingFieldsSummary(set, byId);
   const missingLines = formatMissingFieldsSummary(summary);
+  const safeName = set.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'set';
 
   let exportContent = '';
   let filename = '';
@@ -31,25 +65,20 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ open, set, byId, onC
 
   if (format === 'm3u8') {
     exportContent = exportM3U8(set, byId);
-    filename = `${set.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.m3u8`;
+    filename = `${safeName}.m3u8`;
     mimetype = 'application/x-mpegurl';
+  } else if (format === 'csv') {
+    exportContent = exportCsv(set, byId);
+    filename = `${safeName}.csv`;
+    mimetype = 'text/csv';
+  } else if (format === 'json') {
+    exportContent = exportJson(set, byId);
+    filename = `${safeName}.json`;
+    mimetype = 'application/json';
   } else if (format === 'rekordbox') {
     exportContent = exportRekordbox(set, byId);
-    filename = `${set.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.xml`;
+    filename = `${safeName}.xml`;
     mimetype = 'application/xml';
-  } else if (format === 'tidal') {
-    exportContent = exportTidal(set, byId);
-    filename = `${set.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_tidal.json`;
-    mimetype = 'application/json';
-  } else if (format === 'tracklist') {
-    exportContent = set.tracks.map((track, i) => {
-      const t = byId.get(track.id);
-        const artist = t ? t.a : (track.a || '');
-        const title = t ? t.t : (track.t || '');
-      return `${i + 1}. ${artist} - ${title}`;
-    }).join('\n');
-    filename = `${set.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_tracklist.txt`;
-    mimetype = 'text/plain';
   }
 
   const handleDownload = () => {
@@ -79,7 +108,9 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ open, set, byId, onC
           </div>
           <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
             <button className="sn-btn sn-btn--quiet" type="button" onClick={onClose}>Cancel</button>
-            <button className="sn-btn sn-btn--primary" type="button" onClick={handleDownload}><SnIcon name="download" /> Download {filename}</button>
+            <button className="sn-btn sn-btn--primary" type="button" onClick={handleDownload}>
+              <SnIcon name="download" /> Download {filename}
+            </button>
           </div>
         </div>
       }
@@ -103,21 +134,28 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ open, set, byId, onC
           label="Format"
           value={format}
           onChange={(val) => {
-            if (val === 'm3u8' || val === 'rekordbox' || val === 'tidal' || val === 'tracklist') {
-              setFormat(val as Format);
+            if (val === 'm3u8' || val === 'csv' || val === 'json' || val === 'rekordbox') {
+              setFormat(val);
             }
           }}
           options={[
             { value: 'm3u8', label: 'M3U8 Playlist' },
+            { value: 'csv', label: 'CSV' },
+            { value: 'json', label: 'JSON' },
             { value: 'rekordbox', label: 'Rekordbox XML' },
-            { value: 'tidal', label: 'TIDAL JSON' },
-            { value: 'tracklist', label: 'Text Tracklist' },
           ]}
         />
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
+          <span className="label">Filename preview</span>
+          <code className="sn-mono body-s" style={{ padding: 'var(--space-1) var(--space-2)', backgroundColor: 'var(--surface-1)', borderRadius: 'var(--radius-control)', border: 'var(--space-0.25) solid var(--line)', width: 'fit-content' }}>
+            {filename}
+          </code>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
           <label className="label" htmlFor={`${id}-preview`}>Preview (first 5 lines)</label>
-          <pre id={`${id}-preview`} className="sn-mono" style={{ border: '1px solid var(--line)', padding: 'var(--space-2)', borderRadius: 'var(--radius-control)', backgroundColor: 'var(--surface-1)', whiteSpace: 'pre-wrap', maxHeight: '15rem', overflowY: 'auto', margin: 0 }}>
+          <pre id={`${id}-preview`} className="sn-mono" style={{ border: 'var(--space-0.25) solid var(--line)', padding: 'var(--space-2)', borderRadius: 'var(--radius-control)', backgroundColor: 'var(--surface-1)', whiteSpace: 'pre-wrap', maxHeight: '15rem', overflowY: 'auto', margin: 0 }}>
             {previewLines}
             {exportContent.split('\n').length > 5 && '\n...'}
           </pre>

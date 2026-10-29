@@ -28,15 +28,14 @@ describe('ExportDialog', () => {
     }]
   ]);
 
-  let mockOnClose: any;
+  let mockOnClose: () => void;
 
   beforeEach(() => {
     mockOnClose = vi.fn();
-    // HTMLDialogElement is not fully supported in jsdom, so we mock its methods
-    HTMLDialogElement.prototype.showModal = vi.fn(function(this: HTMLDialogElement) {
+    HTMLDialogElement.prototype.showModal = vi.fn(function (this: HTMLDialogElement) {
       this.setAttribute('open', '');
     });
-    HTMLDialogElement.prototype.close = vi.fn(function(this: HTMLDialogElement) {
+    HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
       this.removeAttribute('open');
     });
   });
@@ -48,81 +47,85 @@ describe('ExportDialog', () => {
   it('renders correctly and shows missing fields summary', () => {
     render(<ExportDialog open={true} set={mockSet} byId={byId} onClose={mockOnClose} />);
 
-    // Check title
     expect(screen.getByText('Export "Test Set"')).toBeDefined();
-
-    // Check summary (t1 has no TIDAL id)
     expect(screen.getByText('Missing metadata')).toBeDefined();
     expect(screen.getByText('1 tracks have no TIDAL id')).toBeDefined();
+    expect(screen.getAllByText('test_set.m3u8').length).toBeGreaterThan(0);
   });
 
-  it('allows format selection', async () => {
+  it('allows format selection across M3U8, CSV, JSON, and Rekordbox XML', async () => {
     render(<ExportDialog open={true} set={mockSet} byId={byId} onClose={mockOnClose} />);
 
-    // Fallback to getByRole or directly finding the select by ID if getByLabelText fails
     const select = document.querySelector('select');
     if (!select) throw new Error('select not found');
 
-    // Default is M3U8
+    // Default M3U8
     expect(select).toHaveProperty('value', 'm3u8');
-    const downloadBtns = screen.getAllByRole('button');
-    expect(downloadBtns.find(b => b.textContent && b.textContent.includes('Download test_set.m3u8'))).toBeDefined();
+    expect(screen.getAllByText('test_set.m3u8').length).toBeGreaterThan(0);
 
-    // Switch to Rekordbox
+    // CSV
+    act(() => {
+      fireEvent.change(select, { target: { value: 'csv' } });
+    });
+    expect(select).toHaveProperty('value', 'csv');
+    expect(screen.getAllByText('test_set.csv').length).toBeGreaterThan(0);
+
+    // JSON
+    act(() => {
+      fireEvent.change(select, { target: { value: 'json' } });
+    });
+    expect(select).toHaveProperty('value', 'json');
+    expect(screen.getAllByText('test_set.json').length).toBeGreaterThan(0);
+
+    // Rekordbox XML
     act(() => {
       fireEvent.change(select, { target: { value: 'rekordbox' } });
     });
     expect(select).toHaveProperty('value', 'rekordbox');
-    expect(screen.getAllByRole('button').find(b => b.textContent && b.textContent.includes('Download test_set.xml'))).toBeDefined();
+    expect(screen.getAllByText('test_set.xml').length).toBeGreaterThan(0);
   });
 
-  it('calls download handler when download is clicked', async () => {
+  it('calls download handler when download button is clicked', async () => {
     const URLCreateObjectURL = vi.fn(() => 'blob:test');
     const URLRevokeObjectURL = vi.fn();
     Object.defineProperty(window, 'URL', {
-      value: { createObjectURL: URLCreateObjectURL, revokeObjectURL: URLRevokeObjectURL }
+      value: { createObjectURL: URLCreateObjectURL, revokeObjectURL: URLRevokeObjectURL },
+      writable: true
     });
 
     const mockAnchor = document.createElement('a');
-    const mockClick = vi.fn() as any;
+    const mockClick = vi.fn();
     mockAnchor.click = mockClick;
 
-    // Capture original before spying
     const originalCreateElement = document.createElement.bind(document);
-    vi.spyOn(document, 'createElement').mockImplementation((tag) => {
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
       if (tag === 'a') return mockAnchor;
       return originalCreateElement(tag);
     });
 
     render(<ExportDialog open={true} set={mockSet} byId={byId} onClose={mockOnClose} />);
 
-    // In our component, we use "Download " + filename for the button content
     const downloadBtns = screen.getAllByRole('button');
     const downloadBtn = downloadBtns.find(b => b.textContent && b.textContent.includes('Download test_set.m3u8'));
 
-    if (downloadBtn) {
-      fireEvent.click(downloadBtn);
-    } else {
-      throw new Error('Download button not found');
-    }
+    if (!downloadBtn) throw new Error('Download button not found');
+
+    fireEvent.click(downloadBtn);
 
     expect(URLCreateObjectURL).toHaveBeenCalled();
     expect(mockClick).toHaveBeenCalled();
   });
 
-  it('calls onClose when close button is clicked', async () => {
+  it('calls onClose when cancel or close button is clicked', async () => {
     render(<ExportDialog open={true} set={mockSet} byId={byId} onClose={mockOnClose} />);
 
-    // Find the Cancel button using document.querySelectorAll to avoid multiple matches from icons etc if they exist
     const buttons = document.querySelectorAll('button');
     let closeBtn: HTMLButtonElement | null = null;
     buttons.forEach((b) => {
       if (b.textContent === 'Cancel' || b.getAttribute('aria-label') === 'Close') closeBtn = b;
     });
 
-    if (!closeBtn) {
-      throw new Error('Close button not found');
-    }
+    if (!closeBtn) throw new Error('Close button not found');
 
     fireEvent.click(closeBtn);
 
