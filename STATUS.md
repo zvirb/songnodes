@@ -855,6 +855,9 @@ Work done:
 <!-- SLOT:S2 BEGIN -->
 ### S2: REST music search: remove the mock results
 - Start: 2026-10-26
+- Built: Ensured REST music search proxy in `services/rest_api/main.py` passes real results and errors directly through from `metadata-enrichment`, returning 503 `{"code": "search_service_unavailable"}` on connection failures with no mock data fallback. Updated `tests/rest_api/test_music_search_proxy.py` and `docs/music-search.md`.
+- Checks run: `python3 -m pytest -p no:postgresql -o addopts="" tests/rest_api/test_music_search_proxy.py` (6 passed).
+- Reviewer check: `curl http://localhost:8082/api/v1/music-search/tidal?q=test` with no credentials returns status 424 with `{"detail": {"detail": "Tidal credentials not configured"}}`.
 - End: 2026-10-26
 <!-- SLOT:S2 END -->
 
