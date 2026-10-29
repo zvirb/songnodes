@@ -864,7 +864,7 @@ Work done:
 ### L2: Reconciliation view: read MusicBrainz ids from musicbrainz_id
 - Start: 2026-10-26
 - End: 2026-10-26
-- End: 2026-10-26. Created 185 up migration using `musicbrainz_id` and 185 down restoring 181. Added tests testing the SQL content.
+- End: 2026-10-26. Created 185 up migration using `musicbrainz_id` and 185 down restoring 181. Added unit test `tests/library_model/test_reconciliation_view.py`.
 <!-- SLOT:L2 END -->
 
 <!-- SLOT:L4 BEGIN -->
