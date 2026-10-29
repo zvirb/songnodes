@@ -1505,10 +1505,12 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 <!-- SLOT:QA7 BEGIN -->
 ### QA7: E2E: pin the library and saved-sets API to a fixture
 - Start: 2026-10-26
-- Built: Created `libraryApi.ts` fixture to intercept and answer library and sets API calls from the frontend to run reliably in Playwright without a live library. Updated `fixtures.ts` to supply `withLibraryApi`. Copied pipeline artifact into `data/library.fixture.json` and updated tests to read from it. Updated `README.md`.
-- Checks run: `tsc` and `oxlint` (locally some linting warnings about pre-existing code exist but no regressions).
-- Checks not run: Playwright tests cannot run in the sandbox; they are expected to mostly pass, with `sets.spec.ts` failing on the `PUT /api/v1/library/sets` because it sends the full set without an ID in the URL, as per the issue description.
-- End: 2026-10-26
+- Built: Created `libraryApi.ts` fixture to intercept and answer library and sets API calls from the frontend to run reliably in Playwright without a live library database. Updated `fixtures.ts` to supply `withLibraryApi`. Copied pipeline artifact into `data/library.fixture.json` and updated tests and documentation in `frontend/tests/README.md`.
+- Checks run: `cd frontend && ./node_modules/.bin/tsc --noEmit -p . && npx oxlint src tests`, `python scripts/scope_guard.py`.
+- Checks not run: Full Playwright E2E suite due to sandbox environment limitations. Expected result: `bash scripts/e2e-docker.sh library` passes against a stack with an empty library database, and `bash scripts/e2e-docker.sh sets` fails only on the saved-set tests naming the 404 for `PUT /api/v1/library/sets`.
+- Reviewer check: `bash scripts/e2e-docker.sh library` passes against an empty library stack; `bash scripts/e2e-docker.sh sets` fails only on saved-set tests citing 404 for `PUT /api/v1/library/sets`.
+- PR: [QA7: E2E: pin the library and saved-sets API to a fixture](https://github.com/zvirb/songnodes/pull/NEW)
+- End: 2026-10-29
 <!-- SLOT:QA7 END -->
 
 <!-- SLOT:G5 BEGIN -->
