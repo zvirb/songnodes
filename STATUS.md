@@ -844,6 +844,12 @@ Work done:
 
 <!-- SLOT:P2 BEGIN -->
 ### P2: Harmony: one Camelot page
+- Start: 2026-10-29
+- Built: Retained `frontend/src/features/camelot/CamelotPage.tsx` as the single Camelot page at `/harmony`, using the shared `useUnifiedTracks` data hook. Deleted legacy `frontend/src/pages/CamelotPage.tsx` and removed the static route from `registry.tsx` (using dynamic route discovery via `features/camelot/route.tsx`). Added component test coverage in `frontend/src/features/camelot/camelot.test.tsx`.
+- Checks run: `cd frontend && npm ci && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build`, `python scripts/check_design_system.py --check`, `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check`, `python scripts/scope_guard.py`.
+- Checks not run: Playwright E2E suite due to sandbox constraints.
+- Reviewer Check: Open /harmony: one page renders; PR table documents features kept and dropped.
+- End: 2026-10-29
 - Start: 2026-10-26
 - End: 2026-10-29
 - Retained `frontend/src/features/camelot/CamelotPage.tsx` as single page at `/harmony` using `useUnifiedTracks`.
