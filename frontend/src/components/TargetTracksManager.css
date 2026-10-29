@@ -79,7 +79,7 @@
   border-bottom: none;
 }
 
-.ttm__item[aria-selected="true"] {
+.ttm__item[data-selected="true"] {
   background: var(--brand-soft);
 }
 

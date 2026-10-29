@@ -560,7 +560,7 @@ const TargetTracksManager: React.FC<TargetTracksManagerProps> = ({ embedded = fa
                 const name = `${track.artist} – ${track.title}`;
                 const completion = track.completion_percentage || 0;
                 return (
-                  <li key={id} className="ttm__item" aria-selected={selectedTracks.has(id)}>
+                  <li key={id} className="ttm__item" data-selected={selectedTracks.has(id) ? 'true' : undefined}>
                     <label className="sn-checkbox sn-checkbox--bare">
                       <input type="checkbox" checked={selectedTracks.has(id)} onChange={() => toggleTrackSelection(id)} aria-label={`Select ${name}`} />
                     </label>
