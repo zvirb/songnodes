@@ -75,11 +75,7 @@ def parse_key_name(value: Optional[str]) -> Optional[Tuple[int, str]]:
 
 # Bolt optimization: Memoize key normalization to eliminate regex overhead on repeated key lookups (~10x speedup).
 @lru_cache(maxsize=1024)
-def to_camelot(value: Optional[str]) -> Optional[str]:
-    """Normalise Camelot ('08a'), Open Key ('1m') or a musical key name to a Camelot code, else None."""
-    if not value or not isinstance(value, str):
-        return None
-    text = value.strip()
+def _to_camelot_cached(text: str) -> Optional[str]:
     camelot = CAMELOT_RE.match(text)
     if camelot:
         return f'{int(camelot.group(1))}{camelot.group(2).upper()}'
@@ -89,6 +85,13 @@ def to_camelot(value: Optional[str]) -> Optional[str]:
         return format_camelot(number, 'minor' if open_key.group(2).lower() == 'm' else 'major')
     parsed = parse_key_name(text)
     return camelot_from_pitch_class(*parsed) if parsed else None
+
+
+def to_camelot(value: Optional[str]) -> Optional[str]:
+    """Normalise Camelot ('08a'), Open Key ('1m') or a musical key name to a Camelot code, else None."""
+    if not value or not isinstance(value, str):
+        return None
+    return _to_camelot_cached(value.strip())
 
 
 def to_open_key(value: Optional[str]) -> Optional[str]:
