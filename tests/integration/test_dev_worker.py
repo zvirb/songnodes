@@ -31,14 +31,26 @@ def scraper_running():
     return service_running('unified-scraper')
 
 
-def wait_for(job_id, states, timeout=60):
+def poll_until(predicate, timeout=60.0, interval=0.1, description="condition"):
+    """Polls predicate every `interval` seconds until it returns truthy or `timeout` is reached."""
     deadline = time.time() + timeout
+    last_val = None
     while time.time() < deadline:
+        last_val = predicate()
+        if last_val:
+            return last_val
+        time.sleep(interval)
+    raise AssertionError(f"Timed out after {timeout}s waiting for {description}. Last state: {last_val}")
+
+
+def wait_for(job_id, states, timeout=60):
+    def check():
         status, job = request(8082, f'/api/v1/jobs/{job_id}')
-        if status == 200 and job['status'] in states:
+        if status == 200 and job.get('status') in states:
             return job
-        time.sleep(1)
-    raise AssertionError(f'job {job_id} did not reach {states} within {timeout}s: {job}')
+        return None
+
+    return poll_until(check, timeout=timeout, interval=0.1, description=f"job {job_id} to reach {states}")
 
 
 @unittest.skipUnless(worker_running(), 'worker container is not running')
@@ -52,36 +64,47 @@ class WorkerEndToEnd(unittest.TestCase):
     def cleanup(self):
         m = f'%{self.marker}%'
         # 1) Emit deleted events so the live worker can detach/delete synthetic graph projection nodes cleanly.
-        sql(f"""BEGIN;
-            INSERT INTO outbox_events (aggregate_type, aggregate_id, event_type, payload)
-            SELECT 'track', id, 'deleted', '{{"_marker": "{self.marker}"}}'::jsonb FROM silver_enriched_tracks
-            WHERE track_title LIKE '{m}' OR artist_name LIKE '{m}';
-            COMMIT;""")
+        try:
+            sql(f"""BEGIN;
+                INSERT INTO outbox_events (aggregate_type, aggregate_id, event_type, payload)
+                SELECT 'track', id, 'deleted', '{{"_marker": "{self.marker}"}}'::jsonb FROM silver_enriched_tracks
+                WHERE track_title LIKE '{m}' OR artist_name LIKE '{m}';
+                COMMIT;""")
+        except Exception:
+            pass
 
-        # 2) Wait for the worker to process the deletion events.
-        deadline = time.time() + 15
-        while time.time() < deadline:
-            drained = sql(f"SELECT count(*) FROM outbox_events WHERE payload::text LIKE '{m}' AND seq > COALESCE((SELECT head FROM outbox_consumers WHERE consumer = 'graph_projection'), 0)").strip() == '0'
-            if drained:
-                break
-            time.sleep(1)
+        # 2) Wait for the worker to process the deletion events (polling every 0.1s up to 15s).
+        def outbox_drained():
+            return sql(f"SELECT count(*) FROM outbox_events WHERE payload::text LIKE '{m}' AND seq > COALESCE((SELECT head FROM outbox_consumers WHERE consumer = 'graph_projection'), 0)").strip() == '0'
+
+        try:
+            poll_until(outbox_drained, timeout=15.0, interval=0.1, description="outbox deletion events drained")
+        except Exception:
+            pass
 
         # 3) Remove the source rows first. Once they are gone, the live worker can only delete projection rows, never add them.
-        sql(f"""BEGIN;
-            DELETE FROM ingestion_jobs WHERE payload::text LIKE '{m}' OR idempotency_key LIKE '{m}'
-                OR idempotency_key ~ '^(backfill-after-ingest|backfill-next|proj-after-ingest|proj-after-backfill|ingest-next|ingest-after-scrape):';
-            DELETE FROM silver_enriched_playlists WHERE playlist_name LIKE '{m}';
-            DELETE FROM silver_enriched_tracks WHERE track_title LIKE '{m}' OR artist_name LIKE '{m}';
-            DELETE FROM silver_enriched_artists WHERE canonical_name LIKE '{m}';
-            DELETE FROM bronze_scraped_tracks WHERE source_url LIKE '{m}';
-            DELETE FROM bronze_scraped_playlists WHERE source_url LIKE '{m}';
-            COMMIT;""")
+        try:
+            sql(f"""BEGIN;
+                DELETE FROM ingestion_jobs WHERE payload::text LIKE '{m}' OR idempotency_key LIKE '{m}'
+                    OR idempotency_key ~ '^(backfill-after-ingest|backfill-next|proj-after-ingest|proj-after-backfill|ingest-next|ingest-after-scrape):';
+                DELETE FROM silver_enriched_playlists WHERE playlist_name LIKE '{m}';
+                DELETE FROM silver_enriched_tracks WHERE track_title LIKE '{m}' OR artist_name LIKE '{m}';
+                DELETE FROM silver_enriched_artists WHERE canonical_name LIKE '{m}';
+                DELETE FROM bronze_scraped_tracks WHERE source_url LIKE '{m}';
+                DELETE FROM bronze_scraped_playlists WHERE source_url LIKE '{m}';
+                COMMIT;""")
+        except Exception:
+            pass
+
         # 4) Then the derived rows and events (a late worker pass over a deleted track now removes, rather than writes, a row).
-        sql(f"""BEGIN;
-            DELETE FROM silver_track_transitions WHERE playlist_occurrences::text LIKE '{m}';
-            DELETE FROM projection_tracks WHERE track_title LIKE '{m}' OR artist_name LIKE '{m}';
-            DELETE FROM outbox_events WHERE payload::text LIKE '{m}';
-            COMMIT;""")
+        try:
+            sql(f"""BEGIN;
+                DELETE FROM silver_track_transitions WHERE playlist_occurrences::text LIKE '{m}';
+                DELETE FROM projection_tracks WHERE track_title LIKE '{m}' OR artist_name LIKE '{m}';
+                DELETE FROM outbox_events WHERE payload::text LIKE '{m}';
+                COMMIT;""")
+        except Exception:
+            pass
 
     def test_worker_runs_jobs_submitted_over_rest(self):
         status, queued = request(8082, '/api/v1/jobs', 'POST', {'kind': 'projection_reconcile', 'payload': {'repair': False, 'note': self.marker}})
@@ -94,14 +117,14 @@ class WorkerEndToEnd(unittest.TestCase):
     def test_scrape_trigger_is_retried_by_the_worker_when_the_scraper_is_unreachable(self):
         status, queued = request(8082, '/api/v1/scrape/trigger?source=mixesdb&search_query=' + f'Marker%20{self.marker}', 'POST')
         self.assertEqual(status, 202, queued)
-        deadline, job = time.time() + 60, None
-        while time.time() < deadline:
+
+        def check_scrape():
             job = request(8082, f"/api/v1/jobs/{queued['job_id']}")[1]
-            if job['attempts'] >= 1 and job['last_error']:
-                break
-            time.sleep(1)
-        else:
-            raise AssertionError(f"scrape trigger job {queued['job_id']} did not record a failure within 60s: {job}")
+            if job.get('attempts', 0) >= 1 and job.get('last_error'):
+                return job
+            return None
+
+        job = poll_until(check_scrape, timeout=60.0, interval=0.1, description=f"scrape trigger job {queued['job_id']} failure recording")
         # No unified scraper runs in the minimal stack: the failure is recorded, retried later, never reported as success.
         self.assertEqual(job['status'], 'queued', job)
         self.assertIn('unified scraper unreachable', job['last_error'])
@@ -128,19 +151,15 @@ class WorkerEndToEnd(unittest.TestCase):
                         WHERE a.track_title LIKE '%{self.marker}' ORDER BY 1""").split('\n')
         self.assertEqual([e.replace(f' {self.marker}', '') for e in edges if e], ['Flow One>Flow Two:1', 'Flow Two>Flow Three:1'])
         # The worker chains projection and enrichment follow-ups by itself.
-        deadline = time.time() + 60
-        projected = '0'
-        while time.time() < deadline:
+        def projection_caught_up():
             projected = sql(f"SELECT count(*) FROM projection_tracks WHERE track_title LIKE '%{self.marker}'").strip()
-            # Wait for graph_projection consumer to drain (outbox_events deleted or processed past our events).
-            # If the queue is empty for our tracks, the graph projection is done.
             graph_drained = sql(f"SELECT count(*) FROM outbox_events WHERE payload::text LIKE '%{self.marker}%' AND seq > COALESCE((SELECT head FROM outbox_consumers WHERE consumer = 'graph_projection'), 0)").strip() == '0'
             if projected == '3' and graph_drained:
-                break
-            time.sleep(1)
-        else:
-            raise AssertionError(f"consumers did not catch up within 60s, found {projected}/3 projection_tracks, graph_drained: {graph_drained}")
-        self.assertEqual(projected, '3', 'the projection consumer caught up through the chained job')
+                return True
+            return False
+
+        poll_until(projection_caught_up, timeout=60.0, interval=0.1, description="projection consumer catch-up")
+
         one = sql(f"SELECT bpm || '|' || camelot_key FROM projection_tracks WHERE track_title = 'Flow One {self.marker}'").strip()
         self.assertEqual(one, '128.00|8A', 'scraped BPM/key flow through evidence into the projection')
         self.assertEqual(request(8082, f"/api/v1/jobs/{queued['job_id']}")[1]['status'], 'succeeded')
