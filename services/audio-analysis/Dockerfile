@@ -1,5 +1,5 @@
 # Python 3.14, not 3.15: Essentia (key_bpm.py) publishes no 3.15 wheel; 2.1b6.dev1438 ships cp314 wheels.
-FROM public.ecr.aws/docker/library/python:3.14-slim
+FROM python:3.14-slim
 
 WORKDIR /app
 
