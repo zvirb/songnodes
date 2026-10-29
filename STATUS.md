@@ -908,8 +908,8 @@ Work done:
 <!-- SLOT:L3 BEGIN -->
 ### L3: Saved sets: outbox events with a UUID aggregate id
 - Start: 2026-10-26
-- Built: Fixed `save_set` in `services/library/model/library_db.py` to calculate a UUID `aggregate_id` using `SET_NAMESPACE` and pass it to `append_outbox` while keeping the integer `set_id` in the payload. Added unit test suite `tests/library_model/test_saved_sets_outbox_uuid.py`.
-- Checks run: `PYTHONPATH=services python3 -m pytest -o addopts="" --noconftest tests/library_model/test_saved_sets_outbox_uuid.py` passed (2/2).
+- Built: Fixed `save_set` in `services/library/model/library_db.py` to calculate a UUID `aggregate_id` using `SET_NAMESPACE` and pass it to `append_outbox` while keeping the integer `set_id` in the payload. Updated unit test suite `tests/library_model/test_saved_sets_outbox.py`.
+- Checks run: `PYTHONPATH=services python3 -m pytest -o addopts="" --noconftest tests/library_model/test_saved_sets_outbox.py` passed (2/2).
 - Checks not run: Full E2E Playwright tests.
 - PR Link: Pending
 - End: 2026-10-26
