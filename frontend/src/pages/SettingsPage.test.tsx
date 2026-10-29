@@ -56,6 +56,51 @@ global.fetch = vi.fn().mockImplementation((url: string) => {
           required: true,
           display_order: 4,
         },
+        {
+          service_name: 'lastfm',
+          key_name: 'api_key',
+          display_name: 'Last.fm API Key',
+          description: 'Last.fm API Key.',
+          documentation_url: 'https://last.fm/api',
+          required: false,
+          display_order: 6,
+        },
+        {
+          service_name: 'musicbrainz',
+          key_name: 'user_agent',
+          display_name: 'MusicBrainz User-Agent',
+          description: 'MusicBrainz User-Agent.',
+          documentation_url: 'https://musicbrainz.org/doc/MusicBrainz_API',
+          required: true,
+          display_order: 7,
+        },
+        {
+          service_name: 'youtube',
+          key_name: 'api_key',
+          display_name: 'YouTube Data API Key',
+          description: 'YouTube Data API Key.',
+          documentation_url: 'https://console.cloud.google.com/apis/credentials',
+          required: true,
+          display_order: 8,
+        },
+        {
+          service_name: 'setlistfm',
+          key_name: 'api_key',
+          display_name: 'Setlist.fm API Key',
+          description: 'Setlist.fm API Key.',
+          documentation_url: 'https://setlist.fm',
+          required: false,
+          display_order: 9,
+        },
+        {
+          service_name: 'reddit',
+          key_name: 'client_id',
+          display_name: 'Reddit Client ID',
+          description: 'Reddit Client ID.',
+          documentation_url: 'https://reddit.com/prefs/apps',
+          required: false,
+          display_order: 10,
+        },
       ]),
     });
   }
@@ -234,5 +279,54 @@ describe('SettingsPage', () => {
     expect(await screen.findByText('Backlink URL')).toBeTruthy();
     expect(screen.getByText('https://github.com/zvirb/songnodes#9-data-sources-and-attribution')).toBeTruthy();
     expect(screen.queryByText('Discogs Token')).toBeNull();
+  });
+
+  it('the Spotify card displays app registration requirements and callback URL', async () => {
+    renderAt('/settings/service-spotify');
+    expect(await screen.findByText('Redirect URI')).toBeTruthy();
+    expect(screen.getByText('http://127.0.0.1:3006/callback/spotify')).toBeTruthy();
+    expect(screen.getByText('Web API')).toBeTruthy();
+  });
+
+  it('the Reddit card displays app requirements and callback URL', async () => {
+    renderAt('/settings/service-reddit');
+    expect(await screen.findByText('Redirect URI')).toBeTruthy();
+    expect(screen.getByText('http://127.0.0.1:3006/callback/reddit')).toBeTruthy();
+  });
+
+  it('the MusicBrainz card displays User-Agent format guidelines', async () => {
+    renderAt('/settings/service-musicbrainz');
+    expect(await screen.findByText('Required format')).toBeTruthy();
+    expect(screen.getByText('AppName/Version ( contact-url-or-email )')).toBeTruthy();
+  });
+
+  it('the Last.fm card displays API account requirements and callback URL', async () => {
+    renderAt('/settings/service-lastfm');
+    expect(await screen.findByText('Callback URL')).toBeTruthy();
+    expect(screen.getByText('http://127.0.0.1:3006/callback/lastfm')).toBeTruthy();
+  });
+
+  it('the Discogs card displays Personal Access Token instructions', async () => {
+    renderAt('/settings/service-discogs');
+    expect(await screen.findByText('Token description')).toBeTruthy();
+    expect(screen.getByText('SongNodes')).toBeTruthy();
+  });
+
+  it('the YouTube card displays Google Cloud Console instructions', async () => {
+    renderAt('/settings/service-youtube');
+    expect(await screen.findByText('API library')).toBeTruthy();
+    expect(screen.getByText('Enable "YouTube Data API v3"')).toBeTruthy();
+  });
+
+  it('the Setlist.fm card displays application requirements', async () => {
+    renderAt('/settings/service-setlistfm');
+    expect(await screen.findByText('Application website')).toBeTruthy();
+    expect(screen.getByText('https://github.com/zvirb/songnodes')).toBeTruthy();
+  });
+
+  it('the 1001Tracklists card displays account credentials note', async () => {
+    renderAt('/settings/service-1001tracklists');
+    expect(await screen.findByText('Username')).toBeTruthy();
+    expect(screen.getByText('Your 1001tracklists.com account username')).toBeTruthy();
   });
 });

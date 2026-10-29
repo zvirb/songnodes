@@ -5,7 +5,7 @@ import { API_BASE_URL } from '../lib/apiBase';
 const OAuthCallback: React.FC = () => {
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
   const [message, setMessage] = useState('Processing authentication...');
-  const [service, setService] = useState<'tidal' | 'spotify'>('tidal');
+  const [service, setService] = useState<'tidal' | 'spotify' | string>('tidal');
 
   // Prevent duplicate requests in React Strict Mode (development)
   const hasProcessed = useRef(false);
@@ -24,20 +24,45 @@ const OAuthCallback: React.FC = () => {
         console.log('[OAuth] Callback pathname:', pathname);
 
         // Explicit service detection with validation
-        let detectedService: 'spotify' | 'tidal';
+        let detectedService: string;
         if (pathname.includes('/callback/spotify') || pathname.includes('spotify')) {
           detectedService = 'spotify';
         } else if (pathname.includes('/oauth/callback') || pathname.includes('tidal')) {
           detectedService = 'tidal';
+        } else if (pathname.includes('reddit')) {
+          detectedService = 'reddit';
+        } else if (pathname.includes('lastfm')) {
+          detectedService = 'lastfm';
         } else {
-          console.error('[OAuth] Unable to determine service from path:', pathname);
-          throw new Error('Unable to determine authentication service. Please try again.');
+          const match = pathname.match(/\/callback\/([^/?#]+)/);
+          if (match && match[1]) {
+            detectedService = match[1].toLowerCase();
+          } else {
+            console.error('[OAuth] Unable to determine service from path:', pathname);
+            throw new Error('Unable to determine authentication service. Please try again.');
+          }
         }
 
         setService(detectedService);
         console.log('[OAuth] Detected service:', detectedService);
 
         const serviceName = detectedService.charAt(0).toUpperCase() + detectedService.slice(1);
+
+        // Services that authenticate via client credentials or API keys (e.g. Reddit, Last.fm)
+        if (detectedService !== 'spotify' && detectedService !== 'tidal') {
+          setStatus('success');
+          setMessage(`${serviceName} callback received. SongNodes authenticates using the API credentials saved in Settings.`);
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'oauth-success',
+              service: detectedService,
+            }, window.location.origin);
+            setTimeout(() => {
+              if (window.opener) window.close();
+            }, 3000);
+          }
+          return;
+        }
 
         // Parse URL parameters
         const urlParams = new URLSearchParams(window.location.search);
