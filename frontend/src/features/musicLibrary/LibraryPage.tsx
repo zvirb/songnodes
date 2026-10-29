@@ -260,7 +260,7 @@ const LibraryPage: React.FC = () => {
             <button className="sn-btn sn-btn--quiet" type="button" onClick={() => setImportOpen(true)}>
               <SnIcon name="upload" />Import library
             </button>
-            <button className="sn-btn sn-btn--primary" type="button" onClick={buildFromCrate} disabled={!lib || tracks.length === 0}>
+            <button className={tracks.length > 0 ? "sn-btn sn-btn--primary" : "sn-btn"} type="button" onClick={buildFromCrate} disabled={!lib || tracks.length === 0}>
               <SnIcon name="list-music" />Build set from crate
             </button>
           </>
