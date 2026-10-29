@@ -662,7 +662,7 @@ const SetBuilderPage: React.FC = () => {
       />
       {liveNode}
       {region}
-      <div className="label" style={{ textAlign: "center", color: "var(--fg-2)", padding: "var(--space-3)", borderTop: "1px solid var(--surface-2)", marginTop: "var(--space-6)", marginBottom: "var(--space-4)" }} /* design-system exception */>Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
+      <div className="sn-attribution">Data from MusicBrainz (musicbrainz.org); tags CC BY-NC-SA 3.0</div>
     </main>
   );
 };

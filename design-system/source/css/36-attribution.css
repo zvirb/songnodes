@@ -1,0 +1,9 @@
+/* ===== Attribution / Legal Notice (36) ===== */
+.sn-attribution, .sn-legal-notice {
+  text-align: center;
+  color: var(--fg-2);
+  padding: var(--space-3);
+  border-top: 1px solid var(--surface-2);
+  margin-top: var(--space-6);
+  margin-bottom: var(--space-4);
+}
