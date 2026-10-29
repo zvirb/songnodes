@@ -76,7 +76,7 @@ export const TargetActionButton: React.FC<Props> = ({ track }) => {
     <>
       <span className="sn-sr" aria-live="polite">{announcement}</span>
       {status === 'added' ? (
-        <span className="sn-btn sn-btn--quiet sn-btn--sm sn-btn--icon" title="In target tracks" aria-label="In target tracks">
+        <span className="sn-btn sn-btn--quiet sn-btn--sm sn-btn--icon" title="In target tracks" role="img" aria-label="In target tracks">
           <SnIcon name="check" />
         </span>
       ) : status === 'error' ? (

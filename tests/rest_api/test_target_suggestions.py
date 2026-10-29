@@ -108,3 +108,23 @@ async def test_target_suggestions_api_empty_db():
     response = client.get("/api/v1/target-tracks/suggestions")
     assert response.status_code == 200
     assert response.json() == []
+
+
+@pytest.mark.asyncio
+async def test_suggestions_skip_tracks_without_a_real_artist_or_title():
+    mock_pool = MagicMock()
+    mock_conn = AsyncMock()
+    mock_acquire = AsyncMock()
+    mock_acquire.__aenter__.return_value = mock_conn
+    mock_pool.acquire.return_value = mock_acquire
+    base = {"genres": None, "camelot_key": None, "melbourne_shows": 0, "edge_count": 0}
+    mock_conn.fetch.return_value = [
+        {**base, "id": "a", "title": "?", "artist": "Unknown Artist"},
+        {**base, "id": "b", "title": "Opus", "artist": "unknown"},
+        {**base, "id": "c", "title": "ID", "artist": "Eric Prydz"},
+        {**base, "id": "d", "title": "Opus", "artist": "Eric Prydz"},
+    ]
+    suggestions = await get_target_suggestions(mock_pool, limit=20)
+    assert [(s["artist"], s["title"]) for s in suggestions] == [("Eric Prydz", "Opus")]
+    query = mock_conn.fetch.await_args.args[0]
+    assert "unknown artist" in query

@@ -25,7 +25,9 @@ test('/pipeline opens the telemetry dashboard', async ({ page }) => {
   for (const section of ['Scrape runs', 'System health', 'Medallion pipeline flow', 'Workers']) {
     await expect(page.getByRole('heading', { name: section })).toBeVisible();
   }
-  await expect(page.getByText('No scrape has run yet. Queue one from the target tracks below.')).toBeVisible();
+  // A fresh database shows the empty state; one with scrape history shows the runs table.
+  await expect(page.getByText('No scrape has run yet. Queue one from the target tracks below.')
+    .or(page.getByRole('table', { name: 'Scrape runs' }))).toBeVisible();
   await expect(page.getByRole('button', { name: 'Run Scrapers' })).toHaveCount(0);
 });
 

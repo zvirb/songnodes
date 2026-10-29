@@ -3,6 +3,17 @@ from typing import List, Dict, Any
 
 logger = logging.getLogger(__name__)
 
+INVALID_ARTISTS = {'unknown', 'unknown artist', 'various artists', 'va'}
+INVALID_TITLES = {'', '?', 'id', 'id - id'}
+
+
+def has_valid_attribution(artist, title) -> bool:
+    """A suggestion needs a real artist and title (CLAUDE.md: no NULL or "Unknown Artist" in the product)."""
+    artist = (artist or '').strip().lower()
+    title = (title or '').strip().lower()
+    return bool(artist) and artist not in INVALID_ARTISTS and title not in INVALID_TITLES
+
+
 async def get_target_suggestions(pool, limit: int = 20) -> List[Dict[str, Any]]:
     # 1. We want tracks from silver_enriched_tracks
     # 2. Priority tracks played on >=2 Melbourne shows. We can check `event_location ILIKE '%Melbourne%'`
@@ -42,7 +53,10 @@ async def get_target_suggestions(pool, limit: int = 20) -> List[Dict[str, Any]]:
     FROM silver_enriched_tracks t
     LEFT JOIN melbourne_shows ms ON t.id = ms.track_id
     LEFT JOIN edge_density ed ON t.id = ed.track_id
-    WHERE NOT EXISTS (
+    WHERE t.artist_name IS NOT NULL AND trim(t.artist_name) <> ''
+      AND lower(trim(t.artist_name)) NOT IN ('unknown', 'unknown artist', 'various artists', 'va')
+      AND t.track_title IS NOT NULL AND trim(t.track_title) NOT IN ('', '?', 'ID', 'ID - ID')
+      AND NOT EXISTS (
         SELECT 1 FROM existing_targets et
         WHERE et.title = lower(trim(t.track_title))
           AND et.artist = lower(trim(t.artist_name))
@@ -57,6 +71,8 @@ async def get_target_suggestions(pool, limit: int = 20) -> List[Dict[str, Any]]:
 
     suggestions = []
     for row in rows:
+        if not has_valid_attribution(row["artist"], row["title"]):
+            continue
         score = 0
         rationales = []
 
