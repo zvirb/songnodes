@@ -147,10 +147,85 @@ export const SETTINGS_LIST: SettingMeta[] = [
 const HIDDEN_SERVICES = new Set(['beatport']);
 /**
  * What a service's sign-up form asks for, shown above that service's key fields.
- * GetSongBPM only activates a key for a public page that links back to getsongbpm.com;
- * the SongNodes README credits section is that page.
+ * Includes sign-up fields, redirect/callback URIs, and provider terms.
  */
-const SERVICE_SETUP: Record<string, { intro: string; fields: { label: string; value: string }[]; note?: string }> = {
+const SERVICE_SETUP: Record<string, { intro: string; fields: { label: string; value: string; mono?: boolean }[]; note?: string }> = {
+  spotify: {
+    intro: 'The Spotify Developer Dashboard app registration asks for:',
+    fields: [
+      { label: 'App name', value: 'SongNodes' },
+      { label: 'App description', value: 'Personal DJ library and harmonic mixing assistant' },
+      { label: 'Website', value: 'https://github.com/zvirb/songnodes' },
+      { label: 'Redirect URI', value: 'http://127.0.0.1:3006/callback/spotify' },
+      { label: 'APIs used', value: 'Web API' },
+    ],
+    note: 'Redirect URI is mandatory for OAuth. Spotify requires loopback redirects as 127.0.0.1 (not localhost). Copy the Client ID, and click "View client secret" to copy the Client Secret.',
+  },
+  discogs: {
+    intro: 'Generating a Personal Access Token on Discogs requires:',
+    fields: [
+      { label: 'Action', value: 'Log in and click "Generate new token"' },
+      { label: 'Token description', value: 'SongNodes' },
+    ],
+    note: 'No application registration or redirect URI is required for Personal Access Tokens. Authenticated requests allow up to 60 queries per minute.',
+  },
+  lastfm: {
+    intro: 'The Last.fm API account creation form asks for:',
+    fields: [
+      { label: 'Email', value: 'Your email address' },
+      { label: 'Application name', value: 'SongNodes' },
+      { label: 'Description', value: 'Personal music library and DJ setlist assistant' },
+      { label: 'Application homepage', value: 'https://github.com/zvirb/songnodes' },
+      { label: 'Callback URL', value: 'http://127.0.0.1:3006/callback/lastfm' },
+    ],
+    note: 'Submitting the form generates both an API Key and a 32-character Shared Secret. Copy both values into the fields below.',
+  },
+  musicbrainz: {
+    intro: 'MusicBrainz does not use API keys; it requires an identifying User-Agent header:',
+    fields: [
+      { label: 'Required format', value: 'AppName/Version ( contact-url-or-email )', mono: true },
+      { label: 'Recommended value', value: 'SongNodes/1.0 ( https://github.com/zvirb/songnodes )', mono: true },
+    ],
+    note: 'Parentheses and valid contact info are mandatory under MusicBrainz terms. Generic User-Agents are blocked or throttled to 1 request per second.',
+  },
+  youtube: {
+    intro: 'Creating a YouTube Data API key in Google Cloud Console asks for:',
+    fields: [
+      { label: 'Project', value: 'Create or select a project (e.g. SongNodes)' },
+      { label: 'API library', value: 'Enable "YouTube Data API v3"' },
+      { label: 'Credentials', value: 'Click "Create Credentials" → "API key"' },
+    ],
+    note: 'Under API restrictions, you can optionally restrict the key to "YouTube Data API v3". Copy the generated AIza... key.',
+  },
+  setlistfm: {
+    intro: 'The Setlist.fm API key application form asks for:',
+    fields: [
+      { label: 'Account', value: 'Free account on setlist.fm' },
+      { label: 'Application name', value: 'SongNodes' },
+      { label: 'Application website', value: 'https://github.com/zvirb/songnodes' },
+      { label: 'Description', value: 'Tracklist and setlist matching for DJ library management' },
+    ],
+    note: 'Free for non-commercial personal use. The key is provided immediately in your user profile under API settings.',
+  },
+  reddit: {
+    intro: 'The Reddit app registration form asks for:',
+    fields: [
+      { label: 'App name', value: 'SongNodes' },
+      { label: 'App type', value: 'Select "script" (for personal script / background scraper)' },
+      { label: 'About URL', value: 'https://github.com/zvirb/songnodes' },
+      { label: 'Redirect URI', value: 'http://127.0.0.1:3006/callback/reddit' },
+    ],
+    note: 'The redirect URI is mandatory on the Reddit form even for script apps. Copy the Client ID (shown under the app name) and the Client Secret (labeled "secret").',
+  },
+  '1001tracklists': {
+    intro: '1001Tracklists scraping requires an authenticated user account:',
+    fields: [
+      { label: 'Username', value: 'Your 1001tracklists.com account username' },
+      { label: 'Email', value: 'Your email address' },
+      { label: 'Password', value: 'Your 1001tracklists.com account password' },
+    ],
+    note: '1001Tracklists has no public developer API; SongNodes authenticates directly with your account credentials to scrape setlists and track tracklists.',
+  },
   getsongbpm: {
     intro: 'The sign-up form behind Get key asks for three things:',
     fields: [
@@ -407,9 +482,13 @@ export const SettingsPage: React.FC = () => {
                   <React.Fragment key={f.label}>
                     <dt>{f.label}</dt>
                     <dd>
-                      {f.value.startsWith('https://') ? (
+                      {f.value.startsWith('https://') || f.value.startsWith('http://') ? (
                         <TextLink href={f.value} external path breakAnywhere>{f.value}</TextLink>
-                      ) : f.value}
+                      ) : f.mono ? (
+                        <span className="sn-mono">{f.value}</span>
+                      ) : (
+                        f.value
+                      )}
                     </dd>
                   </React.Fragment>
                 ))}

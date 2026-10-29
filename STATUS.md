@@ -1765,3 +1765,11 @@ Ended 2026-10-26 22:29: Audited Pathfinder (DS7). Fixed CSS typography variables
 - End: 2026-10-28. Added `frontend/src/components/ds/{FileDrop,StagedProgress,DateRange}.tsx` with tests, exported from `ds/index.tsx`. DateRange mirrors `SongNodes.dateRange` (table role=grid, roving tabindex, APG keys, live region) using `SN.calendar` and `SN.format.range/dayLong`. Checks: tsc, oxlint (0 errors; +9 warnings, all spec-mandated ARIA roles), vitest 248/248, vite build, sync --check, check_design_system --check, scope guard. Over the ~400-line budget (three components, Markus asked for all three).
 - Next: adopt in TargetTracksManager / SetlistBuilder (FileDrop), TracklistImporter / ScraperProgressPage (StagedProgress), DateField calendar button and scrape-history export (DateRange).
 <!-- SLOT:DS19 END -->
+
+<!-- SLOT:CFG1 BEGIN -->
+### CFG1: API provider sign-up requirements, instructions, and callbacks
+- Start: 2026-10-29
+- End: 2026-10-29. Investigated requirements for all pipeline and music service API providers. Documented sign-up fields, redirect/callback URIs, format requirements, and rate limit notes across all service cards in `frontend/src/pages/SettingsPage.tsx` (`SERVICE_SETUP`). Rendered callback URLs as wrapping `TextLink`s and code formats as `sn-mono`. Added support for service callbacks in `frontend/src/App.tsx`, `frontend/src/components/OAuthCallback.tsx`, and `services/rest_api/routers/music_auth.py`. Added unit tests in `frontend/src/pages/SettingsPage.test.tsx` verifying card instructions and callback URLs.
+- Checks: vitest unit tests (48 test files, 309 tests passed), `npm run type-check` (tsc --noEmit passed), `npm run lint` (0 errors), `npm run build` (vite build passed in 2.03s), `python scripts/check_design_system.py --check` (passed), `git diff --check` (passed).
+- PR: CFG1: API provider sign-up requirements, instructions, and callbacks
+<!-- SLOT:CFG1 END -->

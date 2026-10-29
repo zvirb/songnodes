@@ -1227,6 +1227,16 @@ async def tidal_oauth_callback(
         logger.error(f"Tidal OAuth callback failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"OAuth callback failed: {str(e)}")
 
+@router.get("/reddit/callback")
+async def reddit_callback():
+    """Callback endpoint for Reddit redirect URI"""
+    return RedirectResponse(url="/callback/reddit")
+
+@router.get("/lastfm/callback")
+async def lastfm_callback():
+    """Callback endpoint for Last.fm API callback"""
+    return RedirectResponse(url="/callback/lastfm")
+
 @router.post("/tidal/oauth/refresh")
 @router.post("/tidal/refresh")
 async def refresh_tidal_token(

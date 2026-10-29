@@ -31,6 +31,7 @@ const App: React.FC = () => {
           {/* Service sign-in returns: no shell, the window may be a pop-up (AuthCallbackPage). */}
           <Route path="/callback/spotify" element={<OAuthCallback />} />
           <Route path="/oauth/callback" element={<OAuthCallback />} />
+          <Route path="/callback/:service" element={<OAuthCallback />} />
           <Route element={<AppShell />}>
             {routes.map((route, i) => {
               if (route.path === '/') {
