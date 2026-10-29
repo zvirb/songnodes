@@ -826,10 +826,12 @@ Work done:
 
 <!-- SLOT:P1 BEGIN -->
 ### P1: Route /paths to the route finder page
-- Start: 2026-10-26
-- End: 2026-10-26
-- Start: 2024-05-15
-- End: 2024-05-15 Added `frontend/src/features/pathfinder/route.tsx` to expose the page through the shared registry. Switched to `useUnifiedTracks` from the `hooks/` directory, gracefully handling empty library paths and potential errors. `frontend/src/features/pathfinder/useUnifiedTracks.ts` was deleted. Pre-commit checks passed successfully.
+- Start: 2026-10-29
+- Built: Verified `frontend/src/features/pathfinder/route.tsx` exports route `{ path: '/paths', element: <PathfinderPage /> }` registering `/paths`. Confirmed `PathfinderPage.tsx` uses shared hook `useUnifiedTracks` from `../../hooks/useUnifiedTracks` and that local `useUnifiedTracks.ts` is deleted. Confirmed honest empty state ("No tracks found") and error panel ("Cannot load tracks") mapping API errors correctly.
+- Checks run: `cd frontend && npm ci && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build`, `python scripts/scope_guard.py --base main --head HEAD --title "P1: Route /paths to the route finder page" --branch p1-route-paths`.
+- Checks not run: Playwright E2E suite due to environment constraints.
+- Reviewer check: Open /paths: the route finder renders; with backend down it shows error naming cause or falls back gracefully to local fixture with warning rather than a false empty result.
+- End: 2026-10-29
 <!-- SLOT:P1 END -->
 
 <!-- SLOT:P2 BEGIN -->
