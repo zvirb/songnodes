@@ -537,9 +537,11 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:QA4 BEGIN -->
 ### QA4: Run services/common/refmb tests from any directory and in CI
-- Start: 2026-10-26
-- End: 2026-10-26
-- End: 2026-10-26. Added `pythonpath = .` and `services/common/refmb` testpaths to `pytest.ini`. Also added a `services/common/refmb` test step to `.github/workflows/python-tests.yml`. Verified pytest collection from repo root and module execution locally. PR: [QA4: Run services/common/refmb tests from any directory and in CI](#)
+- Start: 2026-10-29
+- Built: Fixed invalid escape sequence SyntaxWarning in `services/common/refmb/test_refmb.py`. Verified `pytest services/common/refmb` collects and passes cleanly from repo root, `services/`, and `services/common/refmb/`.
+- Checks run: `pytest services/common/refmb` (6 passed), `cd services && pytest common/refmb` (6 passed), `cd services/common/refmb && pytest` (6 passed).
+- PR: [QA4: Run services/common/refmb tests from any directory and in CI](https://github.com/zvirb/songnodes/pull/NEW)
+- End: 2026-10-29
 <!-- SLOT:QA4 END -->
 
 <!-- SLOT:QA5 BEGIN -->
