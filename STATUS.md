@@ -875,7 +875,10 @@ Work done:
 <!-- SLOT:E1 BEGIN -->
 ### E1: Local MusicBrainz provider in the enrichment waterfall
 - Start: 2026-10-26
-- End: 2026-10-26
+- End: 2026-10-29
+- Built: Registered local MusicBrainz provider (`musicbrainz_local`) ahead of web MusicBrainz (`musicbrainz`) in `services/common/providers/list_providers.py`. Refined `services/common/providers/musicbrainz_local.py` to support `REFMB_DATABASE_URL` and perform graceful skip returning `None` immediately without network calls when database is unset or unreachable. Added unit test suite in `services/common/tests/test_mb_local_provider.py` and documented order and configuration in `docs/enrichment/providers.md`.
+- Checks run: `PYTHONPATH=services python3 -m pytest -s -o addopts="" services/common/tests/test_mb_local_provider.py` (5/5 passed).
+- Reviewer check: Executing pytest prints provider chain showing `musicbrainz_local` ahead of `musicbrainz`.
 <!-- SLOT:E1 END -->
 
 <!-- SLOT:SB2 BEGIN -->

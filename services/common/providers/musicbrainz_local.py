@@ -1,6 +1,7 @@
+import os
 import asyncio
 from typing import Any, Dict, List, Optional
-import traceback
+import urllib.parse
 
 from common.metadata.matching import Track, parse_title
 from common.refmb.settings import RefMBSettings, create_pool
@@ -15,28 +16,63 @@ except ImportError:
         MusicBrainzResolver = None
         local_candidates = None
 
+
+def _settings_from_env_or_db_url(settings: Optional[RefMBSettings] = None) -> RefMBSettings:
+    if settings is not None:
+        return settings
+
+    db_url = os.getenv("REFMB_DATABASE_URL", "").strip()
+    if db_url:
+        try:
+            parsed = urllib.parse.urlparse(db_url)
+            return RefMBSettings(
+                enabled=True,
+                host=parsed.hostname or "localhost",
+                port=parsed.port or 5432,
+                database=parsed.path.lstrip("/") or "ref_mb",
+                user=parsed.username or "ref_mb_reader",
+            )
+        except Exception:
+            pass
+    return RefMBSettings.from_env()
+
+
 class MusicBrainzLocalProvider(Provider):
     name = 'musicbrainz_local'
     independent_group = 'musicbrainz'
 
     def __init__(self, settings: Optional[RefMBSettings] = None):
-        self.settings = settings or RefMBSettings.from_env()
+        self.settings = _settings_from_env_or_db_url(settings)
         self.pool = None
 
     async def _get_pool(self):
         if self.pool is None:
-            if not self.settings.enabled:
+            db_url = os.getenv("REFMB_DATABASE_URL", "").strip()
+            mb_enabled = os.getenv("MB_LOCAL_ENABLED", "").strip().lower() in ("true", "1", "yes")
+            if not db_url and not mb_enabled and not self.settings.enabled:
                 return None
-            self.pool = await create_pool(self.settings)
+            try:
+                self.pool = await create_pool(self.settings)
+            except Exception:
+                return None
         return self.pool
 
-    async def lookup(self, target: Track, genres: Optional[List[str]] = None) -> List[ProviderTrack]:
-        if not self.settings.enabled or MusicBrainzResolver is None:
-            return []
+    async def lookup(self, target: Track, genres: Optional[List[str]] = None) -> Optional[List[ProviderTrack]]:
+        db_url = os.getenv("REFMB_DATABASE_URL", "").strip()
+        mb_enabled = os.getenv("MB_LOCAL_ENABLED", "").strip().lower() in ("true", "1", "yes")
 
-        pool = await self._get_pool()
-        if not pool:
-            return []
+        if not db_url and not mb_enabled and not self.settings.enabled:
+            return None
+
+        if MusicBrainzResolver is None:
+            return None
+
+        try:
+            pool = await self._get_pool()
+            if not pool:
+                return None
+        except Exception:
+            return None
 
         try:
             async with pool.acquire() as conn:
@@ -47,7 +83,6 @@ class MusicBrainzLocalProvider(Provider):
                 if parsed.versions:
                     mix_str = " ".join(parsed.versions)
 
-                # local_candidates expects a mix argument separately, or just let resolver handle it via title
                 match = await resolver.resolve(
                     artist=target.artist,
                     title=parsed.base,
@@ -57,16 +92,9 @@ class MusicBrainzLocalProvider(Provider):
                 )
 
                 if not match:
-                    return []
+                    return None
 
-                # fetch recording details
-                recording_id = match.canonical_mbid or match.mbid
-
-                # fetch metadata we want to set as evidence
-                # we need recording length and isrcs
-
-                # This could be improved, but this will get us the metadata for fields
-                # musicbrainz_id, isrc, duration_ms
+                recording_id = str(match.canonical_mbid or match.mbid)
 
                 isrc_row = await conn.fetchrow("""
                     SELECT isrc FROM ref_mb.isrc
@@ -87,12 +115,8 @@ class MusicBrainzLocalProvider(Provider):
                 if duration:
                     fields['duration_ms'] = duration
 
-                # Evidence mapped output fields, dump_version, licence
-                # Set CC0; CC-BY-NC-SA-3.0 for tag-derived genre (which we aren't supporting currently)
-
-                # Compute confidence from match bucket
-                confidence = 0.95 if match.confidence_bucket == "auto" else 0.5
-                if match.method == 'isrc':
+                confidence = 0.95 if getattr(match, "confidence_bucket", "") == "auto" else 0.5
+                if getattr(match, "method", "") == 'isrc':
                     confidence = 1.0
 
                 pt = ProviderTrack(
@@ -106,8 +130,8 @@ class MusicBrainzLocalProvider(Provider):
                     ),
                     fields=fields,
                     raw={
-                        'matched_by': match.method,
-                        'dump_version': match.dump_version,
+                        'matched_by': getattr(match, "method", "unknown"),
+                        'dump_version': getattr(match, "dump_version", None),
                         'licence': 'CC0',
                     },
                     field_sources={},
@@ -115,8 +139,5 @@ class MusicBrainzLocalProvider(Provider):
                 )
                 return [pt]
 
-        except Exception as e:
-            # We catch any exception to avoid crashing waterfall, we can log it if needed
-            print(f"MusicBrainzLocalProvider error: {e}")
-            traceback.print_exc()
-            return []
+        except Exception:
+            return None
