@@ -78,6 +78,7 @@ to clear a failure that has another cause.
 |---|---|
 | `routes.smoke.spec.ts` | Every route loads with status 200, the `/sources` redirect, the not-found page |
 | `shell.spec.ts` | NavDrawer open/close/focus, every row navigates and is marked current, Back/Forward, header search and Ctrl+K, skip link, titles |
+| `library.spec.ts` | Crate count from `frontend/tests/e2e/data/library.fixture.json`, search, empty state, en dash for missing values, sorting, Build set from crate |
 | `library.spec.ts` | Crate count from `library.fixture.json`, search, empty state, en dash for missing values, sorting, Build set from crate |
 | `sets.spec.ts` | Build set, save, persist across reload, delete through ConfirmDialog (confirm, Cancel, Escape) |
 | `settings.spec.ts` | Theme, text size, density, motion, reset, About |
