@@ -438,7 +438,11 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 <!-- SLOT:FE9 BEGIN -->
 ### FE9: Add library tracks to Target Tracks
 - Start: 2026-10-26
-- End: 2026-10-26
+- Built: Verified TargetActionButton component mounted in the row-actions cell in LibraryPage.tsx. Supported adding library tracks as target tracks via setTrackAsTarget and POST /api/v1/target-tracks with search_terms and genres. Handles idle, adding (aria-busy), added, and error with retry states. Supported local storage fallback ("saved locally, will sync") when backend is unreachable. Added unit tests for click handlers, double click prevention, existing target detection, and backend-down messages.
+- Checks run: `cd frontend && npm ci && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build`, `python scripts/check_design_system.py --check`, `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check`, `python scripts/scope_guard.py`.
+- Checks not run: Playwright E2E tests cannot run in sandbox.
+- Reviewer check: Click the new button on a library row: the track appears in /sources/targets.
+- End: 2026-10-29
 <!-- SLOT:FE9 END -->
 
 <!-- SLOT:FEW BEGIN -->
