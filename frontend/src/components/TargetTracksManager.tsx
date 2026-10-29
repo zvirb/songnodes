@@ -584,7 +584,7 @@ const TargetTracksManager: React.FC<TargetTracksManagerProps> = ({ embedded = fa
                           {track.track_id ? (
                             <>
                               <span className="sn-track-cell__sep" aria-hidden="true">·</span>
-                              <span className="data" style={{ fontSize: '0.6875rem', color: 'var(--fg-3)' }}>ID: {track.track_id}</span>
+                              <span className="data" style={{ fontSize: '0.6875rem', color: 'var(--fg-2)' }}>ID: {track.track_id}</span>
                             </>
                           ) : null}
                         </span>

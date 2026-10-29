@@ -647,7 +647,8 @@ class PersistencePipeline:
         # FIRST: Queue the track itself (so it exists when we create the relationship)
         # Use _process_track_item to handle this properly
         # Generate synthetic track_id for bronze layer (artist::title format)
-        synthetic_track_id = f"{artist_name}::{track_name}" if artist_name and track_name else None
+        # We append position so two mixes, or one mix playing a track twice, never share a bronze row.
+        synthetic_track_id = f"{artist_name}::{track_name}#{position}" if artist_name and track_name else None
 
         # CRITICAL: Resolve playlist_id from playlist_name for bronze FK relationship
         bronze_playlist_id = self._playlist_id_map.get(playlist_name)

@@ -39,6 +39,8 @@ def generate_synthetic_audio(bpm, key_name, duration=30.0, sample_rate=44100):
         freq = 440.0 * (2.0 ** ((base_midi + interval - 69) / 12.0))
         chord_audio += 0.2 * np.sin(2.0 * np.pi * freq * t)
 
+    lfo = 0.5 + 0.5 * np.sin(2.0 * np.pi * (bpm/120.0) * 0.5 * t)
+    chord_audio *= lfo
     audio += chord_audio
 
     num_beats = int(duration / beat_interval) + 1

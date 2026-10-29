@@ -7,8 +7,10 @@ import { useUnifiedTracks } from '../../hooks/useUnifiedTracks';
 import { buildPrompt } from './api/prompt';
 import { parseAndValidate } from './api/parser';
 import { dedupe, type CatalogSetlist, type DedupeResult } from './api/dedupe';
-import { checkAIAvailability } from '../../services/aiService';
-import { runDirectQuery } from './api/directRun';
+import { checkAIAvailability, type AIProvider } from '../../services/aiService';
+import { getPreferredAIProvider } from '../../services/apiKeyService';
+import { runProxyQuery, proxyErrorMessage, PROVIDER_NAMES } from './api/proxyRun';
+import { importSetlists } from './api/importRun';
 import type { AISetlist, AISetlistTrack } from './api/schema';
 import { SN } from '../../lib/songnodes';
 
@@ -36,8 +38,8 @@ export default function AISetlistsPage() {
   const [selectedSetlists, setSelectedSetlists] = useState<Set<string>>(new Set());
 
   // Provider / API State
-  const [providers, setProviders] = useState<string[]>([]);
-  const [selectedProvider, setSelectedProvider] = useState<string>('claude');
+  const [providers, setProviders] = useState<AIProvider[]>([]);
+  const [selectedProvider, setSelectedProvider] = useState<AIProvider>(() => getPreferredAIProvider());
   const [isCallingAPI, setIsCallingAPI] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [useWebSearch, setUseWebSearch] = useState(true);
@@ -63,7 +65,10 @@ export default function AISetlistsPage() {
 
     checkAIAvailability().then(avail => {
       setProviders(avail.configuredProviders);
-      if (avail.configuredProviders.length > 0 && !avail.configuredProviders.includes(selectedProvider as any)) {
+      const preferred = getPreferredAIProvider();
+      if (avail.configuredProviders.includes(preferred)) {
+        setSelectedProvider(preferred);
+      } else if (avail.configuredProviders.length > 0) {
         setSelectedProvider(avail.configuredProviders[0]);
       }
     });
@@ -110,11 +115,11 @@ export default function AISetlistsPage() {
     setParseErrors([]);
     setReviewResult(null);
     try {
-      const result = await runDirectQuery(selectedProvider as import("../../services/aiService").AIProvider, generatedPrompt, undefined, useWebSearch);
+      const result = await runProxyQuery(selectedProvider, generatedPrompt, { webSearch: useWebSearch });
       setPastedJson(result);
       handleReview(result);
-    } catch (e: any) {
-      setApiError(e.message || "API call failed.");
+    } catch (e) {
+      setApiError(proxyErrorMessage(e, selectedProvider));
     } finally {
       setIsCallingAPI(false);
     }
@@ -123,45 +128,9 @@ export default function AISetlistsPage() {
   const performImport = async (setlistsToImport: AISetlist[]) => {
     setIsImporting(true);
 
-    let created = 0;
-    let failed = 0;
-    let replayed = 0;
+    const { created, replayed, failed: currentFailed, ledger: newLedgerAdditions } =
+      await importSetlists(setlistsToImport, setImportProgress);
 
-    const newLedgerAdditions: string[] = [];
-    const currentFailed: AISetlist[] = [];
-
-    for (let i = 0; i < setlistsToImport.length; i++) {
-      const sl = setlistsToImport[i];
-      setImportProgress(Math.round((i / setlistsToImport.length) * 100));
-      try {
-        const payload = {
-          dj_artist: sl.dj,
-          name: sl.event || 'AI Setlist',
-          tracks: sl.tracks.map(t => ({
-             artist: t.artist,
-             title: t.title,
-             track_number: t.position
-          }))
-        };
-        const res = await fetch('/api/v1/tracks/import-tracklist', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        if (data.replayed) {
-          replayed++;
-        } else {
-          created++;
-        }
-        newLedgerAdditions.push(`${sl.dj} @ ${sl.event} (${sl.date})`);
-      } catch (e) {
-        failed++;
-        currentFailed.push(sl);
-      }
-    }
-
-    setImportProgress(100);
     setIsImporting(false);
 
     setImportStats(prev => ({
@@ -284,8 +253,8 @@ export default function AISetlistsPage() {
                    <div className="sn-row">
                      <label className="sn-field" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 'var(--space-2)' }}>
                        <span className="label">Provider</span>
-                       <select className="sn-input" value={selectedProvider} onChange={e => setSelectedProvider(e.target.value)}>
-                         {providers.map(p => <option key={p} value={p}>{p.toUpperCase()}</option>)}
+                       <select className="sn-input" value={selectedProvider} onChange={e => setSelectedProvider(providers.find(p => p === e.target.value) ?? selectedProvider)}>
+                         {providers.map(p => <option key={p} value={p}>{PROVIDER_NAMES[p]}</option>)}
                        </select>
                      </label>
                      {selectedProvider === 'gemini' && (

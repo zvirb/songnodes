@@ -238,6 +238,39 @@ class Test1001TracklistsSpider:
             assert url.startswith('https://')
             assert '1001tracklists.com' in url
 
+    def test_start_requests_search(self):
+        """A search query generates a Playwright request with form submission coroutines."""
+        import importlib
+        spider_module = importlib.import_module('scrapers.spiders.1001tracklists_spider')
+        OneThousandOneTracklistsSpider = spider_module.OneThousandOneTracklistsSpider
+        spider = OneThousandOneTracklistsSpider(search_query='Deadmau5 Strobe')
+        # Check that we haven't overridden start in an incompatible way
+        import inspect
+        assert not hasattr(OneThousandOneTracklistsSpider, 'start') or inspect.isasyncgenfunction(OneThousandOneTracklistsSpider.start)
+
+        requests = list(spider.start_requests())
+        assert len(requests) == 1
+        req = requests[0]
+        assert req.url == 'https://www.1001tracklists.com/'
+        assert req.callback == spider.parse_search_results
+        assert req.meta.get('playwright') is True
+        assert req.meta.get('search_query') == 'Deadmau5 Strobe'
+        assert len(req.meta.get('playwright_page_coroutines', [])) == 1
+        assert inspect.iscoroutinefunction(req.meta['playwright_page_coroutines'][0])
+
+    def test_start_requests_tracklist(self):
+        """A tracklist URL generates a Playwright request for the page."""
+        import importlib
+        spider_module = importlib.import_module('scrapers.spiders.1001tracklists_spider')
+        OneThousandOneTracklistsSpider = spider_module.OneThousandOneTracklistsSpider
+        spider = OneThousandOneTracklistsSpider(start_urls='https://www.1001tracklists.com/tracklist/123/test.html')
+        requests = list(spider.start_requests())
+        assert len(requests) == 1
+        req = requests[0]
+        assert req.url == 'https://www.1001tracklists.com/tracklist/123/test.html'
+        assert req.callback == spider.parse_tracklist
+        assert req.meta.get('playwright') is True
+
     def test_spider_settings(self, spider):
         """Test spider-specific settings."""
         assert hasattr(spider, 'name')

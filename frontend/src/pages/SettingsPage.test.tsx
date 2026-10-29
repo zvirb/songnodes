@@ -39,6 +39,15 @@ global.fetch = vi.fn().mockImplementation((url: string) => {
           display_order: 3,
         },
         {
+          service_name: 'getsongbpm',
+          key_name: 'api_key',
+          display_name: 'GetSongBPM API Key',
+          description: 'GetSongBPM key.',
+          documentation_url: 'https://getsongbpm.com/api',
+          required: false,
+          display_order: 5,
+        },
+        {
           service_name: '1001tracklists',
           key_name: 'password',
           display_name: '1001Tracklists Password',
@@ -218,5 +227,12 @@ describe('SettingsPage', () => {
     expect(await screen.findByText('Discogs Token')).toBeTruthy();
     expect(screen.queryByText('Setting not found')).toBeNull();
     expect(screen.queryByText('Beatport API Key')).toBeNull();
+  });
+
+  it('the GetSongBPM card says what its sign-up form needs, including the backlink', async () => {
+    renderAt('/settings/service-getsongbpm');
+    expect(await screen.findByText('Backlink URL')).toBeTruthy();
+    expect(screen.getByText('https://github.com/zvirb/songnodes#9-data-sources-and-attribution')).toBeTruthy();
+    expect(screen.queryByText('Discogs Token')).toBeNull();
   });
 });

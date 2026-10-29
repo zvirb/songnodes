@@ -170,6 +170,10 @@ async def _call_provider(provider: str, body: AICompletionRequest, max_tokens: i
                     "generationConfig": {"maxOutputTokens": max_tokens}
                 }
 
+            if body.web_search:
+                # Grounding with Google Search; only Gemini supports this through the proxy.
+                payload["tools"] = [{"google_search": {}}]
+
             async with session.post(url, headers=headers, json=payload) as resp:
                 await _handle_response_errors(resp)
                 data = await resp.json()

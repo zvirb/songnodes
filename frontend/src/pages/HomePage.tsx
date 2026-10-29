@@ -47,10 +47,10 @@ const HomePage: React.FC = () => {
           <LauncherCard
             mod="sources"
             title="Target tracks"
-            summary={lastRun ? `Weekly run ${SN.format.dateOnly(lastRun.date)} added ${SN.format.count(lastRun.added)} tracks.` : 'Tracklists, radio, targets and imports.'}
+            summary={lastRun ? `Weekly run ${SN.format.dateOnly(lastRun.date)} added ${SN.format.count(lastRun.added)} tracks.` : 'Target tracks, tracklist imports and AI setlists.'}
             figures={lastRun ? [['added', SN.format.count(lastRun.added)], ['rejected', SN.format.count(lastRun.rejected)]] : []}
           />
-          <LauncherCard mod="pipeline" title="Scrapers and jobs" summary="Preview pipeline stages; live job and worker telemetry is not connected." />
+          <LauncherCard mod="pipeline" title="Scrapers and jobs" summary="Queue scrapes and watch jobs, workers and the medallion stages live." />
           <LauncherCard mod="services" title="Settings" summary="Spotify, TIDAL, API keys, theme, text size and density." />
         </div>
       </section>

@@ -201,7 +201,7 @@ const ScraperProgressPage: React.FC = () => {
             title={`Last synced: ${new Date(lastUpdated).toLocaleTimeString()}`}
             aria-live="polite"
           >
-            <RefreshCw size={16} aria-label="Sync" className={isLoading ? "sn-spinner" : ""} />
+            <RefreshCw size={16} aria-hidden="true" className={isLoading ? "sn-spinner" : ""} />
             {isLoading ? 'Syncing…' : 'Sync now'}
           </button>
         </div>
@@ -218,7 +218,7 @@ const ScraperProgressPage: React.FC = () => {
 
       {jobs.length === 0 && telemetrySource === 'live' && (
         <section className="sn-page__section sn-empty-state" style={{ border: "1px dashed var(--line)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "var(--space-8)", backgroundColor: "var(--surface-1)", borderRadius: "var(--radius-card)", marginBottom: "var(--space-6)" }}>
-          <Clock size={48} color="var(--fg-3)" style={{ marginBottom: 'var(--space-4)' }} />
+          <Clock size={48} color="var(--fg-2)" style={{ marginBottom: 'var(--space-4)' }} />
           <h2 className="heading-3" style={{ marginBottom: 'var(--space-2)' }}>No jobs yet</h2>
           <p className="body" style={{ color: 'var(--fg-2)', marginBottom: 'var(--space-4)' }}>The pipeline queue is currently empty.</p>
           <Button kind="quiet" onClick={() => artistRef.current?.focus()}>
@@ -353,7 +353,7 @@ const ScraperProgressPage: React.FC = () => {
           <div className="sn-card" style={{ border: '1px solid var(--line)', padding: 'var(--space-4)', backgroundColor: 'var(--surface-1)', borderRadius: 'var(--radius-card)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
               <span className="label" style={{ flex: 1 }}>Tracks scraped today</span>
-              <CheckCircle2 size={18} color={tracksToday > 0 ? "var(--status-ok)" : "var(--fg-3)"} />
+              <CheckCircle2 size={18} color={tracksToday > 0 ? "var(--status-ok)" : "var(--fg-2)"} />
             </div>
             <div className="figure data" >
               {SN.format.count(tracksToday)}
@@ -406,7 +406,7 @@ const ScraperProgressPage: React.FC = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                     {stg.state === 'done' && <CheckCircle2 size={18} color="var(--status-ok)" />}
                     {stg.state === 'running' && <RefreshCw size={18} className="sn-spinner" color="var(--brand)" />}
-                    {stg.state === 'waiting' && <Clock size={18} color="var(--fg-3)" />}
+                    {stg.state === 'waiting' && <Clock size={18} color="var(--fg-2)" />}
                     {stg.state === 'failed' && <XCircle size={18} color="var(--status-bad)" />}
                     {stg.state === 'warning' && <AlertTriangle size={18} color="var(--status-warn)" />}
 
@@ -506,7 +506,7 @@ const ScraperProgressPage: React.FC = () => {
                   <tr key={j.job_id}>
                     <td className="data" >{j.job_id.substring(0, 8)}</td>
                     <td>{j.kind}</td>
-                    <td className="caption data truncate" style={{ maxWidth: "300px" }} title={j.last_error || ''}>
+                    <td className="caption data sn-truncate" style={{ maxWidth: "300px" }} title={j.last_error || ''}>
                       {j.last_error || <span className="sn-none">–</span>}
                     </td>
                     <td>
