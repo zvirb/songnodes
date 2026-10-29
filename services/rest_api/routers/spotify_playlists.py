@@ -91,7 +91,7 @@ async def get_current_user(access_token: str) -> Dict[str, Any]:
                     logger.error(f"Failed to get user profile: {error_text}")
                     raise HTTPException(
                         status_code=response.status,
-                        detail=f"Failed to authenticate with Spotify: {error_text[:200]}"
+                        detail="Failed to authenticate with Spotify"
                     )
     except aiohttp.ClientError as e:
         logger.error(f"Network error getting user profile: {str(e)}")
@@ -163,14 +163,14 @@ async def create_playlist(
                     logger.error(f"Spotify playlist creation failed: {error_text}")
                     raise HTTPException(
                         status_code=response.status,
-                        detail=f"Failed to create playlist: {error_text[:200]}"
+                        detail="Failed to create playlist"
                     )
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error creating Spotify playlist: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Playlist creation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Playlist creation failed")
 
 @router.get("/playlists/list", response_model=List[PlaylistResponse])
 async def list_playlists(
@@ -225,14 +225,14 @@ async def list_playlists(
                     logger.error(f"Failed to fetch playlists: {error_text}")
                     raise HTTPException(
                         status_code=response.status,
-                        detail=f"Failed to fetch playlists: {error_text[:200]}"
+                        detail="Failed to fetch playlists"
                     )
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error fetching playlists: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch playlists: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch playlists")
 
 @router.post("/playlists/{playlist_id}/tracks")
 async def add_tracks_to_playlist(
@@ -288,14 +288,14 @@ async def add_tracks_to_playlist(
                     logger.error(f"Failed to add tracks: {error_text}")
                     raise HTTPException(
                         status_code=response.status,
-                        detail=f"Failed to add tracks: {error_text[:200]}"
+                        detail="Failed to add tracks"
                     )
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error adding tracks to playlist: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to add tracks: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to add tracks")
 
 @router.post("/tracks/search", response_model=Optional[TrackResponse])
 async def search_track(
@@ -365,14 +365,14 @@ async def search_track(
                     logger.error(f"Track search failed: {error_text}")
                     raise HTTPException(
                         status_code=response.status,
-                        detail=f"Track search failed: {error_text[:200]}"
+                        detail="Track search failed"
                     )
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error searching for track: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Track search failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Track search failed")
 
 @router.post("/tracks/check-availability")
 async def check_track_availability(
@@ -400,4 +400,4 @@ async def check_track_availability(
 
     except Exception as e:
         logger.error(f"Error checking track availability: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Availability check failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Availability check failed")
