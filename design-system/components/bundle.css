@@ -1804,6 +1804,16 @@ html[data-motion="reduce"] .sn-autocomplete__popup { animation: none; }
 .sn-set-slot[data-locked] .sn-drag-handle { visibility: hidden; }
 @media (max-width: 767px) { .sn-set-slot-list--drag .sn-set-slot__n { padding-top: var(--space-1); } }
 
+/* ===== Attribution / Legal Notice (36) ===== */
+.sn-attribution, .sn-legal-notice {
+  text-align: center;
+  color: var(--fg-2);
+  padding: var(--space-3);
+  border-top: 1px solid var(--surface-2);
+  margin-top: var(--space-6);
+  margin-bottom: var(--space-4);
+}
+
 /* ===== Charts group (source/css/40-charts.css) =====
    ChartFrame · EnergyWave · ProgressBar · ProgressRing · Heatmap · CamelotWheel · GraphStyles · GraphControls · Sparkline · WaveformStrip
    Charts are inline SVG drawn at 1 user unit = 1 CSS px; marks take colour from tokens through these classes or style="--c: var(--chart-N)". */

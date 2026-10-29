@@ -8,6 +8,7 @@ Common rules:
 - Vertical rhythm between sections `space-8`; inside a section `space-4`.
 - One `h1` (the thin–bold title). Section headings `SectionHeading` (`h2`).
 - Loading uses `LoadingState` (skeletons shaped like the content), errors `ErrorState` in place of the failed region only, empty regions `EmptyState`.
+- **Attribution notice / Legal notice.** Third-party data licensing requirements (such as MusicBrainz CC BY-NC-SA 3.0) use `.sn-attribution` (or `.sn-legal-notice`). It renders centred secondary text (`--fg-2`) with `space-3` padding, `space-6` top margin, `space-4` bottom margin, and a top border in `--surface-2` without ad-hoc inline styles.
 
 ## HomePage (launcher)
 
