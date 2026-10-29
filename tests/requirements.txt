@@ -47,7 +47,7 @@ h11==0.16.0
 httpcore==1.0.9
 httpx==0.28.1
 hyperlink==21.0.0
-hypothesis==6.170.9
+hypothesis==6.170.10
 hypothesis-graphql==0.13.5
 hypothesis-jsonschema==0.23.1
 idna==3.20
@@ -103,7 +103,7 @@ Pygments==2.21.0
 pyOpenSSL==26.4.0
 pyrate-limiter==4.5.1
 pytest==9.1.1
-pytest-asyncio==1.4.0
+pytest-asyncio==1.4.1
 pytest-benchmark==5.3.0
 pytest-cov==7.1.0
 pytest-html==4.2.0
@@ -129,7 +129,7 @@ roundrobin==0.1.0
 rpds-py==2026.9.1
 ruamel.yaml==0.19.1
 ruamel.yaml.clib==0.2.15
-schemathesis==4.32.4
+schemathesis==4.32.5
 Scrapy==2.19.0
 service-identity==26.1.0
 setuptools==84.2.1
