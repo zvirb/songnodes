@@ -2,11 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 
 // Styles, in order (design-system/17-governance: tokens.css, then bundle.css, then app CSS).
-// 1. Legacy stylesheets, kept only until migration phase 6 removes them.
-import './styles/tokens.css';
-import './styles/globals.css';
-import './styles/global.css';
-// 2. The design system: single source of truth for every formatting and design decision.
+// 1. The design system: single source of truth for every formatting and design decision.
 import './styles/design-system/tokens.css';
 import './styles/design-system/bundle.css';
 // 3. Legacy variable names re-pointed at design-system tokens, then app-level layout.
