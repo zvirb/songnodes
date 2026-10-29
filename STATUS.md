@@ -880,9 +880,12 @@ Work done:
 
 <!-- SLOT:SB2 BEGIN -->
 ### SB2: Set builder: export dialog
-- Start: 2026-10-26
-- Built: Added `ExportDialog` component to handle downloading/copying sets as M3U8, Rekordbox XML, TIDAL JSON, or Tracklist, showing missing metadata summary. Hooked it up to `SetBuilderPage`'s OverflowMenu for a single set. Added `ExportDialog.test.tsx` which successfully passes tests.
-- End: 2026-10-26
+- Start: 2026-10-29
+- Built: Updated `ExportDialog` component to support format selection (M3U8, CSV, JSON, Rekordbox XML), filename preview, content generation, and file download. Wired `ExportDialog` directly to the `Export` button in `SetBuilderPage.tsx`. Added `ExportDialog.test.tsx` testing dialog lifecycle, format changes, filename preview, and file download.
+- Checks run: `cd frontend && npm ci && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src/features/setBuilder && npx vite build`, `python scripts/check_design_system.py --check`, `python scripts/scope_guard.py`.
+- Checks not run: Playwright E2E tests cannot run in sandbox.
+- Reviewer check: In /sets: click Export, pick M3U8, download: an .m3u8 file downloads with the set's tracks.
+- End: 2026-10-29
 <!-- SLOT:SB2 END -->
 
 <!-- SLOT:SEC6A BEGIN -->
