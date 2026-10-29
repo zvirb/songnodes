@@ -418,7 +418,7 @@ export function hashStringToColor(str: string): Color {
     const saturation = s / 100;
     const lightness = l / 100;
 
-    const hue2rgb = (p: number, q: number, t: number): number => {
+    const hueToChannel = (p: number, q: number, t: number): number => {
       if (t < 0) t += 1;
       if (t > 1) t -= 1;
       if (t < 1/6) return p + (q - p) * 6 * t;
@@ -434,9 +434,9 @@ export function hashStringToColor(str: string): Color {
     } else {
       const q = lightness < 0.5 ? lightness * (1 + saturation) : lightness + saturation - lightness * saturation;
       const p = 2 * lightness - q;
-      r = hue2rgb(p, q, hue + 1/3);
-      g = hue2rgb(p, q, hue);
-      b = hue2rgb(p, q, hue - 1/3);
+      r = hueToChannel(p, q, hue + 1/3);
+      g = hueToChannel(p, q, hue);
+      b = hueToChannel(p, q, hue - 1/3);
     }
 
     return {

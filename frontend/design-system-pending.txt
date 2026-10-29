@@ -32,6 +32,6 @@ frontend/src/styles/globals.css
 frontend/src/styles/tokens.css
 # migrated DS14: frontend/src/utils/attributions.test.ts
 # migrated DS14: frontend/src/utils/energyUtils.ts
-frontend/src/utils/graphHelpers.ts
+# migrated DS-MATH: frontend/src/utils/graphHelpers.ts
 # migrated DS14: frontend/src/utils/harmonicUtils.ts
 # migrated DS14: frontend/src/utils/moodVisualizerUtils.ts
