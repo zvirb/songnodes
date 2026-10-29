@@ -1,10 +1,8 @@
 /**
  * Music library data contract (Naarm Set Builder, ported from E:\musicLibrary\artifact).
  *
- * public/data/music-library.json is a copy of musicLibrary/outputs/artifact/library.json,
- * written by the weekly run (`python3 pipeline/run_weekly.py db`) and copied in with
- * scripts/sync-music-library.sh. Field names are the pipeline's compact keys; do not
- * rename them here, map them at the edge.
+ * Tracks are loaded from the REST API (/api/v1/library/search).
+ * Field names are the pipeline's compact keys; do not rename them here, map them at the edge.
  */
 import { DRAFT_KEY, lsGet, lsSet } from './storage';
 
@@ -112,34 +110,22 @@ export function loadLibrary(forceRefresh = false): Promise<LibraryFile> {
   }
   if (!cache) {
     cache = (async () => {
-      try {
-        const res = await fetch('/api/v1/library/search?limit=5000');
-        if (res.ok) {
-          /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-          const json = await res.json() as any[];
-          if (json.length > 0) {
-            const tracks = json.map(mapApiToLibraryTrack);
-            return {
-              generated: new Date().toISOString(),
-              ledger_updated: new Date().toISOString(),
-              counts: { tracks: tracks.length, pending: 0, rejected: 0, beatport_check: 0 },
-              sources: [],
-              runs: [],
-              tracks,
-              _source: 'backend' as const
-            };
-          }
-        }
-      } catch (e) {
-        console.warn('API library search error, falling back to static JSON', e);
+      const res = await fetch('/api/v1/library/search?limit=5000');
+      if (!res.ok) {
+        throw new Error(`Library search failed with status ${res.status}`);
       }
-
-      const r = await fetch('/data/music-library.json', { cache: 'no-cache' });
-      if (!r.ok) throw new Error(`Library file returned ${r.status}`);
-      /* eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-type-assertion */
-      const data = await r.json() as LibraryFile;
-      data._source = 'library-fixture';
-      return data;
+      /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+      const json = await res.json() as any[];
+      const tracks = Array.isArray(json) ? json.map(mapApiToLibraryTrack) : [];
+      return {
+        generated: new Date().toISOString(),
+        ledger_updated: new Date().toISOString(),
+        counts: { tracks: tracks.length, pending: 0, rejected: 0, beatport_check: 0 },
+        sources: [],
+        runs: [],
+        tracks,
+        _source: 'backend' as const,
+      };
     })().catch((err) => {
       cache = null;
       throw err;

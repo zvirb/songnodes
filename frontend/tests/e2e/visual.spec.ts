@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'url';
 import type { Page } from '@playwright/test';
 import { test, expect, openRoute } from './fixtures';
+import { useLibraryFixture } from './libraryApi';
 
 const stylePath = fileURLToPath(new URL('./visual.css', import.meta.url));
 
@@ -43,6 +44,7 @@ for (const theme of ['dark', 'light'] as const) {
           try { localStorage.setItem('sn-theme', t); } catch { /* storage blocked */ }
         }, theme);
         await page.setViewportSize({ width, height });
+        await useLibraryFixture(page);
         if (name === 'pipeline') await stubEmptyPipeline(page);
         await openRoute(page, route);
         await page.evaluate(() => document.fonts.ready);
@@ -60,6 +62,7 @@ for (const theme of ['dark', 'light'] as const) {
         try { localStorage.setItem('sn-theme', t); } catch { /* storage blocked */ }
       }, theme);
       await page.setViewportSize({ width, height });
+      await useLibraryFixture(page);
       await openRoute(page, '/');
       await page.getByRole('button', { name: 'Open navigation' }).click();
       await expect(page.getByRole('dialog', { name: 'Site navigation' })).toBeVisible();

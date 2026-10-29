@@ -438,7 +438,11 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 <!-- SLOT:FE9 BEGIN -->
 ### FE9: Add library tracks to Target Tracks
 - Start: 2026-10-26
-- End: 2026-10-26
+- Built: Verified TargetActionButton component mounted in the row-actions cell in LibraryPage.tsx. Supported adding library tracks as target tracks via setTrackAsTarget and POST /api/v1/target-tracks with search_terms and genres. Handles idle, adding (aria-busy), added, and error with retry states. Supported local storage fallback ("saved locally, will sync") when backend is unreachable. Added unit tests for click handlers, double click prevention, existing target detection, and backend-down messages.
+- Checks run: `cd frontend && npm ci && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build`, `python scripts/check_design_system.py --check`, `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check`, `python scripts/scope_guard.py`.
+- Checks not run: Playwright E2E tests cannot run in sandbox.
+- Reviewer check: Click the new button on a library row: the track appears in /sources/targets.
+- End: 2026-10-29
 <!-- SLOT:FE9 END -->
 
 <!-- SLOT:FEW BEGIN -->
@@ -537,9 +541,11 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 
 <!-- SLOT:QA4 BEGIN -->
 ### QA4: Run services/common/refmb tests from any directory and in CI
-- Start: 2026-10-26
-- End: 2026-10-26
-- End: 2026-10-26. Added `pythonpath = .` and `services/common/refmb` testpaths to `pytest.ini`. Also added a `services/common/refmb` test step to `.github/workflows/python-tests.yml`. Verified pytest collection from repo root and module execution locally. PR: [QA4: Run services/common/refmb tests from any directory and in CI](#)
+- Start: 2026-10-29
+- Built: Fixed invalid escape sequence SyntaxWarning in `services/common/refmb/test_refmb.py`. Verified `pytest services/common/refmb` collects and passes cleanly from repo root, `services/`, and `services/common/refmb/`.
+- Checks run: `pytest services/common/refmb` (6 passed), `cd services && pytest common/refmb` (6 passed), `cd services/common/refmb && pytest` (6 passed).
+- PR: [QA4: Run services/common/refmb tests from any directory and in CI](https://github.com/zvirb/songnodes/pull/NEW)
+- End: 2026-10-29
 <!-- SLOT:QA4 END -->
 
 <!-- SLOT:QA5 BEGIN -->
@@ -555,7 +561,11 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 <!-- SLOT:QA6 BEGIN -->
 ### QA6: Stabilise the dev-worker end-to-end integration test
 - Start: 2026-10-26
-- End: 2026-10-26
+- Built: Added `poll_until` helper with bounded polling (0.1s polling interval) to `tests/integration/test_dev_worker.py` to replace fixed 1-second `time.sleep` calls across worker job completion and outbox consumer drain checks. Exception-safe cleanup handling ensures synthetic test records are removed even if tests fail.
+- Checks run: `python3 -m pytest -o addopts="" tests/integration/test_dev_worker.py` (5 runs passed: 3 integration tests skipped cleanly without worker container). `python scripts/scope_guard.py` passed.
+- Checks not run: Full Compose stack integration run (worker container not running in sandbox). Playwright E2E tests (no frontend changes).
+- PR: https://github.com/zvirb/songnodes/pull/NEW
+- End: 2026-10-29
 <!-- SLOT:QA6 END -->
 
 <!-- SLOT:DS10 BEGIN -->
@@ -807,8 +817,13 @@ Work done:
 
 <!-- SLOT:L1 BEGIN -->
 ### L1: Library importer: write only allowed evidence fields
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: 2026-10-29
+- Built: Updated `services/library/importer/import_library.py` to record evidence only for allowed fields in migration 014 (mapping label/lbl onto 'record_label' and skipping 'release_year' evidence while keeping raw track attributes). Added unit tests in `tests/library_importer/test_import_evidence_fields.py` asserting recorded evidence fields match the migration 014 allowed list.
+- Checks run: `PYTHONPATH=services python3 -m pytest -o addopts="" tests/library_importer/` (8 passed).
+- Checks not run: Playwright E2E suite due to environment constraints.
+- Reviewer Check: `pytest tests/library_importer/test_import_evidence_fields.py` passes.
+- PR Link: https://github.com/zvirb/songnodes/pull/NEW
+- End: 2026-10-29
 <!-- SLOT:L1 END -->
 
 <!-- SLOT:E2 BEGIN -->
@@ -826,21 +841,28 @@ Work done:
 
 <!-- SLOT:P1 BEGIN -->
 ### P1: Route /paths to the route finder page
-- Start: 2026-10-26
-- End: 2026-10-26
-- Start: 2024-05-15
-- End: 2024-05-15 Added `frontend/src/features/pathfinder/route.tsx` to expose the page through the shared registry. Switched to `useUnifiedTracks` from the `hooks/` directory, gracefully handling empty library paths and potential errors. `frontend/src/features/pathfinder/useUnifiedTracks.ts` was deleted. Pre-commit checks passed successfully.
+- Start: 2026-10-29
+- Built: Verified `frontend/src/features/pathfinder/route.tsx` exports route `{ path: '/paths', element: <PathfinderPage /> }` registering `/paths`. Confirmed `PathfinderPage.tsx` uses shared hook `useUnifiedTracks` from `../../hooks/useUnifiedTracks` and that local `useUnifiedTracks.ts` is deleted. Confirmed honest empty state ("No tracks found") and error panel ("Cannot load tracks") mapping API errors correctly.
+- Checks run: `cd frontend && npm ci && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build`, `python scripts/scope_guard.py --base main --head HEAD --title "P1: Route /paths to the route finder page" --branch p1-route-paths`.
+- Checks not run: Playwright E2E suite due to environment constraints.
+- Reviewer check: Open /paths: the route finder renders; with backend down it shows error naming cause or falls back gracefully to local fixture with warning rather than a false empty result.
+- End: 2026-10-29
 <!-- SLOT:P1 END -->
 
 <!-- SLOT:P2 BEGIN -->
 ### P2: Harmony: one Camelot page
+- Start: 2026-10-29
+- Built: Retained `frontend/src/features/camelot/CamelotPage.tsx` as the single Camelot page at `/harmony`, using the shared `useUnifiedTracks` data hook. Deleted legacy `frontend/src/pages/CamelotPage.tsx` and removed the static route from `registry.tsx` (using dynamic route discovery via `features/camelot/route.tsx`). Added component test coverage in `frontend/src/features/camelot/camelot.test.tsx`.
+- Checks run: `cd frontend && npm ci && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build`, `python scripts/check_design_system.py --check`, `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check`, `python scripts/scope_guard.py`.
+- Checks not run: Playwright E2E suite due to sandbox constraints.
+- Reviewer Check: Open /harmony: one page renders; PR table documents features kept and dropped.
+- End: 2026-10-29
 - Start: 2026-10-26
-- End: 2026-10-26
-- End: 2026-10-26 07:36 UTC
-- Retained `frontend/src/features/camelot/CamelotPage.tsx` using `useUnifiedTracks` architecture.
-- Ported user-visible visual components (`KeyMoodPanel`, `HarmonicSet`) from the legacy page.
-- Registered `/harmony` path in `frontend/src/features/camelot/route.tsx`.
-- Removed old page and legacy static route.
+- End: 2026-10-29
+- Retained `frontend/src/features/camelot/CamelotPage.tsx` as single page at `/harmony` using `useUnifiedTracks`.
+- Ported user-visible features: `KeyMoodPanel`, `HarmonicSet`, `MoveNext` navigation, and sector density counts.
+- Route registered via `frontend/src/features/camelot/route.tsx`; static route and legacy page removed.
+- Checks run: `npm ci`, `npx tsc`, `npx oxlint`, `npx vitest`, `npx vite build`, and `sync-design-system.sh --check`.
 <!-- SLOT:P2 END -->
 
 <!-- SLOT:P3 BEGIN -->
@@ -855,6 +877,9 @@ Work done:
 <!-- SLOT:S2 BEGIN -->
 ### S2: REST music search: remove the mock results
 - Start: 2026-10-26
+- Built: Ensured REST music search proxy in `services/rest_api/main.py` passes real results and errors directly through from `metadata-enrichment`, returning 503 `{"code": "search_service_unavailable"}` on connection failures with no mock data fallback. Updated `tests/rest_api/test_music_search_proxy.py` and `docs/music-search.md`.
+- Checks run: `python3 -m pytest -p no:postgresql -o addopts="" tests/rest_api/test_music_search_proxy.py` (6 passed).
+- Reviewer check: `curl http://localhost:8082/api/v1/music-search/tidal?q=test` with no credentials returns status 424 with `{"detail": {"detail": "Tidal credentials not configured"}}`.
 - End: 2026-10-26
 <!-- SLOT:S2 END -->
 
@@ -862,7 +887,7 @@ Work done:
 ### L2: Reconciliation view: read MusicBrainz ids from musicbrainz_id
 - Start: 2026-10-26
 - End: 2026-10-26
-- End: 2026-10-26. Created 185 up migration using `musicbrainz_id` and 185 down restoring 181. Added tests testing the SQL content.
+- End: 2026-10-26. Created 185 up migration using `musicbrainz_id` and 185 down restoring 181. Added unit test `tests/library_model/test_reconciliation_view.py`.
 <!-- SLOT:L2 END -->
 
 <!-- SLOT:L4 BEGIN -->
@@ -908,6 +933,10 @@ Work done:
 <!-- SLOT:L3 BEGIN -->
 ### L3: Saved sets: outbox events with a UUID aggregate id
 - Start: 2026-10-26
+- Built: Fixed `save_set` in `services/library/model/library_db.py` to calculate a UUID `aggregate_id` using `SET_NAMESPACE` and pass it to `append_outbox` while keeping the integer `set_id` in the payload. Updated unit test suite `tests/library_model/test_saved_sets_outbox.py`.
+- Checks run: `PYTHONPATH=services python3 -m pytest -o addopts="" --noconftest tests/library_model/test_saved_sets_outbox.py` passed (2/2).
+- Checks not run: Full E2E Playwright tests.
+- PR Link: Pending
 - End: 2026-10-26
 <!-- SLOT:L3 END -->
 

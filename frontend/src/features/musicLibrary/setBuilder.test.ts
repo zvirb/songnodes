@@ -1,5 +1,5 @@
 /**
- * Set builder rules, checked against the real library fixture (public/data/music-library.json).
+ * Set builder rules, checked against the real library fixture (tests/e2e/data/library.fixture.json).
  * The rules are the Naarm Set Builder's: tiers 1–4 / 5–7 / 8–10, climbs of +1 with plateaus,
  * 2–3 point drops after a peak, locks survive rebuilds, a given seed always builds the same set.
  */
@@ -13,7 +13,7 @@ import {
   sortTracks, sourceName, spares, tierOf, waveIssues, addTrack, moveSlot, type Draft,
 } from './setBuilder';
 
-const lib = JSON.parse(readFileSync(resolve(__dirname, '../../../public/data/music-library.json'), 'utf8')) as LibraryFile;
+const lib = JSON.parse(readFileSync(resolve(__dirname, '../../../tests/e2e/data/library.fixture.json'), 'utf8')) as LibraryFile;
 const TRACKS = lib.tracks;
 const BYID = byIdOf(TRACKS);
 const draft = (over: Partial<Draft> = {}): Draft => ({ ...blankDraft(), ...over });

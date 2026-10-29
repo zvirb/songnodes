@@ -58,7 +58,7 @@ def test_ddl_matches_inventory():
                 cols = row['columns_in_order'].split()
 
                 # Find the create table block
-                match = re.search(f"CREATE TABLE ref_mb.{table_name} \((.*?)\);", ddl_content, re.DOTALL)
+                match = re.search(rf"CREATE TABLE ref_mb\.{table_name} \((.*?)\);", ddl_content, re.DOTALL)
                 assert match, f"Table {table_name} not found in DDL"
 
                 # Extract columns from DDL block
