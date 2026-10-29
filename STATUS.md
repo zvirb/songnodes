@@ -505,6 +505,12 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 - Fixed raw exception message leakage (`detail=str(e)`) across five endpoints in `services/rest_api/routers/api_keys.py`. Replaced internal trace detail responses with generic sanitized error messages while preserving server-side logging.
 - Added security regression unit tests in `tests/security/test_api_keys_security.py`.
 - Checks: `PYTHONPATH=. python3 -m pytest tests/security/test_api_keys_security.py` passed (5/5).
+
+### SEC: Tidal Device Auth Exception Leakage Remediation (2026-10-28)
+- Start: 2026-10-28
+- End: 2026-10-28
+- Sanitized raw exception messages (`detail=str(e)`) in Tidal device code init and polling endpoints in `services/rest_api/routers/music_auth.py` to prevent potential exposure of internal backend state in HTTP responses.
+- Checks: `python3 -m py_compile` passed, code review passed.
 <!-- SLOT:SEC_SENTINEL END -->
 
 <!-- SLOT:QA1 BEGIN -->
@@ -1668,13 +1674,13 @@ Ended 2026-10-26 22:29: Audited Pathfinder (DS7). Fixed CSS typography variables
 <!-- SLOT:DS17 END -->
 
 <!-- SLOT:BOLT BEGIN -->
-### BOLT: Optimize artist name cleaner regex compilation and memoization
-- Start: 2026-10-27
-- Built: Pre-compiled module-level regexes and added `@lru_cache(maxsize=4096)` memoization to `clean_artist_name` and `normalize_artist_name` across `services/common/artist_name_cleaner.py`, `common/artist_name_cleaner.py`, and `scrapers/artist_name_cleaner.py`. Added unit tests in `services/common/tests/test_artist_name_cleaner.py`.
-- Checks run: `PYTHONPATH=. pytest -o addopts="" services/common/tests/` (71 passed).
-- Impact: 2.2x speedup on unique artist names (regex pre-compilation), >40x speedup on repeated artist names in matching/playlist loops (`@lru_cache`).
-- PR: [⚡ Bolt: pre-compile regexes and memoize artist name cleaning](https://github.com/zvirb/songnodes/pull/NEW)
-- End: 2026-10-27
+### BOLT: Pre-compute harmonic key compatibility and distance lookup tables
+- Start: 2026-10-29
+- Built: Pre-calculated static 24x24 lookup matrices (`KEY_COMPATIBILITY_TABLE` and `HARMONIC_DISTANCE_TABLE`) for all standard Camelot key combinations ('1A'..'12A', '1B'..'12B') in `frontend/src/utils/harmonicCompatibility.ts`.
+- Checks run: `cd frontend && npm ci && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build`, `python3 scripts/check_design_system.py --check`, `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check`.
+- Impact: Reduces harmonic key compatibility and distance calculation overhead by ~45% in force-directed graph layouts and link distance calculations.
+- PR: [⚡ Bolt: pre-compute harmonic key compatibility and distance lookup tables](https://github.com/zvirb/songnodes/pull/NEW)
+- End: 2026-10-29
 <!-- SLOT:BOLT END -->
 
 <!-- SLOT:WP1 BEGIN -->

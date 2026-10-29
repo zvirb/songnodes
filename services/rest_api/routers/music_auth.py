@@ -990,8 +990,8 @@ async def init_tidal_device_flow(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Device code flow init failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Device code flow init failed: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Device code authorization initialization failed")
 
 @router.post("/tidal/device/poll")
 async def poll_tidal_device_token(device_code: str = Query(...)):
@@ -1065,8 +1065,8 @@ async def poll_tidal_device_token(device_code: str = Query(...)):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Device token polling failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Device token polling failed: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Device token polling failed")
 
 # ===========================================
 # TIDAL OAUTH AUTHORIZATION CODE FLOW
