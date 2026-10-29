@@ -115,6 +115,7 @@ class EnhancedTrackItem(scrapy.Item):
     # Context from scrapers
     track_type = scrapy.Field()  # "Setlist", "Playlist", "Album", etc.
     source_context = scrapy.Field()  # Which playlist/setlist it came from
+    source_url = scrapy.Field()  # Source URL where track was scraped
     position_in_source = scrapy.Field()  # Track order
     start_time = scrapy.Field()  # Timestamp in mix/set
     end_time = scrapy.Field()

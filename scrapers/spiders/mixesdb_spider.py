@@ -548,10 +548,8 @@ class MixesdbSpider(scrapy.Spider):
                     yield playlist_item
 
             for track_info in tracks_data:
-                # CRITICAL FIX: Do NOT yield EnhancedTrackItem for Bronze layer
-                # Bronze layer persistence happens via EnhancedSetlistTrackItem (playlist_track routing)
-                # EnhancedTrackItem is for Silver layer (enrichment pipeline)
-                # yield EnhancedTrackItem(**track_info['track'])  # REMOVED
+                # Yield EnhancedTrackItem with source_url set from response.url
+                yield EnhancedTrackItem(**track_info['track'])
 
                 # Yield relationships (for Silver layer)
                 for relationship in track_info['relationships']:
@@ -769,41 +767,45 @@ class MixesdbSpider(scrapy.Spider):
         # AS ADDITIONAL FALLBACKS instead of replacing existing ones. Different pages on the same
         # domain may use different HTML structures (e.g., older vs newer MediaWiki versions).
         # Removing working patterns can silently break scraping for subsets of pages.
-        tracklist_heading = response.xpath('//h2[contains(., "Tracklist")]').get()
-        self.logger.info(f"🔍 [DEBUG] Tracklist heading found: {bool(tracklist_heading)}")
+        # Multi-block tracklist extraction: collect all <ol> elements between Tracklist header and next section header
+        from bs4 import BeautifulSoup
+        from scrapy import Selector
+        soup = BeautifulSoup(response.text, 'html.parser')
+        heading_el = soup.find(lambda el: el.name in ['h2', 'h3'] and 'tracklist' in el.get_text().lower())
         track_elements = []
 
-        if tracklist_heading:
-            # Pattern 1 (Primary): Collect all <ol> elements between the Tracklist <h2> and the next <h2>
-            # We must be careful not to grab lists that appear after the NEXT <h2> element.
-            track_elements = response.xpath('//h2[contains(., "Tracklist")]/following-sibling::*[preceding-sibling::h2[1][contains(., "Tracklist")]]/descendant-or-self::ol/li')
-            self.logger.info(f"🔍 Attempting XPath pattern 1 (all ol until next h2): Found {len(track_elements)} elements")
+        if heading_el:
+            self.logger.info(f"🔍 [DEBUG] Tracklist heading found: {heading_el.get_text(strip=True)}")
+            curr = heading_el.parent if heading_el.parent and heading_el.parent.name == 'div' and any(
+                'mw-heading' in c for c in (heading_el.parent.get('class') or [])
+            ) else heading_el
 
-            if not track_elements:
-                # Pattern 1a (Fallback): Direct sibling <ol> (most common structure)
-                track_elements = response.xpath('//h2[contains(., "Tracklist")]/following-sibling::ol[1]/li')
-                self.logger.info(f"🔍 Attempting XPath pattern 1a (direct sibling ol): Found {len(track_elements)} elements")
+            curr = curr.next_sibling
+            while curr:
+                if getattr(curr, 'name', None):
+                    classes = curr.get('class') or []
+                    is_next_header = curr.name in ['h2', 'h3'] or (
+                        curr.name == 'div' and any('mw-heading' in c for c in classes)
+                    )
+                    if is_next_header:
+                        self.logger.debug(f"Reached next section header: {curr.get_text(strip=True)[:50]}")
+                        break
 
-            if not track_elements:
-                # Pattern 2 (Fallback): Using following axis to catch ol after any intervening elements
-                # This handles cases where there might be <p>, <div>, or other elements between h2 and ol
-                track_elements = response.xpath('//h2[contains(., "Tracklist")]/following::ol[1]/li')
-                self.logger.info(f"🔍 Attempting XPath pattern 2 (following ol): Found {len(track_elements)} elements")
+                    if curr.name == 'ol':
+                        for li in curr.find_all('li', recursive=False):
+                            track_elements.append(Selector(text=str(li)))
+                    elif hasattr(curr, 'find_all'):
+                        for sub_ol in curr.find_all('ol'):
+                            for li in sub_ol.find_all('li', recursive=False):
+                                track_elements.append(Selector(text=str(li)))
+                curr = curr.next_sibling
 
-            if not track_elements:
-                # Pattern 3 (Fallback): Modern MediaWiki with data-testid attributes (newer structure)
-                track_elements = response.xpath('//h2[contains(., "Tracklist")]/following::div[@data-testid="playlist-track-list"][1]//li')
-                self.logger.info(f"🔍 Attempting XPath pattern 3 (data-testid): Found {len(track_elements)} elements")
-
-            if not track_elements:
-                # Pattern 4 (Fallback): Older div.list wrapper structure
-                track_elements = response.xpath('//h2[contains(., "Tracklist")]/following::div[@class="list"][1]//ol/li')
-                self.logger.info(f"🔍 Attempting XPath pattern 4 (div.list): Found {len(track_elements)} elements")
+            self.logger.info(f"🔍 Collected {len(track_elements)} track elements across all <ol> blocks before next header")
         else:
             self.logger.warning(f"🔍 [DEBUG] No Tracklist heading found on page!")
 
         if not track_elements:
-            # Final fallback: try finding any <ol> or <ul> with tracks, or div.list-track elements
+            # Fallback: CSS selector based extraction
             track_elements = response.css('ol li, ul.tracklist li, div.tracklist-section ul li, div.list-track')
             self.logger.info(f"🔍 [DEBUG] CSS fallback pattern (includes div.list-track): {len(track_elements)} elements")
 
@@ -889,9 +891,9 @@ class MixesdbSpider(scrapy.Spider):
                     'start_time': start_time,
                     'track_type': 'Mix',
                     'source_context': track_string,
+                    'source_url': response.url,
                     'position_in_source': len(tracks_data) + 1,
                     'remix_type': remix_type,
-                    # Note: source_url removed - stored in external_urls instead (EnhancedTrackItem doesn't support it)
                     'metadata': json.dumps({
                         'original_string': track_string,
                         'extraction_source': 'mixesdb',

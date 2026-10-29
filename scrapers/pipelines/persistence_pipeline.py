@@ -1716,9 +1716,19 @@ class PersistencePipeline:
             # 2. Run final batch flush directly on the event loop
             if self._persistent_loop and not self._persistent_loop.is_closed():
                 if self.connection_pool:
+                    def _run_coro_safely(coro):
+                        try:
+                            return self._persistent_loop.run_until_complete(coro)
+                        except RuntimeError:
+                            # If another event loop is running on this thread (e.g. Scrapy's reactor loop),
+                            # run_until_complete cannot be called directly on this thread. Run in a one-off thread.
+                            import concurrent.futures
+                            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+                                return ex.submit(lambda: self._persistent_loop.run_until_complete(coro)).result()
+
                     try:
                         self.logger.info("Flushing remaining batches in persistent event loop...")
-                        self._persistent_loop.run_until_complete(self.flush_all_batches())
+                        _run_coro_safely(self.flush_all_batches())
                         self.logger.info("✓ All batches flushed successfully")
                     except Exception as e:
                         self.logger.error(f"❌ Error during final flush: {e}")
@@ -1726,7 +1736,7 @@ class PersistencePipeline:
                     # 3. Safely close asyncpg connection pool on loop
                     try:
                         self.logger.info("Closing database connection pool...")
-                        self._persistent_loop.run_until_complete(self.connection_pool.close())
+                        _run_coro_safely(self.connection_pool.close())
                         self.logger.info("✓ Database connection pool closed successfully")
                     except Exception as e:
                         self.logger.error(f"Error closing connection pool: {e}")
