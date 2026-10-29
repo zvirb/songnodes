@@ -4,10 +4,9 @@
  */
 
 import { type ClassValue, clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
 
 /**
- * Merge Tailwind CSS classes with proper precedence
+ * Merge class names
  *
  * Reduces cognitive friction by:
  * - Eliminating class conflict bugs
@@ -18,7 +17,7 @@ import { twMerge } from 'tailwind-merge';
  * cn('px-2 py-1', isActive && 'bg-primary', className)
  */
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+  return clsx(inputs);
 }
 
 /**
