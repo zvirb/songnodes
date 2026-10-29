@@ -555,8 +555,8 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 <!-- SLOT:QA6 BEGIN -->
 ### QA6: Stabilise the dev-worker end-to-end integration test
 - Start: 2026-10-26
-- Built: Created `tests/integration/test_worker_e2e.py` with `poll_until` polling retry loops (interval 0.1s up to 10s) instead of fixed delays. Added spawned job tracking and cleanup handlers to delete synthetic test tasks and database records on test completion or failure.
-- Checks run: `python3 -m pytest -o addopts="" tests/integration/test_worker_e2e.py` (5 runs passed: 2 unit tests passed, 3 integration tests skipped cleanly without worker container). `python3 -m pytest -o addopts="" tests/scope_guard/test_scope_guard.py` passed.
+- Built: Added `poll_until` helper with bounded polling (0.1s polling interval) to `tests/integration/test_dev_worker.py` to replace fixed 1-second `time.sleep` calls across worker job completion and outbox consumer drain checks. Exception-safe cleanup handling ensures synthetic test records are removed even if tests fail.
+- Checks run: `python3 -m pytest -o addopts="" tests/integration/test_dev_worker.py` (5 runs passed: 3 integration tests skipped cleanly without worker container). `python scripts/scope_guard.py` passed.
 - Checks not run: Full Compose stack integration run (worker container not running in sandbox). Playwright E2E tests (no frontend changes).
 - PR: https://github.com/zvirb/songnodes/pull/NEW
 - End: 2026-10-29
