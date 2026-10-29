@@ -2,7 +2,7 @@
 # The conformance job in .github/workflows/design-system.yml scans every other file in frontend/src.
 # When a file is migrated or deleted, comment its line out as `# migrated <CODE>: <path>` (keeps the record); never add one.
 # Any package that changes a listed file may comment out that file's line (scripts/scope_guard.py allows exactly this).
-frontend/src/components/AdvancedSearch.tsx
+# migrated DS-CLEANUP: frontend/src/components/AdvancedSearch.tsx
 # migrated DS2A: frontend/src/components/ArtistAttributionManager.css
 # migrated DS11: frontend/src/components/Attributions.tsx
 # migrated DS2A: frontend/src/components/DJInterface.graph.css
@@ -14,13 +14,13 @@ frontend/src/components/AdvancedSearch.tsx
 # migrated DS2A: frontend/src/components/IntelligentBrowser/IntelligentBrowser.module.css
 # migrated DS2B: frontend/src/components/MobileTrackExplorer.css
 # migrated DS6: frontend/src/components/MoodVisualizer.css
-frontend/src/components/MultiSelect.tsx
+# migrated DS-CLEANUP: frontend/src/components/MultiSelect.tsx
 # migrated DS10: frontend/src/components/OAuthCallback.tsx
 # migrated: frontend/src/components/PathBuilder.tsx
 # migrated DS2B: frontend/src/components/QuickSearch.tsx
-frontend/src/components/RadialMenu.tsx
+# migrated DS-CLEANUP: frontend/src/components/RadialMenu.tsx
 # migrated DS12: frontend/src/components/SetlistBuilder/AnalyticsPanel.tsx
-frontend/src/components/SmartTooltip.tsx
+# migrated DS-CLEANUP: frontend/src/components/SmartTooltip.tsx
 # migrated: frontend/src/components/TrackSearch.tsx
 # migrated DS2B: frontend/src/components/TracklistImporter.css
 # migrated DS14: frontend/src/examples/spatialIndexUsage.example.tsx
