@@ -27,9 +27,9 @@ frontend/src/components/SmartTooltip.tsx
 # migrated DS4: frontend/src/features/musicLibrary/SetBuilderPage.tsx
 # migrated DS14: frontend/src/hooks/useToast.tsx
 # migrated DS8: frontend/src/pages/ScraperProgressPage.tsx
-frontend/src/styles/global.css
-frontend/src/styles/globals.css
-frontend/src/styles/tokens.css
+# migrated DS-STYLES: frontend/src/styles/global.css
+# migrated DS-STYLES: frontend/src/styles/globals.css
+# migrated DS-STYLES: frontend/src/styles/tokens.css
 # migrated DS14: frontend/src/utils/attributions.test.ts
 # migrated DS14: frontend/src/utils/energyUtils.ts
 frontend/src/utils/graphHelpers.ts

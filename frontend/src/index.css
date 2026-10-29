@@ -10,14 +10,6 @@
  * 4. Legacy global.css (for backward compatibility)
  */
 
-/* Import design tokens FIRST */
-@import './styles/tokens.css';
-
-/* Import global styles */
-@import './styles/globals.css';
-
-/* Legacy global.css for backward compatibility */
-@import './styles/global.css';
 
 /* ============================================
    BASE OVERRIDES
