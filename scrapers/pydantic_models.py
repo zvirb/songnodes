@@ -238,6 +238,7 @@ class TrackBase(BaseModel):
     track_type: Optional[str] = None
     source_context: Optional[str] = None
     position_in_source: Optional[conint(ge=0)] = None
+    source_url: Optional[str] = None
 
     # System fields
     data_source: DataSource
