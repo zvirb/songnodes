@@ -12,6 +12,8 @@ This service processes audio tracks to extract:
 import os
 import logging
 import asyncio
+import tempfile
+from urllib.parse import urlparse, urlunparse
 from datetime import datetime
 from typing import Dict, Any, Optional
 from contextlib import asynccontextmanager
@@ -30,6 +32,7 @@ from analysis_modules.breakdown_detector import BreakdownDetector
 from analysis_modules.beat_grid_analyzer import BeatGridAnalyzer
 from analysis_modules.audio_fetcher import AudioFetcher
 from analysis_modules.advanced_features import analyze_advanced_features
+from analysis_modules import key_bpm
 
 # Configure logging
 logging.basicConfig(
@@ -105,9 +108,12 @@ async def lifespan(app: FastAPI):
     except NameError:
         logger.warning("⚠️ Secrets manager not available - skipping validation")
 
-    # Initialize database connection pool
+    # Initialize database connection pool. Optional: POST /analyze-url needs neither the database nor RabbitMQ,
+    # so the service starts (and stays healthy) without them; the queue consumer and /analyze need both.
     database_url = os.getenv('DATABASE_URL')
     try:
+        if not database_url:
+            raise RuntimeError('DATABASE_URL is not set')
         # Memory leak prevention per CLAUDE.md Section 5.3.1:
         # - max_queries: Recycle connections after 50,000 queries (equivalent to SQLAlchemy pool_recycle)
         # - max_inactive_connection_lifetime: Close idle connections after 30 minutes
@@ -130,8 +136,8 @@ async def lifespan(app: FastAPI):
             logger.info("✅ Resource monitor initialized")
 
     except Exception as e:
-        logger.error(f"Failed to create database pool: {e}")
-        raise
+        db_pool = None
+        logger.warning(f"Database unavailable, continuing without it: {e}")
 
     # Initialize RabbitMQ - use secrets_manager if available
     try:
@@ -149,9 +155,11 @@ async def lifespan(app: FastAPI):
         logger.warning("⚠️ Using fallback RabbitMQ config from environment")
 
     try:
-        rabbitmq_connection = await aio_pika.connect_robust(
+        if not rabbitmq_pass:
+            raise RuntimeError('RabbitMQ credentials are not set')
+        rabbitmq_connection = await asyncio.wait_for(aio_pika.connect_robust(
             f"amqp://{rabbitmq_user}:{rabbitmq_pass}@{rabbitmq_host}:{rabbitmq_port}/musicdb"
-        )
+        ), timeout=15)
         rabbitmq_channel = await rabbitmq_connection.channel()
         await rabbitmq_channel.set_qos(prefetch_count=1)
 
@@ -166,8 +174,8 @@ async def lifespan(app: FastAPI):
         asyncio.create_task(consume_analysis_requests(queue))
 
     except Exception as e:
-        logger.error(f"Failed to connect to RabbitMQ: {e}")
-        raise
+        rabbitmq_connection = rabbitmq_channel = None
+        logger.warning(f"RabbitMQ unavailable, queue consumer not started: {e}")
 
     yield
 
@@ -245,7 +253,9 @@ async def health_check():
                 health["status"] = "degraded"
 
         # Check RabbitMQ
-        if rabbitmq_connection and not rabbitmq_connection.is_closed:
+        if rabbitmq_connection is None:
+            health["rabbitmq"] = "not connected (queue consumer off; /analyze-url works without it)"
+        elif not rabbitmq_connection.is_closed:
             health["rabbitmq"] = "healthy"
         else:
             health["rabbitmq"] = "unhealthy"
@@ -283,6 +293,101 @@ async def health_check():
 async def metrics():
     """Prometheus metrics endpoint"""
     return Response(content=generate_latest(), media_type="text/plain")
+
+
+# POST /analyze-url (AA2): key and BPM of a short clip at a URL (a Deezer preview). The clip lives only in a
+# temporary file for the length of the request.
+ANALYZE_URL_MAX_BYTES = int(os.getenv('ANALYZE_URL_MAX_BYTES', str(5 * 1024 * 1024)))
+ANALYZE_URL_TIMEOUT_SECONDS = float(os.getenv('ANALYZE_URL_TIMEOUT_SECONDS', '20'))
+# The only hosts the service downloads from: Deezer's preview CDN. Fixed in code (no environment override), and
+# the request URL is rebuilt on the matched constant host, so a caller cannot point the service anywhere else.
+PREVIEW_HOSTS = (
+    'cdnt-preview.dzcdn.net',
+    'cdns-preview-0.dzcdn.net', 'cdns-preview-1.dzcdn.net', 'cdns-preview-2.dzcdn.net', 'cdns-preview-3.dzcdn.net',
+    'cdns-preview-4.dzcdn.net', 'cdns-preview-5.dzcdn.net', 'cdns-preview-6.dzcdn.net', 'cdns-preview-7.dzcdn.net',
+    'cdns-preview-8.dzcdn.net', 'cdns-preview-9.dzcdn.net', 'cdns-preview-a.dzcdn.net', 'cdns-preview-b.dzcdn.net',
+    'cdns-preview-c.dzcdn.net', 'cdns-preview-d.dzcdn.net', 'cdns-preview-e.dzcdn.net', 'cdns-preview-f.dzcdn.net',
+)
+AUDIO_SUFFIXES = {'audio/mpeg': '.mp3', 'audio/mp3': '.mp3', 'audio/mp4': '.m4a', 'audio/aac': '.aac',
+                  'audio/ogg': '.ogg', 'audio/flac': '.flac', 'audio/wav': '.wav', 'audio/x-wav': '.wav'}
+
+
+class AnalyzeUrlRequest(BaseModel):
+    url: str = Field(..., description="http(s) URL of a short audio clip")
+
+
+def analyze_url_client() -> httpx.AsyncClient:
+    """Separate factory so tests can substitute a mock transport."""
+    return httpx.AsyncClient(timeout=ANALYZE_URL_TIMEOUT_SECONDS, follow_redirects=False)
+
+
+def _preview_url(url: str) -> Optional[str]:
+    """The URL rebuilt as https on the matching PREVIEW_HOSTS entry, or None when the host is not a preview host."""
+    parsed = urlparse(url)
+    if parsed.scheme not in ('http', 'https') or parsed.port is not None or parsed.username or parsed.password:
+        return None
+    host = (parsed.hostname or '').lower()
+    for allowed in PREVIEW_HOSTS:
+        if host == allowed:
+            return urlunparse(('https', allowed, parsed.path or '/', '', parsed.query, ''))
+    return None
+
+
+async def _download(url: str, path_holder: list) -> int:
+    """Stream the clip into a temp file (its path goes into path_holder so the caller can always delete it)."""
+    async with analyze_url_client() as client:
+        async with client.stream('GET', url) as response:
+            if response.status_code != 200:
+                raise HTTPException(status_code=502, detail=f'clip download returned HTTP {response.status_code}')
+            content_type = response.headers.get('content-type', '').split(';')[0].strip().lower()
+            if not content_type.startswith('audio/'):
+                raise HTTPException(status_code=415, detail=f'not an audio content type: {content_type or "none"}')
+            declared = response.headers.get('content-length', '')
+            if declared.isdigit() and int(declared) > ANALYZE_URL_MAX_BYTES:
+                raise HTTPException(status_code=413, detail='clip larger than the size limit')
+            handle, path = tempfile.mkstemp(suffix=AUDIO_SUFFIXES.get(content_type, '.audio'), prefix='clip-')
+            path_holder.append(path)
+            size = 0
+            with os.fdopen(handle, 'wb') as out:
+                async for chunk in response.aiter_bytes():
+                    size += len(chunk)
+                    if size > ANALYZE_URL_MAX_BYTES:
+                        raise HTTPException(status_code=413, detail='clip larger than the size limit')
+                    out.write(chunk)
+            return size
+
+
+@app.post("/analyze-url")
+async def analyze_url(request: AnalyzeUrlRequest) -> Dict[str, Any]:
+    """Download the clip (max 5 MB, 20 s, audio content types only), run key_bpm.analyse_file, delete the file.
+
+    Returns AA1's result dict: bpm, raw_bpm, bpm_confidence, key_camelot, key_name, key_confidence, method,
+    method_version. Nothing is kept on disk after the request.
+    """
+    url = _preview_url(request.url)
+    if url is None:
+        raise HTTPException(status_code=422, detail='url must be a Deezer preview address')
+    paths: list = []
+    try:
+        try:
+            size = await asyncio.wait_for(_download(url, paths), timeout=ANALYZE_URL_TIMEOUT_SECONDS)
+        except asyncio.TimeoutError:
+            raise HTTPException(status_code=504, detail='clip download timed out')
+        except httpx.HTTPError as error:
+            raise HTTPException(status_code=502, detail=f'clip download failed: {error.__class__.__name__}')
+        if size == 0:
+            raise HTTPException(status_code=502, detail='clip download was empty')
+        ACTIVE_ANALYSES.inc()
+        try:
+            result = await asyncio.to_thread(key_bpm.analyse_file, paths[0])
+        finally:
+            ACTIVE_ANALYSES.dec()
+        TRACKS_ANALYZED.inc()
+        return result
+    finally:
+        for path in paths:
+            if os.path.exists(path):
+                os.remove(path)
 
 
 @app.post("/analyze", response_model=AudioAnalysisResult)

@@ -27,6 +27,7 @@ SCHEDULE_SECONDS = float(os.getenv('SCHEDULE_SECONDS', '30'))
 INGEST_INTERVAL = int(os.getenv('INGEST_INTERVAL_SECONDS', '60'))
 PROJECTION_INTERVAL = int(os.getenv('PROJECTION_INTERVAL_SECONDS', '15'))
 SCRAPE_TARGETS_INTERVAL = int(os.getenv('SCRAPE_TARGETS_INTERVAL_SECONDS', '3600'))
+AUDIO_ANALYSIS_INTERVAL = int(os.getenv('AUDIO_ANALYSIS_INTERVAL_SECONDS', '600'))
 MAX_JOBS_PER_DRAIN = int(os.getenv('MAX_JOBS_PER_DRAIN', '25'))
 
 def broker_url() -> str:
@@ -90,7 +91,8 @@ async def schedule_async() -> int:
         for kind, interval, payload in (('projection_consume', PROJECTION_INTERVAL, {}),
                                         ('graph_projection_consume', PROJECTION_INTERVAL, {}),
                                         ('ingest_pending', INGEST_INTERVAL, {}),
-                                        ('scrape_targets', SCRAPE_TARGETS_INTERVAL, {})):
+                                        ('scrape_targets', SCRAPE_TARGETS_INTERVAL, {}),
+                                        ('audio_analysis', AUDIO_ANALYSIS_INTERVAL, {})):
             _, was_created = await jobs.enqueue(connection, kind, f'tick:{kind}:{now // interval}', payload)
             created += int(was_created)
         await jobs.prune(connection, int(os.getenv('JOB_RETENTION_DAYS', '14')))

@@ -193,4 +193,14 @@ async def scrape_targets_handler(conn, ctx: Context, payload: Dict[str, Any]) ->
     return await target_scrape.scrape_targets(conn)
 
 
+@handler('audio_analysis')
+async def audio_analysis_handler(conn, ctx: Context, payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Key and BPM from Deezer previews for tracks missing them (AA2). Throttled before any work: retry later."""
+    from . import audio
+    result = await audio.run(conn, ctx.providers(), ctx.http)
+    if result.get('stopped') and not (result['analysed'] or result['no_preview'] or result['failed']):
+        raise RetryableError(result['stopped'])
+    return result
+
+
 from library.ingest.handler import library_ingest  # noqa: F401, E402
