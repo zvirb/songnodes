@@ -633,7 +633,16 @@ class OneThousandOneTracklistsSpider(NLPFallbackSpiderMixin, scrapy.Spider):
 
         return submit_form
 
+    async def start(self):
+        """Generate initial requests complying with Scrapy 2.12+ async generator contract."""
+        for request in self._generate_start_requests():
+            yield request
+
     def start_requests(self):
+        """Generate initial requests for backwards compatibility with Scrapy < 2.12."""
+        return self._generate_start_requests()
+
+    def _generate_start_requests(self):
         """Generate initial requests with enhanced headers and login support"""
         headers = {
             'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
