@@ -148,14 +148,14 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ open, set, byId, onC
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
           <span className="label">Filename preview</span>
-          <code className="sn-mono body-s" style={{ padding: 'var(--space-1) var(--space-2)', backgroundColor: 'var(--surface-1)', borderRadius: 'var(--radius-control)', border: '1px solid var(--line)', width: 'fit-content' }}>
+          <code className="sn-mono body-s" style={{ padding: 'var(--space-1) var(--space-2)', backgroundColor: 'var(--surface-1)', borderRadius: 'var(--radius-control)', border: 'var(--space-0.25) solid var(--line)', width: 'fit-content' }}>
             {filename}
           </code>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
           <label className="label" htmlFor={`${id}-preview`}>Preview (first 5 lines)</label>
-          <pre id={`${id}-preview`} className="sn-mono" style={{ border: '1px solid var(--line)', padding: 'var(--space-2)', borderRadius: 'var(--radius-control)', backgroundColor: 'var(--surface-1)', whiteSpace: 'pre-wrap', maxHeight: '15rem', overflowY: 'auto', margin: 0 }}>
+          <pre id={`${id}-preview`} className="sn-mono" style={{ border: 'var(--space-0.25) solid var(--line)', padding: 'var(--space-2)', borderRadius: 'var(--radius-control)', backgroundColor: 'var(--surface-1)', whiteSpace: 'pre-wrap', maxHeight: '15rem', overflowY: 'auto', margin: 0 }}>
             {previewLines}
             {exportContent.split('\n').length > 5 && '\n...'}
           </pre>
