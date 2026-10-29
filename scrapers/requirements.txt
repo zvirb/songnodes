@@ -62,8 +62,8 @@ prometheus-client==0.26.0
 # Reddit API
 praw==8.0.3
 
-# Music service APIs
-tidalapi==0.8.11
+
+
 
 # Testing (optional)
 pytest==9.1.1
