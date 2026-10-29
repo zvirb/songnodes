@@ -817,8 +817,13 @@ Work done:
 
 <!-- SLOT:L1 BEGIN -->
 ### L1: Library importer: write only allowed evidence fields
-- Start: 2026-10-26
-- End: 2026-10-26
+- Start: 2026-10-29
+- Built: Updated `services/library/importer/import_library.py` to record evidence only for allowed fields in migration 014 (mapping label/lbl onto 'record_label' and skipping 'release_year' evidence while keeping raw track attributes). Added unit tests in `tests/library_importer/test_import_evidence_fields.py` asserting recorded evidence fields match the migration 014 allowed list.
+- Checks run: `PYTHONPATH=services python3 -m pytest -o addopts="" tests/library_importer/` (8 passed).
+- Checks not run: Playwright E2E suite due to environment constraints.
+- Reviewer Check: `pytest tests/library_importer/test_import_evidence_fields.py` passes.
+- PR Link: https://github.com/zvirb/songnodes/pull/NEW
+- End: 2026-10-29
 <!-- SLOT:L1 END -->
 
 <!-- SLOT:E2 BEGIN -->

@@ -132,19 +132,21 @@ async def _process_payload(conn, payload: dict[str, Any]) -> dict[str, Any]:
             INSERT INTO library.tracks (id) VALUES ($1) ON CONFLICT DO NOTHING
         """, canonical_id)
 
-        for evidence_field in ['isrc', 'tidal_id', 'deezer_id', 'genre', 'label', 'release_year']:
-            if evidence_field == 'label':
-                if track.get('label'):
-                    await record_evidence(conn, canonical_id, 'record_label', track['label'], 'musiclibrary', method='importer')
-            elif evidence_field == 'release_year':
-                if track.get('release_year'):
-                    if not logged_release_year_skip:
-                        logger.info("Skipping unallowed evidence field release_year in this import run.")
-                        logged_release_year_skip = True
-                    stats['tracks']['skipped'] += 1
+        for evidence_field in ['isrc', 'tidal_id', 'deezer_id', 'genre', 'record_label', 'bpm', 'key', 'duration_ms', 'mix_name', 'musicbrainz_id']:
+            if evidence_field == 'record_label':
+                label_val = track.get('record_label') or track.get('label') or track.get('lbl')
+                if label_val:
+                    await record_evidence(conn, canonical_id, 'record_label', label_val, 'musiclibrary', method='importer')
             else:
-                if track.get(evidence_field):
-                    await record_evidence(conn, canonical_id, evidence_field, track[evidence_field], 'musiclibrary', method='importer')
+                val = track.get(evidence_field)
+                if val:
+                    await record_evidence(conn, canonical_id, evidence_field, val, 'musiclibrary', method='importer')
+
+        if track.get('release_year'):
+            if not logged_release_year_skip:
+                logger.info("Skipping unallowed evidence field release_year in this import run.")
+                logged_release_year_skip = True
+            stats['tracks']['skipped'] += 1
         await apply_evidence(conn, canonical_id)  # write the recorded ids, label and genre onto the track
 
         if track.get('energy') is not None:  # the musicLibrary 1-10 estimate, kept as evidence with its source
