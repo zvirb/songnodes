@@ -20,7 +20,7 @@ from typing import List, Tuple, Set, Optional
 PENDING_FILE_PATH = "frontend/design-system-pending.txt"
 LAYOUT_BASELINE_PATH = "frontend/design-system-layout-baseline.txt"
 # Page containers the design system defines (design-system/13-page-patterns.md, Page container).
-PAGE_CONTAINERS = ("sn-page__main", "sn-page-error", "sn-page-auth")
+PAGE_CONTAINERS = ("sn-page__main", "sn-page-error", "sn-page-auth", "sn-page-graph")
 MAIN_TAG_PATTERN = re.compile(r"<main\b([^>]*)>")
 CLASSNAME_LITERAL_PATTERN = re.compile(r"""className=(?:"([^"]*)"|'([^']*)'|\{\s*`([^`]*)`\s*\}|\{\s*["']([^"']*)["']\s*\})""")
 SN_CLASS_PATTERN = re.compile(r"(?<![\w-])(sn-[A-Za-z0-9_-]*[A-Za-z0-9_])(?![\w-]*\$)")

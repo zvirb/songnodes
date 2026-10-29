@@ -4,7 +4,7 @@ Fifteen page patterns cover both products. Build a new page by picking the close
 
 Common rules:
 - Content width `content-max` (1400px), centred; side gutter `space-4` on phones, `space-6` from `bp-tablet`, `space-8` from `bp-desktop`.
-- **Page container (required).** Every page's root is `<main class="sn-page__main" id="main" tabindex="-1">`. That class is what gives the gutter, the `content-max` width and the `space-8` rhythm between sections; a page without it renders edge to edge with no padding. `ErrorPage` uses `sn-page-error` and `AuthCallbackPage` uses `sn-page-auth` instead. The graph canvas is the only full-bleed page (05-layout) and carries a `design-system exception` comment on its `<main>`. Do not wrap a page in any other class, and never invent one: a class the bundle does not define renders nothing (17-governance, The sn- namespace).
+- **Page container (required).** Every page's root is `<main class="sn-page__main" id="main" tabindex="-1">`. That class is what gives the gutter, the `content-max` width and the `space-8` rhythm between sections; a page without it renders edge to edge with no padding. `ErrorPage` uses `sn-page-error`, `AuthCallbackPage` uses `sn-page-auth`, and `GraphPage` uses `sn-page-graph` as the full-bleed page container (05-layout). Do not wrap a page in any other class, and never invent one: a class the bundle does not define renders nothing (17-governance, The sn- namespace).
 - Vertical rhythm between sections `space-8`; inside a section `space-4`.
 - One `h1` (the thin–bold title). Section headings `SectionHeading` (`h2`).
 - Loading uses `LoadingState` (skeletons shaped like the content), errors `ErrorState` in place of the failed region only, empty regions `EmptyState`.

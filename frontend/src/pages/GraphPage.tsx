@@ -41,7 +41,7 @@ const GraphPage: React.FC = () => {
   useLegacyTokenMigration();
 
   return (
-    <main className="sn-graph-route" id="main" tabIndex={-1}>{/* design-system exception: the graph canvas is the only full-bleed page (05-layout, 13-page-patterns) */}
+    <main className="sn-graph-route sn-page-graph" id="main" tabIndex={-1}>
       <React.Suspense
         fallback={
           <div className="sn-graph-route__loading" aria-busy="true">
