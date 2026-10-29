@@ -49,9 +49,9 @@ The pinned fixture lives at `frontend/tests/e2e/data/library.fixture.json` and i
 served by Playwright route handlers (`useLibraryFixture`). It never changes automatically
 with the real library.
 
-To deliberately refresh the fixture data, copy the pipeline output over it:
+To deliberately refresh the fixture data, copy the pipeline export over it:
 ```bash
-cp frontend/public/data/music-library.json frontend/tests/e2e/data/library.fixture.json
+cp ../musicLibrary/outputs/artifact/library.json frontend/tests/e2e/data/library.fixture.json
 ```
 Only test data may read from it; nothing under `frontend/src` should reference it.
 
@@ -78,7 +78,7 @@ to clear a failure that has another cause.
 |---|---|
 | `routes.smoke.spec.ts` | Every route loads with status 200, the `/sources` redirect, the not-found page |
 | `shell.spec.ts` | NavDrawer open/close/focus, every row navigates and is marked current, Back/Forward, header search and Ctrl+K, skip link, titles |
-| `library.spec.ts` | Crate count from `public/data/music-library.json`, search, empty state, en dash for missing values, sorting, Build set from crate |
+| `library.spec.ts` | Crate count from `library.fixture.json`, search, empty state, en dash for missing values, sorting, Build set from crate |
 | `sets.spec.ts` | Build set, save, persist across reload, delete through ConfirmDialog (confirm, Cancel, Escape) |
 | `settings.spec.ts` | Theme, text size, density, motion, reset, About |
 | `graph.spec.ts` | Graph toolbar and canvas panel, Play/Plan in the URL, Plan-tab deep links |

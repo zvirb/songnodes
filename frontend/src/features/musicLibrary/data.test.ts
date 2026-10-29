@@ -22,45 +22,28 @@ describe('loadLibrary', () => {
         expect(mapped.chart).toBeNull();
     });
 
-    it('falls back to JSON fixture on API error', async () => {
+    it('throws error on API failure without fallback', async () => {
         const fetchMock = fetch as Mock;
         fetchMock.mockRejectedValueOnce(new Error('Network Error'));
-        fetchMock.mockResolvedValueOnce({
-            ok: true,
-            json: async () => ({ tracks: [], counts: { tracks: 0 } })
-        });
 
-        const data = await loadLibrary(true);
-        expect(data._source).toBe('library-fixture');
-        expect(fetchMock).toHaveBeenCalledTimes(2); // one for API, one for fallback
+        await expect(loadLibrary(true)).rejects.toThrow('Network Error');
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(fetchMock).toHaveBeenCalledWith('/api/v1/library/search?limit=5000');
     });
 
-    it('falls back to static json when API returns empty array', async () => {
+    it('returns empty library when API returns empty array', async () => {
         const fetchMock = fetch as Mock;
-        // API returns 200 OK with empty array
         fetchMock.mockResolvedValueOnce({
             ok: true,
             json: async () => []
         });
-        // Fallback static JSON
-        const staticPayload = {
-            generated: '2026-10-28T00:00:00Z',
-            ledger_updated: '2026-10-28T00:00:00Z',
-            counts: { tracks: 1, pending: 0, rejected: 0, beatport_check: 0 },
-            sources: [],
-            runs: [],
-            tracks: [{ id: 'static-1', a: 'Artist', t: 'Track', m: null, d: 300, bpm: 125, k: '8A', e: 5, p: 'House', rot: 1, tags: [], src: ['pbs'], first: null, last: null, g: 'House', lbl: null, sync: null, tidal: null, dz: null, bp: null, chart: null, rev: false, ovr: false, local: false }]
-        };
-        fetchMock.mockResolvedValueOnce({
-            ok: true,
-            json: async () => staticPayload
-        });
 
         const lib = await loadLibrary(true);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
         expect(fetchMock).toHaveBeenCalledWith('/api/v1/library/search?limit=5000');
-        expect(fetchMock).toHaveBeenCalledWith('/data/music-library.json', { cache: 'no-cache' });
-        expect(lib.tracks).toHaveLength(1);
-        expect(lib.tracks[0].id).toBe('static-1');
+        expect(lib.tracks).toHaveLength(0);
+        expect(lib.counts.tracks).toBe(0);
+        expect(lib._source).toBe('backend');
     });
 
     it('uses API results when API returns tracks', async () => {
