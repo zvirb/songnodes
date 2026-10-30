@@ -109,7 +109,7 @@ async def create_playlist(
         raise
     except Exception as e:
         logger.error(f"Error creating Tidal playlist: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Playlist creation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Playlist creation failed")
 
 @router.get("/playlists/list", response_model=List[PlaylistResponse])
 async def list_playlists(
@@ -157,7 +157,7 @@ async def list_playlists(
         raise
     except Exception as e:
         logger.error(f"Error fetching playlists: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch playlists: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch playlists")
 
 @router.post("/playlists/{playlist_id}/tracks")
 async def add_tracks_to_playlist(
@@ -191,7 +191,7 @@ async def add_tracks_to_playlist(
         raise
     except Exception as e:
         logger.error(f"Error adding tracks to playlist: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to add tracks: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to add tracks")
 
 @router.post("/tracks/search", response_model=Optional[TrackResponse])
 async def search_track(
@@ -239,7 +239,7 @@ async def search_track(
         raise
     except Exception as e:
         logger.error(f"Error searching for track: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Track search failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Track search failed")
 
 @router.post("/tracks/check-availability")
 async def check_track_availability(
@@ -269,7 +269,7 @@ async def check_track_availability(
         raise
     except Exception as e:
         logger.error(f"Error checking track availability: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Availability check failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Availability check failed")
 
 
 # ===========================================
