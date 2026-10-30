@@ -1,0 +1,27 @@
+# Cross-feature imports that existed when the feature-boundary rule arrived (LINT1, 30 Oct 2026).
+# Checked by scripts/check_feature_imports.py in .github/workflows/design-system.yml; the rule is in frontend/LINTING.md.
+# Format: <importing file> -> <imported module> | <reason>   (paths relative to frontend/, module without extension)
+# This list only shrinks: never add a line. When an import goes, the checker fails until its line is deleted.
+#
+# musicLibrary's set builder page uses the helpers in features/setBuilder (a folder with no route of its own).
+src/features/musicLibrary/SetBuilderPage.tsx -> src/features/setBuilder/ExportDialog | set builder export dialog; setBuilder/ has no route and serves only this page
+src/features/musicLibrary/SetBuilderPage.tsx -> src/features/setBuilder/SendToTidalDialog | set builder Tidal dialog; setBuilder/ has no route and serves only this page
+src/features/musicLibrary/SetBuilderPage.tsx -> src/features/setBuilder/reorder | set reorder helper; setBuilder/ has no route and serves only this page
+src/features/musicLibrary/SetBuilderPage.tsx -> src/features/setBuilder/transitions | compatible-track helper; setBuilder/ has no route and serves only this page
+# Shared UI helper living in a feature folder; belongs in src/components/ds.
+src/features/musicLibrary/SetBuilderPage.tsx -> src/features/aiSetlists/components/ui | InlineMessage is a shared UI helper; belongs in src/components/ds
+src/features/setBuilder/ExportDialog.tsx -> src/features/musicLibrary/components/ui | CopyButton is a shared UI helper; belongs in src/components/ds
+src/features/setBuilder/SendToTidalDialog.tsx -> src/features/musicLibrary/components/ui | useToaster is a shared UI helper; belongs in src/components/ds or src/hooks
+# Library data types and set logic living in musicLibrary; belong in src/types or src/lib.
+src/features/setBuilder/ExportDialog.tsx -> src/features/musicLibrary/data | LibraryTrack and SavedSet types; belong in src/types
+src/features/setBuilder/ExportDialog.test.tsx -> src/features/musicLibrary/data | LibraryTrack and SavedSet types; belong in src/types
+src/features/setBuilder/SendToTidalDialog.tsx -> src/features/musicLibrary/data | SavedSet type; belongs in src/types
+src/features/setBuilder/exporters.ts -> src/features/musicLibrary/data | LibraryTrack and SavedSet types; belong in src/types
+src/features/setBuilder/exporters.test.ts -> src/features/musicLibrary/data | LibraryTrack and SavedSet types; belong in src/types
+src/features/setBuilder/sendToTidal.ts -> src/features/musicLibrary/data | SavedSet type; belongs in src/types
+src/features/setBuilder/sendToTidal.test.ts -> src/features/musicLibrary/data | SavedSet type; belongs in src/types
+src/features/setBuilder/transitions.ts -> src/features/musicLibrary/data | LibraryTrack type; belongs in src/types
+src/features/setBuilder/transitions.test.ts -> src/features/musicLibrary/data | LibraryTrack type; belongs in src/types
+src/features/setBuilder/transitions.ts -> src/features/musicLibrary/setBuilder | keyMove set logic; belongs in src/lib
+src/features/setBuilder/reorder.ts -> src/features/musicLibrary/setBuilder | Slot type; belongs in src/types
+src/features/setBuilder/reorder.test.ts -> src/features/musicLibrary/setBuilder | Slot type; belongs in src/types

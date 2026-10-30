@@ -1902,3 +1902,13 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: firefox and webkit (not installed in the cloud container; CI runs them); E2E against the Docker stack.
 - Next: none for AX2.
 <!-- SLOT:AX2 END -->
+
+<!-- SLOT:LINT1 BEGIN -->
+### LINT1: Feature pages do not import each other
+- Start: 2026-10-30. Base `main` d72ac1a.
+- Measure: 19 cross-feature imports on `main`, all between `musicLibrary`, `setBuilder` (a helper folder with no `route.tsx`) and `aiSetlists`: `musicLibrary/SetBuilderPage.tsx` uses four `setBuilder/` modules and `aiSetlists/components/ui`; ten `setBuilder/` files use `musicLibrary/data`, `musicLibrary/setBuilder` or `musicLibrary/components/ui`. No other feature imports another.
+- Changed: added `scripts/check_feature_imports.py` (pure Python; resolves relative and `@/` imports, `export from`, `import()`, `vi.mock()`), `frontend/feature-imports-allowlist.txt` (the 19 imports, each with its reason), `tests/test_check_feature_imports.py` (7 tests, tmp dir with two fake features), one step in `.github/workflows/design-system.yml` (runs the checker and fails a PR that adds an allowlist line), and a section in `frontend/LINTING.md`. Oxlint `no-restricted-imports` was not used: it matches import strings, so `../setBuilder` inside `musicLibrary/components/` (its own `setBuilder.ts`) would be a false hit.
+- Checks run: `python3 scripts/check_feature_imports.py --check` (OK), `python3 -m pytest tests/test_check_feature_imports.py` (7 passed), workflow YAML parses, `scope_guard.py`.
+- Checks not run: the frontend tsc/oxlint/vitest/vite build (no frontend source changed).
+- Next: small packages that move the shared types (`LibraryTrack`, `SavedSet`, `Slot`) to `src/types` and the UI helpers (`CopyButton`, `useToaster`, `InlineMessage`) to `src/components/ds`, deleting allowlist lines as they go; decide whether `features/setBuilder/` should fold into `features/musicLibrary/`.
+<!-- SLOT:LINT1 END -->
