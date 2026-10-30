@@ -1,0 +1,98 @@
+[
+ {
+  "op": "set",
+  "collection": "meta",
+  "doc_id": "rules",
+  "file_path": "/home/user/songnodes/plan/work-queue-2026-10-30/seed/meta-rules.json"
+ },
+ {
+  "op": "set",
+  "collection": "tasks",
+  "doc_id": "MRG1",
+  "file_path": "/home/user/songnodes/plan/work-queue-2026-10-30/seed/tasks-MRG1.json"
+ },
+ {
+  "op": "set",
+  "collection": "tasks",
+  "doc_id": "MRG2",
+  "file_path": "/home/user/songnodes/plan/work-queue-2026-10-30/seed/tasks-MRG2.json"
+ },
+ {
+  "op": "set",
+  "collection": "tasks",
+  "doc_id": "PG1",
+  "file_path": "/home/user/songnodes/plan/work-queue-2026-10-30/seed/tasks-PG1.json"
+ },
+ {
+  "op": "set",
+  "collection": "tasks",
+  "doc_id": "DOC3",
+  "file_path": "/home/user/songnodes/plan/work-queue-2026-10-30/seed/tasks-DOC3.json"
+ },
+ {
+  "op": "set",
+  "collection": "tasks",
+  "doc_id": "E2E2",
+  "file_path": "/home/user/songnodes/plan/work-queue-2026-10-30/seed/tasks-E2E2.json"
+ },
+ {
+  "op": "set",
+  "collection": "tasks",
+  "doc_id": "AX2",
+  "file_path": "/home/user/songnodes/plan/work-queue-2026-10-30/seed/tasks-AX2.json"
+ },
+ {
+  "op": "set",
+  "collection": "tasks",
+  "doc_id": "SC5",
+  "file_path": "/home/user/songnodes/plan/work-queue-2026-10-30/seed/tasks-SC5.json"
+ },
+ {
+  "op": "set",
+  "collection": "tasks",
+  "doc_id": "DATA1",
+  "file_path": "/home/user/songnodes/plan/work-queue-2026-10-30/seed/tasks-DATA1.json"
+ },
+ {
+  "op": "set",
+  "collection": "tasks",
+  "doc_id": "DS21",
+  "file_path": "/home/user/songnodes/plan/work-queue-2026-10-30/seed/tasks-DS21.json"
+ },
+ {
+  "op": "set",
+  "collection": "tasks",
+  "doc_id": "DS22",
+  "file_path": "/home/user/songnodes/plan/work-queue-2026-10-30/seed/tasks-DS22.json"
+ },
+ {
+  "op": "set",
+  "collection": "tasks",
+  "doc_id": "DS23",
+  "file_path": "/home/user/songnodes/plan/work-queue-2026-10-30/seed/tasks-DS23.json"
+ },
+ {
+  "op": "set",
+  "collection": "tasks",
+  "doc_id": "DS24",
+  "file_path": "/home/user/songnodes/plan/work-queue-2026-10-30/seed/tasks-DS24.json"
+ },
+ {
+  "op": "set",
+  "collection": "tasks",
+  "doc_id": "DSQ1",
+  "file_path": "/home/user/songnodes/plan/work-queue-2026-10-30/seed/tasks-DSQ1.json"
+ },
+ {
+  "op": "set",
+  "collection": "tasks",
+  "doc_id": "DOC4",
+  "file_path": "/home/user/songnodes/plan/work-queue-2026-10-30/seed/tasks-DOC4.json"
+ },
+ {
+  "op": "set",
+  "collection": "tasks",
+  "doc_id": "PLAN2",
+  "file_path": "/home/user/songnodes/plan/work-queue-2026-10-30/seed/tasks-PLAN2.json"
+ }
+]
