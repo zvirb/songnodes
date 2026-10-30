@@ -515,6 +515,13 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 - End: 2026-10-28
 - Sanitized raw exception messages (`detail=str(e)`) in Tidal device code init and polling endpoints in `services/rest_api/routers/music_auth.py` to prevent potential exposure of internal backend state in HTTP responses.
 - Checks: `python3 -m py_compile` passed, code review passed.
+
+### SEC: Spotify Playlists Router Exception Leakage Remediation (2026-10-29)
+- Start: 2026-10-29
+- End: 2026-10-29
+- Sanitized raw exception strings (`detail=str(e)`) and raw error response texts (`detail=f"... {error_text[:200]}"`) across Spotify playlist endpoints in `services/rest_api/routers/spotify_playlists.py`. Replaced internal details with generic sanitized messages while retaining server logging.
+- Added security regression unit tests in `tests/security/test_spotify_playlists_security.py`.
+- Checks: `PYTHONPATH=services/rest_api python3 -m pytest -o addopts="" --noconftest tests/security/test_spotify_playlists_security.py tests/rest_api/test_tidal_playlists.py` passed (22/22).
 <!-- SLOT:SEC_SENTINEL END -->
 
 <!-- SLOT:QA1 BEGIN -->
