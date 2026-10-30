@@ -34,6 +34,12 @@ async function stubEmptyPipeline(page: Page) {
   await page.route((url) => url.pathname === '/api/v1/target-tracks', (route) => route.fulfill(json([])));
 }
 
+/**
+ * The library counts "heard this week" back from the time it loads, so the clock is fixed just after the
+ * fixture's last play (tests/e2e/data/library.fixture.json, 24 Oct 2026) and the counts stay the same every day.
+ */
+const FIXED_NOW = new Date('2026-10-25T12:00:00+11:00');
+
 const WIDTHS: [string, number, number][] = [['desktop', 1440, 900], ['phone', 390, 844]];
 
 for (const theme of ['dark', 'light'] as const) {
@@ -43,6 +49,7 @@ for (const theme of ['dark', 'light'] as const) {
         await page.addInitScript((t) => {
           try { localStorage.setItem('sn-theme', t); } catch { /* storage blocked */ }
         }, theme);
+        await page.clock.setFixedTime(FIXED_NOW);
         await page.setViewportSize({ width, height });
         await useLibraryFixture(page);
         if (name === 'pipeline') await stubEmptyPipeline(page);
@@ -61,6 +68,7 @@ for (const theme of ['dark', 'light'] as const) {
       await page.addInitScript((t) => {
         try { localStorage.setItem('sn-theme', t); } catch { /* storage blocked */ }
       }, theme);
+      await page.clock.setFixedTime(FIXED_NOW);
       await page.setViewportSize({ width, height });
       await useLibraryFixture(page);
       await openRoute(page, '/');
