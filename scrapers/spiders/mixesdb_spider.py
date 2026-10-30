@@ -10,7 +10,7 @@ import os
 import hashlib
 from typing import Dict
 from datetime import datetime
-from urllib.parse import quote
+from urllib.parse import quote, unquote, urlparse
 import redis
 import requests
 from urllib import robotparser
@@ -359,7 +359,8 @@ class MixesdbSpider(scrapy.Spider):
 
         # Default: Handle individual mix pages (including direct URLs from start_urls)
         # This handles direct playlist URLs like /w/2015-03-28_-_Martin_Garrix_@_...
-        if self.is_mix_page(response) or (self.is_mix_url(response.url) and '/w/' in response.url):
+        # Only on-site MixesDB article pages qualify; outside hosts and wiki namespaces do not.
+        if self.is_mix_url(response.url):
             yield from self.parse_mix_page(response)
             return
 
@@ -477,13 +478,40 @@ class MixesdbSpider(scrapy.Spider):
             bool(response.xpath('//h2[contains(., "Tracklist")]')) and bool(response.xpath('//ol//li'))
         )
 
+    # MediaWiki namespaces on MixesDB that never hold a mix tracklist.
+    NON_MIX_NAMESPACES = frozenset({
+        'special', 'category', 'user', 'talk', 'file', 'image', 'media', 'template',
+        'help', 'mediawiki', 'mixesdb', 'project', 'module', 'portal', 'explorer',
+    })
+
     def is_mix_url(self, url):
-        """Check if URL is likely a mix page"""
-        exclude_patterns = [
-            'Special:', 'Category:', 'User:', 'Talk:', 'File:', 'Template:',
-            'Help:', 'MediaWiki:', 'Main_Page', 'search=', 'index.php?'
-        ]
-        return not any(pattern in url for pattern in exclude_patterns)
+        """Check if URL is an on-site MixesDB article that can hold a mix tracklist.
+
+        Rejects outside hosts (for example discord.gg links on mix pages), non-HTTP
+        schemes, anything outside /w/, query-string pages (search, index.php) and
+        wiki or meta namespaces (Special:, Category:, User:, *_talk: and so on).
+        """
+        if not url:
+            return False
+        try:
+            parsed = urlparse(url)
+        except ValueError:
+            return False
+        if parsed.scheme not in ('http', 'https'):
+            return False
+        host = (parsed.hostname or '').lower()
+        if host != 'mixesdb.com' and not host.endswith('.mixesdb.com'):
+            return False
+        if not parsed.path.startswith('/w/') or parsed.query:
+            return False
+        title = unquote(parsed.path[len('/w/'):]).strip()
+        if not title or title in ('Main_Page', 'index.php'):
+            return False
+        if ':' in title:
+            namespace = title.split(':', 1)[0].strip().lower().replace(' ', '_')
+            if namespace in self.NON_MIX_NAMESPACES or namespace.endswith('_talk'):
+                return False
+        return True
 
     def parse_mix_page(self, response):
         """Parse individual mix page with CSS selector-based extraction"""
@@ -495,10 +523,28 @@ class MixesdbSpider(scrapy.Spider):
             # Store response for debugging
             self.last_response = response
 
+            # Only on-site MixesDB article pages are mix pages (callbacks can be reached
+            # directly from start URLs or redirects, so check here as well as in parse()).
+            if not self.is_mix_url(response.url):
+                self.logger.info(f"Skipped {response.url}: not an on-site MixesDB mix page")
+                return
+
             # Extract comprehensive setlist metadata
             self.logger.info(f"🔍 [DEBUG] Calling extract_enhanced_setlist_data...")
             setlist_data = self.extract_enhanced_setlist_data(response)
             self.logger.info(f"🔍 [DEBUG] Setlist data extracted: {bool(setlist_data)}")
+
+            # Extract tracks with full metadata using CSS selectors
+            self.logger.info(f"🔍 [DEBUG] Calling extract_enhanced_tracks...")
+            tracks_data = self.extract_enhanced_tracks(response, setlist_data)
+            self.logger.info(f"🔍 [DEBUG] Tracks data returned: {len(tracks_data) if tracks_data else 0} tracks")
+
+            # A page with no parsed tracks is not a complete playlist: yield nothing
+            # (no setlist, artist, playlist or track items) and log it as skipped.
+            if not tracks_data:
+                self.logger.info(f"Skipped {response.url}: 0 tracks parsed, no playlist yielded")
+                return
+
             if setlist_data:
                 yield EnhancedSetlistItem(**setlist_data)
 
@@ -508,34 +554,6 @@ class MixesdbSpider(scrapy.Spider):
             artist_data = self.extract_artist_data(response)
             if artist_data:
                 yield EnhancedArtistItem(**artist_data)
-
-            # Extract tracks with full metadata using CSS selectors
-            self.logger.info(f"🔍 [DEBUG] Calling extract_enhanced_tracks...")
-            tracks_data = self.extract_enhanced_tracks(response, setlist_data)
-            self.logger.info(f"🔍 [DEBUG] Tracks data returned: {len(tracks_data) if tracks_data else 0} tracks")
-
-            if not tracks_data:
-                self.logger.warning(
-                    f"No tracks extracted from {response.url} using CSS selectors"
-                )
-                # Yield a parsing failure item for retry tracking
-                failure_item = PlaylistItem(
-                    item_type='playlist',  # CRITICAL: Explicit type for pipeline routing
-                    name=setlist_data.get('setlist_name', 'Unknown Playlist') if setlist_data else 'Unknown Playlist',
-                    source='mixesdb',
-                    source_url=response.url,
-                    playlist_type='DJ Set',
-                    dj_artist_id=None,
-                    event_name=setlist_data.get('event_name') if setlist_data else None,
-                    event_date=setlist_data.get('event_date') if setlist_data else None,
-                    tracklist_count=0,
-                    scrape_error=f"XPath selector failed - 0 tracks found",
-                    last_scrape_attempt=datetime.utcnow(),
-                    parsing_version="mixesdb_v1.1_xpath_fixed"  # Updated version identifier
-                )
-                self.logger.warning(f"⚠️ Yielding failure item for playlist: {failure_item.get('name')}")
-                yield failure_item
-                return
 
             self.logger.info(f"✅ CSS extraction: {len(tracks_data)} tracks found from {response.url}")
 
