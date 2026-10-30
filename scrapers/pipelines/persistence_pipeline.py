@@ -155,7 +155,10 @@ class PersistencePipeline:
         self.processed_items: Dict[str, set] = {
             'artists': set(),
             'tracks': set(),  # Changed from 'songs' to 'tracks'
-            'playlists': set()
+            'playlists': set(),
+            # Bronze playlist tracks are keyed on (playlist, position), not title::artist, so a
+            # track in several playlists, or after its standalone item, still gets its bronze row.
+            'bronze_tracks': set()
         }
 
         # Internal statistics tracking
@@ -390,8 +393,34 @@ class PersistencePipeline:
         artist_name = item.get('artist_name', '').strip()
         track_key = f"{track_name}::{artist_name}"
 
+        # MEDALLION: Add to BRONZE batch (raw data preservation) BEFORE the title::artist dedupe,
+        # so every positioned playlist track gets one row per playlist + position.
+        # Playlist context (_bronze_playlist_id, _track_position) comes from _process_playlist_track_item.
+        # SKIP bronze insertion for standalone tracks (no playlist context) to avoid NULL FK violations.
+        has_playlist_context = item.get('_bronze_playlist_id') is not None or item.get('_track_position') is not None
+        if has_playlist_context:
+            bronze_key = (
+                item.get('_bronze_playlist_id') or item.get('_playlist_name'),
+                item.get('_track_position'),
+            )
+            if bronze_key not in self.processed_items['bronze_tracks']:
+                self.processed_items['bronze_tracks'].add(bronze_key)
+                self.item_batches['bronze_tracks'].append(item)  # Store complete raw item
+                self.logger.debug(
+                    f"✓ Track '{track_name}' queued to bronze_tracks (has playlist context: "
+                    f"playlist_id={item.get('_bronze_playlist_id')}, position={item.get('_track_position')})"
+                )
+                # Flush bronze if batch full (bronze must flush before silver)
+                if len(self.item_batches['bronze_tracks']) >= self.batch_size:
+                    await self._flush_batch('bronze_tracks')
+        else:
+            self.logger.debug(
+                f"⊘ Track '{track_name}' skipped for bronze_tracks (no playlist context - standalone track)"
+            )
+
+        # Silver and artist writes stay de-duplicated on title::artist within the job.
         if track_key in self.processed_items['tracks']:
-            self.logger.debug(f"Duplicate track skipped: {track_key}")
+            self.logger.debug(f"Duplicate track skipped for silver: {track_key}")
             return
 
         # Log missing critical fields
@@ -423,23 +452,6 @@ class PersistencePipeline:
         artist_name = item.get('artist_name', '').strip()
         if artist_name and artist_name not in self.processed_items['artists']:
             await self._process_artist_item({'artist_name': artist_name, 'genre': item.get('genre')})
-
-        # MEDALLION: Add to BRONZE batch (raw data preservation)
-        # CRITICAL: Preserve playlist context fields (_bronze_playlist_id, _track_position)
-        # These are passed from _process_playlist_track_item for bronze FK relationships
-        # SKIP bronze insertion for standalone tracks (no playlist context) to avoid NULL FK violations
-        # Tracks WITH playlist context come from EnhancedSetlistTrackItem processing
-        has_playlist_context = item.get('_bronze_playlist_id') is not None or item.get('_track_position') is not None
-        if has_playlist_context:
-            self.item_batches['bronze_tracks'].append(item)  # Store complete raw item
-            self.logger.debug(
-                f"✓ Track '{track_name}' queued to bronze_tracks (has playlist context: "
-                f"playlist_id={item.get('_bronze_playlist_id')}, position={item.get('_track_position')})"
-            )
-        else:
-            self.logger.debug(
-                f"⊘ Track '{track_name}' skipped for bronze_tracks (no playlist context - standalone track)"
-            )
 
         # MEDALLION: Add to SILVER batch (enriched data)
         silver_item = {
@@ -484,10 +496,6 @@ class PersistencePipeline:
             '_raw_item': item  # Keep reference to get bronze_id later
         }
         self.item_batches['tracks'].append(silver_item)
-
-        # Flush bronze if batch full (bronze must flush before silver)
-        if len(self.item_batches['bronze_tracks']) >= self.batch_size:
-            await self._flush_batch('bronze_tracks')
 
         if len(self.item_batches['tracks']) >= self.batch_size:
             await self._flush_batch('tracks')

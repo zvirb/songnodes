@@ -1859,3 +1859,14 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: frontend checks and E2E (docs only, no code).
 - Next: waiting for Markus to pick A on /pipeline, A on /library, or B. Then one package for the chosen option only.
 <!-- SLOT:DS24 END -->
+
+<!-- SLOT:SC6 BEGIN -->
+### SC6: Bronze keeps every positioned playlist track
+- Start: 2026-10-30. Base `main` e1ea438. Cause found in SC5 Step 0: `_process_track_item` ran the job-wide `title::artist` dedupe before queueing the bronze row.
+- End: 2026-10-30. `scrapers/pipelines/persistence_pipeline.py`: the bronze row for a track with playlist context is queued first, de-duplicated on (playlist, position) in a new `processed_items['bronze_tracks']` set. The `title::artist` dedupe now gates only the silver track and artist writes. Standalone tracks still get no bronze row. Spider yields and job-result counters unchanged.
+- Test: `scrapers/tests/test_persistence_bronze_every_track.py` (2 MixesDB-style playlists x 5 tracks, both with Deadmau5 - Strobe, spider yield order, fake asyncpg pool). On main it fails with 0 bronze track rows; with the fix both playlists have positions 1..5 (10 rows).
+- Checks run: `cd scrapers && python -m pytest tests/`: 6 passed (5 on main; `psutil` and `redis` had to be pip-installed for `test_1001tracklists_spider.py` to import). `scope_guard.py`.
+- Checks not run: live stack, Postgres, E2E (no Docker in the cloud sandbox).
+- Found, not fixed: silver tracks from MixesDB are still skipped ("missing bronze_id") because the first, standalone item for each track creates the silver row and it has no bronze row. Same on main.
+- Next: SC5 (per-job bronze counts), then a package to link silver tracks to the positioned bronze row.
+<!-- SLOT:SC6 END -->
