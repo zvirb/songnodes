@@ -67,7 +67,7 @@ describe('TargetActionButton', () => {
 
   it('renders correctly with idle state', () => {
     render(<TargetActionButton track={mockTrack} />);
-    const btn = screen.getByRole('button', { name: 'Add Artist - Title to target tracks' });
+    const btn = screen.getByRole('button', { name: 'Add Artist – Title to target tracks' });
     expect(btn).not.toBeNull();
     expect(screen.getByTestId('icon-star')).not.toBeNull();
   });
@@ -77,7 +77,7 @@ describe('TargetActionButton', () => {
     globalThis.fetch = fetchMock;
 
     render(<TargetActionButton track={mockTrack} />);
-    const btn = screen.getByRole('button', { name: 'Add Artist - Title to target tracks' });
+    const btn = screen.getByRole('button', { name: 'Add Artist – Title to target tracks' });
 
     fireEvent.click(btn);
 
@@ -99,7 +99,7 @@ describe('TargetActionButton', () => {
     globalThis.fetch = fetchMock;
 
     render(<TargetActionButton track={mockTrack} />);
-    const btn = screen.getByRole('button', { name: 'Add Artist - Title to target tracks' });
+    const btn = screen.getByRole('button', { name: 'Add Artist – Title to target tracks' });
 
     fireEvent.click(btn);
     fireEvent.click(btn);
@@ -127,7 +127,7 @@ describe('TargetActionButton', () => {
     globalThis.fetch = fetchMock;
 
     render(<TargetActionButton track={mockTrack} />);
-    const btn = screen.getByRole('button', { name: 'Add Artist - Title to target tracks' });
+    const btn = screen.getByRole('button', { name: 'Add Artist – Title to target tracks' });
 
     fireEvent.click(btn);
 

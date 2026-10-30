@@ -1,4 +1,5 @@
 import { readFileSync } from 'fs';
+import AxeBuilder from '@axe-core/playwright';
 import { test, expect, openRoute } from './fixtures';
 
 /** Library (Melbourne crate) against the checked-in frontend/tests/e2e/data/library.fixture.json. */
@@ -55,3 +56,28 @@ test('Build set from crate opens the set builder with the crate as the pool', as
   await expect(page).toHaveURL(/\/sets(\?|$)/);
   await expect(page.getByRole('combobox', { name: 'Pool' })).toHaveValue('crate');
 });
+
+/**
+ * AX2: the row icon buttons meet WCAG 2.5.8 target size (24 × 24 CSS px; the design system draws them at
+ * control-sm, 32px) and name their track. The accessibility spec opens /library without the fixture, so on a
+ * fresh database it sees no rows; this checks the rows themselves in both themes.
+ */
+for (const theme of ['dark', 'light'] as const) {
+  test(`row icon buttons meet the target size and name their track in ${theme}`, async ({ page }) => {
+    await page.evaluate((t) => { try { localStorage.setItem('sn-theme', t); } catch { /* storage blocked */ } }, theme);
+    await openRoute(page, '/library');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+
+    const row = page.locator('table.sn-table tbody tr[data-id]').first();
+    const id = await row.getAttribute('data-id');
+    const track = library.tracks.find((t: { id: string }) => t.id === id);
+    await expect(row.getByRole('button', { name: `Add ${track.a} – ${track.t} to set`, exact: true })).toBeVisible();
+    const labels = await page.locator('.sn-data-table__actions button').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
+    expect(labels.length).toBeGreaterThan(0);
+    for (const label of labels) expect(label).toMatch(/^(Add|Retry adding) .+ – .+ to (target tracks|set)$/);
+
+    const results = await new AxeBuilder({ page }).include('table.sn-table tbody').withRules(['target-size']).analyze();
+    expect(results.violations.flatMap((v) => v.nodes.map((n) => `${v.id}: ${n.target.join(' ')}`))).toEqual([]);
+    expect(results.passes.flatMap((v) => v.nodes).length).toBeGreaterThan(0);
+  });
+}
