@@ -1850,3 +1850,12 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: tests, E2E (docs only).
 - Next: owner decides how to merge the duplicated slots; 104 finished slots still have no PR line at all.
 <!-- SLOT:DOC4 END -->
+
+<!-- SLOT:DS24 BEGIN -->
+### DS24: DateRange: decide the first real use
+- Start: 2026-10-30. Base `main` e1ea438. Step 0 only (blocking design choice).
+- Changed: docs/integration/DS24/decision.md compares A (port DateField with the calendar button, then the /pipeline job history filter) and B (DateRange directly on an existing list), with pages touched, data filtered, the Q11–Q16 answers that affect each, and a recommendation (A, first on /library "Last heard between"). Findings: library runs are always empty since DB1; `GET /api/v1/jobs` has no date parameters and succeeded jobs are pruned after 14 days; B as a filter goes against the DateRange card's "When to use" table.
+- Checks run: `git diff --check`; `scope_guard.py`.
+- Checks not run: frontend checks and E2E (docs only, no code).
+- Next: waiting for Markus to pick A on /pipeline, A on /library, or B. Then one package for the chosen option only.
+<!-- SLOT:DS24 END -->
