@@ -1870,3 +1870,11 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Found, not fixed: silver tracks from MixesDB are still skipped ("missing bronze_id") because the first, standalone item for each track creates the silver row and it has no bronze row. Same on main.
 - Next: SC5 (per-job bronze counts), then a package to link silver tracks to the positioned bronze row.
 <!-- SLOT:SC6 END -->
+
+<!-- SLOT:DS21 BEGIN -->
+### DS21: FileDrop replaces raw file inputs
+- Start: 2026-10-30 (branch ds21-filedrop off main e1ea438)
+- End: 2026-10-30. `TracklistImporter.tsx` and `LibraryImportDialog.tsx` take their file through `components/ds/FileDrop` (drag and drop, Choose file, type and size checks, file name only per DR-033). Parse and upload handlers are unchanged; the tracklist keeps .txt/.csv up to 5 MB, the library export takes .json up to 50 MB (it had no limit before). `TargetTracksManager` "Import from JSON" is left as is: it opens a paste-JSON dialog and never picks a file. New `TracklistImporter.test.tsx` and two new `LibraryImportDialog` tests cover drop-to-import and rejections.
+- Checks run: tsc, oxlint (exit 0, warnings only), vitest 340/340, vite build, sync-design-system --check, check_design_system --check, scope guard. Not run: E2E and a real drag in a browser (no Docker stack in the cloud sandbox).
+- Next: reviewer drags a .json onto the library import dialog and a .txt onto the tracklist importer; follow-ups in the PR (unused `tli__dropzone`/`tli__file-*` rules in TracklistImporter.css, FileDrop in the target-track import dialog, frontend nginx 1 MB default body limit).
+<!-- SLOT:DS21 END -->
