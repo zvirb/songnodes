@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Optional, Protocol
 import httpx
 
 from common.metadata.matching import Track
+from .web_call_log import WebCallLogger, attach_web_call_wrapper, default_sink
 
 USER_AGENT = 'SongNodes/1.0 (+https://github.com/songnodes)'
 RETRYABLE = {429, 500, 502, 503, 504}
@@ -115,9 +116,15 @@ class HttpProvider:
     max_retry_after = 60.0
 
     def __init__(self, client: Optional[httpx.AsyncClient] = None, rate_interval: float = 0.0, cache=None,
-                 sleep=asyncio.sleep, timeout: float = 15.0):
+                 sleep=asyncio.sleep, timeout: float = 15.0, call_log=None):
         self._owns_client = client is None
         self.client = client or httpx.AsyncClient(timeout=timeout, headers={'User-Agent': USER_AGENT})
+        if self._owns_client:
+            # Every provider client is built here, so this is where outside calls get recorded in web_call_log.
+            # An injected client belongs to the caller (and may be shared by several providers), so it is left alone.
+            sink = call_log or default_sink()
+            if sink is not None:
+                attach_web_call_wrapper(self.client, WebCallLogger(self.name, log_callback=sink))
         self.limiter = RateLimiter(rate_interval, sleep=sleep)
         self.cache = cache or MemoryCache()
         self._sleep = sleep

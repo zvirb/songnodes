@@ -1932,3 +1932,13 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: live Deezer call and the running stack (no Docker daemon in the cloud sandbox); E2E (no UI change).
 - Next: PV2 wires `MiniAudioPreview` into the library row with this endpoint.
 <!-- SLOT:PV1 END -->
+
+<!-- SLOT:WEB1 BEGIN -->
+### WEB1: Record outside music-service calls in the web call log
+- Start: 2026-10-30
+- End: 2026-10-30
+- Changed: `HttpProvider.__init__` (services/common/providers/base.py), where every provider builds its own HTTP client, now attaches `attach_web_call_wrapper` with a `PostgresSink` that writes one `web_call_log` row per response when `DATABASE_URL` is set (worker, rest-api). Injected clients are left alone. `web_call_log.py`: URLs are redacted before storing (user:password and credential-like query values such as Last.fm `api_key` become `REDACTED`; headers and bodies were never stored), a failing sink is logged by exception class and never fails the call, and async callable sinks are awaited.
+- Checks run: `python -m pytest tests/enrichment_local/test_web_call_log.py` (6 passed); `cd services && python -m pytest common/tests` (144 passed); root `python -m pytest` (same 52 failures/errors as origin/main: tests/integration need a database, tests/library_importer, tests/enrichment_local/test_provider.py import order); scope guard.
+- Checks not run: against a running stack (no Docker here). `run_id` and `field` stay empty because callers do not pass them yet.
+- Next: reviewer runs one enrichment job and checks `SELECT provider, endpoint, status FROM web_call_log ORDER BY id DESC LIMIT 5`.
+<!-- SLOT:WEB1 END -->
