@@ -87,6 +87,8 @@ const STATUSES=["Prompt ready","In progress","Waiting on user","Proposal queued"
 const COLORS={"Prompt ready":"var(--fg-2)","In progress":"var(--info)","Waiting on user":"var(--warn)","Proposal queued":"var(--brand)","Live":"var(--ok)"};
 let tasks=[],rules="",group="All",open=new Set(),canWrite=true,db=null;
 const $=id=>document.getElementById(id);
+/* Snapshot bodies are frozen: never assign to a task, swap in an edited copy instead. */
+function replaceTask(id,patch){tasks=tasks.map(x=>x.id===id?{...x,...patch}:x);render()}
 function toast(msg){const t=$("toast");t.textContent=msg;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2200)}
 function setReadOnly(why){canWrite=false;const n=$("ro");n.textContent=why;n.hidden=false;render()}
 function el(tag,attrs={},...kids){const e=document.createElement(tag);for(const[k,v]of Object.entries(attrs)){if(k==="class")e.className=v;else if(k.startsWith("on"))e.addEventListener(k.slice(2),v);else if(v!==false&&v!=null)e.setAttribute(k,v===true?"":v)}for(const k of kids)if(k!=null)e.append(k);return e}
@@ -115,7 +117,7 @@ function render(){
   if(!shown.length){$("list").replaceChildren(el("div",{class:"empty"},tasks.length?"No jobs in this group.":"No jobs yet. Claude seeds them after publishing."));return}
   $("list").replaceChildren(...shown.map(t=>{
     const isOpen=open.has(t.id);
-    const sel=el("select",{id:"st-"+t.id,"aria-label":`Status of ${t.id}`,disabled:!canWrite,onchange:e=>{t.status=e.target.value;render();save(t,{status:t.status})}},...STATUSES.map(s=>el("option",{value:s,selected:s===t.status},s)));
+    const sel=el("select",{id:"st-"+t.id,"aria-label":`Status of ${t.id}`,disabled:!canWrite,onchange:e=>{const status=e.target.value;replaceTask(t.id,{status});save(t,{status})}},...STATUSES.map(s=>el("option",{value:s,selected:s===t.status},s)));
     const tags=el("div",{class:"tags"},el("span",{class:"tag"},t.group),t.openQuestion?el("span",{class:"tag q"},"Question open"):null,t.dependsOn?el("span",{class:"tag d"},"Depends on "+t.dependsOn):null);
     const head=el("div",{class:"head"},
       el("span",{class:"code"},t.id),
@@ -123,7 +125,7 @@ function render(){
       el("div",{class:"act"},el("button",{class:"copy",onclick:e=>copyPrompt(t,e.target)},"Copy prompt"),sel));
     const row=el("article",{class:"row"},head);
     if(isOpen){
-      const note=el("textarea",{id:"note-"+t.id,disabled:!canWrite,onblur:e=>{if(e.target.value!==(t.note||"")){t.note=e.target.value;save(t,{note:t.note})}}});note.value=t.note||"";
+      const note=el("textarea",{id:"note-"+t.id,disabled:!canWrite,onblur:e=>{const note=e.target.value;if(note!==(t.note||"")){replaceTask(t.id,{note});save(t,{note})}}});note.value=t.note||"";
       row.append(el("div",{class:"body"},
         el("dl",{},el("dt",{},"Area"),el("dd",{},t.area),el("dt",{},"Touches"),el("dd",{},t.pages||"–"),el("dt",{},"Depends on"),el("dd",{},t.dependsOn||"–"),el("dt",{},"Open question"),el("dd",{},t.openQuestion||"–")),
         el("pre",{},t.prompt),
