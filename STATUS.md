@@ -368,7 +368,10 @@ One slot per work package. Each agent edits ONLY the lines between its own `SLOT
 Write a dated start entry when you begin and a dated end entry when you finish (what was built, checks run / not run, PR link).
 
 <!-- SLOT:FE12 BEGIN -->
-### FE12: Pipeline telemetry (2025-XX-XX)
+### FE12: Pipeline telemetry
+- Start: 2026-10-25
+- End: 2026-10-25
+- PR: https://github.com/zvirb/songnodes/pull/116 (merged 2026-10-25)
 - Created `usePipelineTelemetry` polling hook mapping live jobs and outbox endpoints.
 - Replaced mock data in `ScraperProgressPage.tsx` with live data mapping.
 - Handled empty and error states correctly.
@@ -484,7 +487,9 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 <!-- SLOT:BE1 END -->
 
 <!-- SLOT:REF0 BEGIN -->
-**[2026-10-25] ref_mb schema and DB preparation (Jules)**:
+### REF0: ref_mb schema and DB preparation (Jules)
+- Start: 2026-10-25
+- End: 2026-10-25
 - Replaced schema migration 100 with NO-OPs since ref_mb will use a separate DB.
 - Recorded deployment decision to docs/integration/ref_mb/DECISION.md.
 - Added connection settings and pass-through variables in compose.dev.yaml.
@@ -492,6 +497,7 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 - Generated tests, Pytest fixture with mock data, and DDL for ref_mb schema.
 - Added license documentation in docs/licensing/MUSICBRAINZ.md and README.md.
 - Superseded legacy MBID schema migration 001.
+- PR: https://github.com/zvirb/songnodes/pull/132, https://github.com/zvirb/songnodes/pull/134 and https://github.com/zvirb/songnodes/pull/135 (all merged 2026-10-25)
 <!-- SLOT:REF0 END -->
 
 <!-- SLOT:SEC_SENTINEL BEGIN -->
@@ -549,7 +555,7 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 - Built: Moved `test_performance.py` into `tests/integration/` and added a `pytest.mark.skip` and `pytest.mark.performance` so it is treated as a benchmark requiring the live stack. Created unit tests for `catalog.py` and `main.py` mocking out external dependencies. Updated `.github/workflows/python-tests.yml` to run the tests in CI without coverage output.
 - Checks run: `python -m pytest tests/unit/` with `PYTHONPATH=..` inside `services/graph-visualization-api`. Ran `actionlint` on workflow file.
 - Checks not run: Full performance test suite (requires live stack). E2E Playwright tests (no environment).
-- PR: [Link to be added]
+- PR: https://github.com/zvirb/songnodes/pull/200 (merged 2026-10-26)
 - End: 2026-10-26
 <!-- SLOT:QA3 END -->
 
@@ -558,7 +564,7 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 - Start: 2026-10-29
 - Built: Fixed invalid escape sequence SyntaxWarning in `services/common/refmb/test_refmb.py`. Verified `pytest services/common/refmb` collects and passes cleanly from repo root, `services/`, and `services/common/refmb/`.
 - Checks run: `pytest services/common/refmb` (6 passed), `cd services && pytest common/refmb` (6 passed), `cd services/common/refmb && pytest` (6 passed).
-- PR: [QA4: Run services/common/refmb tests from any directory and in CI](https://github.com/zvirb/songnodes/pull/NEW)
+- PR: [QA4: Run services/common/refmb tests from any directory and in CI](https://github.com/zvirb/songnodes/pull/430) (merged 2026-10-29); earlier PR https://github.com/zvirb/songnodes/pull/181 (merged 2026-10-26)
 - End: 2026-10-29
 <!-- SLOT:QA4 END -->
 
@@ -568,7 +574,7 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 - Built: Exported `PYTHONUTF8=1` in `scripts/sync-design-system.sh` and resolved command compatibility (`python3` vs `python`) to fix `UnicodeDecodeError` parsing `tokens.json` in Windows Git Bash.
 - Checks run: `bash scripts/sync-design-system.sh --check` both with valid state and induced drift (tested rollback) successfully correctly identify in sync or out of sync states.
 - Checks not run: Full E2E suite due to environment constraints.
-- PR link: To be generated on submission.
+- PR link: https://github.com/zvirb/songnodes/pull/159 (merged 2026-10-26)
 - End: 2026-10-26
 <!-- SLOT:QA5 END -->
 
@@ -578,7 +584,7 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 - Built: Added `poll_until` helper with bounded polling (0.1s polling interval) to `tests/integration/test_dev_worker.py` to replace fixed 1-second `time.sleep` calls across worker job completion and outbox consumer drain checks. Exception-safe cleanup handling ensures synthetic test records are removed even if tests fail.
 - Checks run: `python3 -m pytest -o addopts="" tests/integration/test_dev_worker.py` (5 runs passed: 3 integration tests skipped cleanly without worker container). `python scripts/scope_guard.py` passed.
 - Checks not run: Full Compose stack integration run (worker container not running in sandbox). Playwright E2E tests (no frontend changes).
-- PR: https://github.com/zvirb/songnodes/pull/NEW
+- PR: https://github.com/zvirb/songnodes/pull/428 (merged 2026-10-29); earlier PR https://github.com/zvirb/songnodes/pull/190 (merged 2026-10-26)
 - End: 2026-10-29
 <!-- SLOT:QA6 END -->
 
@@ -626,7 +632,7 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
   - Skipped out-of-scope files `AISetlistsPage.tsx`, `CamelotPage.tsx`, `camelot.css`, `EnergyWave.tsx`, `ui.tsx`, and `usePipelineTelemetry.ts`.
   - Created DS13.md audit file.
 - Checks run: `vitest` pass, `check_design_system.py` pass. E2E Playwright skipped (unavailable in sandbox).
-- PR: Pending
+- PR: https://github.com/zvirb/songnodes/pull/239 (merged 2026-10-27)
 <!-- SLOT:DS13 END -->
 
 <!-- SLOT:DS14 BEGIN -->
@@ -645,7 +651,7 @@ Checks run:
 - Sync script check (`bash scripts/sync-design-system.sh --check`)
 Checks not run:
 - Playwright E2E tests (unavailable in sandbox environment)
-PR link: To be opened
+PR link: https://github.com/zvirb/songnodes/pull/233 (merged 2026-10-27)
 <!-- SLOT:DS14 END -->
 
 <!-- SLOT:DS15 BEGIN -->
@@ -673,7 +679,7 @@ Checks: Read docs only. Hand-back: 19 missing token instances (top gaps: 300px m
 - Built: Audited the following components and fixed their CSS and token usage to adhere to design system specifications: `ArtistAttributionManager.tsx` & `.css`, `ContextMenu.tsx`, `EdgeDetailsModal.tsx` & `.css`, `GraphFilterPanel.tsx` & `.css`, `GraphMiniMap.tsx`, `IntelligentBrowser.module.css`, `CurrentTrack.tsx`, `FilterTabs.tsx`, `TrackItem.tsx`, and `DJInterface.tsx` & `.graph.css`. Replaced ad-hoc typography styles (font weights, px sizing) with standard tokens (e.g. `data-s`, `caption`, `label`, `body-strong`). Replaced inline pixel metrics (e.g., `34px`) with `var(--space-8)` and `2px` with `var(--space-0.5)`. Replaced hard-coded colors with tokens like `color-fg-3` and `color-fg`. Fixed ad-hoc media breakpoints for `.gx-main--play/plan` and `.aam__split` to match `--bp-tablet` (768px). Updated `frontend/design-system-pending.txt` to indicate migrations for `ArtistAttributionManager.css`, `DJInterface.graph.css`, and `IntelligentBrowser.module.css`. Logged audit results in `docs/design-system/audits/DS2A.md`.
 - Checks run: `npm ci`, `tsc`, `vitest` (passed), `vite build` (passed), `check_design_system.py` (passed), `sync-design-system.sh --check` (passed).
 - Checks not run: Playwright E2E tests cannot run in sandbox.
-- PR: Pending.
+- PR: https://github.com/zvirb/songnodes/pull/235 (merged 2026-10-27)
 <!-- SLOT:DS2A END -->
 
 <!-- SLOT:DS2B BEGIN -->
@@ -687,7 +693,7 @@ Checks: Read docs only. Hand-back: 19 missing token instances (top gaps: 300px m
 ### DS3: Design system audit and fix: Library page
 - Start: 2026-10-26
 - End: 2026-10-26
-- End: 2026-10-26. Fixed inline pixel sizes, invalid tokens (`var(--text-2)`, `var(--spacing-md)`), missing padding and font-size tokens by replacing with `sn-` utility classes and correct space/fg tokens. Checked vitest tests and sync-design-system. Playwright tests could not be run. PR link: TBD.
+- End: 2026-10-26. Fixed inline pixel sizes, invalid tokens (`var(--text-2)`, `var(--spacing-md)`), missing padding and font-size tokens by replacing with `sn-` utility classes and correct space/fg tokens. Checked vitest tests and sync-design-system. Playwright tests could not be run. PR link: https://github.com/zvirb/songnodes/pull/237 (merged 2026-10-27).
 <!-- SLOT:DS3 END -->
 
 <!-- SLOT:DS4 BEGIN -->
@@ -703,7 +709,7 @@ Checks: Read docs only. Hand-back: 19 missing token instances (top gaps: 300px m
 - Built: Migrated `SetBuilderPage.tsx`, `EnergyWave.tsx`, and `ExportDialog.tsx` to fully comply with design-system rules, replacing inline pixels/colors with proper tokens (e.g. `--space-3`, `--fg-2`, `.label`), replacing manual status chips with `<StatusPill>`, and exporting missing metadata as empty strings instead of "Unknown". Created audit DS4.md and marked files as migrated.
 - Checks run: `vitest run src`, `oxlint`, `tsc`, `vite build`, `python scripts/check_design_system.py --check`.
 - Checks not run: Playwright E2E visual tests (not supported in sandbox).
-- PR: https://github.com/zvirb/songnodes/pull/NEW
+- PR: https://github.com/zvirb/songnodes/pull/250 (merged 2026-10-27)
 - End: 2026-10-27
 <!-- SLOT:DS4 END -->
 
@@ -727,7 +733,7 @@ Checks run:
 Not run:
 - Playwright E2E and visual tests (cannot run in this sandbox environment).
 
-PR: ds5-design-system-audit-sources-not-found-pages
+PR: https://github.com/zvirb/songnodes/pull/232 (merged 2026-10-27), branch ds5-design-system-audit-sources-not-found-pages
 <!-- SLOT:DS5 END -->
 
 <!-- SLOT:DS6 BEGIN -->
@@ -736,7 +742,7 @@ PR: ds5-design-system-audit-sources-not-found-pages
 - Built: Audited and migrated Harmony components to design system. Removed inline properties, ad-hoc pixels, non-compliant fallback text ("Unknown") and implemented required text/layout classes (`.data-strong`, `.body-s`, `.label`, `.sn-card`, etc). Documented missing items and review notes in `docs/design-system/audits/DS6.md`.
 - Checks run: `vitest run src`, `tsc`, `oxlint`, `vite build`, and `sync-design-system.sh --check`.
 - Checks not run: Playwright E2E visual tests (sandbox constraint).
-- PR: Pending
+- PR: https://github.com/zvirb/songnodes/pull/247 (merged 2026-10-27)
 - End: 2026-10-26
 <!-- SLOT:DS6 END -->
 
@@ -762,10 +768,13 @@ PR: ds5-design-system-audit-sources-not-found-pages
 <!-- SLOT:R1 END -->
 
 <!-- SLOT:R2 BEGIN -->
-## 2026-10-26 (Jules)
+### R2: Restore the route finder page (Jules)
+- Start: 2026-10-26
+- End: 2026-10-26
 - Restored `frontend/src/features/pathfinder` folder from commit ccaca01 to recover FE3 Route Finder Page.
 - Fixed type issues in `PathfinderPage.tsx` and `useUnifiedTracks.ts` to make `oxlint` and `tsc` pass cleanly.
 - Updated `PathfinderPage.test.tsx` to properly assign `window.SongNodes` and use strict typings.
+- PR: https://github.com/zvirb/songnodes/pull/177 (merged 2026-10-26)
 <!-- SLOT:R2 END -->
 
 <!-- SLOT:R3 BEGIN -->
@@ -836,7 +845,7 @@ Work done:
 - Checks run: `PYTHONPATH=services python3 -m pytest -o addopts="" tests/library_importer/` (8 passed).
 - Checks not run: Playwright E2E suite due to environment constraints.
 - Reviewer Check: `pytest tests/library_importer/test_import_evidence_fields.py` passes.
-- PR Link: https://github.com/zvirb/songnodes/pull/NEW
+- PR Link: https://github.com/zvirb/songnodes/pull/433 (merged 2026-10-29); earlier PR https://github.com/zvirb/songnodes/pull/194 (merged 2026-10-26)
 - End: 2026-10-29
 <!-- SLOT:L1 END -->
 
@@ -956,7 +965,7 @@ Work done:
 - Built: Fixed `save_set` in `services/library/model/library_db.py` to calculate a UUID `aggregate_id` using `SET_NAMESPACE` and pass it to `append_outbox` while keeping the integer `set_id` in the payload. Updated unit test suite `tests/library_model/test_saved_sets_outbox.py`.
 - Checks run: `PYTHONPATH=services python3 -m pytest -o addopts="" --noconftest tests/library_model/test_saved_sets_outbox.py` passed (2/2).
 - Checks not run: Full E2E Playwright tests.
-- PR Link: Pending
+- PR Link: https://github.com/zvirb/songnodes/pull/183 (merged 2026-10-26); re-sent as https://github.com/zvirb/songnodes/pull/424 (merged 2026-10-29)
 - End: 2026-10-26
 <!-- SLOT:L3 END -->
 
@@ -1220,7 +1229,7 @@ Work done:
 - Built: Upgraded `services/health-monitor/Dockerfile` base image to `node:26-alpine`. Regenerated `package-lock.json` with npm 12. Modified `package.json` test script to use `--passWithNoTests` since there are no test files.
 - Checks run: `npm ci && npm test` and `docker build` of the owned Dockerfile.
 - Checks not run: Full end-to-end integration tests due to lack of environment access.
-- PR: U28: Upgrade services/health-monitor to Node 26 and latest npm dependencies (u28-health-monitor-node26)
+- PR: [U28: Upgrade services/health-monitor to Node 26 and latest npm dependencies](https://github.com/zvirb/songnodes/pull/244) (merged 2026-10-27), branch u28-health-monitor-node26
 - Reviewer check: `docker build` succeeds; `node --version` in the image prints v26.
 - End: 2026-10-26
 <!-- SLOT:U28 END -->
@@ -1240,17 +1249,17 @@ Work done:
 - End: 2026-10-26. Replaced undefined layout classes (`sn-card--danger`, `sn-field--inline`, `sn-layout-stack`, `sn-layout-grid`, `sn-list`, `sn-mb-*`, `sn-ml-*`, `sn-mr-*`, `sn-mt-*`, `sn-page__body`, `sn-row--compact`, `sn-stat`, `sn-inline-msg`) with valid design system counterparts, components like `ErrorPanel` and `FigureTile`, or exact layout inline styles using `var(--space-*)` in `AISetlistsPage.tsx` and `ui.tsx`. Generated audit docs at `docs/design-system/audits/LY1.md`.
 - Checks run: `npm ci && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build` (success), `python scripts/check_design_system.py --check` (success), `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check` (success).
 - Checks not run: Playwright E2E and visual tests due to environment constraints.
-- PR Link: https://github.com/zvirb/songnodes/pull/NEW
+- PR Link: https://github.com/zvirb/songnodes/pull/308 (merged 2026-10-28)
 <!-- SLOT:LY1 END -->
 
 <!-- SLOT:LY2 BEGIN -->
 ### LY2: Layout debt: music library and set builder pages
-- Start: 2024-11-20
-- End: 2024-11-20
+- Start: 2026-10-28
+- End: 2026-10-28
 Replaced all undefined `sn-` layout classes (`sn-page-library`, `sn-mb-credit`, `sn-page-sets`, `sn-panel`, `sn-u-mt-sm`, `sn-body-s`, `sn-body-strong`, `sn-copy-button__text`, `sn-color-brand`, etc.) in the Music Library and Set Builder pages with valid DS components and tokens (`sn-card`, `body-s`, `body-strong`, `var(--space-*)`).
 Removed lines from the frontend baseline file and created LY2 audit report.
 Checks run: `check_design_system.py`, UI lint, compilation and typescript check, unit tests, DS sync check. Playwright/E2E visual checks were not run because this environment doesn't allow UI verification.
-PR: https://github.com/zvirb/songnodes/pull/LY2
+PR: https://github.com/zvirb/songnodes/pull/305 (merged 2026-10-28)
 <!-- SLOT:LY2 END -->
 
 <!-- SLOT:LY3 BEGIN -->
@@ -1259,7 +1268,7 @@ PR: https://github.com/zvirb/songnodes/pull/LY2
 - Built: Replaced undefined layout classes (`sn-camelot-page`, `sn-page__head`, `sn-input-wrap`, etc) in Camelot and Pathfinder pages with standard design-system shell components (PageHeader) and inline layout tokens. Adopted standard CSS from `bundle.css` for TrackCell and InlineMessage inside Pathfinder and Camelot views. Cleared all requested unused layout classes from `design-system-layout-baseline.txt` and generated the LY3 audit file.
 - Checks run: `check_design_system.py`, `sync-design-system.sh`, `vitest`, `tsc`, `oxlint`.
 - Checks not run: Playwright E2E and visual tests (cannot run browser in sandbox).
-- PR: [LY3: Layout debt: pathfinder and Camelot pages](https://github.com/zvirb/songnodes/pull/LY3)
+- PR: [LY3: Layout debt: pathfinder and Camelot pages](https://github.com/zvirb/songnodes/pull/309) (merged 2026-10-28)
 - End: 2026-10-27
 <!-- SLOT:LY3 END -->
 
@@ -1269,7 +1278,7 @@ PR: https://github.com/zvirb/songnodes/pull/LY2
 - Built: Replaced undefined `sn-*` layout classes with standard layout structures and Design System components. Replaced `<dialog>` and `<select>` with `<Dialog>` and `<SelectField>` in `ExportDialog.tsx`. Refactored `ScraperProgressPage.tsx` to remove pseudo-headers and redundant elements. Removed resolved items from `frontend/design-system-layout-baseline.txt` and completed the layout audit in `docs/design-system/audits/LY4.md`.
 - Checks run: `python scripts/check_design_system.py --check`, `npm ci && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build`, `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check`.
 - Checks not run: Playwright E2E and visual tests due to environment limitations in the sandbox.
-- PR: [LY4: Layout debt: pipeline page and export dialog](https://github.com/zvirb/songnodes/pull/NEW)
+- PR: [LY4: Layout debt: pipeline page and export dialog](https://github.com/zvirb/songnodes/pull/307) (merged 2026-10-28)
 - End: 2026-10-27
 <!-- SLOT:LY4 END -->
 
@@ -1279,7 +1288,7 @@ PR: https://github.com/zvirb/songnodes/pull/LY2
 - Built: Replaced undefined classes with standard design-system components or inline space/typography variables across OAuthCallback, AIAssistantModal, NowPlayingDeck, ds/index, spatialIndexUsage, and DJInterface. Shrunk the layout baseline exception list. Replaced nested <main> in DJInterface with a div so GraphPage acts as the page container. Documented changes in docs/design-system/audits/LY5.md.
 - Checks run: check_design_system.py (passed with baseline shrunk), tsc, oxlint, vitest, vite build, sync-design-system.sh.
 - Checks not run: Playwright E2E and visual tests due to environment limitations.
-- PR Link: https://github.com/zvirb/songnodes/pull/NEW
+- PR Link: https://github.com/zvirb/songnodes/pull/306 (merged 2026-10-28)
 - End: 2026-10-27
 <!-- SLOT:LY5 END -->
 
@@ -1299,42 +1308,43 @@ PR: https://github.com/zvirb/songnodes/pull/LY2
 - Checks run: `npm ci`, `npx tsc --noEmit -p .`, `npx oxlint src`, `npx vitest run src`, `npx vite build` on Node 26. Design system checks. All pass.
 - Checks not run: Playwright E2E suite could not be run as per sandbox limitations.
 - Reviewer Check: Open /library, click the table (or Tab to it), press J three times: the third row has the focus outline and a screen reader hears '3 of N: Artist – Title'; press T: the row's target button shows it was added.
-- PR Link: https://github.com/zvirb/songnodes/pull/NEW
+- PR Link: https://github.com/zvirb/songnodes/pull/337 (merged 2026-10-28)
 - End: 2026-10-28
 <!-- SLOT:FL5 END -->
 
 <!-- SLOT:DB1 BEGIN -->
 ### DB1: One track source: every page reads the library from the database
-- Start: 2023-11-20
+- Start: 2026-10-28
 - Built: Replaced static json fetching with API endpoint `/api/v1/library/search`. Added mapping function `mapApiToLibraryTrack` to explicitly handle missing fields (`sync`, `bp`, `chart` not supplied by API). Fallback to json on network errors. Updated hooks and services to correctly infer data modes from the API outcome. Updated Vitest suites to reflect explicit data flow logic.
 - Checks run: `vitest run src` (passed, covering logic fallback and API data handling). `tsc --noEmit -p .`, `oxlint src`.
 - Checks not run: Playwright E2E testing cannot be run in the sandbox.
 - Reviewer Check: With the stack running and library.tracks empty, /paths shows the empty state instead of 294 old tracks; after the library import (L7) /library and /paths show the same count.
-- PR Link: https://github.com/zvirb/songnodes/pull/NEW
-- End: 2023-11-20
+- PR Link: https://github.com/zvirb/songnodes/pull/333 (merged 2026-10-28)
+- End: 2026-10-28
 <!-- SLOT:DB1 END -->
 
 <!-- SLOT:SC2 BEGIN -->
-Started: 2024-11-20
-Ended: 2024-11-20
+Started: 2026-10-28
+Ended: 2026-10-28
 Built: Added scrape_targets handler and recurring celery job to automatically search target tracks on a schedule. Tested via test_target_scrape.py.
 Checks run: cd services && python -m unittest common/tests/test_target_scrape.py, python scripts/scope_guard.py.
 Checks not run: UI checks (not applicable).
 Reviewer check: With stack running, add target track on /sources/targets; set SCRAPE_TARGETS_INTERVAL_SECONDS=60, GET /api/v1/jobs?kind=scrape lists 2 jobs, target's last_searched is set.
 Follow-ups: Updating playlists_found after a scrape.
-PR: https://github.com/zvirb/songnodes/pull/NEW_PR
+PR: https://github.com/zvirb/songnodes/pull/331 (merged 2026-10-28)
 <!-- SLOT:SC2 END -->
 
 <!-- SLOT:L8 BEGIN -->
 ### L8: Library page: import the library export from the browser
-- Start: 2024-10-28
-- End: 2024-10-28
+- Start: 2026-10-28
+- End: 2026-10-28
   - Added LibraryImportDialog component with FileDrop and StagedProgress using design system CSS classes and standard HTML tags.
   - Implemented reading library.json, hash generation via crypto.subtle.digest, POST to /api/v1/library/ingest with idempotency key, and polling `/api/v1/jobs/{id}` for job status.
   - Added 'Import library' action to LibraryPage header and empty state for when the DB has 0 tracks.
   - Wrote comprehensive unit tests using vitest and testing-library/react with jsdom.
   - Checks run: `cd frontend && npm ci && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build`, python scripts/check_design_system.py, bash scripts/sync-design-system.sh
   - Note: Playwright E2E tests cannot be run in the sandbox environment.
+- PR: https://github.com/zvirb/songnodes/pull/391 (merged 2026-10-28)
 <!-- SLOT:L8 END -->
 
 <!-- SLOT:AA1 BEGIN -->
@@ -1343,7 +1353,7 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 - End: 2026-10-26
 - Built: Essentia-based key and BPM analyser with half/double BPM folding to typical ranges. Validated via synthetic audio test fixtures representing kicks, hi-hats, claps, and chord progressions. Also added a `benchmark-key-bpm.py` script for local library evaluation.
 - Checks: `cd services/audio-analysis && python -m pytest tests/unit/test_key_bpm.py -q` run successfully.
-- PR: (Pending submission)
+- PR: https://github.com/zvirb/songnodes/pull/343, https://github.com/zvirb/songnodes/pull/353 and https://github.com/zvirb/songnodes/pull/398 (all merged 2026-10-28)
 <!-- SLOT:AA1 END -->
 
 <!-- SLOT:AA2 BEGIN -->
@@ -1362,14 +1372,17 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 - Checks run: `python -m pytest tests/ai_proxy tests/rest_api/test_api_keys_ai_services.py tests/security/test_api_keys_security.py -q`, `cd frontend && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build`, `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check`. All passed (note: there are pre-existing vitest failures in out-of-scope files due to a JSDOM network routing error `TargetTracksManager.test.tsx`, `data.test.ts` etc; they were explicitly avoided).
 - Checks not run: Playwright E2E suite could not be run in the sandbox.
 - Reviewer Check: Save a Claude key in Settings, reload: the mask shows and `SELECT service_name FROM api_keys` lists 'anthropic'; localStorage has no raw key. Run AI setlists: the browser network panel shows only /api/v1/ai/complete, never api.anthropic.com.
-- PR: (pending)
+- PR: https://github.com/zvirb/songnodes/pull/361, https://github.com/zvirb/songnodes/pull/390 and https://github.com/zvirb/songnodes/pull/396 (all merged 2026-10-28)
 - End: 2026-10-28
 <!-- SLOT:AK1 END -->
 
 <!-- SLOT:CR1 BEGIN -->
+### CR1: Data-source credits in the app footer
+- Start: 2026-10-28
+- End: 2026-10-28
 - **Status:** Complete. Added `CreditsFooter.tsx` containing track metadata data source attributions according to DS rule 15-print-export.
 - **Checks run:** frontend unit tests, linting, build, DS sync check (all passed).
-- **PR Link:** TBD
+- **PR Link:** https://github.com/zvirb/songnodes/pull/355 (merged 2026-10-28)
 <!-- SLOT:CR1 END -->
 
 <!-- SLOT:EC1 BEGIN -->
@@ -1378,7 +1391,7 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 - Built: Added `.github/workflows/e2e.yml` to run the Playwright E2E suite against the development Compose stack. On `pull_request`, it runs the chromium project; on `push` to `main`, it runs the full multi-browser suite. Added documentation on the CI run in `frontend/tests/README.md`.
 - Checks run: `docker compose -f compose.dev.yaml config -q`, YAML lint (`python -c "import yaml,sys; yaml.safe_load(open('.github/workflows/e2e.yml'))"`).
 - End: 2026-10-28
-- PR: https://github.com/zvirb/songnodes/pull/NEW
+- PR: https://github.com/zvirb/songnodes/pull/354 (merged 2026-10-28)
 <!-- SLOT:EC1 END -->
 
 <!-- SLOT:EK1 BEGIN -->
@@ -1390,7 +1403,7 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
   - Adapted `build_providers` to query saved keys using the database connection strings, falling back where necessary, and logging source properly.
   - Checks run: Scope guard, shared domain unit tests (`python -m pytest common/tests/test_provider_saved_keys.py common/tests/test_providers.py -q`).
   - The reviewer's check check passes.
-  - PR: TODO
+  - PR: https://github.com/zvirb/songnodes/pull/358 (merged 2026-10-28) (https://github.com/zvirb/songnodes/pull/368 merged the same branch again with no file changes)
 <!-- SLOT:EK1 END -->
 
 <!-- SLOT:HM1 BEGIN -->
@@ -1401,7 +1414,7 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 - Checks not run: Playwright E2E suite due to sandbox constraints.
 - Reviewer Check: Open /harmony, click 8A on the wheel, six move cards appear (8A, 9A, 7A, 8B, 10A, 3A). Clicking 10A sets the wheel and "Tracks in" to 10A. Keyboard accessible via Tab and Enter.
 - End: 2026-10-28
-- PR: https://github.com/zvirb/songnodes/pull/NEW
+- PR: https://github.com/zvirb/songnodes/pull/357 (merged 2026-10-28)
 <!-- SLOT:HM1 END -->
 
 <!-- SLOT:LS1 BEGIN -->
@@ -1441,16 +1454,17 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 - Checks run: `npm ci && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build` and `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check`. All passed.
 - Checks not run: Playwright E2E suite due to environment constraints.
 - Reviewer Check: Open http://127.0.0.1:3006/settings: cards come in coloured groups (pink API keys incl. one card each for Spotify, Discogs, Last.fm …; teal theme, text size, row density, reduce motion; gold TIDAL, Spotify connection, 1001Tracklists, saved data); About is neutral and says nothing about API status; Beatport appears nowhere. Open the Discogs card's page: only the Discogs token field. /settings/scraper-keys still loads.
-- PR Link: https://github.com/zvirb/songnodes/pull/NEW
+- PR Link: https://github.com/zvirb/songnodes/pull/362 (merged 2026-10-28)
 - End: 2026-10-28
 <!-- SLOT:ST1 END -->
 
 <!-- SLOT:SV1 BEGIN -->
-* Started: 2026-10-28
-* Finished: 2026-10-28
-* Summary: Updated Set builder to load saved sets from the database on mount. Merges server and local sets, gracefully falls back to local data if the API fails, and prevents duplicates on saves by mapping server IDs back to local items using a pending creates map.
-* Checks: ran vitest tests for data.ts, oxlint, tsc, and sync-design-system.sh --check. All pass.
-* PR: (Pending)
+### SV1: Set builder: load saved sets from the database
+- Start: 2026-10-28
+- End: 2026-10-28
+- Summary: Updated Set builder to load saved sets from the database on mount. Merges server and local sets, gracefully falls back to local data if the API fails, and prevents duplicates on saves by mapping server IDs back to local items using a pending creates map.
+- Checks: ran vitest tests for data.ts, oxlint, tsc, and sync-design-system.sh --check. All pass.
+- PR: https://github.com/zvirb/songnodes/pull/363 (merged 2026-10-28)
 <!-- SLOT:SV1 END -->
 
 <!-- SLOT:TV1 BEGIN -->
@@ -1469,7 +1483,7 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 - Start: 2026-10-28
 - Built: Fixed gap in positions by changing MixesDB `parse_mix_page` to grab all `ol` tracks between headers and to handle unknown tracks with 'Unknown Artist' preserving their position slots. Modified persistence pipeline to append `#<position>` string to synthetic_track_id to eliminate bronze layer row collisions within and across mixes.
 - Checks run: `python -m pytest tests/unit/scrapers/test_mixesdb_spider.py -q` passed; `cd scrapers && python3 -m pytest -o addopts="" tests -q` passed; tests added via `git add -f`.
-- PR Link: PR pending.
+- PR Link: https://github.com/zvirb/songnodes/pull/389 (merged 2026-10-28)
 - End: 2026-10-28
 <!-- SLOT:SC3 END -->
 
@@ -1478,7 +1492,7 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 - Start: 2026-10-28
 - Built: Renamed `start(self)` to `start_requests(self)` in `scrapers/spiders/1001tracklists_spider.py` so Scrapy engine's internal `start()` isn't overridden with a synchronous generator. Added `test_start_requests_search` and `test_start_requests_tracklist` in `tests/unit/scrapers/test_1001tracklists_spider.py`.
 - Checks run: `python3 -m pytest -o addopts="" tests/unit/scrapers/test_1001tracklists_spider.py -q`
-- PR: [SC4: 1001Tracklists spider starts on current Scrapy]
+- PR: [SC4: 1001Tracklists spider starts on current Scrapy](https://github.com/zvirb/songnodes/pull/387) (merged 2026-10-28)
 - End: 2026-10-28
 <!-- SLOT:SC4 END -->
 
@@ -1488,7 +1502,7 @@ PR: https://github.com/zvirb/songnodes/pull/NEW_PR
 - Built: Replaced the Set builder's 'Send to TIDAL on the weekly run' switch with an instant 'Send to TIDAL' dialog that creates a new playlist using the official TIDAL API. It uses the stored access token, preserves the set track order, logs unmatched tracks, and uses the design system.
 - Checks run: `pytest tests/rest_api/test_tidal_playlists.py -q` (16 passed), `cd frontend && npm ci && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src/features/setBuilder src/features/musicLibrary && npx vite build`, `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check`.
 - Reviewer check: With TIDAL connected in Settings, open /sets, build and save a set, choose Send to TIDAL, add a note, send: a new playlist named "<today> . <set name>" appears in the TIDAL app with the note as its description and the tracks in set order; unmatched tracks are listed in the dialog. Sending again makes a second playlist.
-- PR Link: https://github.com/zvirb/songnodes/pull/NEW
+- PR Link: https://github.com/zvirb/songnodes/pull/394 (merged 2026-10-28)
 - Follow-ups: Removing SavedSet.tidal and the weekly-run TIDAL step in the musicLibrary pipeline.
 - End: 2026-10-28
 <!-- SLOT:TX1 END -->
@@ -1547,8 +1561,9 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 
 <!-- SLOT:SB4 BEGIN -->
 ### SB4: Set builder: save and delete sets through the per-set API
-- Start: 2023-10-26
-- End: 2023-10-26 - Completed changes
+- Start: 2026-10-26
+- End: 2026-10-26 - Completed changes
+- PR: https://github.com/zvirb/songnodes/pull/203 (merged 2026-10-26)
 <!-- SLOT:SB4 END -->
 
 <!-- SLOT:QA7 BEGIN -->
@@ -1558,7 +1573,7 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks run: `cd frontend && ./node_modules/.bin/tsc --noEmit -p . && npx oxlint src tests`, `python scripts/scope_guard.py`.
 - Checks not run: Full Playwright E2E suite due to sandbox environment limitations. Expected result: `bash scripts/e2e-docker.sh library` passes against a stack with an empty library database, and `bash scripts/e2e-docker.sh sets` fails only on the saved-set tests naming the 404 for `PUT /api/v1/library/sets`.
 - Reviewer check: `bash scripts/e2e-docker.sh library` passes against an empty library stack; `bash scripts/e2e-docker.sh sets` fails only on saved-set tests citing 404 for `PUT /api/v1/library/sets`.
-- PR: [QA7: E2E: pin the library and saved-sets API to a fixture](https://github.com/zvirb/songnodes/pull/NEW)
+- PR: [QA7: E2E: pin the library and saved-sets API to a fixture](https://github.com/zvirb/songnodes/pull/431) (merged 2026-10-29); earlier PR https://github.com/zvirb/songnodes/pull/201 (merged 2026-10-26)
 - End: 2026-10-29
 <!-- SLOT:QA7 END -->
 
@@ -1640,7 +1655,7 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Built: Modified QuickSearch.tsx to include recent searches (with JSON serialization of type and id) and added static route modules that can be matched and selected via fuse and navigation via `useNavigate`. Added QuickSearch.test.tsx that asserts filtering and recent modules loading and Enter key navigation.
 - Checks run: `vitest run src/components/QuickSearch.test.tsx`, `tsc --noEmit -p .`, `oxlint src`, `vitest run src`, `vite build`. All passed.
 - Checks not run: Playwright E2E suite cannot run in the sandbox.
-- End: 2026-10-26 - Completed changes. https://github.com/zvirb/songnodes/pull/NEW
+- End: 2026-10-26 - Completed changes. https://github.com/zvirb/songnodes/pull/257 (merged 2026-10-27)
 <!-- SLOT:UX8 END -->
 
 <!-- SLOT:TG1 BEGIN -->
@@ -1673,7 +1688,7 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks run: `npm ci && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build` in frontend, `python scripts/check_design_system.py --check`.
 - Checks not run: Playwright E2E suite due to environment constraints.
 - Reviewer Check: Open /library with un-targeted tracks: banner appears; clicking action targets them and updates coverage.
-- PR Link: opened by the scheduled run from branch tg4-crate-discovery-banner-17335777320996562292 (merged current main, kept to owned files).
+- PR Link: https://github.com/zvirb/songnodes/pull/281 (merged 2026-10-27); opened by the scheduled run from branch tg4-crate-discovery-banner-17335777320996562292 (merged current main, kept to owned files).
 - End: 2026-10-27
 <!-- SLOT:TG4 END -->
 
@@ -1714,14 +1729,15 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 <!-- SLOT:FL4 END -->
 
 <!-- SLOT:DS7 BEGIN -->
-Started 2026-10-26 22:29
-Ended 2026-10-26 22:29: Audited Pathfinder (DS7). Fixed CSS typography variables and refactored EmptyPanel -> EmptyState. Checks run: ts, lint, vite, vitest (tests passed), and sync script. Not run: Playwright E2E/visuals (no sandbox). PR: (pending)
+### DS7: Design system audit and fix: Paths (route finder) page
+- Start: 2026-10-26 22:29
+- End: 2026-10-26 22:29: Audited Pathfinder (DS7). Fixed CSS typography variables and refactored EmptyPanel -> EmptyState. Checks run: ts, lint, vite, vitest (tests passed), and sync script. Not run: Playwright E2E/visuals (no sandbox). PR: https://github.com/zvirb/songnodes/pull/245 (merged 2026-10-27)
 <!-- SLOT:DS7 END -->
 
 <!-- SLOT:DS17 BEGIN -->
 ### DS17: Design system audit and fix: AI setlists import page
 - Start: 2026-10-26
-- End: 2026-10-26 - Fixed ad-hoc spacing, inline styling, missing SN formatters, and missing Button components in AISetlistsPage.tsx. Checked and validated UI components under design system. Vitest tests passed. Could not run Playwright. PR link pending.
+- End: 2026-10-26 - Fixed ad-hoc spacing, inline styling, missing SN formatters, and missing Button components in AISetlistsPage.tsx. Checked and validated UI components under design system. Vitest tests passed. Could not run Playwright. PR link: https://github.com/zvirb/songnodes/pull/234 (merged 2026-10-27).
 <!-- SLOT:DS17 END -->
 
 <!-- SLOT:BOLT BEGIN -->
@@ -1730,7 +1746,7 @@ Ended 2026-10-26 22:29: Audited Pathfinder (DS7). Fixed CSS typography variables
 - Built: Pre-calculated static 24x24 lookup matrices (`KEY_COMPATIBILITY_TABLE` and `HARMONIC_DISTANCE_TABLE`) for all standard Camelot key combinations ('1A'..'12A', '1B'..'12B') in `frontend/src/utils/harmonicCompatibility.ts`.
 - Checks run: `cd frontend && npm ci && npx tsc --noEmit -p . && npx oxlint src && npx vitest run src && npx vite build`, `python3 scripts/check_design_system.py --check`, `PYTHONUTF8=1 bash scripts/sync-design-system.sh --check`.
 - Impact: Reduces harmonic key compatibility and distance calculation overhead by ~45% in force-directed graph layouts and link distance calculations.
-- PR: [⚡ Bolt: pre-compute harmonic key compatibility and distance lookup tables](https://github.com/zvirb/songnodes/pull/NEW)
+- PR: [⚡ Bolt: pre-compute harmonic key compatibility and distance lookup tables](https://github.com/zvirb/songnodes/pull/402) (merged 2026-10-29)
 - End: 2026-10-29
 <!-- SLOT:BOLT END -->
 
@@ -1758,7 +1774,7 @@ Ended 2026-10-26 22:29: Audited Pathfinder (DS7). Fixed CSS typography variables
 - Start: 2026-10-29
 - Built: Created `pipeline/build_db.py` adding `artwork_url TEXT` column to `tracks` SQLite table and exporting `"art": r.get("artwork_url")` in Set Builder JSON artifact (`outputs/artifact/library.json`). Added unit tests in `pipeline/test_db_artwork.py`.
 - Checks: `pytest -o addopts="" pipeline/test_db_artwork.py` (4 passed), `pytest -o addopts="" pipeline/test_pipeline.py pipeline/test_normalise.py pipeline/test_db_artwork.py` (11 passed).
-- PR: [ART3-DB: Persist Artwork in SQLite and Set Builder JSON Export](https://github.com/zvirb/songnodes/pull/NEW)
+- PR: [ART3-DB: Persist Artwork in SQLite and Set Builder JSON Export](https://github.com/zvirb/songnodes/pull/348) (merged 2026-10-28)
 - End: 2026-10-29
 <!-- SLOT:ART3 END -->
 
@@ -1785,7 +1801,7 @@ Ended 2026-10-26 22:29: Audited Pathfinder (DS7). Fixed CSS typography variables
 - Start: 2026-10-29
 - End: 2026-10-29. Investigated requirements for all pipeline and music service API providers. Documented sign-up fields, redirect/callback URIs, format requirements, and rate limit notes across all service cards in `frontend/src/pages/SettingsPage.tsx` (`SERVICE_SETUP`). Rendered callback URLs as wrapping `TextLink`s and code formats as `sn-mono`. Added support for service callbacks in `frontend/src/App.tsx`, `frontend/src/components/OAuthCallback.tsx`, and `services/rest_api/routers/music_auth.py`. Added unit tests in `frontend/src/pages/SettingsPage.test.tsx` verifying card instructions and callback URLs.
 - Checks: vitest unit tests (48 test files, 309 tests passed), `npm run type-check` (tsc --noEmit passed), `npm run lint` (0 errors), `npm run build` (vite build passed in 2.03s), `python scripts/check_design_system.py --check` (passed), `git diff --check` (passed).
-- PR: CFG1: API provider sign-up requirements, instructions, and callbacks
+- PR: [CFG1: API provider sign-up requirements, instructions, and callbacks](https://github.com/zvirb/songnodes/pull/435) (merged 2026-10-29)
 <!-- SLOT:CFG1 END -->
 
 <!-- SLOT:QA8 BEGIN -->
@@ -1822,3 +1838,15 @@ Ended 2026-10-26 22:29: Audited Pathfinder (DS7). Fixed CSS typography variables
 - Checks not run: tests, E2E (docs only).
 - Next: none.
 <!-- SLOT:DOC3 END -->
+
+<!-- SLOT:DOC4 BEGIN -->
+### DOC4: STATUS.md: fix placeholder PR links and wrong dates
+- Start: 2026-10-30. Base `main` e1ea438.
+- Changed: every placeholder PR link in the slots (`pull/NEW`, `pull/NEW_PR`, `pull/LY2`, `pull/LY3`, "(pending)", "Pending", "PR pending", "TBD", "TODO", "To be opened", "Link to be added", bare branch or title) now points at the merged PR found by code in the PR titles and `git log origin/main`, with its merge date (Australia/Melbourne). Where a code has two merged PRs, both are listed. No placeholder lacked a merged PR, so none says "not merged".
+- Dates: LY2, DB1, SC2, L8 and SB4 had 2023 or 2024 dates; FE12 had "2025-XX-XX". Each now carries the first-commit and merge dates of its PR.
+- Shape: FE12, SV1, DS7, REF0, R2 and CR1 now start with `### CODE: title`, `- Start:` and `- End:`; their text is unchanged.
+- Not touched: the task log above "Agent status slots", "Scheduled run" notes, and duplicated or mismatched slot markers (DS13/DS15, DS4/DS5, DS14, S3/SEC6A), which are listed as a follow-up.
+- Checks run: `grep -c "pull/NEW" STATUS.md` (0); placeholder grep (none left in slots); 5 links spot-checked against GitHub; `git diff --check`; `scope_guard.py`.
+- Checks not run: tests, E2E (docs only).
+- Next: owner decides how to merge the duplicated slots; 104 finished slots still have no PR line at all.
+<!-- SLOT:DOC4 END -->
