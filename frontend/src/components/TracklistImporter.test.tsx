@@ -1,23 +1,27 @@
 /** @vitest-environment jsdom */
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { TracklistImporter } from './TracklistImporter';
 
+beforeEach(() => {
+  vi.stubGlobal('fetch', vi.fn());
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+});
+
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
+
 const tracklist = '1. Bicep - Glue\n2. Overmono - So U Kno\n';
+const pastedTracklist = '1. Bicep - Glue\n2. Overmono - So U Kno\n3. Four Tet - Baby';
 const zone = () => document.querySelector('.sn-file-drop__zone') as HTMLElement;
 const input = () => document.querySelector('input[type="file"]') as HTMLInputElement;
 
 describe('TracklistImporter file input', () => {
-  beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn());
-  });
-
-  afterEach(() => {
-    cleanup();
-    vi.unstubAllGlobals();
-  });
-
   it('reads a dropped tracklist and imports it as choosing it did', async () => {
     (fetch as Mock).mockResolvedValueOnce({ ok: true, json: async () => ({ created: 2, updated: 0, failed: 0 }) });
     render(<TracklistImporter onClose={vi.fn<() => void>()} />);
@@ -68,5 +72,92 @@ describe('TracklistImporter file input', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Remove set.txt' }));
     expect(screen.queryByText('set.txt')).toBeNull();
     expect(screen.getByLabelText<HTMLTextAreaElement>('Or paste tracklist as text').value).toBe('');
+  });
+});
+
+/** Paste the fixture tracklist, read it, and press Import. */
+function startImport() {
+  render(<TracklistImporter onClose={vi.fn<() => void>()} />);
+  fireEvent.change(screen.getByLabelText('Or paste tracklist as text'), { target: { value: pastedTracklist } });
+  fireEvent.click(screen.getByRole('button', { name: 'Read tracklist' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Import 3 tracks' }));
+}
+
+const steps = () => Array.from(document.querySelectorAll<HTMLElement>('.sn-staged-progress__step'));
+const stateOf = (i: number) => steps()[i]?.getAttribute('data-state');
+const detailOf = (i: number) => steps()[i]?.querySelector('.sn-staged-progress__detail')?.textContent;
+
+/** A fetch that stays open until the test answers it. */
+function pendingFetch() {
+  let answer: (r: unknown) => void = () => {};
+  let fail: (e: unknown) => void = () => {};
+  (fetch as Mock).mockImplementationOnce(() => new Promise((resolve, reject) => { answer = resolve; fail = reject; }));
+  return { answer: (r: unknown) => answer(r), fail: (e: unknown) => fail(e) };
+}
+
+describe('TracklistImporter import stages', () => {
+  it('shows read, then importing while the API works, then done with the real counts', async () => {
+    const call = pendingFetch();
+    startImport();
+
+    expect(steps().map((s) => s.querySelector('.sn-staged-progress__name')?.textContent)).toEqual(['Read the tracklist', 'Import the tracks']);
+    expect(stateOf(0)).toBe('done');
+    expect(detailOf(0)).toBe('3 tracks');
+    expect(stateOf(1)).toBe('running');
+    expect(detailOf(1)).toBe('Sending 3 tracks to SongNodes');
+    expect(document.querySelector('[role="progressbar"]')).toBeNull();
+    expect(screen.queryByText(/%/)).toBeNull();
+
+    await act(async () => {
+      call.answer({ ok: true, status: 200, json: async () => ({ created: 2, updated: 1, failed: 0, total: 3 }) });
+    });
+
+    expect(stateOf(1)).toBe('done');
+    expect(detailOf(1)).toBe('2 new, 1 updated');
+    expect(screen.getByText('Imported 3 of 3 tracks.')).toBeTruthy();
+    expect(within(document.querySelector('.sn-staged-progress') as HTMLElement).getByRole('status').textContent).toBe('Tracklist import finished.');
+  });
+
+  it('names the cause when the API is down', async () => {
+    const call = pendingFetch();
+    startImport();
+    await act(async () => { call.fail(new TypeError('Failed to fetch')); });
+
+    expect(stateOf(1)).toBe('failed');
+    expect(detailOf(1)).toBe('SongNodes did not answer. Check that the API is running, then try again; the tracklist is still here.');
+    expect(document.body.textContent).not.toContain('Failed to fetch');
+    expect(screen.getByRole('button', { name: 'Import 3 tracks' }).hasAttribute('disabled')).toBe(false);
+  });
+
+  it('names the cause from the API error answer', async () => {
+    (fetch as Mock).mockResolvedValueOnce({ ok: false, status: 409, json: async () => ({ detail: 'This tracklist is already being imported' }) });
+    startImport();
+    await act(async () => {});
+    expect(stateOf(1)).toBe('failed');
+    expect(detailOf(1)).toBe('SongNodes did not import the tracks: This tracklist is already being imported');
+
+    (fetch as Mock).mockResolvedValueOnce({ ok: false, status: 502, json: async () => { throw new SyntaxError('Unexpected token <'); } });
+    fireEvent.click(screen.getByRole('button', { name: 'Import 3 tracks' }));
+    await act(async () => {});
+    expect(detailOf(1)).toBe('SongNodes could not save the tracks (error 502). The tracklist is still here, so you can try again.');
+    expect(document.body.textContent).not.toContain('Unexpected token');
+  });
+
+  it('says the import has had no answer for 60 s without failing it', async () => {
+    vi.useFakeTimers();
+    const call = pendingFetch();
+    startImport();
+
+    for (let s = 0; s < 59; s += 1) act(() => { vi.advanceTimersByTime(1000); });
+    expect(detailOf(1)).toBe('Sending 3 tracks to SongNodes');
+    act(() => { vi.advanceTimersByTime(1000); });
+    expect(stateOf(1)).toBe('running');
+    expect(detailOf(1)).toBe('No answer from SongNodes for 60 s. It may still finish; the tracklist stays here.');
+    expect(document.querySelector('.sn-staged-progress__time b')?.textContent).toBe('1:00');
+
+    await act(async () => {
+      call.answer({ ok: true, status: 200, json: async () => ({ created: 3, updated: 0, failed: 0 }) });
+    });
+    expect(stateOf(1)).toBe('done');
   });
 });

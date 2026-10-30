@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScanText, Download } from 'lucide-react';
-import { Dialog, FileDrop, type FileDropFile } from './ds';
+import { Dialog, FileDrop, StagedProgress, type FileDropFile, type StagedProgressStep } from './ds';
 import { SN } from '../lib/songnodes';
 import './TracklistImporter.css';
 
@@ -16,6 +16,31 @@ interface ParsedTrack {
 }
 
 
+/** One press of Import: what was sent, when, and what the API answered. */
+interface ImportRun {
+  tracks: number;
+  source: string;
+  started: number;
+  finished?: number;
+  phase: 'sending' | 'done' | 'failed';
+  result?: { created: number; updated: number; failed: number };
+  error?: string;
+}
+
+/** StagedProgress stall rule (design system 1.4.0): 60 s with no progress. */
+const STALL_MS = 60_000;
+
+/** The cause of a failed import in words, from the API's answer; never raw exception text. */
+async function importFailure(response: Response): Promise<string> {
+  const data: unknown = await response.json().catch(() => null);
+  const detail = data && typeof data === 'object' && 'detail' in data ? data.detail : null;
+  if (typeof detail === 'string' && detail.trim()) return `SongNodes did not import the tracks: ${detail.trim()}`;
+  if (response.status === 413) return 'The tracklist is too large for SongNodes to accept. Split it and import each part.';
+  if (response.status === 400 || response.status === 422) return `SongNodes could not read the tracks it was sent (error ${response.status}). Check the parsed tracks and try again.`;
+  if (response.status >= 500) return `SongNodes could not save the tracks (error ${response.status}). The tracklist is still here, so you can try again.`;
+  return `SongNodes refused the import (error ${response.status}).`;
+}
+
 /**
  * TracklistImporter - Manual tracklist & file input component
  * Allows users to drop/choose tracklist files (.txt, .csv) or paste tracklists as text
@@ -24,7 +49,8 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
   const [tracklistText, setTracklistText] = useState('');
   const [parsedTracks, setParsedTracks] = useState<ParsedTrack[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [importProgress, setImportProgress] = useState<number | null>(null);
+  const [importRun, setImportRun] = useState<ImportRun | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const [activeFile, setActiveFile] = useState<FileDropFile | null>(null);
 
   const [importStatus, setImportStatus] = useState<{
@@ -33,6 +59,18 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
     total: number;
   } | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Elapsed time and the stall check: one tick a second while the API has not answered.
+  useEffect(() => {
+    if (importRun?.phase !== 'sending') return undefined;
+    let timer: ReturnType<typeof setTimeout>;
+    const tick = () => {
+      setNow(Date.now());
+      timer = setTimeout(tick, 1000);
+    };
+    timer = setTimeout(tick, 1000);
+    return () => clearTimeout(timer);
+  }, [importRun]);
 
   /**
    * Parse a single line to extract artist and title
@@ -114,6 +152,7 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
 
     setParsedTracks(parsed);
     setImportStatus(null);
+    setImportRun(null);
     setErrorMessage(null);
     return parsed;
   };
@@ -162,7 +201,7 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
   };
 
   /**
-   * Import parsed tracks to backend with progress animation
+   * Import parsed tracks to the backend; the stages follow what the request really does.
    */
   const handleImport = async () => {
     if (parsedTracks.length === 0) {
@@ -170,59 +209,78 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
       return;
     }
 
+    const started = Date.now();
+    const run: ImportRun = { tracks: parsedTracks.length, source: activeFile?.name ?? 'Pasted tracklist', started, phase: 'sending' };
     setIsProcessing(true);
-    setImportProgress(10);
+    setImportRun(run);
+    setNow(started);
+    setImportStatus(null);
     setErrorMessage(null);
 
-    const progressInterval = setInterval(() => {
-      setImportProgress(prev => (prev !== null && prev < 90 ? prev + 15 : prev));
-    }, 150);
-
     try {
-      const response = await fetch('/api/v1/tracks/import-tracklist', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          tracks: parsedTracks.map(t => ({
-            artist: t.artist,
-            title: t.title,
-            track_number: t.trackNumber
-          }))
-        })
-      });
-
-      clearInterval(progressInterval);
-      setImportProgress(100);
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Import failed with status ${response.status}`);
+      let response: Response;
+      try {
+        response = await fetch('/api/v1/tracks/import-tracklist', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            tracks: parsedTracks.map(t => ({
+              artist: t.artist,
+              title: t.title,
+              track_number: t.trackNumber
+            }))
+          })
+        });
+      } catch (cause) {
+        throw new Error('SongNodes did not answer. Check that the API is running, then try again; the tracklist is still here.', { cause });
       }
 
-      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(await importFailure(response));
+      }
+
+      const result = await response.json().catch((cause: unknown) => {
+        throw new Error('SongNodes answered, but not with an import result. Check the library before importing again.', { cause });
+      });
+      const counts = { created: Number(result.created) || 0, updated: Number(result.updated) || 0, failed: Number(result.failed) || 0 };
+      setImportRun({ ...run, phase: 'done', finished: Date.now(), result: counts });
       setImportStatus({
-        success: result.created + result.updated,
-        failed: result.failed,
+        success: counts.created + counts.updated,
+        failed: counts.failed,
         total: parsedTracks.length
       });
 
-      if (result.failed === 0) {
+      if (counts.failed === 0) {
         setTracklistText('');
         setParsedTracks([]);
         setActiveFile(null);
       }
     } catch (error) {
       console.error('Failed to import tracklist:', error);
-      setErrorMessage(error instanceof Error ? error.message : 'Failed to import tracklist');
+      setImportRun({ ...run, phase: 'failed', finished: Date.now(), error: error instanceof Error ? error.message : 'The tracklist was not imported.' });
     } finally {
-      clearInterval(progressInterval);
-      setTimeout(() => {
-        setIsProcessing(false);
-        setImportProgress(null);
-      }, 300);
+      setIsProcessing(false);
     }
+  };
+
+  const importSteps = (r: ImportRun): StagedProgressStep[] => {
+    const seconds = r.finished != null ? Math.round((r.finished - r.started) / 1000) : undefined;
+    const stalled = r.phase === 'sending' && now - r.started >= STALL_MS;
+    const res = r.result;
+    return [
+      { name: 'Read the tracklist', state: 'done', detail: `${SN.format.count(r.tracks)} tracks` },
+      {
+        name: 'Import the tracks',
+        state: r.phase === 'sending' ? 'running' : r.phase,
+        seconds,
+        detail: r.phase === 'failed' ? r.error
+          : res ? `${SN.format.count(res.created)} new, ${SN.format.count(res.updated)} updated${res.failed ? `, ${SN.format.count(res.failed)} not imported` : ''}`
+            : stalled ? `No answer from SongNodes for ${STALL_MS / 1000} s. It may still finish; the tracklist stays here.`
+              : `Sending ${SN.format.count(r.tracks)} tracks to SongNodes`,
+      },
+    ];
   };
 
   return (
@@ -279,17 +337,14 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
           {parsedTracks.length > 0 && <span className="tli__count" role="status">{parsedTracks.length} tracks parsed</span>}
         </div>
 
-        {/* Progress Indicator */}
-        {importProgress !== null && (
-          <div className="tli__progress" role="progressbar" aria-valuenow={importProgress} aria-valuemin={0} aria-valuemax={100} aria-label="Import progress">
-            <div className="tli__progress-header">
-              <span className="tli__progress-label">Importing tracklist…</span>
-              <span className="tli__progress-value">{importProgress}%</span>
-            </div>
-            <div className="tli__progress-track">
-              <div className="tli__progress-fill" style={{ width: `${importProgress}%` }} />
-            </div>
-          </div>
+        {/* Import stages */}
+        {importRun && (
+          <StagedProgress
+            lead="Tracklist import"
+            title={importRun.source}
+            steps={importSteps(importRun)}
+            elapsedSeconds={Math.max(0, Math.floor(((importRun.finished ?? now) - importRun.started) / 1000))}
+          />
         )}
 
         {/* Parsed Preview */}
