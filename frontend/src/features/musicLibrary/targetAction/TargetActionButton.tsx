@@ -26,7 +26,7 @@ export const TargetActionButton: React.FC<Props> = ({ track }) => {
     }
   }, [isTarget]);
 
-  const name = `${track.a} - ${track.t}`;
+  const name = `${track.a} – ${track.t}`;
 
   const handleClick = async () => {
     if (status === 'added' || status === 'adding') return;
