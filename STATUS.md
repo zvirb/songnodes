@@ -1878,3 +1878,15 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks run: tsc, oxlint (exit 0, warnings only), vitest 340/340, vite build, sync-design-system --check, check_design_system --check, scope guard. Not run: E2E and a real drag in a browser (no Docker stack in the cloud sandbox).
 - Next: reviewer drags a .json onto the library import dialog and a .txt onto the tracklist importer; follow-ups in the PR (unused `tli__dropzone`/`tli__file-*` rules in TracklistImporter.css, FileDrop in the target-track import dialog, frontend nginx 1 MB default body limit).
 <!-- SLOT:DS21 END -->
+
+<!-- SLOT:UNK1 BEGIN -->
+### UNK1: Never show 'Unknown Artist' or 'N/A' in the app
+- Start: 2026-10-30. Base `main` e1ea438.
+- End: 2026-10-30, branch `unk1-no-unknown-artist`, not pushed (orchestrator opens the PR).
+- Display (en dash): `GraphVisualization.tsx` node label artist, `NowPlayingDeck.tsx` genre (`sn-none`), `PathfinderPage.tsx` track name, `harmonic.ts` `camelotToKey` for an invalid key, `trackMetadata.ts` `formatStoredEnergy` with no energy.
+- Data (no invented name): `trackMetadata.ts` `trackFromNode` leaves a missing artist as `''` (still rejected by `hasValidArtist`); `LiveDataLoader.tsx` drops a dead fallback after its `hasValidArtist` filter; `pathfinding.ts` leaves tracks without a valid artist out of the client route graph; `aiService.ts` leaves the "by" clause out of the prompt; `pathfinder.machine.ts` CSV writes empty BPM and key cells.
+- Tests: `trackMetadata.test.ts` updated and extended; new `harmonic.test.ts` and `pathfinding.test.ts`.
+- Checks run: `tsc --noEmit`, `oxlint src` (no errors), `vitest run src` (50 files, 342 tests passed), `vite build`, `sync-design-system.sh --check`, `check_design_system.py --check`, `scope_guard.py`.
+- Checks not run: E2E (no Docker daemon in the cloud sandbox).
+- Next: follow-ups in the PR (TracklistImporter lines 94 and 101; `'Unknown Track'`/`'Unknown Title'`/`'Unknown Label'` fallbacks; the `0 || Infinity` start-distance bug in `findDJPath`).
+<!-- SLOT:UNK1 END -->
