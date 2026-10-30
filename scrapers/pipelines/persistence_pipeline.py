@@ -164,7 +164,14 @@ class PersistencePipeline:
         # Internal statistics tracking
         self.stats: Dict[str, Any] = {
             'total_items': 0,
-            'persisted_items': 0,
+            # Rows written across ALL tables (bronze, silver, artists, adjacency): a mixed total,
+            # not a playlist or track count.
+            'records_written': 0,
+            # Per-job bronze counts: rows queued for bronze and rows the bronze inserts returned.
+            'bronze_playlists_queued': 0,
+            'bronze_playlists_written': 0,
+            'bronze_tracks_queued': 0,
+            'bronze_tracks_written': 0,
             'failed_items': 0,
             'silent_failures': 0,  # NEW: Track silent failures
             'items_by_type': {}
@@ -406,6 +413,7 @@ class PersistencePipeline:
             if bronze_key not in self.processed_items['bronze_tracks']:
                 self.processed_items['bronze_tracks'].add(bronze_key)
                 self.item_batches['bronze_tracks'].append(item)  # Store complete raw item
+                self.stats['bronze_tracks_queued'] += 1
                 self.logger.debug(
                     f"✓ Track '{track_name}' queued to bronze_tracks (has playlist context: "
                     f"playlist_id={item.get('_bronze_playlist_id')}, position={item.get('_track_position')})"
@@ -594,6 +602,7 @@ class PersistencePipeline:
             f"(current size: {bronze_batch_size_before}/{self.batch_size})"
         )
         self.item_batches['bronze_playlists'].append(item)  # Store complete raw item
+        self.stats['bronze_playlists_queued'] += 1
         bronze_batch_size_after = len(self.item_batches['bronze_playlists'])
         self.logger.info(
             f"📦 Added to bronze_playlists batch "
@@ -867,12 +876,14 @@ class PersistencePipeline:
                 async with conn.transaction():
                     if batch_type == 'bronze_tracks':
                         results = await self._insert_bronze_tracks_batch(conn, batch)
+                        self.stats['bronze_tracks_written'] += len(results)
                         # Store bronze_ids in items for silver layer linkage
                         for result in results:
                             result['item']['_bronze_id'] = result['bronze_id']
                     elif batch_type == 'bronze_playlists':
                         # _bronze_id already set inside _insert_bronze_playlists_batch (line 1059)
                         results = await self._insert_bronze_playlists_batch(conn, batch)
+                        self.stats['bronze_playlists_written'] += len(results)
                     elif batch_type == 'artists':
                         await self._insert_artists_batch(conn, batch)
                     elif batch_type == 'tracks':
@@ -884,10 +895,10 @@ class PersistencePipeline:
                     elif batch_type == 'song_adjacency':
                         await self._insert_song_adjacency_batch(conn, batch)
 
-            self.stats['persisted_items'] += len(batch)
+            self.stats['records_written'] += len(batch)
             self.logger.info(
                 f"✅ Successfully flushed {len(batch)} {batch_type} items to {target_table} "
-                f"(total persisted: {self.stats['persisted_items']})"
+                f"(records written, all tables: {self.stats['records_written']})"
             )
             self.item_batches[batch_type] = []
 
@@ -1761,13 +1772,18 @@ class PersistencePipeline:
             self.logger.info("=" * 80)
             self.logger.info(f"  Spider: {spider.name}")
             self.logger.info(f"  Total items processed: {self.stats['total_items']}")
-            self.logger.info(f"  ✅ Items persisted: {self.stats['persisted_items']}")
+            # unified_scraper_api._extract_stats parses these labels; keep them in step.
+            self.logger.info(f"  Bronze playlists queued: {self.stats['bronze_playlists_queued']}")
+            self.logger.info(f"  Bronze playlists written: {self.stats['bronze_playlists_written']}")
+            self.logger.info(f"  Bronze tracks queued: {self.stats['bronze_tracks_queued']}")
+            self.logger.info(f"  Bronze tracks written: {self.stats['bronze_tracks_written']}")
+            self.logger.info(f"  Pipeline records written (all tables): {self.stats['records_written']}")
             self.logger.info(f"  ❌ Items failed: {self.stats['failed_items']}")
             self.logger.info(f"  🚨 Silent failures detected: {self.stats.get('silent_failures', 0)}")
 
             # Calculate persistence rate
             if self.stats['total_items'] > 0:
-                persistence_rate = (self.stats['persisted_items'] / self.stats['total_items']) * 100
+                persistence_rate = (self.stats['records_written'] / self.stats['total_items']) * 100
                 self.logger.info(f"  📈 Persistence success rate: {persistence_rate:.2f}%")
 
             # Log statistics by item type

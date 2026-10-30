@@ -192,17 +192,22 @@ def _extract_stats(stdout: str, stderr: str) -> Dict[str, int]:
     """
     Parse scrapy log output for item counters.
 
-    CRITICAL: Differentiates between:
-    - items_yielded: Items yielded by spider (from scrapy stats)
-    - items_persisted: Items actually written to database (from persistence pipeline)
-
-    Returns both counts to detect data loss (yielded > persisted).
+    Headline counts are per job and per bronze table:
+    - bronze_playlists_persisted / bronze_tracks_persisted: rows the bronze inserts returned,
+      summed over the "Inserted N ... to bronze layer" line of every batch.
+    - bronze_playlists_queued / bronze_tracks_queued: rows the pipeline queued for bronze
+      (its close summary), so a shortfall compares like with like.
+    Also returned, not comparable with either:
+    - items_yielded: every item the spider yielded, of all kinds (scrapy item_scraped_count).
+    - pipeline_records_written: rows written across all tables (bronze, silver, artists,
+      adjacency), a mixed total and not a playlist or track count.
     """
     combined = f"{stdout}\n{stderr}"
     items_yielded = 0  # Items yielded by spider (from scrapy's item_scraped_count)
-    items_persisted = 0  # Items actually persisted to database (from persistence pipeline)
+    pipeline_records_written = 0  # Rows written across all tables (mixed record types)
     bronze_playlists_persisted = 0  # Bronze playlists actually written
     bronze_tracks_persisted = 0  # Bronze tracks actually written
+    bronze_queued = {"playlists": 0, "tracks": 0}  # Rows the pipeline queued for bronze
 
     for line in combined.splitlines():
         # Extract scrapy's item_scraped_count (items yielded by spider)
@@ -218,18 +223,23 @@ def _extract_stats(stdout: str, stderr: str) -> Dict[str, int]:
                 logger.warning(f"Failed to parse item_scraped_count from line: {line[:100]}, error: {e}")
                 continue
 
-        # Extract persistence pipeline's "Items persisted" count (actual DB writes)
-        # Format: "  ✅ Items persisted: 21"
-        if "Items persisted:" in line:
+        # Persistence pipeline close summary (labels set in PersistencePipeline.close_spider).
+        # Format: "  Pipeline records written (all tables): 42"
+        if "Pipeline records written (all tables):" in line:
             try:
-                parts = line.split("Items persisted:")
-                if len(parts) >= 2:
-                    count_str = parts[1].strip().split()[0]  # Get first word after colon
-                    items_persisted = int(count_str)
-                    logger.info(f"Extracted items_persisted: {items_persisted} from line: {line[:100]}")
+                count_str = line.split("Pipeline records written (all tables):")[1].strip().split()[0]
+                pipeline_records_written = int(count_str)
             except (IndexError, ValueError) as e:
-                logger.warning(f"Failed to parse Items persisted from line: {line[:100]}, error: {e}")
-                continue
+                logger.warning(f"Failed to parse pipeline records written from line: {line[:100]}, error: {e}")
+            continue
+        # Format: "  Bronze tracks queued: 10"
+        if "Bronze playlists queued:" in line or "Bronze tracks queued:" in line:
+            kind = "playlists" if "Bronze playlists queued:" in line else "tracks"
+            try:
+                bronze_queued[kind] = int(line.split("queued:")[1].strip().split()[0])
+            except (IndexError, ValueError) as e:
+                logger.warning(f"Failed to parse bronze {kind} queued from line: {line[:100]}, error: {e}")
+            continue
 
         # Extract bronze layer insert counts for detailed tracking
         # Format: "✓ Inserted 5 playlists to bronze layer"
@@ -249,15 +259,19 @@ def _extract_stats(stdout: str, stderr: str) -> Dict[str, int]:
                 logger.debug(f"Failed to parse bronze insert count from line: {line[:100]}, error: {e}")
                 continue
 
-    logger.info(f"Final extracted stats: yielded={items_yielded}, persisted={items_persisted}, bronze_playlists={bronze_playlists_persisted}, bronze_tracks={bronze_tracks_persisted}")
+    logger.info(
+        f"Final extracted stats: bronze_playlists={bronze_playlists_persisted}/{bronze_queued['playlists']} queued, "
+        f"bronze_tracks={bronze_tracks_persisted}/{bronze_queued['tracks']} queued, "
+        f"yielded={items_yielded}, pipeline_records_written={pipeline_records_written}"
+    )
 
     return {
-        "items_yielded": items_yielded,
-        "items_persisted": items_persisted,
         "bronze_playlists_persisted": bronze_playlists_persisted,
         "bronze_tracks_persisted": bronze_tracks_persisted,
-        # DEPRECATED: Keep for backward compatibility, but now tracks DB writes only
-        "items_processed": items_persisted,
+        "bronze_playlists_queued": bronze_queued["playlists"],
+        "bronze_tracks_queued": bronze_queued["tracks"],
+        "items_yielded": items_yielded,
+        "pipeline_records_written": pipeline_records_written,
         "items_scraped": items_yielded,  # Alias for items_yielded
     }
 
@@ -409,26 +423,37 @@ async def _scrape_internal(request: ScrapeRequest) -> Dict[str, Any]:
     scrape_duration_seconds.labels(source=request.source, status=status_label).observe(
         duration
     )
-    # Increment counter by items PERSISTED (actual DB writes), not yielded
-    items_scraped_total.labels(source=request.source).inc(stats["items_persisted"])
+    # Counter keeps its previous value: rows written across all tables
+    items_scraped_total.labels(source=request.source).inc(stats["pipeline_records_written"])
 
-    # CRITICAL: Detect data loss (items yielded but not persisted)
-    if stats["items_yielded"] > stats["items_persisted"]:
-        data_loss_count = stats["items_yielded"] - stats["items_persisted"]
+    # Data loss: rows queued for a bronze table but not written to it (like with like).
+    # Spider yields are not compared: they mix item kinds, and standalone track items
+    # are never meant to reach bronze.
+    bronze_shortfall = {
+        "playlists": max(stats["bronze_playlists_queued"] - stats["bronze_playlists_persisted"], 0),
+        "tracks": max(stats["bronze_tracks_queued"] - stats["bronze_tracks_persisted"], 0),
+    }
+    data_loss_count = sum(bronze_shortfall.values())
+    if data_loss_count:
         logger.warning(
-            "⚠️ DATA LOSS DETECTED: source=%s, items_yielded=%s, items_persisted=%s, data_loss=%s",
+            "DATA LOSS DETECTED: source=%s, bronze playlists written=%s of %s queued, "
+            "bronze tracks written=%s of %s queued",
             request.source,
-            stats["items_yielded"],
-            stats["items_persisted"],
-            data_loss_count,
+            stats["bronze_playlists_persisted"],
+            stats["bronze_playlists_queued"],
+            stats["bronze_tracks_persisted"],
+            stats["bronze_tracks_queued"],
         )
 
     logger.info(
-        "Spider completed: source=%s, duration_seconds=%s, items_yielded=%s, items_persisted=%s",
+        "Spider completed: source=%s, duration_seconds=%s, bronze_playlists=%s, bronze_tracks=%s, "
+        "items_yielded=%s, pipeline_records_written=%s",
         request.source,
         f"{duration:.2f}",
+        stats["bronze_playlists_persisted"],
+        stats["bronze_tracks_persisted"],
         stats["items_yielded"],
-        stats["items_persisted"],
+        stats["pipeline_records_written"],
     )
 
     return {
@@ -436,18 +461,18 @@ async def _scrape_internal(request: ScrapeRequest) -> Dict[str, Any]:
         "source": request.source,
         "task_id": task_id,
         "url": request.url,
-        # Report both counts for transparency
+        # Headline: rows written to bronze for this job (read by the worker and /pipeline)
+        "bronze_playlists_persisted": stats["bronze_playlists_persisted"],
+        "bronze_tracks_persisted": stats["bronze_tracks_persisted"],
+        "bronze_playlists_queued": stats["bronze_playlists_queued"],
+        "bronze_tracks_queued": stats["bronze_tracks_queued"],
+        # Not playlist or track counts: all spider items, and rows across all tables
         "items_yielded": stats["items_yielded"],
-        "items_persisted": stats["items_persisted"],
-        # Bronze layer details
-        "bronze_playlists_persisted": stats.get("bronze_playlists_persisted", 0),
-        "bronze_tracks_persisted": stats.get("bronze_tracks_persisted", 0),
-        # Backward compatibility (now tracks persisted count)
-        "items_processed": stats["items_persisted"],
+        "pipeline_records_written": stats["pipeline_records_written"],
         "items_scraped": stats["items_yielded"],
-        # Data loss indicator
-        "data_loss_count": stats["items_yielded"] - stats["items_persisted"] if stats["items_yielded"] > stats["items_persisted"] else 0,
-        "data_loss_detected": stats["items_yielded"] > stats["items_persisted"],
+        # Data loss: bronze rows queued but not written
+        "data_loss_count": data_loss_count,
+        "data_loss_detected": data_loss_count > 0,
         "duration_seconds": round(duration, 2),
     }
 
