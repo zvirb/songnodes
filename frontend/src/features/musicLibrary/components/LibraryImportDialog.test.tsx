@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { LibraryImportDialog } from './LibraryImportDialog';
 
 const generateMockFile = (content: string, filename = 'library.json') => {
@@ -17,6 +17,7 @@ describe('LibraryImportDialog', () => {
   });
 
   afterEach(() => {
+    cleanup();
     vi.restoreAllMocks();
   });
 
@@ -119,5 +120,37 @@ describe('LibraryImportDialog', () => {
       expect(fetchMock).toHaveBeenCalledTimes(3);
       expect(fetchMock).toHaveBeenNthCalledWith(3, '/api/v1/jobs/test-job-456/retry', expect.any(Object));
     });
+  });
+
+  it('starts the same import when the export is dropped on the zone', async () => {
+    const fetchMock = fetch as Mock;
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ job_id: 'drop-job', status: 'queued', created: true }) });
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ status: 'succeeded', result: { tracks: 1 } }) });
+    const onReload = vi.fn();
+
+    render(<LibraryImportDialog open={true} onClose={vi.fn()} onReload={onReload} pollMs={0} />);
+
+    const zone = document.querySelector('.sn-file-drop__zone') as HTMLElement;
+    const file = generateMockFile(JSON.stringify({ tracks: [{ id: '1' }], generated: '2023-10-24T00:00:00.000Z' }));
+    fireEvent.dragOver(zone, { dataTransfer: { files: [file] } });
+    expect(zone.hasAttribute('data-dragover')).toBe(true);
+    fireEvent.drop(zone, { dataTransfer: { files: [file] } });
+
+    await screen.findByText(/1 tracks, generated/);
+    expect(screen.getByText('library.json')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/v1/library/ingest', expect.objectContaining({ method: 'POST' }));
+      expect(onReload).toHaveBeenCalled();
+    });
+  });
+
+  it('rejects a file that is not JSON before reading it', async () => {
+    render(<LibraryImportDialog open={true} onClose={vi.fn()} onReload={vi.fn()} pollMs={0} />);
+    const zone = document.querySelector('.sn-file-drop__zone') as HTMLElement;
+    fireEvent.drop(zone, { dataTransfer: { files: [new File(['a - b'], 'set.txt')] } });
+    await screen.findAllByText('The selected file must be a .json file.');
+    expect(screen.queryByRole('button', { name: 'Import' })).toBeNull();
   });
 });

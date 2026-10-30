@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Dialog, showToast } from '../../../components/ds';
-import { SN, SnIcon } from '../../../lib/songnodes';
+import { Dialog, FileDrop, showToast } from '../../../components/ds';
+import { SN } from '../../../lib/songnodes';
 import { type LibraryFile } from '../data';
 
 export async function readExport(file: File): Promise<{ text: string; count: number; generated?: string }> {
@@ -19,6 +19,9 @@ export async function importKey(text: string): Promise<string> {
   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   return `import-sha256-${hashHex}`;
 }
+
+/** Size limit for a library export; there was none before FileDrop, so it is set well above a full export. */
+const LIBRARY_MAX_MB = 50;
 
 interface LibraryImportDialogProps {
   open: boolean;
@@ -39,7 +42,8 @@ export const LibraryImportDialog: React.FC<LibraryImportDialogProps> = ({ open, 
   const [jobStatus, setJobStatus] = useState<string | null>(null);
   const [jobError, setJobError] = useState<string | null>(null);
 
-  const inputRef = useRef<HTMLInputElement>(null);
+  /** The file whose read is current; a slower read of a replaced file is ignored. */
+  const latestRef = useRef<File | null>(null);
 
   useEffect(() => {
     if (!open) {
@@ -55,45 +59,50 @@ export const LibraryImportDialog: React.FC<LibraryImportDialogProps> = ({ open, 
     }
   }, [open]);
 
-  const handleFile = async (selectedFile: File) => {
-    setFile(selectedFile);
+  /** FileDrop has checked type and size; the page owns the one selected file. */
+  const addFile = (added: File[]) => {
+    const selected = added[0];
+    if (!selected) return;
+    latestRef.current = selected;
+    setFile(selected);
     setFileState('reading');
     setFileError(null);
     setSummary(null);
     setFileContent(null);
     setFileHash(null);
+  };
 
+  /** Read and hash the export; FileDrop shows the summary or the error on the file row. */
+  const readFile = async (selectedFile: File): Promise<{ summary: string }> => {
     try {
       const parsed = await readExport(selectedFile);
-      setFileContent(parsed.text);
-
       const hash = await importKey(parsed.text);
-      setFileHash(hash);
-
-      setSummary(`${SN.format.count(parsed.count)} tracks, generated ${parsed.generated ? SN.format.date(parsed.generated) : 'unknown date'}`);
-      setFileState('read');
+      const text = `${SN.format.count(parsed.count)} tracks, generated ${parsed.generated ? SN.format.date(parsed.generated) : 'unknown date'}`;
+      if (latestRef.current === selectedFile) {
+        setFileContent(parsed.text);
+        setFileHash(hash);
+        setSummary(text);
+        setFileState('read');
+      }
+      return { summary: text };
     } catch (e) {
-      setFileState('error');
-      setFileError(e instanceof Error ? e.message : 'Invalid JSON file');
+      const message = e instanceof Error ? e.message : 'Invalid JSON file';
+      if (latestRef.current === selectedFile) {
+        setFileState('error');
+        setFileError(message);
+      }
+      throw new Error(message, { cause: e });
     }
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.currentTarget.setAttribute('data-dragover', 'true');
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.currentTarget.removeAttribute('data-dragover');
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.currentTarget.removeAttribute('data-dragover');
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFile(e.dataTransfer.files[0]);
-    }
+  const removeFile = () => {
+    latestRef.current = null;
+    setFile(null);
+    setFileState(null);
+    setFileError(null);
+    setSummary(null);
+    setFileContent(null);
+    setFileHash(null);
   };
 
   const startImport = async () => {
@@ -194,45 +203,23 @@ export const LibraryImportDialog: React.FC<LibraryImportDialogProps> = ({ open, 
       }
     >
       {!jobStatus ? (
-        <div className="sn-file-drop">
-          <div className="sn-file-drop__label">Library export</div>
-          <div
-            className="sn-file-drop__zone"
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            data-invalid={fileState === 'error' ? 'true' : undefined}
-          >
-            <SnIcon name="upload" />
-            <div className="sn-file-drop__zone-text">
-              <strong>Drop library.json here</strong>
-              <span className="sn-file-drop__accept">JSON files</span>
-            </div>
-            <input
-              ref={inputRef}
-              type="file"
-              accept=".json"
-              className="sn-file-drop__input sn-sr"
-              id="library-import-file"
-              onChange={(e) => e.target.files && e.target.files[0] && handleFile(e.target.files[0])}
-            />
-            <label htmlFor="library-import-file" className="sn-btn sn-btn--sm sn-file-drop__choose">Choose file</label>
-          </div>
-          {file && (
-            <ul className="sn-file-drop__files">
-              <li className="sn-file-drop__file" data-error={fileState === 'error' ? 'true' : undefined}>
-                <SnIcon name={fileState === 'error' ? 'triangle-alert' : 'file-json'} />
-                <div className="sn-file-drop__name">
-                  <b>{file.name}</b>
-                  <span className="sn-file-drop__size">{Math.round(file.size / 1024)} KB</span>
-                </div>
-                {fileState === 'reading' && <div className="sn-file-drop__result">Reading…</div>}
-                {fileState === 'read' && summary && <div className="sn-file-drop__result">{summary}</div>}
-                {fileState === 'error' && fileError && <div className="sn-file-drop__result sn-file-drop__result--error">{fileError}</div>}
-              </li>
-            </ul>
-          )}
-        </div>
+        <FileDrop
+          label="Library export"
+          accept={['.json']}
+          maxMb={LIBRARY_MAX_MB}
+          hint={`library.json exported from SongNodes, up to ${LIBRARY_MAX_MB} MB`}
+          parse={readFile}
+          files={file && fileState ? [{
+            id: 'library-export',
+            name: file.name,
+            size: file.size,
+            state: fileState,
+            summary: summary ?? undefined,
+            error: fileError ?? undefined,
+          }] : []}
+          onAdd={addFile}
+          onRemove={removeFile}
+        />
       ) : (
         <div className="sn-staged-progress">
           <ul className="sn-staged-progress__steps">

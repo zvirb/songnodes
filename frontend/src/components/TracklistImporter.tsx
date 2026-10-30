@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
-import { Upload, ScanText, Download, FileText, X } from 'lucide-react';
-import { Dialog } from './ds';
+import React, { useState } from 'react';
+import { ScanText, Download } from 'lucide-react';
+import { Dialog, FileDrop, type FileDropFile } from './ds';
+import { SN } from '../lib/songnodes';
 import './TracklistImporter.css';
 
 interface TracklistImporterProps {
@@ -14,10 +15,6 @@ interface ParsedTrack {
   originalLine: string;
 }
 
-interface FileItem {
-  name: string;
-  size: number;
-}
 
 /**
  * TracklistImporter - Manual tracklist & file input component
@@ -28,8 +25,7 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
   const [parsedTracks, setParsedTracks] = useState<ParsedTrack[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [importProgress, setImportProgress] = useState<number | null>(null);
-  const [isDragOver, setIsDragOver] = useState(false);
-  const [activeFile, setActiveFile] = useState<FileItem | null>(null);
+  const [activeFile, setActiveFile] = useState<FileDropFile | null>(null);
 
   const [importStatus, setImportStatus] = useState<{
     success: number;
@@ -37,8 +33,6 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
     total: number;
   } | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   /**
    * Parse a single line to extract artist and title
@@ -107,7 +101,7 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
   /**
    * Parse text content into structured track list
    */
-  const processText = (text: string) => {
+  const processText = (text: string): ParsedTrack[] => {
     const lines = text.split('\n');
     const parsed: ParsedTrack[] = [];
 
@@ -121,6 +115,7 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
     setParsedTracks(parsed);
     setImportStatus(null);
     setErrorMessage(null);
+    return parsed;
   };
 
   /**
@@ -131,65 +126,39 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
   };
 
   /**
-   * Handle file loading
+   * FileDrop has checked type (.txt, .csv) and size (5 MB); the dialog keeps one file.
    */
-  const handleFileSelect = (file: File) => {
+  const handleFilesAdded = (files: File[]) => {
+    const file = files[0];
     if (!file) return;
+    setActiveFile({ id: 'tracklist-file', name: file.name, size: file.size, state: 'reading' });
+  };
 
-    // Validate size (< 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setErrorMessage('File size exceeds the 5 MB limit.');
-      return;
-    }
-
+  /**
+   * Read the file into the text box and parse it; FileDrop shows the result on the file row.
+   */
+  const handleFileSelect = (file: File): Promise<{ summary: string }> => new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const content = e.target?.result as string || '';
       setTracklistText(content);
-      setActiveFile({ name: file.name, size: file.size });
-      processText(content);
+      const parsed = processText(content);
+      const summary = `${SN.format.count(parsed.length)} tracks read`;
+      setActiveFile({ id: 'tracklist-file', name: file.name, size: file.size, state: 'read', summary });
+      resolve({ summary });
     };
     reader.onerror = () => {
-      setErrorMessage('Failed to read file.');
+      const error = 'This file could not be read.';
+      setActiveFile({ id: 'tracklist-file', name: file.name, size: file.size, state: 'error', error });
+      reject(new Error(error));
     };
     reader.readAsText(file);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragOver(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragOver(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragOver(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFileSelect(e.dataTransfer.files[0]);
-    }
-  };
-
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      handleFileSelect(e.target.files[0]);
-    }
-  };
+  });
 
   const removeFile = () => {
     setActiveFile(null);
     setTracklistText('');
     setParsedTracks([]);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
   };
 
   /**
@@ -256,12 +225,6 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
     }
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
-
   return (
     <Dialog
       open
@@ -280,44 +243,16 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
       }
     >
       <div className="tli__container">
-        {/* Tokenized File Dropzone */}
-        <div
-          className={`tli__dropzone ${isDragOver ? 'tli__dropzone--active' : ''}`}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          role="region"
-          aria-label="Drop tracklist file here"
-        >
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileInputChange}
-            accept=".txt,.csv"
-            style={{ display: 'none' }}
-          />
-          <Upload size={24} strokeWidth={2} className="tli__dropzone-icon" aria-hidden="true" />
-          <div className="tli__dropzone-text">
-            <span className="tli__dropzone-title">Drop a tracklist file here, or choose a file</span>
-            <span className="tli__dropzone-hint">Accepts .txt and .csv up to 5 MB</span>
-          </div>
-          <button type="button" className="sn-btn sn-btn--sm" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>
-            Choose file
-          </button>
-        </div>
-
-        {/* Selected File Info */}
-        {activeFile && (
-          <div className="tli__file-pill" role="status">
-            <FileText size={16} strokeWidth={2} aria-hidden="true" />
-            <span className="tli__file-name">{activeFile.name}</span>
-            <span className="tli__file-size">({formatFileSize(activeFile.size)})</span>
-            <button type="button" className="sn-btn sn-btn--icon sn-btn--quiet sn-btn--sm" onClick={removeFile} aria-label="Remove file" title="Remove file">
-              <X size={14} strokeWidth={2} aria-hidden="true" />
-            </button>
-          </div>
-        )}
+        <FileDrop
+          label="Tracklist file"
+          accept={['.txt', '.csv']}
+          maxMb={5}
+          hint=".txt or .csv, one track per line, up to 5 MB"
+          parse={handleFileSelect}
+          files={activeFile ? [activeFile] : []}
+          onAdd={handleFilesAdded}
+          onRemove={removeFile}
+        />
 
         {/* Text Area */}
         <div className="sn-field">
