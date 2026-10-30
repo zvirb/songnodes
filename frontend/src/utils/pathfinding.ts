@@ -314,7 +314,7 @@ export async function findDJPath(
       visited.add(currentId);
       nodesExplored++;
 
-      const currentDistance = distances.get(currentId) || Infinity;
+      const currentDistance = distances.get(currentId) ?? Infinity;
 
       // Explore neighbors
       const neighbors = adjacencyList.get(currentId) || [];
@@ -323,7 +323,7 @@ export async function findDJPath(
         if (visited.has(neighborId)) continue;
 
         const newDistance = currentDistance + neighbor.weight.totalWeight;
-        const existingDistance = distances.get(neighborId) || Infinity;
+        const existingDistance = distances.get(neighborId) ?? Infinity;
 
         if (newDistance < existingDistance) {
           distances.set(neighborId, newDistance);
@@ -347,7 +347,7 @@ export async function findDJPath(
 
       if (node && track) {
         const isWaypoint = options.waypoints.has(currentId);
-        const distanceFromStart = distances.get(currentId) || 0;
+        const distanceFromStart = distances.get(currentId) ?? 0;
 
         path.unshift({
           id: currentId,
@@ -367,7 +367,7 @@ export async function findDJPath(
     }
 
     // Calculate metrics
-    const totalWeight = distances.get(options.endTrackId) || Infinity;
+    const totalWeight = distances.get(options.endTrackId) ?? Infinity;
     const totalDuration = path.reduce((sum, node) => sum + (node.track.duration || 0), 0);
 
     // Analyze transitions
