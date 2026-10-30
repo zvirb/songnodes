@@ -1,0 +1,146 @@
+<title>SongNodes Work Queue</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@200;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: one column of job rows under a summary strip; rows expand in place. SongNodes type: Sora titles, Inter body, JetBrains Mono codes. */
+:root{
+  --bg:#f6f5f9; --surface:#ffffff; --surface-2:#efedf5; --line:#dcd8e6;
+  --fg:#1f1c27; --fg-2:#5a5568; --brand:#5e4a99; --brand-soft:#e7e1f5;
+  --ok:#2f7a4d; --ok-soft:#dcefe3; --warn:#8a5a00; --warn-soft:#f6ead0;
+  --info:#285f9c; --info-soft:#dde8f5; --muted:#e9e7ee;
+  --f-title:"Sora",system-ui,sans-serif; --f-body:"Inter",system-ui,sans-serif; --f-mono:"JetBrains Mono",ui-monospace,monospace;
+  --r:8px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#18161d; --surface:#222029; --surface-2:#2b2833; --line:#3a3644;
+  --fg:#ece9f3; --fg-2:#aaa4b8; --brand:#b6a4e6; --brand-soft:#352d4d;
+  --ok:#7fcb9b; --ok-soft:#1f3a2a; --warn:#e7bd62; --warn-soft:#3d3018;
+  --info:#8fb8ea; --info-soft:#1e2f45; --muted:#2e2b36; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#18161d; --surface:#222029; --surface-2:#2b2833; --line:#3a3644;
+  --fg:#ece9f3; --fg-2:#aaa4b8; --brand:#b6a4e6; --brand-soft:#352d4d;
+  --ok:#7fcb9b; --ok-soft:#1f3a2a; --warn:#e7bd62; --warn-soft:#3d3018;
+  --info:#8fb8ea; --info-soft:#1e2f45; --muted:#2e2b36; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--f-body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 48px}
+.wrap{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font:200 1.9rem/1.2 var(--f-title);margin:0;text-wrap:balance}
+h1 b{font-weight:600}
+.sub{color:var(--fg-2);margin:4px 0 0}
+.mono{font-family:var(--f-mono);font-size:.85em}
+.howto{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 16px;color:var(--fg-2);font-size:.9rem}
+.howto b{color:var(--fg)}
+.summary{display:flex;flex-direction:column;gap:8px}
+.counts{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.88rem;color:var(--fg-2)}
+.counts span b{color:var(--fg);font-variant-numeric:tabular-nums;margin-right:4px}
+.bar{display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--muted)}
+.bar i{display:block;height:100%}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:500 .82rem var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--fg-2);border-radius:999px;padding:4px 12px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--brand-soft);color:var(--fg);border-color:var(--brand)}
+.notice{padding:10px 14px;border-radius:var(--r);background:var(--warn-soft);color:var(--warn);font-size:.9rem}
+.list{display:flex;flex-direction:column;gap:8px}
+.row{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.head{display:grid;grid-template-columns:4.6rem minmax(0,1fr) auto;gap:6px 14px;align-items:center;padding:12px 14px}
+.code{font:500 .85rem var(--f-mono);color:var(--brand)}
+.tl{min-width:0;display:flex;flex-direction:column;gap:4px}
+.tl button.title{all:unset;cursor:pointer;font-weight:600;line-height:1.35}
+.tl button.title:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:3px}
+.tags{display:flex;flex-wrap:wrap;gap:6px;font-size:.75rem}
+.tag{padding:1px 8px;border-radius:999px;background:var(--surface-2);color:var(--fg-2);letter-spacing:.02em}
+.tag.q{background:var(--warn-soft);color:var(--warn)}
+.tag.d{background:var(--info-soft);color:var(--info)}
+.act{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.copy{font:600 .85rem var(--f-body);color:var(--brand);background:none;border:0;padding:4px 2px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.copy:focus-visible,select:focus-visible,textarea:focus-visible,.chip:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+select{font:500 .82rem var(--f-body);background:var(--surface-2);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:4px 6px}
+.body{border-top:1px solid var(--line);padding:12px 14px 14px;display:flex;flex-direction:column;gap:10px}
+dl{display:grid;grid-template-columns:8rem minmax(0,1fr);gap:4px 12px;margin:0;font-size:.88rem}
+dt{color:var(--fg-2)} dd{margin:0}
+pre{margin:0;background:var(--surface-2);border-radius:6px;padding:12px;overflow-x:auto;font:500 .78rem/1.55 var(--f-mono);white-space:pre-wrap;word-break:break-word}
+label{font-size:.85rem;color:var(--fg-2)}
+textarea{width:100%;box-sizing:border-box;min-height:4.5rem;font:inherit;font-size:.9rem;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:8px}
+.empty{padding:24px;text-align:center;color:var(--fg-2);background:var(--surface);border:1px dashed var(--line);border-radius:var(--r)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:8px 16px;border-radius:6px;font-size:.88rem}
+@media (max-width:560px){.head{grid-template-columns:3.8rem minmax(0,1fr)}.act{grid-column:1/-1;justify-content:flex-start}dl{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>SongNodes <b>work queue</b></h1>
+    <p class="sub">Next steps after the restructure waves · main at <span class="mono">b359108</span> · 30 Oct 2026</p>
+  </header>
+  <div class="howto"><b>How to use this sheet.</b> “Copy prompt” copies the house rules plus that job’s brief, ready to paste into Jules or Claude Code. Set the status as work moves, and add notes in the expanded row; both save for everyone. Jobs flagged “Question open” start with a Step 0 that stops for your answer.</div>
+  <div id="ro" class="notice" hidden></div>
+  <section class="summary" aria-label="Status summary">
+    <div class="counts" id="counts"></div>
+    <div class="bar" id="bar" aria-hidden="true"></div>
+  </section>
+  <div class="chips" id="chips" role="group" aria-label="Filter by group"></div>
+  <div class="list" id="list"><div class="empty">Loading jobs…</div></div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+const STATUSES=["Prompt ready","In progress","Waiting on user","Proposal queued","Live"];
+const COLORS={"Prompt ready":"var(--fg-2)","In progress":"var(--info)","Waiting on user":"var(--warn)","Proposal queued":"var(--brand)","Live":"var(--ok)"};
+let tasks=[],rules="",group="All",open=new Set(),canWrite=true,db=null;
+const $=id=>document.getElementById(id);
+function toast(msg){const t=$("toast");t.textContent=msg;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2200)}
+function setReadOnly(why){canWrite=false;const n=$("ro");n.textContent=why;n.hidden=false;render()}
+function el(tag,attrs={},...kids){const e=document.createElement(tag);for(const[k,v]of Object.entries(attrs)){if(k==="class")e.className=v;else if(k.startsWith("on"))e.addEventListener(k.slice(2),v);else if(v!==false&&v!=null)e.setAttribute(k,v===true?"":v)}for(const k of kids)if(k!=null)e.append(k);return e}
+
+async function copyPrompt(t,btn){
+  const text=rules.trim()+"\n\n---\n\n"+t.prompt;
+  try{await navigator.clipboard.writeText(text);toast(`Copied ${t.id} prompt`);return}catch(e){}
+  const ta=el("textarea");ta.value=text;ta.style.position="fixed";ta.style.opacity="0";document.body.append(ta);ta.select();
+  let ok=false;try{ok=document.execCommand("copy")}catch(e){}ta.remove();
+  if(ok){toast(`Copied ${t.id} prompt`);return}
+  open.add(t.id);render();toast("Copy blocked: the prompt is shown below, select it to copy");
+}
+async function save(t,patch){
+  if(!db||!canWrite)return;
+  try{await db.doc("tasks/"+t.id).update(patch);toast("Saved")}
+  catch(e){if(e&&(e.code==="invalid_argument"||e.code==="not_granted"))setReadOnly("You can view this sheet but not change it. Ask the owner for edit access.");else toast("Not saved: "+(e&&e.message||"the store did not answer"))}
+}
+
+function render(){
+  const c={};for(const s of STATUSES)c[s]=0;for(const t of tasks)c[t.status]=(c[t.status]||0)+1;
+  $("counts").replaceChildren(...STATUSES.map(s=>el("span",{},el("b",{},String(c[s]))," "+s.toLowerCase())));
+  $("bar").replaceChildren(...STATUSES.filter(s=>c[s]).map(s=>{const i=el("i");i.style.width=(100*c[s]/tasks.length)+"%";i.style.background=COLORS[s];return i}));
+  const groups=["All",...new Set(tasks.map(t=>t.group))];
+  $("chips").replaceChildren(...groups.map(g=>el("button",{class:"chip","aria-pressed":String(g===group),onclick:()=>{group=g;render()}},g)));
+  const shown=tasks.filter(t=>group==="All"||t.group===group);
+  if(!shown.length){$("list").replaceChildren(el("div",{class:"empty"},tasks.length?"No jobs in this group.":"No jobs yet. Claude seeds them after publishing."));return}
+  $("list").replaceChildren(...shown.map(t=>{
+    const isOpen=open.has(t.id);
+    const sel=el("select",{id:"st-"+t.id,"aria-label":`Status of ${t.id}`,disabled:!canWrite,onchange:e=>{t.status=e.target.value;render();save(t,{status:t.status})}},...STATUSES.map(s=>el("option",{value:s,selected:s===t.status},s)));
+    const tags=el("div",{class:"tags"},el("span",{class:"tag"},t.group),t.openQuestion?el("span",{class:"tag q"},"Question open"):null,t.dependsOn?el("span",{class:"tag d"},"Depends on "+t.dependsOn):null);
+    const head=el("div",{class:"head"},
+      el("span",{class:"code"},t.id),
+      el("div",{class:"tl"},el("button",{class:"title","aria-expanded":String(isOpen),onclick:()=>{isOpen?open.delete(t.id):open.add(t.id);render()}},t.title),tags),
+      el("div",{class:"act"},el("button",{class:"copy",onclick:e=>copyPrompt(t,e.target)},"Copy prompt"),sel));
+    const row=el("article",{class:"row"},head);
+    if(isOpen){
+      const note=el("textarea",{id:"note-"+t.id,disabled:!canWrite,onblur:e=>{if(e.target.value!==(t.note||"")){t.note=e.target.value;save(t,{note:t.note})}}});note.value=t.note||"";
+      row.append(el("div",{class:"body"},
+        el("dl",{},el("dt",{},"Area"),el("dd",{},t.area),el("dt",{},"Touches"),el("dd",{},t.pages||"–"),el("dt",{},"Depends on"),el("dd",{},t.dependsOn||"–"),el("dt",{},"Open question"),el("dd",{},t.openQuestion||"–")),
+        el("pre",{},t.prompt),
+        el("label",{for:"note-"+t.id},"Notes"),note));
+    }
+    return row;
+  }));
+}
+
+(async()=>{
+  const use=async n=>{try{return await window.claude.use(n)}catch(e){return null}};
+  db=await use("db");
+  const user=await use("user");
+  if(!db){$("list").replaceChildren(el("div",{class:"empty"},"Sign in to claude.ai to see the jobs."));return}
+  if(user){const w=await user.can("data.write");if(w===false)setReadOnly("You can view this sheet but not change it. Ask the owner for edit access.")}
+  db.doc("meta/rules").onSnapshot(s=>{rules=(s.data()||{}).text||""});
+  db.collection("tasks").orderBy("order").onSnapshot(s=>{tasks=s.docs.map(d=>d.data());render()},
+    e=>$("list").replaceChildren(el("div",{class:"empty"},"Could not load jobs: "+(e.message||e.code))));
+})();
+</script>
