@@ -1812,3 +1812,13 @@ Ended 2026-10-26 22:29: Audited Pathfinder (DS7). Fixed CSS typography variables
 - Checks not run: the counts inside the old Postgres 16 volume (it would mean copying the volume to a scratch volume and starting a temporary postgres:16 on the copy); `start-dev.sh`; the full stack health check; E2E (STATUS.md only).
 - Next: optionally confirm the old volume's counts on a copy. Keep `songnodes-dev_dev-postgres` as the rollback source until the owner decides otherwise.
 <!-- SLOT:PG1 END -->
+
+<!-- SLOT:DOC3 BEGIN -->
+### DOC3: Bring CLAUDE.md in line with the running stack
+- Start: 2026-10-30. Base `main` f7212af.
+- Changed: CLAUDE.md section 1 now names the volume `songnodes-dev_dev-postgres-18` (compose.dev.yaml line 13, `dev-postgres-18:/var/lib/postgresql/data`) and says the Postgres 16 volume `songnodes-dev_dev-postgres` is kept and never removed. Section 2 Backend line now says Python 3.15, read from the `FROM python:3.15-slim` lines of `services/rest_api/Dockerfile`, `services/graph-visualization-api/Dockerfile`, `services/worker/Dockerfile` and `scrapers/Dockerfile.unified`.
+- Section 7 backup command unchanged: the Compose service is still `postgres`.
+- Checks run: the `grep` commands in the brief; `git diff --check`; `scope_guard.py`.
+- Checks not run: tests, E2E (docs only).
+- Next: none.
+<!-- SLOT:DOC3 END -->
