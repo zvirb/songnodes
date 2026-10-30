@@ -19,6 +19,7 @@ import { Banner, TrackCell, useAnnouncer, useToaster } from './components/ui';
 import { CrateFilterRail } from './components/CrateFilterRail';
 import { TargetActionButton } from './targetAction/TargetActionButton';
 import { LibraryImportDialog } from './components/LibraryImportDialog';
+import { LibraryRowPreview } from './components/LibraryRowPreview';
 import { DiscoveryBanner } from './targetAction/DiscoveryBanner';
 import { useTableKeyboardNav } from '../../hooks/useTableKeyboardNav';
 import './musicLibrary.css';
@@ -196,8 +197,8 @@ const LibraryPage: React.FC = () => {
         const t = visible.find((x) => x.id === id);
         if (t) addToSet(t);
       },
-      ' ': () => {
-        // Space does nothing yet (no preview source)
+      ' ': (id) => {
+        document.querySelector<HTMLButtonElement>(`tr[data-id="${id}"] .sn-mini-preview__btn:not(:disabled)`)?.click();
       }
     },
     describe: (id) => {
@@ -207,7 +208,7 @@ const LibraryPage: React.FC = () => {
   });
 
   // Override aria-keyshortcuts to reflect the actually handled keys
-  boxProps['aria-keyshortcuts'] = 'J K ArrowDown ArrowUp Enter T A';
+  boxProps['aria-keyshortcuts'] = 'J K ArrowDown ArrowUp Enter T A Space';
 
   const buildFromCrate = () => {
     const p = filtersToParams(filters);
@@ -417,6 +418,7 @@ const LibraryPage: React.FC = () => {
                           <td className="num" data-label="Heard"><Heard t={t} /></td>
                           <td className="num" data-label="Last heard"><LastHeard d={t.last} /></td>
                           <td className="sn-data-table__actions">
+                            <LibraryRowPreview trackId={t.id} title={name} />
                             <TargetActionButton track={t} />
                             <button className="sn-btn sn-btn--quiet sn-btn--sm sn-btn--icon" type="button" aria-label={`Add ${name} to set`} title={`Add ${name} to set`} onClick={() => addToSet(t)}>
                               <SnIcon name="plus" />

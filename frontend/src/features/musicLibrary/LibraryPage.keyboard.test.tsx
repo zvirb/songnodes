@@ -108,6 +108,14 @@ describe('LibraryPage keyboard navigation', () => {
       expect(spyT).toHaveBeenCalled();
     }
 
+    // Space presses the active row's preview button
+    const previewBtn = document.querySelector(`tr[data-id="3"] .sn-mini-preview__btn`) as HTMLButtonElement;
+    expect(previewBtn).toBeTruthy();
+    const spySpace = vi.spyOn(previewBtn, 'click').mockImplementation(() => {});
+    fireEvent.keyDown(tableBox, { key: ' ' });
+    expect(spySpace).toHaveBeenCalled();
+    expect(tableBox.getAttribute('aria-keyshortcuts')).toContain('Space');
+
     // Action 'a' triggers addToSet which calls writeDraft
     fireEvent.keyDown(tableBox, { key: 'a' });
     expect(storage.writeDraft).toHaveBeenCalled();

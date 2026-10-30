@@ -1985,3 +1985,13 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks run: tsc, oxlint (exit 0, warnings only), vitest 51 files / 354 tests, vite build, sync-design-system --check, check_design_system --check, check_feature_imports --check, scope guard. Not run: E2E (no Docker daemon in the cloud sandbox).
 - Next: follow-ups in the PR ('Unknown DJ'/'Unknown Event'/'Unknown Date' in `features/aiSetlists`; 'Unknown error' text in OAuthCallback and useTokenRefresh; invented genre 'Electronic' in LiveDataLoader; empty track names in MobileTrackExplorer/DJInterface need an en dash).
 <!-- SLOT:UNK2 END -->
+
+<!-- SLOT:PV2 BEGIN -->
+### PV2: Play a Deezer preview from a library row
+- Start: 2026-10-30. Base `main` d72ac1a. Depends on PV1 (`GET /api/v1/library/tracks/{id}/preview`, branch `pv1-library-previews`); without PV1 merged every press ends in the unavailable state with the HTTP status in the tooltip.
+- End: 2026-10-30.
+- Built: `frontend/src/features/musicLibrary/components/LibraryRowPreview.tsx` wraps the design-system `MiniAudioPreview` (FL4) for a crate row. No request until play is pressed; then the card's loading state (spinner, `aria-busy`, a second press cancels), then `MiniAudioPreview` with the Deezer URL starts the clip. Deezer with no clip shows the card's unavailable state ("No preview"); a failed lookup shows the same state with the server's fixed message (or "the server could not be reached") as the tooltip. `LibraryPage.tsx` puts it first in each row's actions cell, Space presses the active row's preview (FL5), and `aria-keyshortcuts` now lists Space.
+- Checks run: `tsc --noEmit`, `oxlint src` (exit 0, no findings in the new files), `vitest run src` (49 files, 340 tests; 6 new in `LibraryRowPreview.test.tsx`, a Space case in `LibraryPage.keyboard.test.tsx`), `vite build`, `sync-design-system.sh --check`, `check_design_system.py --check`, scope guard.
+- Checks not run: E2E and a look in a real browser (no Docker daemon in the cloud sandbox), so the row layout with the 32px player and real Deezer playback are unchecked.
+- Next: merge PV1 first, then this; on the running stack press play on a row with a `dz` link and hear the clip.
+<!-- SLOT:PV2 END -->
