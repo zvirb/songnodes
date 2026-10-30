@@ -42,7 +42,8 @@ export function trackFromNode(input: GraphNode | Record<string, unknown>): Track
     ...nested,
     id: identifier(node.id ?? node.track_id ?? nested.id) ?? '',
     name: title, title,
-    artist: text(field('artist', 'artist_name')) ?? 'Unknown Artist',
+    // No artist recorded stays empty (hasValidArtist rejects it); never invent a name.
+    artist: text(field('artist', 'artist_name')) ?? '',
     bpm: bpm !== undefined && bpm > 0 ? bpm : undefined,
     key, musical_key: text(field('musical_key', 'key')),
     camelotKey, camelot_key: camelotKey,
@@ -89,7 +90,7 @@ const textId = (value: unknown) => typeof value === 'string' ? value : undefined
 /** Never turn an uncalibrated stored energy value into a rating or percentage. */
 export function formatStoredEnergy(energy?: number, scale?: string): string {
   return energy === undefined || !Number.isFinite(energy)
-    ? 'Unknown' : `${energy} (${scale || 'scale not recorded'})`;
+    ? '–' : `${energy} (${scale || 'scale not recorded'})`;
 }
 
 /**

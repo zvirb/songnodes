@@ -93,7 +93,7 @@ export function camelotToKey(camelotKey: CamelotKey): string {
   const info = CAMELOT_WHEEL[camelotKey];
   if (!info) {
     console.warn(`Invalid Camelot key: ${camelotKey}`);
-    return 'Unknown';
+    return '–'; // missing value: en dash (design-system/01-writing.md)
   }
   return `${info.key} ${info.mode}`;
 }
