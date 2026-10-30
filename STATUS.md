@@ -1922,3 +1922,13 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: live crawl against mixesdb.com and E2E (no Docker in the sandbox).
 - Next: follow-up package for a pipeline-side guard in `scrapers/pipelines/persistence_pipeline.py` that rejects 0-track playlists; `is_mix_page` is now unused and can be removed separately.
 <!-- SLOT:SC7 END -->
+
+<!-- SLOT:PV1 BEGIN -->
+### PV1: Deezer preview URL for a library track
+- Start: 2026-10-30. Base `main` d72ac1a.
+- End: 2026-10-30.
+- Built: `services/rest_api/routers/preview.py` (G3 `register(app)`): `GET /api/v1/library/tracks/{id}/preview` returns `{"url": <Deezer preview MP3 URL> | null, "source": "deezer"}`. It reuses the shared `DeezerClient` (`services/common/providers/deezer.py`, already in the rest-api image via `COPY services/common`): the stored `deezer_id` first (`/track/{id}`), otherwise ISRC then artist + title, with enrichment's `best_match(..., 'unique_exact')` so a fuzzy hit on another recording gives null. Results (null included) sit in the client's `MemoryCache` for `PREVIEW_CACHE_TTL_SECONDS` (600) because preview URLs are signed and expire. 404 for a track not in `library.tracks` + `projection_tracks`; 422 for a non-UUID id; 503/502/500 with fixed messages, never exception text. No audio is fetched or proxied.
+- Checks run: `python -m pytest tests/rest_api` (74 passed, 12 new in `tests/rest_api/test_library_preview.py`, fake provider plus one real `DeezerClient` over `httpx.MockTransport`); `router_registry._defines_register` finds the module; scope guard.
+- Checks not run: live Deezer call and the running stack (no Docker daemon in the cloud sandbox); E2E (no UI change).
+- Next: PV2 wires `MiniAudioPreview` into the library row with this endpoint.
+<!-- SLOT:PV1 END -->
