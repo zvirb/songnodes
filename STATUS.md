@@ -1790,3 +1790,18 @@ Ended 2026-10-26 22:29: Audited Pathfinder (DS7). Fixed CSS typography variables
 - Caveats: the cloud sandbox could not build the worker, unified-scraper, audio-analysis or frontend images: those Dockerfiles do not take the proxy CA, so pip and npm fail TLS. The frontend image was built from a local `vite build` with the same nginx stage, and the other three services were not started. CI on the PR is the authoritative run.
 - Next: e2e green on the PR, then merge.
 <!-- SLOT:QA8 END -->
+
+<!-- SLOT:PG1 BEGIN -->
+### PG1: Confirm the Postgres 18 cut-over
+- Start: 2026-10-30. Base `main` 7be0e5b. Case: A (already done), recorded on the owner's decision. The cut-over happened on 2026-10-28 after U7 (#327) merged; this job did not migrate anything.
+- Step 0 (read-only): `docker volume ls` lists `songnodes-dev_dev-postgres` and `songnodes-dev_dev-postgres-18`. `PG_VERSION`: new volume `18`, old volume `16` (data at the volume root). The container was `postgres:18-alpine`, created 2026-10-28 17:11 AEDT, stopped (Docker Desktop was not running). The owner approved `docker compose start postgres` on that existing container (no recreate, no migrations, no `start-dev.sh`).
+- `select version()`: `PostgreSQL 18.6 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit`.
+- Counts now (playlists / tracks / transitions / library.tracks): 42 / 357 / 218 / 339. Last recorded (28 Oct): 9 / 100 / 80 / 339. The exact-match gate does not apply because two days of scraping (28–29 Oct) ran on the new volume.
+- Evidence of the carry-over: rows created before the new volume existed (2026-10-28 05:36 UTC) are on Postgres 18 with dates from 25 Oct: bronze_scraped_tracks 100, silver_track_transitions 80, bronze_scraped_playlists 7, library.tracks 339. The 2 missing playlists are re-scraped mixesdb playlists whose `created_at` (28 Oct 08:35) is later than their tracks (27 Oct). An empty new volume could not hold rows from 25–27 Oct. Container logs show "Skipping initialization" and then 18.6 starting at 06:11 UTC on 28 Oct.
+- Script output: `scripts/upgrade-postgres-18.sh` was not run in this job. There was no `pg18-upgrade-*.log` in the repo folder.
+- Backup: none taken in this job (case A); no `backup-*.dump` was found.
+- Volumes: both still listed; neither was deleted or changed.
+- Checks run: the Step 0 commands, the version() and counts query, row dates split at the cut-over, container logs, `scope_guard.py`.
+- Checks not run: the counts inside the old Postgres 16 volume (it would mean copying the volume to a scratch volume and starting a temporary postgres:16 on the copy); `start-dev.sh`; the full stack health check; E2E (STATUS.md only).
+- Next: optionally confirm the old volume's counts on a copy. Keep `songnodes-dev_dev-postgres` as the rollback source until the owner decides otherwise.
+<!-- SLOT:PG1 END -->
