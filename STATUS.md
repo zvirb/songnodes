@@ -1955,3 +1955,11 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Found, not fixed: a per-row bronze insert error inside the batch transaction aborts it in real Postgres, yet the rows before it are still counted (and the batch COMMIT becomes a rollback). Needs savepoints, which changes what is written: separate package.
 - Next: /pipeline needs no change (it already reads the bronze fields). Follow-up: the bronze batch transaction above.
 <!-- SLOT:SC5 END -->
+
+<!-- SLOT:DS22 BEGIN -->
+### DS22: TracklistImporter: real StagedProgress, no fake progress
+- Start: 2026-10-30 (branch ds22-tracklist-staged-progress off main e1ea438; rebased onto main c48fdda after DS21, keeping its FileDrop)
+- End: 2026-10-30. `TracklistImporter.tsx` drops the setInterval fake percentage and shows `StagedProgress`: "Read the tracklist" (done, track count) and "Import the tracks" (running while `POST /api/v1/tracks/import-tracklist` is open, then done with created/updated/failed from the answer, or failed with the cause in words: API down, the API's `detail`, or the HTTP status). The endpoint is synchronous and returns no job, so there is no separate "waiting for the job" stage and no percentage. After 60 s with no answer the running step says so; the React `StagedProgress` has no `stalled` state yet (CSS has it), so the step stays `running` with the stall wording. Adds an import-stages `describe` block to DS21's `TracklistImporter.test.tsx` (shared setup at file level).
+- Checks run: tsc, oxlint (exit 0, warnings only), vitest 344/344 (TracklistImporter.test.tsx 8/8), vite build, sync-design-system --check, check_design_system --check, scope guard. Not run: E2E (no Docker stack in the cloud sandbox).
+- Next: a package owning `components/ds/StagedProgress.tsx` adds the 1.4.0 `stalled` state; then TracklistImporter passes `state: 'stalled'` after 60 s. Unused `tli__progress*` rules in TracklistImporter.css (not owned).
+<!-- SLOT:DS22 END -->
