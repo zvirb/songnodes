@@ -485,7 +485,7 @@ export const SettingsPage: React.FC = () => {
                       {f.value.startsWith('https://') || f.value.startsWith('http://') ? (
                         <TextLink href={f.value} external path breakAnywhere>{f.value}</TextLink>
                       ) : f.mono ? (
-                        <span className="sn-mono">{f.value}</span>
+                        <span className="sn-key-value-grid__id" title={f.value}>{f.value}</span>
                       ) : (
                         f.value
                       )}
