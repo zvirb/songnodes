@@ -68,4 +68,4 @@ praw==8.0.3
 # Testing (optional)
 pytest==9.1.1
 pytest-asyncio==1.4.1
-twisted==26.4.0
+twisted==26.10.0rc1
