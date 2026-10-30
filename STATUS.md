@@ -1780,3 +1780,10 @@ Ended 2026-10-26 22:29: Audited Pathfinder (DS7). Fixed CSS typography variables
 - Checks: vitest unit tests (48 test files, 309 tests passed), `npm run type-check` (tsc --noEmit passed), `npm run lint` (0 errors), `npm run build` (vite build passed in 2.03s), `python scripts/check_design_system.py --check` (passed), `git diff --check` (passed).
 - PR: CFG1: API provider sign-up requirements, instructions, and callbacks
 <!-- SLOT:CFG1 END -->
+
+<!-- SLOT:QA8 BEGIN -->
+### QA8: Fix red e2e on main
+- Start: 2026-10-30. Base `main` 3686d48. Job: make the `e2e` workflow green (28 failures in run 40835939367 on b359108).
+- Diagnosis: `/settings` overflowed to 493px at phone width because the CFG1 (#435) user-agent value was an unbreakable `sn-mono` span in a KeyValueGrid (real regression). The other visual diffs are intended changes: legacy stylesheets retired in DS-STYLES (#439), new CFG1 settings content (#435), the API-backed library in #421, and the set builder Export button from SB2 (#434). Their e2e runs on main were cancelled by the next merge, so nobody refreshed the baselines. The library's "Heard this week" also counted back from the real clock.
+- Next: fix the value with the KeyValueGrid `__id` pattern, fix the visual spec's clock, regenerate baselines in `scripts/e2e-docker.sh`, open the PR.
+<!-- SLOT:QA8 END -->
