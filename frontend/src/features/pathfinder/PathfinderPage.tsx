@@ -86,7 +86,7 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
     const fullTrack = pf.availableTracks.find(t => t.id === option.id);
     if (fullTrack) {
        // Ensure name property exists to satisfy TS Track requirement if it's missing on GraphNode
-       const trackToUse = { ...fullTrack, name: fullTrack.name || (fullTrack as any).title || 'Unknown' };
+       const trackToUse = { ...fullTrack, name: fullTrack.name || (fullTrack as any).title || '–' };
        if (type === 'start') {
           pf.send({ type: 'SET_START_TRACK', track: trackToUse as any });
           setStartQuery('');

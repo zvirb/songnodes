@@ -39,8 +39,13 @@ describe('stored track metadata transport', () => {
     expect(trackFromNode({ bpm: true, duration_ms: 'NaN', energy: '0.72' })).toMatchObject({ energy: 0.72 });
     expect(trackFromNode({ bpm: true }).bpm).toBeUndefined();
     expect(formatStoredEnergy(0)).toBe('0 (scale not recorded)');
-    expect(formatStoredEnergy(undefined)).toBe('Unknown');
+    expect(formatStoredEnergy(undefined)).toBe('–');
     expect(formatStoredEnergy(7, 'dj_1_10')).toBe('7 (dj_1_10)');
+  });
+  it('leaves a missing artist empty instead of inventing one', () => {
+    expect(trackFromNode({ id: 'no-artist', title: 'Untitled' }).artist).toBe('');
+    expect(graphNodeFromApi({ id: 'no-artist', title: 'Untitled' }).artist).toBe('');
+    expect(trackFromNode(measured).artist).toBe('Fixture');
   });
   it('sends measured durations and zero energy to routing and rejects unknown durations', () => {
     expect(routeTracksFromNodes([measured])[0]).toMatchObject({ duration_ms: 210500, energy: 0, camelot_key: '8A' });

@@ -94,7 +94,7 @@ function exportPath(context: PathfinderContext, event: Extract<PathfinderEvent, 
     case 'csv':
       content = 'Position,Track Name,Artist,BPM,Key,Duration (s),Cumulative Duration (min)\n';
       context.result.path.forEach((segment, index) => {
-        content += `${index + 1},"${segment.track.name}","${segment.track.artist}",${segment.track.bpm || 'N/A'},${segment.track.camelot_key || 'N/A'},${Math.floor(segment.track.duration_ms / 1000)},${Math.floor(segment.cumulative_duration_ms / 60000)}\n`;
+        content += `${index + 1},"${segment.track.name}","${segment.track.artist}",${segment.track.bpm || ''},${segment.track.camelot_key || ''},${Math.floor(segment.track.duration_ms / 1000)},${Math.floor(segment.cumulative_duration_ms / 60000)}\n`;
       });
       filename = 'pathfinder-result.csv';
       mimeType = 'text/csv';

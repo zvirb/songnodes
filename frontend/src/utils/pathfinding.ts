@@ -8,6 +8,7 @@ import {
   PathfindingAlgorithm,
 } from '../types/pathfinding';
 import { getHarmonicCompatibility, keyToCamelot } from './harmonic';
+import { hasValidArtist } from './dataLoaderUtils';
 
 /**
  * Priority queue implementation for Dijkstra's algorithm
@@ -252,7 +253,7 @@ export async function findDJPath(
       const track: Track = node.track || {
         id: node.id,
         name: node.name || node.title || node.label,
-        artist: node.artist || 'Unknown Artist',
+        artist: node.artist || '',
         duration: node.duration,
         bpm: node.bpm,
         key: node.key,
@@ -261,8 +262,9 @@ export async function findDJPath(
         genre: node.genre,
       };
 
-      // Only include if we have a valid name
-      if (track.name) {
+      // Only include tracks with a name and a valid artist (CLAUDE.md:
+      // artist attribution); edges to excluded tracks are dropped below.
+      if (track.name && hasValidArtist({ artist: track.artist } as GraphNode)) {
         trackMap.set(node.id, track);
         adjacencyList.set(node.id, []);
       }

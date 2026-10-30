@@ -126,13 +126,14 @@ export const checkAIAvailability = async (): Promise<AvailabilityResult> => {
  */
 const formatTrackInfo = (t: TrackSummary): string => {
   const title = t.title || t.name || 'Unknown Track';
-  const artist = t.artist || 'Unknown Artist';
+  // No artist recorded: leave the "by" clause out rather than invent a name.
+  const byArtist = t.artist ? ` by ${t.artist}` : '';
   const bpm = t.bpm ? `${t.bpm} BPM` : 'BPM unknown';
   const key = t.camelotKey || t.camelot_key || 'Key unknown';
   const energy = t.energy != null ? `Energy: ${t.energy}/10` : 'Energy unknown';
   const genre = t.genre ? `Genre: ${t.genre}` : '';
 
-  return `"${title}" by ${artist} [${bpm}, Camelot ${key}, ${energy}${genre ? `, ${genre}` : ''}]`;
+  return `"${title}"${byArtist} [${bpm}, Camelot ${key}, ${energy}${genre ? `, ${genre}` : ''}]`;
 };
 
 /**

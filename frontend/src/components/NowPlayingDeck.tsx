@@ -414,7 +414,7 @@ export const NowPlayingDeck: React.FC<NowPlayingDeckProps> = ({ track }) => {
             fontWeight: 600,
             textTransform: 'uppercase'
           }}>
-            {track.genre ?? 'N/A'}
+            {track.genre ?? <span className="sn-none" title="Genre not set">–</span>}
           </span>
         </div>
 

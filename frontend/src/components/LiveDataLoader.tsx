@@ -269,7 +269,8 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
       const nodes: GraphNode[] = validNodesData.map((node: any) => ({
         id: node.id,
         title: node.title || node.metadata?.title || 'Unknown Title',
-        artist: node.artist || node.metadata?.artist || 'Unknown Artist',
+        // hasValidArtist above guarantees one of these is set; never invent a name.
+        artist: node.artist || node.metadata?.artist,
         label: node.metadata?.label || node.title || 'Unknown Label',
         bpm: node.metadata?.bpm,
         key: node.metadata?.key,
