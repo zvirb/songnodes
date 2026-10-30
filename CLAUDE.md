@@ -96,8 +96,8 @@ Values starting `CHANGE_ME` count as not configured.
 ```bash
 bash scripts/start-dev.sh   # applies migrations, builds every image, docker compose up --wait
 ```
-Re-run it after any code change. The Postgres volume `songnodes-dev_dev-postgres` is kept;
-never reset it to fix a problem.
+Re-run it after any code change. The Postgres volume `songnodes-dev_dev-postgres-18` is kept;
+never reset it to fix a problem. The old Postgres 16 volume `songnodes-dev_dev-postgres` is also kept and is never removed.
 
 ---
 
@@ -115,7 +115,7 @@ never reset it to fix a problem.
 
 ### Stack
 - **Frontend:** React 19, TypeScript 7, Oxlint (`frontend/LINTING.md`), react-router (feature routes self-register via `G2`), PIXI.js v8, D3.js, Zustand; styled only by the SongNodes design system (`design-system/`)
-- **Backend:** Python (3.11 in baseline images, upgrading to 3.15 in Wave `up`; 3.15 in CI), FastAPI, asyncpg / SQLAlchemy 2.0, Pydantic v2
+- **Backend:** Python 3.15 (`python:3.15-slim` in the rest-api, graph-api, worker and unified-scraper images; 3.15 in CI), FastAPI, asyncpg / SQLAlchemy 2.0, Pydantic v2
 - **Scraping:** Scrapy 2.11+, scrapy-playwright
 - **Infrastructure:** Docker Compose (`compose.dev.yaml`); no Kubernetes for now
 
