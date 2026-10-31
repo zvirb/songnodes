@@ -736,5 +736,6 @@ async def find_dj_path(request: PathfinderRequest):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Pathfinding error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Pathfinding failed: {str(e)}")
+        logger.error(f"Pathfinding error: {str(e)}", exc_info=True)
+        # Security: Do not expose internal exception details or trace messages to clients
+        raise HTTPException(status_code=500, detail="Pathfinding failed")
