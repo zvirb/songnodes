@@ -1912,3 +1912,13 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: the frontend tsc/oxlint/vitest/vite build (no frontend source changed).
 - Next: small packages that move the shared types (`LibraryTrack`, `SavedSet`, `Slot`) to `src/types` and the UI helpers (`CopyButton`, `useToaster`, `InlineMessage`) to `src/components/ds`, deleting allowlist lines as they go; decide whether `features/setBuilder/` should fold into `features/musicLibrary/`.
 <!-- SLOT:LINT1 END -->
+
+<!-- SLOT:SC7 BEGIN -->
+### SC7: MixesDB spider yields only real mix pages with tracks
+- Start: 2026-10-30. Base `main` d72ac1a. End: 2026-10-30.
+- Changed: `scrapers/spiders/mixesdb_spider.py`. `is_mix_url` now accepts only http(s) URLs on `mixesdb.com` (or a subdomain) under `/w/` with no query string, and rejects wiki and meta namespaces (Special, Category, User, Talk, File, Template, Help, MediaWiki, MixesDB and any `*_talk`) plus `Main_Page`. Outside hosts such as `discord.gg` are no longer followed. `parse()` sends a page to `parse_mix_page` only when `is_mix_url` passes, and `parse_mix_page` checks it again. A page with zero parsed tracks yields nothing (no setlist, artist, `PlaylistItem` or track items; the old `tracklist_count=0` failure item is gone) and is logged as skipped.
+- Tests: `tests/unit/scrapers/test_mixesdb_spider.py` adds outside and namespace links not followed from search results, `is_mix_url` reject/accept cases, an outside page not parsed as a mix, a zero-track page yields nothing, and a real mix page yields one playlist (5 tracks) before its tracks in order 1–5.
+- Checks run: `python -m pytest tests/unit/scrapers/test_mixesdb_spider.py --no-cov`: 18 passed. `tests/unit/scrapers/`: 35 passed, 2 failed in `test_1001tracklists_spider.py` (`scrapy_playwright` not installed in the sandbox; not touched here). `scope_guard.py`: exit 0 ("not a work package", no `plan/agents/SC7_*.md`).
+- Checks not run: live crawl against mixesdb.com and E2E (no Docker in the sandbox).
+- Next: follow-up package for a pipeline-side guard in `scrapers/pipelines/persistence_pipeline.py` that rejects 0-track playlists; `is_mix_page` is now unused and can be removed separately.
+<!-- SLOT:SC7 END -->
