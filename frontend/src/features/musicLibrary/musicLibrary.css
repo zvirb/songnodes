@@ -15,3 +15,13 @@
 /* SetSlot data cell: BPM and key share a line, the Spares toggle sits under them. */
 .sn-ml-sets .sn-ml-slot-bk { display: inline-flex; align-items: center; gap: var(--space-2); }
 .sn-ml-sets .sn-set-slot__data .sn-btn { margin-left: calc(-1 * var(--space-2)); }
+
+/* Crate Preview cell (PV2): at table widths the row keeps its play button, time and both actions inside
+   the table (1440px desktop measured). MiniAudioPreview's card lets a tight cell hide the progress line (the
+   time carries the position), and the cell drops its own inline padding so the player's gap and the
+   neighbouring cells' padding space it. 600px is DataTable's own --stack breakpoint (below it rows are
+   cards and the player keeps its line). Candidate for the design system (a DataTable preview-cell rule). */
+@media (min-width: 600px) {
+  .sn-page-library__crate .sn-table td.sn-ml-preview { padding-left: 0; padding-right: 0; }
+  .sn-page-library__crate .sn-table td.sn-ml-preview .sn-mini-preview__track { display: none; }
+}

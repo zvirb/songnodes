@@ -19,6 +19,7 @@ import { Banner, TrackCell, useAnnouncer, useToaster } from './components/ui';
 import { CrateFilterRail } from './components/CrateFilterRail';
 import { TargetActionButton } from './targetAction/TargetActionButton';
 import { LibraryImportDialog } from './components/LibraryImportDialog';
+import { LibraryRowPreview } from './components/LibraryRowPreview';
 import { DiscoveryBanner } from './targetAction/DiscoveryBanner';
 import { useTableKeyboardNav } from '../../hooks/useTableKeyboardNav';
 import './musicLibrary.css';
@@ -196,8 +197,8 @@ const LibraryPage: React.FC = () => {
         const t = visible.find((x) => x.id === id);
         if (t) addToSet(t);
       },
-      ' ': () => {
-        // Space does nothing yet (no preview source)
+      ' ': (id) => {
+        document.querySelector<HTMLButtonElement>(`tr[data-id="${id}"] .sn-mini-preview__btn:not(:disabled)`)?.click();
       }
     },
     describe: (id) => {
@@ -207,7 +208,7 @@ const LibraryPage: React.FC = () => {
   });
 
   // Override aria-keyshortcuts to reflect the actually handled keys
-  boxProps['aria-keyshortcuts'] = 'J K ArrowDown ArrowUp Enter T A';
+  boxProps['aria-keyshortcuts'] = 'J K ArrowDown ArrowUp Enter T A Space';
 
   const buildFromCrate = () => {
     const p = filtersToParams(filters);
@@ -354,13 +355,14 @@ const LibraryPage: React.FC = () => {
                         <button type="button" onClick={() => onSort(c.id, c.label)} disabled={!lib}>{c.label}</button>
                       </th>
                     ))}
+                    <th scope="col"><span className="sn-sr">Preview</span></th>
                     <th scope="col" className="sn-data-table__actions"><span className="sn-sr">Actions</span></th>
                   </tr>
                 </thead>
                 <tbody>
                   {error ? (
                     <tr className="sn-data-table__state">
-                      <td colSpan={COLS.length + 1}>
+                      <td colSpan={COLS.length + 2}>
                         <section className="sn-error-state sn-error-state--panel" data-status="warn" role="alert" aria-labelledby="crate-err">
                           <div className="sn-error-state__icon"><SnIcon name="cloud-off" /></div>
                           <h3 className="sn-error-state__title" id="crate-err">The library file didn’t load</h3>
@@ -377,11 +379,12 @@ const LibraryPage: React.FC = () => {
                         <td className="sn-data-table__track"><span className="sn-loading-state__lines"><span className="sn-skel" style={{ ['--w' as string]: '220px', ['--h' as string]: '12px' }} /><span className="sn-skel" style={{ ['--w' as string]: '140px', ['--h' as string]: '10px' }} /></span></td>
                         {COLS.slice(2).map((c) => <td key={c.id}><span className="sn-skel" style={{ ['--w' as string]: '40px', ['--h' as string]: '10px' }} /></td>)}
                         <td />
+                        <td />
                       </tr>
                     ))
                   ) : tracks.length === 0 ? (
                     <tr className="sn-data-table__state">
-                      <td colSpan={COLS.length + 1}>
+                      <td colSpan={COLS.length + 2}>
                         <EmptyState
                           icon="list-music"
                           title="The library has not been imported yet"
@@ -393,7 +396,7 @@ const LibraryPage: React.FC = () => {
                     </tr>
                   ) : visible.length === 0 ? (
                     <tr className="sn-data-table__state">
-                      <td colSpan={COLS.length + 1}>
+                      <td colSpan={COLS.length + 2}>
                         <EmptyState
                           icon="funnel"
                           title="No tracks match these filters"
@@ -416,6 +419,7 @@ const LibraryPage: React.FC = () => {
                           <td data-label="Rotation"><RotationTag rot={t.rot} /></td>
                           <td className="num" data-label="Heard"><Heard t={t} /></td>
                           <td className="num" data-label="Last heard"><LastHeard d={t.last} /></td>
+                          <td className="sn-ml-preview" data-label="Preview"><LibraryRowPreview trackId={t.id} title={name} /></td>
                           <td className="sn-data-table__actions">
                             <TargetActionButton track={t} />
                             <button className="sn-btn sn-btn--quiet sn-btn--sm sn-btn--icon" type="button" aria-label={`Add ${name} to set`} title={`Add ${name} to set`} onClick={() => addToSet(t)}>
