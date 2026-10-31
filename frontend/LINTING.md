@@ -13,6 +13,18 @@ npm run lint         # oxlint --type-aware src
 ```
 Config: `frontend/.oxlintrc.json`. CI runs both in `.github/workflows/design-system.yml`.
 
+## Feature boundaries: pages do not import each other
+A file in `src/features/<A>/` never imports from `src/features/<B>/` (B is not A), by relative path, the `@/` alias, `export … from`, `import()` or `vi.mock()`. Code two pages need goes in `src/lib`, `src/components`, `src/hooks`, `src/services`, `src/utils` or `src/types` (plan/RESTRUCTURE.md section 4), so a change to one page cannot break another.
+
+Oxlint's `no-restricted-imports` matches the import string, not the resolved file, so it cannot tell `../setBuilder` inside `musicLibrary/` (its own `setBuilder.ts`) from the `features/setBuilder/` folder. The rule is therefore a small checker:
+
+```bash
+python3 scripts/check_feature_imports.py --check   # from the repo root; CI runs it in design-system.yml
+python3 scripts/check_feature_imports.py --list    # every cross-feature import found
+```
+
+Imports that existed when the rule arrived (19 on 30 Oct 2026, all between `musicLibrary`, `setBuilder` and `aiSetlists`) are listed in `frontend/feature-imports-allowlist.txt` as `<file> -> <module> | <reason>`. The list only shrinks: CI fails a pull request that adds a line, and the checker fails when a listed import is gone until its line is deleted. Tests: `tests/test_check_feature_imports.py`.
+
 ## Baseline (the code had never been linted)
 Lint passes today because every rule that currently fails is set to `warn`. Each line below is a rule that should go back to `error` once its findings are fixed, by small per-folder packages.
 
