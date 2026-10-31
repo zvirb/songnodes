@@ -35,7 +35,8 @@ export function trackFromNode(input: GraphNode | Record<string, unknown>): Track
   const bpm = number(field('bpm'));
   const key = text(field('key', 'musical_key'));
   const camelotKey = text(field('camelot_key', 'camelotKey'));
-  const title = text(field('title', 'name', 'track_name')) ?? text(field('label')) ?? 'Unknown Track';
+  // No title recorded stays empty; display sites show an en dash, never a made-up title.
+  const title = text(field('title', 'name', 'track_name')) ?? text(field('label')) ?? '';
   const releaseDate = text(field('release_date'));
   const genre = field('genre', 'category');
   const track: Track = {
@@ -117,7 +118,7 @@ export function routeTracksFromNodes(nodes: (GraphNode | Record<string, unknown>
   return nodes.map(node => {
     const track = trackFromNode(node);
     if (track.duration_ms === undefined || track.duration_ms <= 0) {
-      throw new Error(`Cannot calculate a timed route: duration is unknown for ${track.name}. Enrich track durations first.`);
+      throw new Error(`Cannot calculate a timed route: duration is unknown for ${track.name || 'a track with no title'}. Enrich track durations first.`);
     }
     return {
       id: track.id, name: track.name, artist: track.artist,

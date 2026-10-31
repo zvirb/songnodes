@@ -161,3 +161,35 @@ describe('TracklistImporter import stages', () => {
     expect(stateOf(1)).toBe('done');
   });
 });
+
+describe('TracklistImporter parsing', () => {
+  it('never guesses an artist: a line without Artist – Title is shown as not understood and left out', async () => {
+    (fetch as Mock).mockResolvedValueOnce({ ok: true, json: async () => ({ created: 2, updated: 0, failed: 0 }) });
+    render(<TracklistImporter onClose={vi.fn<() => void>()} />);
+    fireEvent.change(screen.getByLabelText('Or paste tracklist as text'), {
+      target: { value: '1. Bicep - Glue\n2. Some Long Track Name Here\n3. Glue by Bicep\n4. Intro' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Read tracklist' }));
+
+    expect(document.querySelector('.tli__count')?.textContent).toBe('2 tracks parsed; 2 lines need an artist and will be left out');
+    expect(document.body.textContent).not.toMatch(/Unknown/);
+    const items = Array.from(document.querySelectorAll<HTMLElement>('.tli__item'));
+    expect(items).toHaveLength(4);
+    expect(items[1].querySelector('.sn-track-cell__artist .sn-none')?.textContent).toBe('–');
+    expect(items[1].textContent).toContain('Some Long Track Name Here');
+    expect(items[1].textContent).toContain('Not understood: write it as Artist – Title. Left out of the import.');
+    expect(items[0].textContent).not.toContain('Not understood');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Import 2 tracks' }));
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    expect(JSON.parse((fetch as Mock).mock.calls[0][1].body).tracks).toEqual([
+      { artist: 'Bicep', title: 'Glue', track_number: 1 },
+      { artist: 'Bicep', title: 'Glue', track_number: 3 },
+    ]);
+
+    await screen.findByText('Imported 2 of 2 tracks.');
+    // The lines that were not understood stay, so they can be fixed and read again.
+    expect(screen.getByLabelText<HTMLTextAreaElement>('Or paste tracklist as text').value).toBe('2. Some Long Track Name Here\n4. Intro');
+    expect(screen.getByRole('button', { name: 'Import tracks' }).hasAttribute('disabled')).toBe(true);
+  });
+});

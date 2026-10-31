@@ -268,10 +268,11 @@ export const LiveDataLoader: React.FC<LiveDataLoaderProps> = ({
 
       const nodes: GraphNode[] = validNodesData.map((node: any) => ({
         id: node.id,
-        title: node.title || node.metadata?.title || 'Unknown Title',
+        // No title recorded stays empty; the graph label shows an en dash, never a made-up title.
+        title: node.title || node.metadata?.title || '',
         // hasValidArtist above guarantees one of these is set; never invent a name.
         artist: node.artist || node.metadata?.artist,
-        label: node.metadata?.label || node.title || 'Unknown Label',
+        label: node.metadata?.label || node.title || '',
         bpm: node.metadata?.bpm,
         key: node.metadata?.key,
         genre: node.metadata?.genre || 'Electronic',

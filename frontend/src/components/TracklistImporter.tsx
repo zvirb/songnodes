@@ -10,10 +10,14 @@ interface TracklistImporterProps {
 
 interface ParsedTrack {
   trackNumber?: number;
+  /** Empty when the line has no "Artist – Title" shape; never a made-up name. */
   artist: string;
   title: string;
   originalLine: string;
 }
+
+/** A line imports only with both an artist and a title (CLAUDE.md: no unknown artists in the graph). */
+const isImportable = (t: ParsedTrack) => Boolean(t.artist && t.title);
 
 
 /** One press of Import: what was sent, when, and what the API answered. */
@@ -115,25 +119,13 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
       artist = parts[0].trim();
       title = parts.slice(1).join(dash).trim();
     }
-    // Pattern 5: No clear separator
+    // No separator: the artist cannot be told apart from the title, so none is guessed.
+    // The line stays in the preview as not understood and is left out of the import.
     else {
-      const words = withoutNumber.split(' ');
-      if (words.length >= 3) {
-        const midpoint = Math.floor(words.length / 2);
-        artist = words.slice(0, midpoint).join(' ');
-        title = words.slice(midpoint).join(' ');
-      } else {
-        artist = 'Unknown Artist';
-        title = withoutNumber;
-      }
+      title = withoutNumber;
     }
 
-    return {
-      trackNumber,
-      artist: artist || 'Unknown Artist',
-      title: title || 'Unknown Title',
-      originalLine: line
-    };
+    return { trackNumber, artist, title, originalLine: line };
   };
 
   /**
@@ -194,6 +186,9 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
     reader.readAsText(file);
   });
 
+  const importable = parsedTracks.filter(isImportable);
+  const notUnderstood = parsedTracks.length - importable.length;
+
   const removeFile = () => {
     setActiveFile(null);
     setTracklistText('');
@@ -204,13 +199,15 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
    * Import parsed tracks to the backend; the stages follow what the request really does.
    */
   const handleImport = async () => {
-    if (parsedTracks.length === 0) {
-      setErrorMessage('Paste a tracklist or drop a file to import.');
+    if (importable.length === 0) {
+      setErrorMessage(parsedTracks.length
+        ? 'No line has an artist and a title. Write each track as Artist – Title, then read the tracklist again.'
+        : 'Paste a tracklist or drop a file to import.');
       return;
     }
 
     const started = Date.now();
-    const run: ImportRun = { tracks: parsedTracks.length, source: activeFile?.name ?? 'Pasted tracklist', started, phase: 'sending' };
+    const run: ImportRun = { tracks: importable.length, source: activeFile?.name ?? 'Pasted tracklist', started, phase: 'sending' };
     setIsProcessing(true);
     setImportRun(run);
     setNow(started);
@@ -226,7 +223,7 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            tracks: parsedTracks.map(t => ({
+            tracks: importable.map(t => ({
               artist: t.artist,
               title: t.title,
               track_number: t.trackNumber
@@ -249,12 +246,14 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
       setImportStatus({
         success: counts.created + counts.updated,
         failed: counts.failed,
-        total: parsedTracks.length
+        total: importable.length
       });
 
       if (counts.failed === 0) {
-        setTracklistText('');
-        setParsedTracks([]);
+        // Keep only the lines that were not understood, so they can be fixed and read again.
+        const left = parsedTracks.filter((t) => !isImportable(t));
+        setTracklistText(left.map((t) => t.originalLine).join('\n'));
+        setParsedTracks(left);
         setActiveFile(null);
       }
     } catch (error) {
@@ -293,9 +292,9 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
       footer={
         <>
           <button type="button" className="sn-btn" onClick={onClose} disabled={isProcessing}>Cancel</button>
-          <button type="button" className="sn-btn sn-btn--primary" onClick={handleImport} disabled={parsedTracks.length === 0 || isProcessing} aria-busy={isProcessing || undefined}>
+          <button type="button" className="sn-btn sn-btn--primary" onClick={handleImport} disabled={importable.length === 0 || isProcessing} aria-busy={isProcessing || undefined}>
             {isProcessing ? <span className="sn-spinner" aria-hidden="true" /> : <Download size={16} strokeWidth={2} aria-hidden="true" />}
-            {isProcessing ? 'Importing…' : parsedTracks.length ? `Import ${parsedTracks.length} tracks` : 'Import tracks'}
+            {isProcessing ? 'Importing…' : importable.length ? `Import ${importable.length} tracks` : 'Import tracks'}
           </button>
         </>
       }
@@ -334,7 +333,12 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
             <ScanText size={16} strokeWidth={2} aria-hidden="true" />
             Read tracklist
           </button>
-          {parsedTracks.length > 0 && <span className="tli__count" role="status">{parsedTracks.length} tracks parsed</span>}
+          {parsedTracks.length > 0 && (
+            <span className="tli__count" role="status">
+              {importable.length} tracks parsed
+              {notUnderstood > 0 && `; ${SN.format.count(notUnderstood)} ${notUnderstood === 1 ? 'line needs' : 'lines need'} an artist and will be left out`}
+            </span>
+          )}
         </div>
 
         {/* Import stages */}
@@ -357,9 +361,15 @@ export const TracklistImporter: React.FC<TracklistImporterProps> = ({ onClose })
                   <span className="tli__num">{track.trackNumber ?? index + 1}</span>
                   <div className="sn-track-cell">
                     <span className="sn-track-cell__title">
-                      <span className="sn-track-cell__name"><span className="sn-track-cell__artist">{track.artist} –</span> {track.title}</span>
+                      <span className="sn-track-cell__name">
+                        <span className="sn-track-cell__artist">{track.artist || <span className="sn-none" title="No artist">–</span>} –</span>{' '}
+                        {track.title || <span className="sn-none" title="No title">–</span>}
+                      </span>
                     </span>
-                    <span className="sn-track-cell__meta"><span className="tli__orig">{track.originalLine}</span></span>
+                    <span className="sn-track-cell__meta">
+                      <span className="tli__orig">{track.originalLine}</span>
+                      {!isImportable(track) && <span> Not understood: write it as Artist – Title. Left out of the import.</span>}
+                    </span>
                   </div>
                 </li>
               ))}

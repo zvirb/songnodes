@@ -1784,7 +1784,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
     // Create multi-line, multi-color label with container
     const artistText = node.artist || node.track?.artist || node.metadata?.artist || '–'; // missing value: en dash (design-system/01-writing.md)
-    const fullTitleText = node.title || node.track?.name || node.metadata?.title || node.metadata?.label || node.label || 'Unknown Title';
+    const fullTitleText = node.title || node.track?.name || node.metadata?.title || node.metadata?.label || node.label || '–'; // missing value: en dash
 
     // Extract remix info from title (common patterns)
     // Matches: (Extended Mix), [Radio Edit], - Laidback Luke Remix, etc.
