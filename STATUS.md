@@ -1974,3 +1974,14 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: E2E (no Docker daemon in the cloud sandbox).
 - Next: follow-ups in the PR (ContextMenu is the only caller; `|| 0.5` genre matrix and truthy energy checks in `calculateDJEdgeWeight` are scoring and were left alone).
 <!-- SLOT:PF2 END -->
+
+<!-- SLOT:UNK2 BEGIN -->
+### UNK2: No 'Unknown' track, title, label or artist text left in the app
+- Start: 2026-10-31. Base `main` 451905d.
+- End: 2026-10-31, branch `unk2-remaining-unknown-fallbacks`, not pushed (orchestrator opens the PR).
+- `TracklistImporter.tsx`: no word-splitting guess and no 'Unknown Artist'/'Unknown Title'. A line without "Artist – Title" (or "/", "by", en/em dash) stays in the preview with an en dash (`sn-none`) and "Not understood", is left out of the payload and the Import count, and stays in the text box after a successful import so it can be fixed.
+- Data (empty, never invented): `trackMetadata.ts` `trackFromNode` title, `LiveDataLoader.tsx` title and graph label. Display: `GraphVisualization.tsx` node title falls back to an en dash. `aiService.ts` prompt says "A track with no title recorded".
+- Tests: `TracklistImporter.test.tsx` parse test; `trackMetadata.test.ts` missing-title test.
+- Checks run: tsc, oxlint (exit 0, warnings only), vitest 51 files / 354 tests, vite build, sync-design-system --check, check_design_system --check, check_feature_imports --check, scope guard. Not run: E2E (no Docker daemon in the cloud sandbox).
+- Next: follow-ups in the PR ('Unknown DJ'/'Unknown Event'/'Unknown Date' in `features/aiSetlists`; 'Unknown error' text in OAuthCallback and useTokenRefresh; invented genre 'Electronic' in LiveDataLoader; empty track names in MobileTrackExplorer/DJInterface need an en dash).
+<!-- SLOT:UNK2 END -->
