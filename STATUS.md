@@ -1963,3 +1963,14 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks run: tsc, oxlint (exit 0, warnings only), vitest 344/344 (TracklistImporter.test.tsx 8/8), vite build, sync-design-system --check, check_design_system --check, scope guard. Not run: E2E (no Docker stack in the cloud sandbox).
 - Next: a package owning `components/ds/StagedProgress.tsx` adds the 1.4.0 `stalled` state; then TracklistImporter passes `state: 'stalled'` after 60 s. Unused `tli__progress*` rules in TracklistImporter.css (not owned).
 <!-- SLOT:DS22 END -->
+
+<!-- SLOT:PF2 BEGIN -->
+### PF2: Client route finder finds routes again
+- Start: 2026-10-30. Base `main` 059f6f3 (includes UNK1, #457).
+- End: 2026-10-30, branch `pf2-dijkstra-start-distance`, not pushed (orchestrator opens the PR).
+- Changed: `frontend/src/utils/pathfinding.ts` `findDJPath` reads distances with `??` instead of `||` (current, neighbour, `distanceFromStart`, `totalWeight`), so the start track's distance of 0 is no longer read as Infinity and Dijkstra relaxes edges again. Scoring unchanged.
+- Tests: `pathfinding.test.ts` adds two-track route, A-B-C chain, route through a middle track, unreachable end, no route through an artist-less track, and the attributed detour around one. The four route tests fail on main and pass now; UNK1's exclusion tests still pass.
+- Checks run: `tsc --noEmit`, `oxlint src` (exit 0, warnings only), `vitest run src` (51 files, 354 tests), `vite build`, `sync-design-system.sh --check`, `check_design_system.py --check`, `scope_guard.py`.
+- Checks not run: E2E (no Docker daemon in the cloud sandbox).
+- Next: follow-ups in the PR (ContextMenu is the only caller; `|| 0.5` genre matrix and truthy energy checks in `calculateDJEdgeWeight` are scoring and were left alone).
+<!-- SLOT:PF2 END -->
