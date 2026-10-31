@@ -47,6 +47,13 @@ describe('stored track metadata transport', () => {
     expect(graphNodeFromApi({ id: 'no-artist', title: 'Untitled' }).artist).toBe('');
     expect(trackFromNode(measured).artist).toBe('Fixture');
   });
+  it('leaves a missing title empty instead of inventing one', () => {
+    const track = trackFromNode({ id: 'no-title', artist: 'Fixture' });
+    expect(track.name).toBe('');
+    expect(track.title).toBe('');
+    expect(graphNodeFromApi({ id: 'no-title', artist: 'Fixture' }).label).toBe('');
+    expect(() => routeTracksFromNodes([{ id: 'no-title' }])).toThrow('duration is unknown for a track with no title');
+  });
   it('sends measured durations and zero energy to routing and rejects unknown durations', () => {
     expect(routeTracksFromNodes([measured])[0]).toMatchObject({ duration_ms: 210500, energy: 0, camelot_key: '8A' });
     expect(() => routeTracksFromNodes([{ id: 'unknown', title: 'No duration' }])).toThrow('duration is unknown for No duration');

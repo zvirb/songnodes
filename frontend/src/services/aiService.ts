@@ -125,7 +125,9 @@ export const checkAIAvailability = async (): Promise<AvailabilityResult> => {
  * Formats track summary into a clean string representation.
  */
 const formatTrackInfo = (t: TrackSummary): string => {
-  const title = t.title || t.name || 'Unknown Track';
+  const title = t.title || t.name;
+  // No title recorded: say so rather than invent one.
+  const named = title ? `"${title}"` : 'A track with no title recorded';
   // No artist recorded: leave the "by" clause out rather than invent a name.
   const byArtist = t.artist ? ` by ${t.artist}` : '';
   const bpm = t.bpm ? `${t.bpm} BPM` : 'BPM unknown';
@@ -133,7 +135,7 @@ const formatTrackInfo = (t: TrackSummary): string => {
   const energy = t.energy != null ? `Energy: ${t.energy}/10` : 'Energy unknown';
   const genre = t.genre ? `Genre: ${t.genre}` : '';
 
-  return `"${title}"${byArtist} [${bpm}, Camelot ${key}, ${energy}${genre ? `, ${genre}` : ''}]`;
+  return `${named}${byArtist} [${bpm}, Camelot ${key}, ${energy}${genre ? `, ${genre}` : ''}]`;
 };
 
 /**
