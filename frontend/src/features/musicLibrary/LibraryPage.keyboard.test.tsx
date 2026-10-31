@@ -111,6 +111,9 @@ describe('LibraryPage keyboard navigation', () => {
     // Space presses the active row's preview button
     const previewBtn = document.querySelector(`tr[data-id="3"] .sn-mini-preview__btn`) as HTMLButtonElement;
     expect(previewBtn).toBeTruthy();
+    // The player sits in its own Preview cell; the actions cell keeps only the row's icon buttons
+    expect(previewBtn.closest('td')?.getAttribute('data-label')).toBe('Preview');
+    expect(previewBtn.closest('.sn-data-table__actions')).toBeNull();
     const spySpace = vi.spyOn(previewBtn, 'click').mockImplementation(() => {});
     fireEvent.keyDown(tableBox, { key: ' ' });
     expect(spySpace).toHaveBeenCalled();
