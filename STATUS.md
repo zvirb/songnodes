@@ -2033,3 +2033,31 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: against the laptop stack and E2E (no Docker here).
 - Next: the /pipeline "Started between" filter (DS24 A2) can pass these parameters; moving the span query into `common/datalayer/jobs.py` is a follow-up for a package that owns it.
 <!-- SLOT:JOBDATE END -->
+  
+<!-- SLOT:DS24A BEGIN -->
+### DS24A: React DateRange and DateField from the design system
+- Start: 2026-11-01 (branch ds24a-react-daterange off origin/main f2bdc9b). Job: the React date components the scheduled-scrape window card will use.
+- End: 2026-11-01. `DateRange` was already in React (DS19, `ds/DateRange.tsx`, matches its card), so this package adds only `frontend/src/components/ds/DateField.tsx`: `DateField` (three boxes, en-AU order, readable date, error on the wrong part, native variant) and `DateRangeField` (presets, From/To groups, order and real-date errors, calendar button opening `DateRange` with focus on the grid; Escape, close and "Use these dates" return focus, a click outside does not). Exported from `ds/index.tsx`. Value API follows the card: `[from, to]` date-only ISO tuples, not `{start, end}`. Q11–Q16 defaults: outcome default button, popover stays open until the outcome, week presets in the popover only, one code per day, bottom sheet below 480px (CSS), no `max`.
+- Not built: `min`/`max` disabled days. Neither card has them and Q16's default is "none", so they need a design-system change (17-governance) first.
+- Checks: tsc, oxlint (exit 0, no findings in the new files), vitest 392/392 (17 new, incl. Melbourne DST 4 Oct 2026 and a Melbourne-not-UTC "today"), vite build, sync-design-system --check, check_design_system --check, check_feature_imports --check, scope guard. Not run: E2E (no Docker; no page uses the component yet).
+- Next: DSQ answer on min/max (Q16), then the /pipeline scheduled-scrape window card with its backend setting.
+<!-- SLOT:DS24A END -->
+
+<!-- SLOT:M6S BEGIN -->
+### M6S: One harmonic scoring and energy move spec
+- Start: 2026-11-01. Base `main` 2427bf9. Docs only, no code.
+- End: 2026-11-01.
+- Added `docs/specs/HARMONIC_SCORING.md` (`harmonic-1`, provisional): inventory with file:line of every key/BPM/energy rule (design-system `SN.compat`/`bpmStep`/`energyStep`, 12 frontend sites incl. 4 dead copies, REST pathfinder, graph projection, migration 006, scraper and gold helpers) and where they disagree; one canonical spec (key table identical to `SN.compat`, BPM with half/double time, energy move labels, compatibility score separate from energy, positive monotone path cost); 24 worked examples; 8 implementation packages with owned paths; 12 open questions with evidence. Found: the REST pathfinder receives `occurrence_count` as a cost (more-played transitions cost more) and can produce negative costs; graph projection links every pair within 10 BPM with `key_compatibility` 1.0 and writes unknown energy as 0.0.
+- Checks run: example scores and costs computed with a scratch script (not committed); cited line numbers re-read on 2427bf9; scope guard.
+- Checks not run: frontend and backend suites (no code changed).
+- Next: Markus answers Q-E1…Q-S3 (Q-E1, Q-E2, Q-B1 change labels in the examples); then M6-F1 (classifier and golden tests).
+<!-- SLOT:M6S END -->
+<!-- SLOT:JOBSTG BEGIN -->
+### JOBSTG: A scrape job reports its stages, with live scrape progress
+- Start: 2026-11-01. Base `main` f2bdc9b. Brief: DS23 Step 0 (stall rule dishonest while a scrape reports nothing for up to 15 min).
+- End: 2026-11-01.
+- Changed: `scrapers/unified_scraper_api.py` reads the spider's log as it arrives (was: only after exit), runs scrapy with `LOGSTATS_INTERVAL=10`, and keeps an in-memory progress record per worker job (pages fetched, bronze playlists and tracks written; `updated_at` moves only when a count changes), served at `GET /scrape/progress/{job_id}`. `handlers.py`: the scrape handler sends `job_id` in the `POST /scrape` body. `routers/jobs.py`: `GET /api/v1/jobs/{job_id}/stages` (queued, scrape with live progress, ingest via `ingest-after-scrape:<id>`, projection via `proj-after-ingest`/`graph-proj-after-ingest`; a recurring-run ingest is `done` only when no bronze playlist from that source written during the scrape is still un-ingested; fixed failure details only; 404/422 fixed messages).
+- Checks run: `pytest tests/rest_api` (86 passed, 12 new), `pytest scrapers/tests` (14 passed, 5 new), `cd services && pytest common/tests` (146 passed, 2 new). Root `pytest`: 181 passed; failures and errors only in Docker-backed `tests/integration/test_dev_*`, `tests/library_importer`, `tests/enrichment_local` and `tests/security/test_pathfinder_security.py` (no `annoy`), none in files this package touches.
+- Checks not run: a real crawl against the running stack, E2E (no Docker daemon in the cloud sandbox). The scope guard reports "not a work package" (the code JOBSTG has no digit, and there is no `plan/agents/JOBSTG_*.md`).
+- Next: on the stack, trigger a MixesDB scrape and poll `/api/v1/jobs/<id>/stages`: `progress.pages` should rise about every 15 s. Then DS23 (after DS-SP14) renders it.
+<!-- SLOT:JOBSTG END -->
