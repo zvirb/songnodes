@@ -2211,3 +2211,13 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: the GitHub workflow itself (runs on the PR).
 - Next: none.
 <!-- SLOT:G1B END -->
+
+<!-- SLOT:INS1 BEGIN -->
+### INS1: Design check fails text set 4–7 px from its box edge
+- Start: 2026-11-01 (branch ins1-text-inset-check off origin/main). Brief: plan/agents/INS1_text_inset_check.md. Job: build the rendered text-inset check DR-050 (Q18) asks for.
+- End: 2026-11-01.
+- Changed: `design-rules.spec.ts` gains "keeps text at least 8px inside its box" on every shell route and `/sources/import` at 390 and 1440px. The browser collects text line rects (`Range.getClientRects`, clipped to what shows) and the computed style of every ancestor; new `src/lib/textInset.ts` finds the nearest box inside main that draws a left or right edge (a fill unlike what is behind it, a visible border, a ring or shadow) and fails 4 to under 8px from its padding edge. The message lists every offender: route, width, selector, inset, side, box and a text snippet. Not measured: text outside main, field values, SVG text, hidden text, and `sn-key-picker__key` (KeyPicker card: keys at least 24px wide padded `space-1`). Governance conformance row "Text inset (rendered)" now says built.
+- Checks run: tsc, oxlint (no findings in the new files), vitest run src (58 files, 437 tests; 14 new in textInset.test.ts), vite build, `sync-design-system.sh --check` (1.7.0 in sync), `check_design_system.py --check`, scope guard, a type-check of the spec, and a dry run of the new tests in local Chromium against the static `vite build` with every API answering `{}`: positive controls injected into /library (4px fill, 6px ring) were reported with selector and inset; an 8px `sn-tag`, a KeyPicker key and a bottom-rule-only box were not.
+- Checks not run: the e2e job against the real stack (no Docker here). Its result is unknown until CI runs; the first run is the offender list.
+- Next: read the first CI run's list and open fix packages per component or page (or exclusions with a card citation where the system intends the inset).
+<!-- SLOT:INS1 END -->
