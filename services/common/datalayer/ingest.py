@@ -20,11 +20,21 @@ from common.metadata.matching import normalize_isrc
 from common.metadata.names import clean_name, is_placeholder_artist, normalize
 from common.metadata.tempo import known_bpm
 
-from . import evidence, outbox
+from . import evidence, outbox, transition_scores
 from .errors import CatalogError
 
 INGEST_MARKER = 'datalayer-ingest-v1'
 MAX_ENTRIES = 5000
+_SCORED = ', '.join(transition_scores.NAMES)
+# One directed N -> N+1 edge; its harmonic scoring (HS4) is recomputed from the two tracks on every write.
+TRANSITION_UPSERT = f"""
+    INSERT INTO silver_track_transitions (from_track_id, to_track_id, playlist_occurrences, {_SCORED}, scored_at)
+    VALUES ($1, $2, $3::jsonb, {transition_scores.placeholders(4)}, NOW())
+    ON CONFLICT (from_track_id, to_track_id) DO UPDATE SET
+        occurrence_count = silver_track_transitions.occurrence_count + 1, last_seen = NOW(), updated_at = NOW(),
+        playlist_occurrences = silver_track_transitions.playlist_occurrences || EXCLUDED.playlist_occurrences,
+        ({_SCORED}, scored_at) = ({', '.join('EXCLUDED.' + n for n in transition_scores.NAMES)}, EXCLUDED.scored_at)
+"""
 
 
 def raw_object(value) -> Dict[str, Any]:
@@ -230,6 +240,7 @@ async def ingest_playlist(conn, bronze_playlist_id: UUID) -> Dict[str, Any]:
             "SELECT EXISTS(SELECT 1 FROM silver_track_transitions WHERE playlist_occurrences::text LIKE $1 OR playlist_occurrences::text LIKE $2)",
             f'%{bronze_playlist_id}%', f'%{silver_playlist}%')
         if not already_linked:
+            tracks = await transition_scores.load_tracks(conn, track_at.values()) if len(track_at) > 1 else {}
             for position, from_track in sorted(track_at.items()):
                 to_track = track_at.get(position + 1)
                 if to_track is None or to_track == from_track:
@@ -237,13 +248,8 @@ async def ingest_playlist(conn, bronze_playlist_id: UUID) -> Dict[str, Any]:
                 occurrence = json.dumps([{'playlist_id': str(silver_playlist), 'bronze_playlist_id': str(bronze_playlist_id),
                                           'position': position, 'source': source,
                                           'date': bronze['event_date'].isoformat() if isinstance(bronze['event_date'], date) else None}])
-                await conn.execute("""
-                    INSERT INTO silver_track_transitions (from_track_id, to_track_id, playlist_occurrences)
-                    VALUES ($1, $2, $3::jsonb)
-                    ON CONFLICT (from_track_id, to_track_id) DO UPDATE SET
-                        occurrence_count = silver_track_transitions.occurrence_count + 1, last_seen = NOW(), updated_at = NOW(),
-                        playlist_occurrences = silver_track_transitions.playlist_occurrences || EXCLUDED.playlist_occurrences
-                """, from_track, to_track, occurrence)
+                await conn.execute(TRANSITION_UPSERT, from_track, to_track, occurrence,
+                                   *transition_scores.edge_values(tracks.get(from_track), tracks.get(to_track)))
                 result['transitions'] += 1
         await outbox.append(conn, 'setlist', silver_playlist, 'ingested', {
             'tracks': len(track_at), 'transitions': result['transitions'], 'source': source})
