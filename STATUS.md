@@ -2136,3 +2136,13 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: the migration against Postgres and the reviewer's curl check (no Docker here).
 - Next: DS24C (the /pipeline card) after DS23 merges.
 <!-- SLOT:DS24B END -->
+
+<!-- SLOT:DSQ1A BEGIN -->
+### DSQ1A: Design system 1.7.0: the owner's answers to the open questions
+- Start: 2026-11-01 (branch dsq1-design-answers off origin/main 5610049; rebased on origin/main 920beb6 after DS25 took 1.6.0 and DR-034 to DR-042, so this is now 1.7.0 with DR-043 to DR-050). Job: record Markus's answers of 2 Nov 2026 (Melbourne) to Q9, Q11–Q16 and Q18 at the design-system source, bump, rebuild and re-sync.
+- End: 2026-11-01.
+- Changed: `17-governance.md` gains DR-043 to DR-050, the 1.7.0 change log entry, a "Closed on 2 Nov 2026" table (Q23–Q27 from 1.6.0 stay open) and a "Text inset (rendered)" conformance row. Answers: Q9 fitted bands (DR-043); Q11 DateRange outcome always primary, the one exception to one primary per view, inside its popover or sheet (DR-044); Q12 stays open (DR-045); Q13 week presets in the picker only (DR-046); Q14 two stacked codes (DR-047, new `[data-marks="2"]`); Q15 bottom sheet (DR-048); Q16 no limit (DR-049); Q18 tight inset fails the check (DR-050). Source: `bundle.src.js` (outcome `sn-btn--primary`, up to two codes, version), `css/25-date-range.css`, `types/20-inputs.d.ts`, `build_tokens.py` version. Cards and sections: DateRange, DateField, 05, 11, 12, 18, README; `docs/sdlc/SDLC.md` open row. Rebuilt with build_tokens.py and build_bundle.py; synced with sync-design-system.sh.
+- Checks run: build_tokens (contrast: all pairs pass), build_bundle, `sync-design-system.sh --check` (1.7.0 in sync), `check_design_system.py --check`, tsc, oxlint (exit 0), vitest 411/411, vite build, a jsdom run of the synced `SongNodes.dateRange` (two codes stacked, apply is primary), scope guard.
+- Checks not run: E2E and preview screenshots (no Docker or browser here).
+- Next: DSQ1B (React DateRange outcome primary and stacked codes; the Q18 inset check, which does not exist yet).
+<!-- SLOT:DSQ1A END -->

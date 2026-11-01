@@ -37,7 +37,8 @@ The typed boxes stay the main path; the calendar is a visible second way in (imp
 - `sn-btn sn-btn--icon` with the `calendar` icon, after the To group, level with the boxes; `control-md` (44px on touch). The `Tooltip` / `title` repeats the name.
 - Pressing it opens `DateRange` under the fieldset with **focus on the grid** (From, else today). Escape, the close button or the outcome button closes it and returns focus to the calendar button; a click outside closes it without moving focus.
 - Two-way: typed dates show in the months (`set`), and picked dates fill the boxes and their readable dates. A preset pressed in either place is pressed in both; typing or picking a day unpresses it.
-- The outcome reads "Use these dates" and only closes the popover: the boxes already hold the dates.
+- The outcome reads "Use these dates", is the popover's filled primary (DR-044) and only closes the popover: the boxes already hold the dates. The popover stays open through both picks until then (DR-045).
+- The field's own chip row keeps Last 7 days · Last 30 days · This year and the page's spans. Week presets (Last week · This week · Next week) show in the popover only, never mirrored in the chip row (DR-046).
 
 ## States
 Error: `sn-field__error` under the legend, `aria-invalid` and a 2px `status-bad` border only on the wrong part. Presets: the active preset is pressed; typing a date or picking one on the calendar unpresses it. Calendar button: `aria-expanded="true"` while the popover is open.

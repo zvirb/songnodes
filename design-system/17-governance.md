@@ -20,6 +20,12 @@ The design system has one version number, [semver](https://semver.org) `MAJOR.MI
 
 Newest first. Each entry: version, date (Melbourne), one line per change, prefixed Added / Changed / Deprecated / Removed / Fixed, with the decision record if any.
 
+**1.7.0 — 2 Nov 2026: the open questions answered (Markus, 2 Nov 2026)**
+- Changed `DateRange`: the outcome button is always the filled primary (`sn-btn sn-btn--primary`), the one stated exception to one primary per view; it lives only inside the popover or sheet (DR-044, closes Q11). `SongNodes.dateRange` renders it so.
+- Added `[data-marks="2"]` on `.sn-date-range__day`: a day with two coded marks shows both codes stacked, packed to keep the cell height; `SongNodes.dateRange` renders up to two codes (DR-047, closes Q14).
+- Changed 05-layout "Text inset": a 4–7px inset fails the design check instead of warning (DR-050, closes Q18). Conformance table row added below.
+- Recorded DR-043 (score bands fitted, closes Q9), DR-045 (popover stays open, Q12), DR-046 (week presets in the popover only, Q13), DR-048 (bottom sheet below 480px, Q15), DR-049 (no limit on future days, Q16): the defaults, now decided. DateRange, DateField, 11, 12 and 18 updated. No token changed.
+
 **1.6.0 — 2 Nov 2026: explain once, every warning links to its source, go icons (imported from BeanAlliance v4.18 to v4.20.2, asked for by Markus 2 Nov 2026)**
 - Added `InfoTip` (Feedback): an explanatory notice shrunk to one `info` button (24px, `fg-2`, no `title`) where the text was; the words move verbatim into a tooltip (40 words or fewer, the `Tooltip` look, opens on hover, keyboard focus and tap, a tap pins it) or a panel (the `Popover` look, 24rem, click, tap, Enter or Space only, never hover); one open per page; Escape closes; under 768px both sit at the bottom of the screen; never printed. Classes `.sn-infotip`, `__btn`, `__tip` (`--up`, `--end`, `--static`), `__panel` (`--static`), `__close`; helpers `SongNodes.infoTip`, `SongNodes.infoTips` (DR-038).
 - Changed: every field's help is an `InfoTip` after its label, however short; a caveat on a figure, today's included, may be one; long method text is the panel form (DR-039). New `.sn-text-field__head` / `.sn-field__head` (label, InfoTip, count). 01-writing, 09-cognitive-load, 12-inputs, `TextField`, `SectionHeading`, `Tooltip` updated.
@@ -186,6 +192,20 @@ Markus's BeanAlliance decisions of 1 Nov 2026, brought into SongNodes at his req
 | DR-041 | Every warning can be dismissed; a dismissed warning shrinks to its status icon in place (icon only, no word) and returns the next day or when its fact changes; a bad one also returns when the blocked action is tried again. Nothing is recorded. |
 | DR-042 | Go icon: the target module's icon at 84% with a half-size new-tab badge, in the target module's colour, leading the words of every source link to another page. |
 
+### DR-043 to DR-050 — answers of 2 Nov 2026 (Melbourne), 1.7.0
+2 Nov 2026 · Markus. Context for each: the open question it closes (1.3.0 fitted defaults). Options: those listed in the closed question.
+
+| # | Decision |
+|---|---|
+| DR-043 | Recommendation score bands are **fitted**: 80/60/40 until enough accepted suggestions exist, then the band edges are fitted to Markus's own accepted picks. Band names, glyphs and order do not change (closes Q9). |
+| DR-044 | The `DateRange` outcome button is **always primary** (`sn-btn--primary`), on every page. This is an explicit exception to "one primary button per view", for this button only. It coexists with the page's own primary because it lives only inside the popover or bottom sheet, which counts as its own view while open (as a dialog does) and takes its primary with it when it closes; the page keeps its one primary, and the popover itself has exactly one (Clear is quiet) (closes Q11). |
+| DR-045 | The `DateRange` popover **stays open** until the outcome button (or close, Escape, a click outside); never on a preset or the second pick, in DateField too (closes Q12). |
+| DR-046 | Week presets (Last week · This week · Next week) are offered **inside the picker only**, never mirrored in DateField's chip row (closes Q13). |
+| DR-047 | A day with more than one coded mark shows **two stacked codes**: both visible in the cell, in the order the page passed them; every mark is in the day's name and `title` (closes Q14). |
+| DR-048 | Below 480px (`bp-phone`) `DateRange` is a **bottom sheet**, not a full-screen Dialog sheet (closes Q15). |
+| DR-049 | **No limit** on future days: no `max`, and days after the last data are not greyed, exports included (closes Q16). |
+| DR-050 | A "tight" text inset (4–7px) **fails the design check** and blocks the pull request until the inset is at least 8px (`space-2`); under 4px stays a defect (closes Q18). |
+
 ## How rules are derived
 
 1. Markus's own decisions (DR-001…DR-016) and his past corrections win.
@@ -196,23 +216,28 @@ Markus's BeanAlliance decisions of 1 Nov 2026, brought into SongNodes at his req
 
 ## Open questions
 
-All questions raised at the 1.0.0 release were answered on 24 Oct 2026 (DR-018 revised, DR-021 to DR-030). Q9 remains open; Q11–Q16 and Q18 were fitted in 1.3.0 and Q23–Q27 in 1.6.0, and wait for Markus (Q10 and Q17 answered as DR-031 and DR-032):
+Q23–Q27 (fitted in 1.6.0) wait for Markus. All questions raised at the 1.0.0 release were answered on 24 Oct 2026 (DR-018 revised, DR-021 to DR-030); Q10 and Q17 on 28 Oct 2026 (DR-031, DR-032); Q9, Q11–Q16 and Q18 on 2 Nov 2026 (DR-043 to DR-050, closed below):
 
 | # | Question | Options | Default until answered |
 |---|---|---|---|
-| Q9 | Score bands for recommendations | 80/60/40 (current code) · fit to Markus's accepted picks | 80/60/40 until enough accepted picks exist to fit, then fitted from his own picks |
-| Q11 | DateRange outcome button weight | Default button · primary when the picker is the whole view · always primary | Default button (one primary per view) |
-| Q12 | When the DateRange popover closes | Stays open until the outcome button · closes on the second pick in DateField | Stays open |
-| Q13 | Week presets in DateField's chip row | Popover only · mirrored in the field when enabled | Popover only |
-| Q14 | More than one mark on a day | One code, extra marks in the name · two stacked codes · "+1" | One code |
-| Q15 | DateRange on phones | Bottom sheet below 480px · full-screen Dialog sheet (DR-029) | Bottom sheet |
-| Q16 | Limit future days in exports | None · `max` greys days after the last data with a reason | None |
-| Q18 | "Tight" text inset (4–7px) | Warn only · fail the check | Warn only |
 | Q23 | How long a dismissed warning stays down (DR-041) | Until the next calendar day in Melbourne · until the next weekly run · until the fact changes only | Next calendar day (BeanAlliance's "next working day" has no SongNodes calendar to follow) |
 | Q24 | Source links in a single-page app (DR-040) | New tab, as BeanAlliance · same tab, since Back restores filters, tab and scroll (08-motion) | New tab, so the page with the warning keeps its place |
 | Q25 | Info and ok banners when dismissed | Go entirely until their fact changes (SongNodes 1.0) · shrink to their icon like a warning | Go entirely |
 | Q26 | InfoTip button size | 24px (WCAG 2.5.8 minimum, matches BeanAlliance's `control-h-sm`) · 32px `control-sm` like other small icon buttons | 24px, 44px hit area on touch |
 | Q27 | InfoTip hover delay | Opens at once on hover (the info button is pointed at on purpose, as BeanAlliance) · 500 ms like `Tooltip` | At once |
+
+Closed on 2 Nov 2026:
+
+| # | Question | Answer (2 Nov 2026) | Closed by |
+|---|---|---|---|
+| Q9 | Score bands for recommendations | Fitted: 80/60/40 until enough accepted suggestions, then fitted to Markus's picks | DR-043 |
+| Q11 | DateRange outcome button weight | Always primary (exception to one primary per view) | DR-044 |
+| Q12 | When the DateRange popover closes | Stays open until the outcome button | DR-045 |
+| Q13 | Week presets in DateField's chip row | Inside the picker only | DR-046 |
+| Q14 | More than one mark on a day | Two stacked codes | DR-047 |
+| Q15 | DateRange on phones | Bottom sheet below 480px | DR-048 |
+| Q16 | Limit future days in exports | No limit | DR-049 |
+| Q18 | "Tight" text inset (4–7px) | Fail the check | DR-050 |
 
 ### Approved exceptions
 
@@ -252,6 +277,7 @@ Automated (CI on SongNodes, script on the design system):
 | Page container | `scripts/check_design_system.py` | A `<main>` without `sn-page__main`, `sn-page-error` or `sn-page-auth` (exception comment allowed only for the graph canvas) |
 | Undefined classes | `scripts/check_design_system.py` | An `sn-*` class in app code that no stylesheet defines; existing debt is listed in `frontend/design-system-layout-baseline.txt`, which may only shrink |
 | Page gutter (rendered) | Playwright `design-rules.spec.ts` on every shell route except the graph | The page has no side gutter, or visible text starts within the gutter of the window edge |
+| Text inset (rendered, DR-050) | Playwright on every shell route (SongNodes: not built yet, follow-up to DSQ1) | Text in a box that draws an edge sits 4–7px from that edge (tight) or closer; the PR is blocked until the inset is at least `space-2` (8px) |
 
 Manual: run the pre-release checklist in Accessibility and quality (section 09) before each minor or major release.
 
