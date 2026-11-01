@@ -2202,6 +2202,36 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Next: close U17B; a design-system package drops the GraphiQL rows; a small package removes the stale GraphQL section, load-test task and test deps.
 <!-- SLOT:U17C END -->
 
+<!-- SLOT:BRZ2 BEGIN -->
+### BRZ2: Bronze playlists store raw_json as a JSON object
+- Start: 2026-11-01 (branch brz2-bronze-raw-json off origin/main 62795a7). Job: bronze playlist and track raw_json are JSON objects, so ingest sees fields such as `total_tracks`.
+- End: 2026-11-01.
+- Changed: `persistence_pipeline.py` gains `_bronze_raw_json` (Items, nested Items and tuples become dicts/lists before `json.dumps`), used by the bronze playlist and track inserts. Before, a playlist Item was stored as a JSON string of its repr; track batch items were already dicts in the MixesDB flow but used the same call. `ingest.py` rejects a playlist flagged `bronze_incomplete` (BRZ1) with reason `bronze_incomplete` when no other completeness error applies (a lost last position leaves no gap). Old string rows are not rewritten: ingest reads them as `{}` as before, and still sees the flag when BRZ1 wrapped them under `raw`.
+- Checks run: `python -m pytest scrapers/tests` (21 passed), `cd services && python -m pytest common/tests` (163 passed), root `python -m pytest` (failures are Docker-only integration tests and modules that cannot import `annoy`/`common.*` here; none touch the changed files), scope guard.
+- Checks not run: E2E and a real scrape into Postgres (no Docker daemon).
+- Next: optionally backfill old bronze playlist rows (re-scrape, or parse the stored repr) so ingest sees their declared track counts.
+<!-- SLOT:BRZ2 END -->
+
+<!-- SLOT:DSQ2 BEGIN -->
+### DSQ2: Design system 1.7.1: the owner's answers to Q23–Q27
+- Start: 2026-11-01 (branch dsq2-design-answers off origin/main 62795a7). Job: record Markus's answers of 2 Nov 2026 (Melbourne) to Q23–Q27 (the 1.6.0 fitted choices) at the design-system source, change what differs, bump, rebuild and re-sync.
+- End: 2026-11-01.
+- Changed: `17-governance.md` gains DR-051 to DR-055, the 1.7.1 change log entry, and Q23–Q27 in the closed table (no question is open now). Q23 next Melbourne calendar day (DR-051), Q24 new tab (DR-052), Q25 info/ok go entirely (DR-053), Q26 24px with a 44px touch hit area (DR-054) match the 1.6.0 build. Q27 does not: the InfoTip tooltip form now opens after 500 ms of mouse hover like `Tooltip`, at once on focus and tap (DR-055). Source: `bundle.src.js` (`infoTips` hover delay, version), `types/50-feedback.d.ts`, `components/index.d.ts`, `build_tokens.py` version. Cards and sections: InfoTip, Banner, 06, 08; `docs/sdlc/SDLC.md` open row. Rebuilt with build_tokens.py and build_bundle.py; synced with sync-design-system.sh. No React InfoTip port exists, so no React change.
+- Checks run: build_tokens (contrast: all pairs pass), build_bundle, `sync-design-system.sh --check` (1.7.1 in sync), `check_design_system.py --check`, tsc, oxlint (exit 0), vitest 423/423, vite build, a jsdom run of the synced `SongNodes.infoTips` (closed at 200 ms of hover, open after 500 ms, a brief sweep opens nothing, focus and click open at once), scope guard.
+- Checks not run: E2E and preview screenshots (no Docker or browser here).
+- Next: `frontend/src/features/musicLibrary/storage.ts` keys a banner dismissal on the condition's count only; DR-051 also ends it at the next Melbourne day (`SongNodes.dismissal`). A small follow-up for that feature's owner.
+<!-- SLOT:DSQ2 END -->
+
+<!-- SLOT:HS1 BEGIN -->
+### HS1: One transition scoring classifier with golden tests (spec package M6-F1)
+- Start: 2026-11-01 (branch hs1-transition-scoring off main 62795a7).
+- End: 2026-11-01.
+- Changed: `docs/specs/HARMONIC_SCORING.md` records the owner's answers of 2 Nov 2026 (§5 answer column; Q-E1 `step_down`, Q-E2 drop/rise bounds, Q-B1 octave capped at compatible and worded "half time"/"double time", the rest proposed defaults) and is marked accepted. Six §3 scores were arithmetic slips and are corrected (0.8^0.6 is 87, not 88; 0.8^0.4 is 91, not 92); every cost was already right. New `services/common/metadata/transition_scoring.py` (pure functions: key verdict, BPM verdict with half/double time, energy move, compat score, path cost, all stored edge fields), `services/common/tests/test_transition_scoring.py`, golden `tests/fixtures/harmonic_scoring/examples.json` (all 24 §3 rows) and the brief `plan/agents/HS1_transition_scoring.md`.
+- Checks run: `cd services && python -m pytest common/tests` (pass), scope guard (pass).
+- Checks not run: root `python -m pytest` (not touched by this package), E2E (no Docker daemon; no UI change).
+- Next: M6-F2 parity test (SN.compat/bpmStep/energyStep against `examples.json`, `sn_differs` rows as expected differences), then M6-DS for the octave words, rounding, fractional energy, drop bound and `step_down` word.
+<!-- SLOT:HS1 END -->
+
 <!-- SLOT:HS8 BEGIN -->
 ### HS8: Remove the dead harmonic-matching copies
 - Start: 2026-11-01 (branch hs8-remove-dead-matching off origin/main 62795a7). Brief: plan/agents/HS8_remove_dead_matching.md (spec package M6-F3, docs/specs/HARMONIC_SCORING.md).

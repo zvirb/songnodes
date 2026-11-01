@@ -20,6 +20,10 @@ The design system has one version number, [semver](https://semver.org) `MAJOR.MI
 
 Newest first. Each entry: version, date (Melbourne), one line per change, prefixed Added / Changed / Deprecated / Removed / Fixed, with the decision record if any.
 
+**1.7.1 — 2 Nov 2026: the 1.6.0 fitted choices answered (Markus, 2 Nov 2026)**
+- Changed `InfoTip`: the tooltip form opens after **500 ms** on mouse hover, the same as `Tooltip`; keyboard focus and a tap still open it at once, and the 300 ms leave grace is unchanged. `SongNodes.infoTips` waits so; a pointer that leaves first opens nothing (DR-055, closes Q27; not the fitted default "at once"). A changed value, so a patch.
+- Recorded DR-051 (a dismissed warning stays down until the next Melbourne calendar day, Q23), DR-052 (source links to another page open in a new tab, Q24), DR-053 (dismissed info and ok banners go entirely until their fact changes, Q25), DR-054 (InfoTip button 24px, 44px hit area on touch, Q26): the fitted defaults, now decided, already built in 1.6.0. InfoTip, Banner, 06 and 08 updated. No token changed. No open questions remain.
+
 **1.7.0 — 2 Nov 2026: the open questions answered (Markus, 2 Nov 2026)**
 - Changed `DateRange`: the outcome button is always the filled primary (`sn-btn sn-btn--primary`), the one stated exception to one primary per view; it lives only inside the popover or sheet (DR-044, closes Q11). `SongNodes.dateRange` renders it so.
 - Added `[data-marks="2"]` on `.sn-date-range__day`: a day with two coded marks shows both codes stacked, packed to keep the cell height; `SongNodes.dateRange` renders up to two codes (DR-047, closes Q14).
@@ -182,7 +186,7 @@ Chosen from four layouts and three link styles compared on the same 40 tracks (G
 
 ### DR-038 to DR-042 — imported from BeanAlliance v4.18 to v4.20.2 (2 Nov 2026)
 
-Markus's BeanAlliance decisions of 1 Nov 2026, brought into SongNodes at his request ("collect, transform and integrate those more recent updates"). Each is his rule, fitted to SongNodes; where the fit needed a choice of its own, the choice is an open question below (Q23–Q27).
+Markus's BeanAlliance decisions of 1 Nov 2026, brought into SongNodes at his request ("collect, transform and integrate those more recent updates"). Each is his rule, fitted to SongNodes; where the fit needed a choice of its own, the choice was an open question (Q23–Q27), answered as DR-051 to DR-055.
 
 | DR | Decision |
 |---|---|
@@ -206,6 +210,17 @@ Markus's BeanAlliance decisions of 1 Nov 2026, brought into SongNodes at his req
 | DR-049 | **No limit** on future days: no `max`, and days after the last data are not greyed, exports included (closes Q16). |
 | DR-050 | A "tight" text inset (4–7px) **fails the design check** and blocks the pull request until the inset is at least 8px (`space-2`); under 4px stays a defect (closes Q18). |
 
+### DR-051 to DR-055 — answers of 2 Nov 2026 (Melbourne), 1.7.1
+2 Nov 2026 · Markus. Context for each: the open question it closes (1.6.0 fitted choices for DR-040, DR-041 and DR-038). Options: those listed in the closed question.
+
+| # | Decision |
+|---|---|
+| DR-051 | A dismissed warning stays down **until the next calendar day in Melbourne** (`SongNodes.calendar.today()`), or until its fact changes, whichever comes first; a bad one also returns when the blocked action is tried again (closes Q23). |
+| DR-052 | A source link to another page **opens in a new tab**, led by its go icon, so the page with the warning keeps its place; a place on the same page stays a same-tab link with no icon (closes Q24). |
+| DR-053 | A dismissed `info` or `ok` banner **goes entirely** until its fact changes; only warn and bad shrink to their icon (closes Q25). |
+| DR-054 | The `InfoTip` button is **24px** (`space-6`, the WCAG 2.5.8 minimum) with a **44px hit area on touch** (`touch-min`) (closes Q26). |
+| DR-055 | The `InfoTip` tooltip form opens **after 500 ms on mouse hover**, the same as `Tooltip`, so a pointer sweeping across a row of labels does not flash tips; keyboard focus and a tap open it at once. This is not the fitted default ("at once") (closes Q27). |
+
 ## How rules are derived
 
 1. Markus's own decisions (DR-001…DR-016) and his past corrections win.
@@ -216,15 +231,7 @@ Markus's BeanAlliance decisions of 1 Nov 2026, brought into SongNodes at his req
 
 ## Open questions
 
-Q23–Q27 (fitted in 1.6.0) wait for Markus. All questions raised at the 1.0.0 release were answered on 24 Oct 2026 (DR-018 revised, DR-021 to DR-030); Q10 and Q17 on 28 Oct 2026 (DR-031, DR-032); Q9, Q11–Q16 and Q18 on 2 Nov 2026 (DR-043 to DR-050, closed below):
-
-| # | Question | Options | Default until answered |
-|---|---|---|---|
-| Q23 | How long a dismissed warning stays down (DR-041) | Until the next calendar day in Melbourne · until the next weekly run · until the fact changes only | Next calendar day (BeanAlliance's "next working day" has no SongNodes calendar to follow) |
-| Q24 | Source links in a single-page app (DR-040) | New tab, as BeanAlliance · same tab, since Back restores filters, tab and scroll (08-motion) | New tab, so the page with the warning keeps its place |
-| Q25 | Info and ok banners when dismissed | Go entirely until their fact changes (SongNodes 1.0) · shrink to their icon like a warning | Go entirely |
-| Q26 | InfoTip button size | 24px (WCAG 2.5.8 minimum, matches BeanAlliance's `control-h-sm`) · 32px `control-sm` like other small icon buttons | 24px, 44px hit area on touch |
-| Q27 | InfoTip hover delay | Opens at once on hover (the info button is pointed at on purpose, as BeanAlliance) · 500 ms like `Tooltip` | At once |
+None are open. All questions raised at the 1.0.0 release were answered on 24 Oct 2026 (DR-018 revised, DR-021 to DR-030); Q10 and Q17 on 28 Oct 2026 (DR-031, DR-032); Q9, Q11–Q16 and Q18 on 2 Nov 2026 (DR-043 to DR-050); Q23–Q27 on 2 Nov 2026 (DR-051 to DR-055). A new question goes in a table here, with its options and the default until answered.
 
 Closed on 2 Nov 2026:
 
@@ -238,6 +245,11 @@ Closed on 2 Nov 2026:
 | Q15 | DateRange on phones | Bottom sheet below 480px | DR-048 |
 | Q16 | Limit future days in exports | No limit | DR-049 |
 | Q18 | "Tight" text inset (4–7px) | Fail the check | DR-050 |
+| Q23 | How long a dismissed warning stays down (DR-041) | Until the next calendar day in Melbourne | DR-051 |
+| Q24 | Source links in a single-page app (DR-040) | New tab | DR-052 |
+| Q25 | Info and ok banners when dismissed | Go entirely until their fact changes | DR-053 |
+| Q26 | InfoTip button size | 24px, 44px hit area on touch | DR-054 |
+| Q27 | InfoTip hover delay | 500 ms like `Tooltip` (not the fitted default "at once") | DR-055 |
 
 ### Approved exceptions
 
