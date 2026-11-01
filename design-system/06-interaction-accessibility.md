@@ -101,7 +101,7 @@ The global set is listed in `ShortcutSheet` (open with ?).
 | 1.4.10 Reflow | 320 CSS px, no page scroll sideways | `LibraryPage`, `SetBuilderPage`, `MonitoringPage` |
 | 1.4.11 Non-text contrast | 3:1 control edges, focus, chart marks | `TextField`, `Checkbox`, `Switch`, `RangeSlider`, `ProgressBar` |
 | 1.4.12 Text spacing | No clipping | `FilterChip`, `Tabs`, `StatusPill` |
-| 1.4.13 Content on hover or focus | Dismissible (Esc), hoverable, persistent. `Tooltip` shows immediately on keyboard focus and after 500 ms on mouse hover; hides at once on leave or blur | `Tooltip`, `Popover`, graph node hover card |
+| 1.4.13 Content on hover or focus | Dismissible (Esc), hoverable, persistent. `Tooltip` and the `InfoTip` tooltip form show immediately on keyboard focus (and on a tap) and after 500 ms on mouse hover (DR-055); `Tooltip` hides at once on leave or blur, `InfoTip` after a 300 ms grace | `Tooltip`, `InfoTip`, `Popover`, graph node hover card |
 | 2.1.1 / 2.1.2 Keyboard, no trap | All operable, Esc exits | `Dialog`, `SideSheet`, graph canvas, `CommandPalette` |
 | 2.1.4 Character key shortcuts | Off switch, input-aware | `ShortcutSheet`, `PreferencesPanel` |
 | 2.2.1 Timing adjustable | Toasts with actions stay until dismissed; others ≥ 6 s | `Toast` |
