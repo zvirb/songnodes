@@ -2295,6 +2295,16 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Next: follow-ups in the PR (admissible heuristic, `key_compatible` from `key_verdict`, consistent `connection_strength`).
 <!-- SLOT:HS6 END -->
 
+<!-- SLOT:HS4 BEGIN -->
+### HS4: Silver transitions store their harmonic scoring
+- Start: 2026-11-01 (branch hs4-silver-transition-scoring off origin/main a071a2e). Brief: plan/agents/HS4_silver_transition_scoring.md (added in this PR). Spec package M6-P1.
+- End: 2026-11-01.
+- Changed: migration 270 adds 21 nullable scoring columns to `silver_track_transitions` (spec 2.7 plus energy provenance and `scored_at`); new `common/datalayer/transition_scores.py` maps `score_transition` onto them; the ingest N -> N+1 upsert writes them; new job kind `transition_scoring` backfills existing rows in chained keyset batches and writes only rows whose scoring changed. `start-dev.sh` applies 270 and queues the backfill once per scoring version (`backfill:harmonic-1`).
+- Checks run: `cd services && python -m pytest common/tests`; scope guard.
+- Checks not run: the migration and job against a real Postgres (no Docker here); integration tests.
+- Next: M6-P2 projects the stored fields; rescoring when track metadata changes after ingest is a follow-up.
+<!-- SLOT:HS4 END -->
+
 <!-- SLOT:TT1 BEGIN -->
 ### TT1: Target tracks show real search progress, not a hand-set slider
 - Start: 2026-11-01 (branch tt1-target-real-progress off origin/main ae56475, rebased on 33dcc5a). Brief: plan/agents/TT1_target_real_progress.md (added in this PR).
