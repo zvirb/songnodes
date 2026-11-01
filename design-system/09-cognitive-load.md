@@ -22,6 +22,8 @@ SongNodes is used in two modes of attention: planning at a desk with time to exp
 | Settings | Connections, theme, text size | API keys, density, shortcuts, reduce motion, advanced |
 
 - Disclosed content keeps its place: opening it never moves the primary action.
+- **Explanations sit behind an `InfoTip`** (1.6.0, imported from BeanAlliance v4.18): a sentence that explains a heading, a field or a figure is one `info` button where the sentence was. The default view is the short one; the explanation is one hover, focus or tap away. Every field's help is an InfoTip, however short.
+- **A warning can be put away** (1.6.0): dismissing it shrinks it to its status icon in place for the rest of the day, so a known problem stops competing for attention without disappearing. It ends with a link to where it is fixed, so acting on it is one click.
 - The state of each disclosure, filter and tab persists per person (see "User-controlled simplification").
 
 ## Consistent placement
@@ -37,7 +39,8 @@ Recurring regions are always in the same place, on every page:
 | Page actions | Top right in `PageHeader` |
 | Totals and summary figures | Above the table they summarise ("412 of 1,284 tracks · 6 h 40 min") |
 | Row actions | Last column, right-aligned |
-| Method and caveats | `Disclosure` directly under the chart or table |
+| Method and caveats | `InfoTip` after the heading, label or figure it explains (panel form for long method text); text already behind a `Disclosure` stays there |
+| Where to fix a warning | The warning's last words, as a source link |
 | Dialog buttons | Bottom right: Cancel, then the action verb |
 
 ## Non-colour cues

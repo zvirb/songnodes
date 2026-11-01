@@ -82,6 +82,19 @@ How the interface says "nothing here", "working on it", "done" and "that went wr
 | Blocking question | `ConfirmDialog` | Destructive or irreversible action | 1 |
 
 - Never `alert()`, `confirm()` or `prompt()` (`DJInterface.tsx` `clearQueue`).
+- A notice that only explains is not a message at all: it is an `InfoTip` (1.6.0). Banners, inline messages, errors and toasts are never InfoTips.
+
+## Every warning links to its source and can be put away (1.6.0)
+
+Imported from BeanAlliance v4.19, v4.19.1 and v4.20–v4.20.2 (Markus, 1 Nov 2026), fitted to SongNodes. The full rules are in `Banner`.
+
+| Rule | What it means here |
+|---|---|
+| Source link | Every warn and bad `Banner` and `InlineMessage`, a stale `FreshnessStamp`'s phrase, a flagged row's reason and a data-caused `ErrorState` end with one `sn-link--src` naming the page and place where the cause is changed. Another module opens in a new tab, led by its go icon; a place on this page is a same-page link that focuses the control. A banner whose own button fixes it here ("Reconnect TIDAL") needs no link |
+| Dismiss | Every banner, and every boxed warn or bad `InlineMessage`, has an `x` button. A warning shrinks to its status icon in place (`.sn-dismissed`); info and ok banners go entirely |
+| How long | Until the next day (Melbourne) or until the fact changes; a bad banner also returns when the blocked action is tried again. Kept on this device (`SongNodes.dismissal`); nothing is recorded and nobody else is affected |
+| Never dismissable | `LoadingState`, `StagedProgress`, an `ErrorState` that is the region, a `ConfirmDialog` |
+| Toasts | Unchanged: confirmations only, with their own dismiss and a timer that pauses on hover and focus. A warning is never a toast in SongNodes, so BeanAlliance's warn and crit toasts are not adopted |
 - Messages never contain emoji, "Success!", or stacked bullet lists of internals. The clear-queue result becomes one toast: "Cleared 37 queued jobs." with a "Details" `Disclosure` in Pipeline → Jobs.
 
 ## Success confirmation is proportional
@@ -115,7 +128,7 @@ How the interface says "nothing here", "working on it", "done" and "that went wr
 | Service connection (Spotify, TIDAL token) | valid | expires in < 24 h | expired |
 | Audio analysis per track | any age (static) | – | – |
 
-- Stale is a warning on the stamp, not a `Banner`, unless the page's main data is very stale.
+- Stale is a warning on the stamp, not a `Banner`, unless the page's main data is very stale. The stale phrase ends with its source link (1.6.0): "▲ 11 days old. Open Pipeline · Weekly run".
 - Simulated or preview data never shows a freshness stamp; it shows "Preview" (03-colour).
 
 ## Connection and source status

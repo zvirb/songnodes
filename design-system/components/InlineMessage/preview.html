@@ -1,4 +1,4 @@
-<!-- @dsCard group="Feedback" height=528 subtitle="Under a transition list, under a field, in a table row, in a card section; warn, bad, ok, info; plain and boxed" -->
+<!-- @dsCard group="Feedback" height=600 subtitle="Under a transition list, under a field, in a table row, in a card section; warn, bad, ok, info; plain and boxed; a boxed warning with its source link and dismiss" -->
 <!doctype html>
 <html>
 <head><meta charset="utf-8"><title>InlineMessage — preview</title>
@@ -30,6 +30,7 @@
         <p class="sn-inline-message" data-status="info" id="pool-msg">673 tracks without a key are placed by energy alone.</p>
       </div>
       <p class="sn-inline-message sn-inline-message--boxed" data-status="ok"><span>All 14 transitions are <strong>perfect or compatible</strong>.</span></p>
+      <div id="boxed-warn"></div>
     </section>
   </div>
   <section class="sn-stack" aria-labelledby="c3">
@@ -47,6 +48,16 @@
     h += '<li><span class="sn-mono sn-dim">' + r[0] + "</span>" + H.energy(r[0] + (i === 2 ? 3 : 1)) + "<span>" + S.esc(r[1]) + "</span></li>";
   });
   document.getElementById("order").innerHTML = h;
+  var W = '<p class="sn-inline-message sn-inline-message--boxed" data-status="warn"><span>4 tracks have no Beatport match, so their genre is a guess. ' +
+    S.sourceLink({ text: "Open Sources · Enrichment", href: "#sources-enrichment", module: "sources" }) + '</span>' +
+    '<button class="sn-btn sn-btn--sm sn-btn--icon sn-btn--quiet sn-inline-message__dismiss" type="button" aria-label="Dismiss: 4 tracks unmatched" title="Dismiss">' + S.icon("x") + '</button></p>';
+  var D = '<button type="button" class="sn-dismissed" data-status="warn" aria-label="Show warning: 4 tracks unmatched" title="Show warning: 4 tracks unmatched" aria-expanded="false">' + S.icon("triangle-alert") + '</button>';
+  var box = document.getElementById("boxed-warn"); box.innerHTML = W;
+  box.addEventListener("click", function (e) {
+    if (e.target.closest('a[href^="#"]')) { e.preventDefault(); return; }
+    if (e.target.closest(".sn-inline-message__dismiss")) { box.innerHTML = D; box.firstChild.focus(); return; }
+    if (e.target.closest(".sn-dismissed")) { box.innerHTML = W; box.querySelector(".sn-inline-message__dismiss").focus(); }
+  });
   document.getElementById("rows").innerHTML =
     "<tr><td>Peggy Gou – (It Goes Like) Nanana</td><td class=\"num\">125</td><td>" + H.key("8A") + '</td><td><span class="sn-inline-message" data-status="info">Matched by ISRC; Spotify ID missing</span></td></tr>' +
     "<tr><td>Josh Baker – Lost In Muzik</td><td class=\"num\">127</td><td>" + H.key("") + '</td><td><span class="sn-inline-message" data-status="warn">Two Beatport IDs; check the right mix</span></td></tr>';

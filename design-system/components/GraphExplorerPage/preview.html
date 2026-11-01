@@ -30,7 +30,7 @@
         <div class="sn-side-sheet__layout">
           <div class="sn-side-sheet__main sn-graph-styles">
             <div class="sn-graph-controls" id="gc">
-              <svg class="sn-graph-controls__canvas sn-graph-styles__canvas" id="canvas" viewBox="0 0 640 560" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="cdesc"><desc id="cdesc">Graph of 12 tracks around Bicep – Glue, playing now. Overmono – So U Kno is selected; two tracks are faded by the energy filter.</desc></svg>
+              <svg class="sn-graph-controls__canvas sn-graph-styles__canvas" id="canvas" viewBox="0 0 640 560" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="cdesc"><desc id="cdesc">12 tracks seated on rings around Bicep – Glue, playing now; the strongest links sit on the first ring. Overmono – So U Kno is selected; two tracks are faded by the energy filter.</desc></svg>
               <div class="sn-graph-controls__count">48 nodes · 112 links</div>
               <div class="sn-page-graph__legend"><aside class="sn-graph-styles__legend" aria-label="Graph legend" id="legend"></aside></div>
               <div class="sn-graph-controls__dock" role="group" aria-label="Graph controls" id="dock"></div>
@@ -104,7 +104,7 @@
       var rid = it.reason ? id + "-r" + (++n) : "";
       h += '<button type="button" tabindex="-1" class="sn-overflow-menu__item' + (it.danger ? " sn-overflow-menu__item--danger" : "") + (it.cls ? " " + it.cls : "") + '" role="' + (it.checked != null ? "menuitemcheckbox" : "menuitem") + '"' +
         (it.checked != null ? ' aria-checked="' + it.checked + '"' : "") + (it.id ? ' data-id="' + it.id + '"' : "") + (it.reason ? ' aria-disabled="true" aria-describedby="' + rid + '"' : "") + ">" +
-        (it.checked != null || it.icon ? S.icon(it.checked != null ? "check" : it.icon, { size: 16 }) : '<span class="sn-overflow-menu__icon-gap" aria-hidden="true"></span>') + '<span class="sn-overflow-menu__label"><span class="sn-overflow-menu__text">' + S.esc(it.label) + "</span>" +
+        S.icon(it.checked != null ? "check" : (it.icon || "circle-dot"), { size: 16 }) + '<span class="sn-overflow-menu__label"><span class="sn-overflow-menu__text">' + S.esc(it.label) + "</span>" +
         (it.reason ? '<span class="sn-overflow-menu__reason" id="' + rid + '">' + S.esc(it.reason) + "</span>" : "") + "</span>" + (it.kbd ? "<kbd>" + S.esc(it.kbd) + "</kbd>" : "") + "</button>";
     });
     if (open) h += "</div>";
@@ -304,10 +304,18 @@
   ];
   var EDGES = [[0, 1, "adjacency", 0.95], [0, 2, "adjacency", 0.7], [0, 3, "similarity", 0.5], [0, 4, "adjacency", 0.6], [0, 5, "collab", 0.6], [1, 4, "adjacency", 0.45], [1, 11, "key", 0.4],
     [2, 3, "collab", 0.5], [2, 7, "similarity", 0.35], [3, 10, "genre", 0.2], [7, 10, "genre", 0.2], [4, 6, "adjacency", 0.3], [5, 9, "similarity", 0.25], [1, 6, "genre", 0.2], [0, 8, "similarity", 0.85], [8, 2, "key", 0.4]];
+  /* ring layout around now playing (GraphStyles → Layout); seats keep each node + label clear at zoom 1.5 */
+  var mctx = document.createElement("canvas").getContext("2d"); mctx.font = "600 12px Inter, system-ui, sans-serif";
+  var LAY = S.ringLayout(N.map(function (n, i) { return { id: i, box: S.seatBox(n[2], Math.min(mctx.measureText(n[3] + " " + n[4]).width + 5, 260), n[6] === "now") }; }),
+    EDGES.map(function (e) { return { source: e[0], target: e[1], weight: e[3] }; }), { anchor: 0 });
+  var ext = 0.6; N.forEach(function (n, i) { var p = LAY.pos[i]; ext = Math.max(ext, (Math.abs(p.x) + 90) / 300, (Math.abs(p.y) + 30) / 250); }); /* preview zoom: fill the canvas, never past 1/0.6 */
+  N.forEach(function (n, i) { var p = LAY.pos[i]; n[0] = +(320 + p.x / ext).toFixed(1); n[1] = +(280 + p.y / ext).toFixed(1); });
   var ge = el("g", {}, cv), gn = el("g", {}, cv), gl = el("g", {}, cv);
-  EDGES.forEach(function (e) {
-    var a = N[e[0]], b = N[e[1]], cls = "sn-graph-styles__edge sn-graph-styles__edge--" + e[2] + (e[3] >= 0.8 ? " sn-graph-styles__edge--strong" : "") + (e[0] === 0 && e[1] === 1 ? " sn-graph-styles__edge--sel" : "");
-    var faded = a[6] === "faded" || b[6] === "faded", st = (e[2] === "adjacency" || e[2] === "similarity" ? "stroke-width:" + (0.5 + 7.5 * e[3]).toFixed(1) + ";" : "") + (faded ? "opacity:var(--opacity-faded)" : "");
+  var VIS = S.edgeVisibility(EDGES.map(function (e, i) { return { source: e[0], target: e[1], weight: e[3], i: i }; }), { anchor: 0, focus: [1] });
+  VIS.forEach(function (v) {
+    if (!v.show) return;
+    var e = EDGES[v.link.i], a = N[e[0]], b = N[e[1]], cls = "sn-graph-styles__edge sn-graph-styles__edge--" + e[2] + " sn-graph-styles__edge--b" + v.band + (v.focus ? " sn-graph-styles__edge--sel" : " sn-graph-styles__edge--dim");
+    var faded = a[6] === "faded" || b[6] === "faded", st = faded ? "opacity:var(--opacity-faded)" : "";
     if (e[2] === "collab") { var dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy), nx = -dy / L * 2, ny = dx / L * 2; [1, -1].forEach(function (s) { el("line", { x1: a[0] + s * nx, y1: a[1] + s * ny, x2: b[0] + s * nx, y2: b[1] + s * ny, "class": cls, style: st }, ge); }); }
     else el("line", { x1: a[0], y1: a[1], x2: b[0], y2: b[1], "class": cls, style: st }, ge);
   });
@@ -320,19 +328,20 @@
     if (n[6] === "now") { el("circle", { cx: n[0], cy: n[1], r: n[2] + 4, "class": "sn-graph-styles__ring-now" }, gn);
       el("rect", { x: n[0] - 15, y: n[1] - n[2] - 22, width: 30, height: 14, rx: 3, "class": "sn-graph-styles__now-tag" }, gn);
       var nt = el("text", { x: n[0], y: n[1] - n[2] - 15, "class": "sn-graph-styles__now-text" }, gn); nt.textContent = "Now"; }
-    if (n[6] === "now" || n[6] === "sel" || n[2] >= 11) {
+    if (n[6] === "now" || n[6] === "sel") { /* today's label rule: hover, selection, now playing; every label once zoom > 1.5 */
       var t = el("text", { x: n[0] + n[2] + 10, y: n[1] + 4, "class": "sn-graph-styles__label" }, gl);
       var a = el("tspan", { "class": "sn-graph-styles__label-artist" }, t); a.textContent = n[3];
       var b = el("tspan", { "class": "sn-graph-styles__label-title", dx: 5 }, t); b.textContent = n[4];
     }
   });
-  function lk(type) { var s = '<svg width="28" height="10" aria-hidden="true">'; if (type === "collab") s += '<line x1="1" y1="3" x2="27" y2="3" class="sn-graph-styles__edge sn-graph-styles__edge--collab sn-graph-styles__edge--strong"/><line x1="1" y1="7" x2="27" y2="7" class="sn-graph-styles__edge sn-graph-styles__edge--collab sn-graph-styles__edge--strong"/>'; else s += '<line x1="1" y1="5" x2="27" y2="5" class="sn-graph-styles__edge sn-graph-styles__edge--' + type + ' sn-graph-styles__edge--strong"/>'; return s + "</svg>"; }
+  function lk(type) { var s = '<svg width="28" height="10" aria-hidden="true">'; if (type === "collab") s += '<line x1="1" y1="3" x2="27" y2="3" class="sn-graph-styles__edge sn-graph-styles__edge--collab"/><line x1="1" y1="7" x2="27" y2="7" class="sn-graph-styles__edge sn-graph-styles__edge--collab"/>'; else s += '<line x1="1" y1="5" x2="27" y2="5" class="sn-graph-styles__edge sn-graph-styles__edge--' + type + '"/>'; return s + "</svg>"; }
   var CB = { neutral: "All tracks alike", energy: "Energy 1–10 (Low · Building · High)", key: "Camelot key colours", genre: "House · Techno · UK garage" };
   document.getElementById("legend").innerHTML = '<h4 id="cbl">Colour by</h4><div class="sn-seg" role="group" aria-labelledby="cbl" id="cbseg">' +
     [["neutral", "Neutral"], ["energy", "Energy"], ["key", "Key"], ["genre", "Genre"]].map(function (m) { return '<button type="button" data-cb="' + m[0] + '" aria-pressed="' + (m[0] === cmode) + '">' + m[1] + "</button>"; }).join("") + '</div><span class="caption sn-dim" id="cbnote">' + CB[cmode] + "</span>" +
     '<h4>Rings</h4><ul><li><svg width="24" height="20" aria-hidden="true"><circle cx="12" cy="10" r="5" class="sn-graph-styles__node"/><circle cx="12" cy="10" r="8" class="sn-graph-styles__ring-now"/></svg>Now playing (amber, “Now”)</li>' +
     '<li><svg width="24" height="20" aria-hidden="true"><circle cx="12" cy="10" r="5" class="sn-graph-styles__node"/><circle cx="12" cy="10" r="8" class="sn-graph-styles__ring-selected"/></svg>Selected</li></ul>' +
-    "<h4>Links</h4><ul><li>" + lk("adjacency") + "Played back to back</li><li>" + lk("similarity") + "Similar sound</li><li>" + lk("key") + "Compatible key</li><li>" + lk("collab") + "Same artists</li><li>" + lk("genre") + "Same genre</li></ul>";
+    "<h4>Links</h4><ul><li>" + lk("adjacency") + "Played back to back</li><li>" + lk("similarity") + "Similar sound</li><li>" + lk("key") + "Compatible key</li><li>" + lk("collab") + "Same artists</li><li>" + lk("genre") + "Same genre</li></ul>" +
+    '<h4>Strength</h4><ul><li><svg width="40" height="12" aria-hidden="true">' + [1, 2, 3, 4].map(function (b, i) { return '<line x1="' + (2 + i * 10) + '" y1="11" x2="' + (8 + i * 10) + '" y2="1" class="sn-graph-styles__edge sn-graph-styles__edge--b' + b + '"/>'; }).join("") + "</svg>Thicker is stronger; faint links show on hover</li></ul>";
   document.getElementById("cbseg").addEventListener("click", function (e) { var b = e.target.closest("[data-cb]"); if (!b) return; cmode = b.dataset.cb;
     this.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", x === b); });
     nodeEls.forEach(function (c, i) { var f = nodeFill(i); if (f) c.style.setProperty("--c", f); else c.style.removeProperty("--c"); });
