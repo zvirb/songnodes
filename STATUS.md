@@ -2024,6 +2024,16 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Next: follow-up for TracklistImporter (DS22) to pass `secondsSinceProgress` or state `stalled` plus `onResume`/`onCancel` instead of its STALL_MS detail message.
 <!-- SLOT:SP14 END -->
 
+<!-- SLOT:JOBDATE BEGIN -->
+### JOBDATE: GET /api/v1/jobs filters by a created date span
+- Start: 2026-11-01. Base `main` 527c5a7. Follows the DS24 decision note (`docs/integration/DS24/decision.md`): a /pipeline "Started between" filter needs a date span on the jobs list.
+- End: 2026-11-01.
+- Changed: `services/rest_api/routers/jobs.py` list endpoint takes optional `created_from` / `created_to` (YYYY-MM-DD, Australia/Melbourne days, both inclusive). From is the start of that Melbourne day, to is the start of the next one (exclusive); Postgres turns the local midnights into instants with `AT TIME ZONE 'Australia/Melbourne'`, so DST days are 23 or 25 hours. 422 for a malformed or impossible date and for from after to. `status`, `kind`, `limit`, `offset` unchanged; with no dates the existing `common.datalayer.jobs.list_jobs` query still runs. The parameter description notes that succeeded jobs are deleted after `JOB_RETENTION_DAYS` (default 14). Added `tests/rest_api/test_jobs_date_span.py` (14 tests).
+- Checks run: new tests pass; `pytest tests/rest_api tests/security/test_rest_auth.py` (91 pass); `services: pytest common/tests` (144 pass); root `pytest` minus integration/live: 178 pass, 1 fail + 2 errors in `tests/enrichment_local` and `tests/library_importer` (missing `common.metadata` on that test's path, DB fixtures; not touched here). The span query ran against a local Postgres 16 with migration 013 and rows on both sides of the 4 Oct 2026 DST start and 1 Nov: all six spans returned exactly the expected jobs. Scope guard.
+- Checks not run: against the laptop stack and E2E (no Docker here).
+- Next: the /pipeline "Started between" filter (DS24 A2) can pass these parameters; moving the span query into `common/datalayer/jobs.py` is a follow-up for a package that owns it.
+<!-- SLOT:JOBDATE END -->
+
 <!-- SLOT:SC2B BEGIN -->
 ### SC2B: A target track records how many playlists the scrape found
 - Start: 2026-11-01. Base `main` 527c5a7. Follow-up listed in SC2's slot (`target_tracks.playlists_found` never written).
