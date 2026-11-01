@@ -15,7 +15,7 @@ import { ContextMenu, useContextMenu } from './ContextMenu';
 import { graphColours, onThemeChange, tokenHex } from '../lib/graphColours';
 import { Waypoints } from 'lucide-react';
 import { EmptyPanel } from './ds';
-import { seatTracks, fitTransform, cssEase } from '../lib/graphLayout';
+import { seatTracks, fitTransform, cssEase, pickAnchor, edgeBandOf, edgeBandStyles } from '../lib/graphLayout';
 import type { GraphSeat } from '../styles/design-system/index';
 // import { GraphMiniMap } from './GraphMiniMap'; // DISABLED: Minimap commented out
 
@@ -1077,17 +1077,33 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
   }, [handleSimulationTick, handleSimulationEnd]);
 
   const nowPlayingRef = useRef<string | null>(nowPlayingId);
+  /** The anchor the tracks are seated around now (GraphStyles, Layout). */
+  const anchorRef = useRef<string | null>(null);
+  /** The strongest link weight in the graph, which scales link weights to the 0–1 strength SN.edgeBand takes. */
+  const mostWeightRef = useRef(0);
+  /** Band widths and opacities from the graph-edge tokens, read once. */
+  const edgeBandsRef = useRef<ReturnType<typeof edgeBandStyles> | null>(null);
 
-  /** Seat every track (graphLayout.seatTracks); tracks keep their seats while the anchor stays the same. */
-  const applySeats = useCallback((anchor: string | null) => {
+  /**
+   * Seat every track (graphLayout.seatTracks) around the anchor: now playing, else the selected track, else the
+   * whole-library anchor already in use. Tracks keep their seats while the anchor stays; new tracks take free seats.
+   * Returns true when the anchor changed (everything was re-seated).
+   */
+  const applySeats = useCallback((nowPlaying: string | null): boolean => {
     const nodes = Array.from(enhancedNodesRef.current.values());
-    if (!nodes.length) return;
+    if (!nodes.length) return false;
     const endId = (end: string | EnhancedGraphNode) => (typeof end === 'object' ? end.id : end);
     const links = Array.from(enhancedEdgesRef.current.values())
       .map(e => ({ source: endId(e.source), target: endId(e.target), weight: e.weight ?? 0 }));
-    const { seats, radius } = seatTracks(
-      nodes.map(n => ({ id: n.id, labelWidth: n.labelWidth, seat: n.seat })), links, anchor,
+    mostWeightRef.current = Math.max(0, ...links.map(l => l.weight));
+    const wanted = pickAnchor(
+      new Set(enhancedNodesRef.current.keys()), nowPlaying, useStore.getState().viewState.selectedNodes, anchorRef.current,
     );
+    const { seats, radius, anchor } = seatTracks(
+      nodes.map(n => ({ id: n.id, labelWidth: n.labelWidth, seat: n.seat })), links, nowPlaying, undefined, wanted,
+    );
+    const changed = anchor !== anchorRef.current;
+    anchorRef.current = anchor;
     nodes.forEach(n => {
       const seat = seats[n.id];
       if (!seat) return;
@@ -1099,6 +1115,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     });
     spatialIndexRef.current.rebuild(nodes);
     frameRef.current++;
+    return changed;
   }, []);
 
   // Initialize D3 zoom behavior
@@ -1999,23 +2016,15 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       );
     });
 
-    // Use very thin edges for clean visualization
-    // Weight-based width: stronger relationships get slightly thicker lines
-    const baseWidth = isPathEdge ? 3.0 : 0.5; // Path edges are 6x thicker!
-    const weight = edge.weight || 1;
-    const screenWidth = isPathEdge
-      ? baseWidth // Path edges maintain constant thick width
-      : baseWidth + Math.min(weight / 10, 1); // Regular edges scale with weight (max 1.5)
+    // GraphStyles, Links (DR-035): strength is one of four bands, drawn by line width with opacity backing it up.
+    // Path links are at least 3px; the selected track's links and path links are at full opacity.
+    const bands = edgeBandsRef.current ??= edgeBandStyles();
+    const band = bands[edgeBandOf(edge.weight ?? 0, mostWeightRef.current) - 1];
+    const screenWidth = isPathEdge ? Math.max(3, band.width) : band.width;
 
     const color = getEdgeColor(edge);
-    // GraphStyles: links at --opacity-edge, strong links (weight >= 0.8 on a 0–1 scale) 0.9,
-    // the selected node's links and path links at full opacity
     const isHighlighted = isPathEdge || color === COLOR_SCHEMES.edge.selected;
-    const isStrong = weight >= 0.8 && weight <= 1;
-    const baseAlpha = isHighlighted
-      ? 1.0
-      : (lodLevel > 1 ? COLOR_SCHEMES.edgeAlpha * 0.5 : isStrong ? 0.9 : COLOR_SCHEMES.edgeAlpha);
-    const alpha = isHighlighted ? 1.0 : baseAlpha * Math.max(0.6, edge.opacity || 1);
+    const alpha = isHighlighted ? 1.0 : band.alpha * (lodLevel > 1 ? 0.5 : 1);
 
     // Calculate edge endpoints that stop at node boundaries
     // Get node radii (use enhanced node data if available)
@@ -2746,13 +2755,13 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     frameRef.current++;
   }, [createEnhancedNode, createPixiNode, createEnhancedEdge, createPixiEdge, generateDataHash, startAnimation, applySeats, fitToContent]);
 
-  // Now playing is the anchor: a new one re-seats every track around it, then the view fits again.
+  // A new anchor (now playing, else the selected track) re-seats every track around it, then the view fits again.
+  // Anything else (a live update, adding to a selection) keeps every seat.
   useEffect(() => {
     nowPlayingRef.current = nowPlayingId;
     if (!isInitialized || enhancedNodesRef.current.size === 0) return;
-    applySeats(nowPlayingId);
-    fitToContent();
-  }, [nowPlayingId, isInitialized, applySeats, fitToContent]);
+    if (applySeats(nowPlayingId)) fitToContent();
+  }, [nowPlayingId, viewState.selectedNodes, isInitialized, applySeats, fitToContent]);
 
   // CRITICAL FIX: Keep graphDataRef in sync with graphData state
   // This allows updateGraphData to access current data without being recreated on every state change
