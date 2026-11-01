@@ -2190,3 +2190,13 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: E2E (no Docker daemon).
 - Next: a package that adds a rendered text-inset check (4–7px fails) to `design-rules.spec.ts`, run on a Docker host, fixing or listing what it finds.
 <!-- SLOT:DSQ1B END -->
+
+<!-- SLOT:BRZ2 BEGIN -->
+### BRZ2: Bronze playlists store raw_json as a JSON object
+- Start: 2026-11-01 (branch brz2-bronze-raw-json off origin/main 62795a7). Job: bronze playlist and track raw_json are JSON objects, so ingest sees fields such as `total_tracks`.
+- End: 2026-11-01.
+- Changed: `persistence_pipeline.py` gains `_bronze_raw_json` (Items, nested Items and tuples become dicts/lists before `json.dumps`), used by the bronze playlist and track inserts. Before, a playlist Item was stored as a JSON string of its repr; track batch items were already dicts in the MixesDB flow but used the same call. `ingest.py` rejects a playlist flagged `bronze_incomplete` (BRZ1) with reason `bronze_incomplete` when no other completeness error applies (a lost last position leaves no gap). Old string rows are not rewritten: ingest reads them as `{}` as before, and still sees the flag when BRZ1 wrapped them under `raw`.
+- Checks run: `python -m pytest scrapers/tests` (21 passed), `cd services && python -m pytest common/tests` (163 passed), root `python -m pytest` (failures are Docker-only integration tests and modules that cannot import `annoy`/`common.*` here; none touch the changed files), scope guard.
+- Checks not run: E2E and a real scrape into Postgres (no Docker daemon).
+- Next: optionally backfill old bronze playlist rows (re-scrape, or parse the stored repr) so ingest sees their declared track counts.
+<!-- SLOT:BRZ2 END -->
