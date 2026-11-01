@@ -2033,6 +2033,15 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Next: DSQ answer on min/max (Q16), then the /pipeline scheduled-scrape window card with its backend setting.
 <!-- SLOT:DS24A END -->
 
+<!-- SLOT:M6S BEGIN -->
+### M6S: One harmonic scoring and energy move spec
+- Start: 2026-11-01. Base `main` 2427bf9. Docs only, no code.
+- End: 2026-11-01.
+- Added `docs/specs/HARMONIC_SCORING.md` (`harmonic-1`, provisional): inventory with file:line of every key/BPM/energy rule (design-system `SN.compat`/`bpmStep`/`energyStep`, 12 frontend sites incl. 4 dead copies, REST pathfinder, graph projection, migration 006, scraper and gold helpers) and where they disagree; one canonical spec (key table identical to `SN.compat`, BPM with half/double time, energy move labels, compatibility score separate from energy, positive monotone path cost); 24 worked examples; 8 implementation packages with owned paths; 12 open questions with evidence. Found: the REST pathfinder receives `occurrence_count` as a cost (more-played transitions cost more) and can produce negative costs; graph projection links every pair within 10 BPM with `key_compatibility` 1.0 and writes unknown energy as 0.0.
+- Checks run: example scores and costs computed with a scratch script (not committed); cited line numbers re-read on 2427bf9; scope guard.
+- Checks not run: frontend and backend suites (no code changed).
+- Next: Markus answers Q-E1…Q-S3 (Q-E1, Q-E2, Q-B1 change labels in the examples); then M6-F1 (classifier and golden tests).
+<!-- SLOT:M6S END -->
 <!-- SLOT:JOBSTG BEGIN -->
 ### JOBSTG: A scrape job reports its stages, with live scrape progress
 - Start: 2026-11-01. Base `main` f2bdc9b. Brief: DS23 Step 0 (stall rule dishonest while a scrape reports nothing for up to 15 min).
