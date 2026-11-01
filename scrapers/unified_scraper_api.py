@@ -23,10 +23,13 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import re
 import shlex
 import time
-from datetime import datetime
-from typing import Any, Dict, Optional
+from collections import OrderedDict
+from contextvars import ContextVar
+from datetime import datetime, timezone
+from typing import Any, Callable, Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel
@@ -100,6 +103,61 @@ class ScrapeRequest(BaseModel):
     artist_name: Optional[str] = None
     search_query: Optional[str] = None  # For mixesdb: "Artist - Track Title"
     limit: Optional[int] = None
+    job_id: Optional[str] = None  # the worker's job id; keys the live progress record
+
+
+# Live progress per worker job, read by GET /scrape/progress/{job_id} while POST /scrape is still open.
+# In memory only: a restart of this service loses it, and the reader then reports no live progress.
+PROGRESS_KEEP = 200
+LOGSTATS_SECONDS = 10  # scrapy logs "Crawled N pages" this often, so a fetched page shows within 10 s
+_CRAWLED = re.compile(r"Crawled (\d+) pages \(at .*?\), scraped (\d+) items")
+_INSERTED = re.compile(r"Inserted (\d+) (playlists|tracks) to bronze layer")
+
+
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+class ScrapeProgress:
+    """Counts for one running spider, fed line by line from its log. `updated_at` moves only when a count changes."""
+
+    def __init__(self, job_id: str):
+        self.job_id = job_id
+        self.pages = self.items = self.playlists = self.tracks = 0
+        self.started_at = self.updated_at = _now()
+        self.finished_at: Optional[str] = None
+
+    def feed(self, line: str) -> None:
+        before = (self.pages, self.items, self.playlists, self.tracks)
+        crawled = _CRAWLED.search(line)
+        if crawled:
+            self.pages, self.items = max(self.pages, int(crawled.group(1))), max(self.items, int(crawled.group(2)))
+        inserted = _INSERTED.search(line)
+        if inserted:
+            if inserted.group(2) == "playlists":
+                self.playlists += int(inserted.group(1))
+            else:
+                self.tracks += int(inserted.group(1))
+        if (self.pages, self.items, self.playlists, self.tracks) != before:
+            self.updated_at = _now()
+
+    def as_dict(self) -> Dict[str, Any]:
+        return {"job_id": self.job_id, "running": self.finished_at is None, "pages": self.pages,
+                "items": self.items, "playlists": self.playlists, "tracks": self.tracks,
+                "started_at": self.started_at, "updated_at": self.updated_at, "finished_at": self.finished_at}
+
+
+PROGRESS: "OrderedDict[str, ScrapeProgress]" = OrderedDict()
+_current_progress: ContextVar[Optional[ScrapeProgress]] = ContextVar("current_progress", default=None)
+
+
+def start_progress(job_id: str) -> ScrapeProgress:
+    """A new record per attempt: a retry of the same job starts again from zero."""
+    record = PROGRESS[job_id] = ScrapeProgress(job_id)
+    PROGRESS.move_to_end(job_id)
+    while len(PROGRESS) > PROGRESS_KEEP:
+        PROGRESS.popitem(last=False)
+    return record
 
 
 @app.get("/health")
@@ -118,6 +176,15 @@ async def metrics() -> Response:
     return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
+@app.get("/scrape/progress/{job_id}")
+async def scrape_progress(job_id: str) -> Dict[str, Any]:
+    """Live counts for the spider run of one worker job (pages fetched, bronze playlists and tracks written so far)."""
+    record = PROGRESS.get(job_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="No progress recorded for this job")
+    return record.as_dict()
+
+
 @app.get("/sources")
 async def list_sources() -> Dict[str, Any]:
     """List all supported scraper sources with implementation status."""
@@ -132,8 +199,26 @@ async def list_sources() -> Dict[str, Any]:
     }
 
 
+async def _pump(stream, sink: List[bytes], on_line: Optional[Callable[[str], None]]) -> None:
+    """Read a pipe to its end, keeping every byte and handing each complete line to `on_line` as it arrives."""
+    pending = b""
+    while True:
+        chunk = await stream.read(65536)
+        if not chunk:
+            break
+        sink.append(chunk)
+        if on_line is None:
+            continue
+        *lines, pending = (pending + chunk).split(b"\n")
+        pending = pending[-65536:]  # a line longer than this carries no counter we read
+        for line in lines:
+            on_line(line.decode("utf-8", errors="ignore"))
+    if on_line is not None and pending:
+        on_line(pending.decode("utf-8", errors="ignore"))
+
+
 async def _run_spider(cmd: list[str], timeout: int = 900) -> Dict[str, Any]:
-    """Execute the scrapy command asynchronously."""
+    """Execute the scrapy command asynchronously, feeding its log to the current job's progress record live."""
     logger.info("Executing command: %s", " ".join(shlex.quote(c) for c in cmd))
 
     process = await asyncio.create_subprocess_exec(
@@ -142,20 +227,26 @@ async def _run_spider(cmd: list[str], timeout: int = 900) -> Dict[str, Any]:
         stderr=asyncio.subprocess.PIPE,
         cwd="/app",
     )
+    record = _current_progress.get()
+    on_line = record.feed if record is not None else None
+    out: List[bytes] = []
+    err: List[bytes] = []
 
     try:
-        stdout_bytes, stderr_bytes = await asyncio.wait_for(
-            process.communicate(), timeout=timeout
+        await asyncio.wait_for(
+            asyncio.gather(_pump(process.stdout, out, on_line), _pump(process.stderr, err, on_line), process.wait()),
+            timeout=timeout,
         )
     except asyncio.TimeoutError:
         process.kill()
-        await process.communicate()
+        await process.wait()
         return {
             "status": "timeout",
             "returncode": None,
             "stdout": "",
             "stderr": f"Spider timeout after {timeout} seconds",
         }
+    stdout_bytes, stderr_bytes = b"".join(out), b"".join(err)
 
     stdout_text = stdout_bytes.decode("utf-8", errors="ignore") if stdout_bytes else ""
     stderr_text = stderr_bytes.decode("utf-8", errors="ignore") if stderr_bytes else ""
@@ -308,6 +399,8 @@ async def _scrape_internal(request: ScrapeRequest) -> Dict[str, Any]:
         "INFO",
         "-s",
         "LOG_ENABLED=1",
+        "-s",
+        f"LOGSTATS_INTERVAL={LOGSTATS_SECONDS}",
     ]
 
     # Add source-specific parameters
@@ -492,6 +585,8 @@ async def scrape(request: ScrapeRequest) -> Dict[str, Any]:
         # Scrape 1001tracklists with URL
         POST /scrape {"source": "1001tracklists", "url": "https://..."}
     """
+    record = start_progress(request.job_id) if request.job_id else None
+    token = _current_progress.set(record)
     # Wrap entire scraping operation with 15-minute (900s) timeout
     try:
         result = await asyncio.wait_for(
@@ -509,6 +604,10 @@ async def scrape(request: ScrapeRequest) -> Dict[str, Any]:
             status_code=504,
             detail=f"Scrape request timeout after 900 seconds for source '{request.source}'"
         )
+    finally:
+        _current_progress.reset(token)
+        if record is not None:
+            record.finished_at = _now()
 
 
 if __name__ == "__main__":  # pragma: no cover
