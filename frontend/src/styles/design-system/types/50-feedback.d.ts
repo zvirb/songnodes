@@ -312,7 +312,7 @@ export interface InfoTipProps {
   id: string;
   /** The button's name: "About" + the subject ("About the energy tiers", "How the set is built"). Never "Info" or "Help" alone. */
   about: string;
-  /** Tooltip form: the words, plain text, 40 words or fewer. Opens on hover, keyboard focus and tap. */
+  /** Tooltip form: the words, plain text, 40 words or fewer. Opens after 500 ms on hover, at once on keyboard focus and tap. */
   text?: string;
   /** Panel form: a title and the content (may hold a list, links, mono file names). Opens on click, tap, Enter or Space only. */
   panel?: { title: string; content: ReactNode };

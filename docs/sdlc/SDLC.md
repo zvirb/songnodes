@@ -17,7 +17,7 @@ touches anything a person sees.
 | Frontend migration | Phases 0–6 of `design-system/19-songnodes-migration.md`. Each phase ships on its own and removes what it replaces in the same change. | DS section 19 |
 | Data integrity | Bronze → Silver → Gold → Operational; no layer skipping. Unknown metadata stays unknown, never invented. | [CLAUDE.md](../../CLAUDE.md), [AGENTS.md](../../AGENTS.md) |
 | Delivery | Git first (pull request → `main` → rebuild the Docker Compose stack; no Kubernetes for now); feature branches; conventional commits; E2E before merge | CLAUDE.md §3, §6 |
-| Score bands | Recommendation score bands are fitted: 80/60/40 until enough accepted suggestions exist, then fitted to Markus's own picks (DR-043). Q9, Q11–Q16 and Q18 were answered on 2 Nov 2026 (DR-043 to DR-050); Q23–Q27 are still open. | `17-governance.md` open questions |
+| Score bands | Recommendation score bands are fitted: 80/60/40 until enough accepted suggestions exist, then fitted to Markus's own picks (DR-043). Q9, Q11–Q16 and Q18 (DR-043 to DR-050) and Q23–Q27 (DR-051 to DR-055) were answered on 2 Nov 2026; no design-system question is open. | `17-governance.md` open questions |
 
 ## §1 Lifecycle
 

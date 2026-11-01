@@ -38,9 +38,9 @@ An InfoTip is for text a person reads once and then knows: it explains, it does 
 <span class="sn-infotip"><button type="button" class="sn-infotip__btn" aria-label="About the energy tiers" aria-expanded="false" aria-controls="tip-tiers" aria-describedby="tip-tiers"><svg class="sn-icon">…info…</svg></button><span class="sn-tooltip sn-infotip__tip" id="tip-tiers" role="tooltip" hidden>Low is 1–4, building 5–7, high 8–10, on Mixed In Key's scale.</span></span>
 ```
 
-- Button: `.sn-infotip__btn`, a 24px square (`space-6`, the WCAG 2.5.8 minimum; 44px hit area on touch) with the 16px Lucide `info`, `fg-2` and no border at rest; on hover or open it takes `surface-1`, a `line-strong` edge and `fg`. Its name is "About" + the subject; it has **no `title`** (a native tooltip would show a second tip).
+- Button: `.sn-infotip__btn`, a 24px square (`space-6`, the WCAG 2.5.8 minimum; 44px hit area on touch, DR-054) with the 16px Lucide `info`, `fg-2` and no border at rest; on hover or open it takes `surface-1`, a `line-strong` edge and `fg`. Its name is "About" + the subject; it has **no `title`** (a native tooltip would show a second tip).
 - Tip: the system's `Tooltip` look (`fg` ground, `bg` text, `radius-chip`, `shadow-2`, `z-tooltip`), at most 16rem wide, under the button and left-aligned to it; it flips above or right-aligned when it would leave the viewport.
-- Opens on **hover** (mouse), on **keyboard focus** and on a **tap or click**. Hover and focus keep it open until the pointer or focus leaves (300 ms grace so the pointer can cross onto it); a tap or click pins it until a second tap, a tap outside or Escape. One InfoTip open per page. Unlike a plain `Tooltip` there is no 500 ms hover delay: the person pointed at an info button on purpose.
+- Opens after **500 ms of mouse hover**, the same as `Tooltip`, so a pointer sweeping across a row of labels does not flash tips (DR-055, 1.7.1); a pointer that leaves sooner opens nothing. **Keyboard focus** and a **tap or click** open it at once. Hover and focus keep it open until the pointer or focus leaves (300 ms grace so the pointer can cross onto it); a tap or click pins it until a second tap, a tap outside or Escape. One InfoTip open per page.
 - Plain text only: no links, buttons or fields inside a tooltip.
 
 **Panel form (more than 40 words, or a list).**

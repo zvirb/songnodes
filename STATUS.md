@@ -2190,3 +2190,13 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: E2E (no Docker daemon).
 - Next: a package that adds a rendered text-inset check (4–7px fails) to `design-rules.spec.ts`, run on a Docker host, fixing or listing what it finds.
 <!-- SLOT:DSQ1B END -->
+
+<!-- SLOT:DSQ2 BEGIN -->
+### DSQ2: Design system 1.7.1: the owner's answers to Q23–Q27
+- Start: 2026-11-01 (branch dsq2-design-answers off origin/main 62795a7). Job: record Markus's answers of 2 Nov 2026 (Melbourne) to Q23–Q27 (the 1.6.0 fitted choices) at the design-system source, change what differs, bump, rebuild and re-sync.
+- End: 2026-11-01.
+- Changed: `17-governance.md` gains DR-051 to DR-055, the 1.7.1 change log entry, and Q23–Q27 in the closed table (no question is open now). Q23 next Melbourne calendar day (DR-051), Q24 new tab (DR-052), Q25 info/ok go entirely (DR-053), Q26 24px with a 44px touch hit area (DR-054) match the 1.6.0 build. Q27 does not: the InfoTip tooltip form now opens after 500 ms of mouse hover like `Tooltip`, at once on focus and tap (DR-055). Source: `bundle.src.js` (`infoTips` hover delay, version), `types/50-feedback.d.ts`, `components/index.d.ts`, `build_tokens.py` version. Cards and sections: InfoTip, Banner, 06, 08; `docs/sdlc/SDLC.md` open row. Rebuilt with build_tokens.py and build_bundle.py; synced with sync-design-system.sh. No React InfoTip port exists, so no React change.
+- Checks run: build_tokens (contrast: all pairs pass), build_bundle, `sync-design-system.sh --check` (1.7.1 in sync), `check_design_system.py --check`, tsc, oxlint (exit 0), vitest 423/423, vite build, a jsdom run of the synced `SongNodes.infoTips` (closed at 200 ms of hover, open after 500 ms, a brief sweep opens nothing, focus and click open at once), scope guard.
+- Checks not run: E2E and preview screenshots (no Docker or browser here).
+- Next: `frontend/src/features/musicLibrary/storage.ts` keys a banner dismissal on the condition's count only; DR-051 also ends it at the next Melbourne day (`SongNodes.dismissal`). A small follow-up for that feature's owner.
+<!-- SLOT:DSQ2 END -->
