@@ -2003,3 +2003,13 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Row fit (2026-10-31): CI's visual run showed the actions pushed past the table at 1440x900 (measured: table box scrollWidth 1121 vs clientWidth 1062; both action buttons at x 1374–1438 past the box's right edge 1388; Track cell at its 200px floor). `musicLibrary.css` now hides the MiniAudioPreview progress line in the crate's Preview cell and drops that cell's inline padding, from DataTable's 600px table breakpoint up (the card allows hiding the line in tight cells; bundle.css has no rule for it, so this is a candidate for the design system). After: scrollWidth 1062 = clientWidth, actions at 1315–1379, Track 205px; phone (390) unchanged. `library.spec.ts` 8/8 in chromium; visual snapshots still need regenerating in the Linux image.
 - Next: merge PV1 first, then this; on the running stack press play on a row with a `dz` link and hear the clip.
 <!-- SLOT:PV2 END -->
+
+<!-- SLOT:TGT1 BEGIN -->
+### TGT1: Library tracks become scrape targets
+- Start: 2026-11-01. Base `main` 9ff6045. Owner decision (DATA1 Step 0, 1 Nov): target the music library, not `target_tracks_master.json`; start with a hand-run batch of 10 on MixesDB, then `SCRAPE_TARGETS_PER_RUN=4`.
+- End: 2026-11-01.
+- Changed: added `scripts/load-library-targets.sh` and `scripts/load-library-targets.sql` (library.tracks + silver_enriched_tracks into target_tracks; skips blank or "Unknown" artists and existing targets, case-insensitive; `--dry-run`, `--priority`); deleted `load_target_tracks.py` (wrote to `musicdb.target_track_searches`, a table the current schema no longer has).
+- Checks run: the SQL against a local Postgres 16 with migration 012 and a fixture library (new, duplicate-by-case, blank artist, "Unknown Artist", existing target, not-in-library): dry run writes nothing; real run adds 2, keeps the existing target's priority; second run adds 0; summary columns add up to the library count. `bash -n` on the script.
+- Checks not run: against the laptop stack (no Docker here).
+- Next: owner runs `bash scripts/load-library-targets.sh --dry-run`, then without `--dry-run`, then DATA1's batch of 10.
+<!-- SLOT:TGT1 END -->
