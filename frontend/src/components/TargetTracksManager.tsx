@@ -5,6 +5,7 @@ import MusicServiceSearch from './MusicServiceSearch';
 import { Plus, Upload, Download, Archive, ArchiveRestore, Search, Pencil, Trash2, Target, X, SearchX, ServerCrash } from 'lucide-react';
 import { SN } from '../lib/songnodes';
 import { SegmentedControl, OverflowMenu, StatusPill, ConfirmDialog, Dialog, EmptyPanel, ErrorPanel, LoadingPanel, showToast, Card, Title, Text } from './ds';
+import { targetSearchStatus, isPendingSearch, type TargetSearchJobs } from './targetSearchStatus';
 import './TargetTracksManager.css';
 
 export interface TargetTrack {
@@ -19,8 +20,12 @@ export interface TargetTrack {
   playlists_found?: number;
   adjacencies_found?: number;
   archived?: boolean;
-  completion_percentage?: number;
+  /** The latest search's scrape jobs; null when never searched. */
+  search_jobs?: TargetSearchJobs | null;
 }
+
+/** How often the list refreshes while a search is queued or running. */
+const SEARCH_POLL_MS = 10_000;
 
 interface TargetTracksManagerProps {
   embedded?: boolean;
@@ -63,9 +68,17 @@ const TargetTracksManager: React.FC<TargetTracksManagerProps> = ({ embedded = fa
     loadTracks();
   }, []);
 
-  const loadTracks = async () => {
+  // While any search is queued or running, refresh quietly so its status moves on its own.
+  const searching = tracks.some((t) => ['queued', 'running'].includes(targetSearchStatus(t).kind));
+  useEffect(() => {
+    if (!searching) return undefined;
+    const timer = window.setInterval(() => { void loadTracks({ quiet: true }); }, SEARCH_POLL_MS);
+    return () => window.clearInterval(timer);
+  }, [searching]);
+
+  const loadTracks = async ({ quiet = false } = {}) => {
     try {
-      setLoading(true);
+      if (!quiet) setLoading(true);
       const response = await api.get('/target-tracks');
       setTracks(Array.isArray(response.data) ? response.data : []);
       setLoadFailed(false);
@@ -152,21 +165,6 @@ const TargetTracksManager: React.FC<TargetTracksManagerProps> = ({ embedded = fa
     } catch (error) {
       showNotification('error', `Couldn’t ${archived ? 'archive' : 'restore'} the target track.`);
       console.error('Error archiving track:', error);
-    }
-  };
-
-  const handleUpdateCompletion = async (trackId: string, completion_percentage: number) => {
-    try {
-      setTracks(prevTracks =>
-        prevTracks.map(t =>
-          t.track_id === trackId ? { ...t, completion_percentage } : t
-        )
-      );
-      await api.put(`/target-tracks/${trackId}`, { completion_percentage });
-    } catch (error) {
-      showNotification('error', 'Couldn’t save progress.');
-      console.error('Error updating completion:', error);
-      loadTracks();
     }
   };
 
@@ -360,7 +358,7 @@ const TargetTracksManager: React.FC<TargetTracksManagerProps> = ({ embedded = fa
       return false;
     }
 
-    if (filterStatus === 'pending' && track.completion_percentage === 100) return false;
+    if (filterStatus === 'pending' && !isPendingSearch(track)) return false;
     if (filterStatus === 'failed' && track.is_active) return false;
     if (filterStatus === 'active' && !track.is_active) return false;
 
@@ -529,7 +527,7 @@ const TargetTracksManager: React.FC<TargetTracksManagerProps> = ({ embedded = fa
               panel
               title="SongNodes couldn’t load target tracks"
               retry="Try again in a few minutes."
-              actions={<button type="button" className="sn-btn" onClick={loadTracks}>Try again</button>}
+              actions={<button type="button" className="sn-btn" onClick={() => loadTracks()}>Try again</button>}
             >
               The target tracks API didn’t answer.
             </ErrorPanel>
@@ -558,7 +556,8 @@ const TargetTracksManager: React.FC<TargetTracksManagerProps> = ({ embedded = fa
               {filteredTracks.map((track) => {
                 const id = track.track_id!;
                 const name = `${track.artist} – ${track.title}`;
-                const completion = track.completion_percentage || 0;
+                const search = targetSearchStatus(track);
+                const inFlight = search.kind === 'queued' || search.kind === 'running';
                 return (
                   <li key={id} className="ttm__item" data-selected={selectedTracks.has(id) ? 'true' : undefined}>
                     <label className="sn-checkbox sn-checkbox--bare">
@@ -572,15 +571,7 @@ const TargetTracksManager: React.FC<TargetTracksManagerProps> = ({ embedded = fa
                           </span>
                         </span>
                         <span className="sn-track-cell__meta">
-                          <span className="data"><strong className="data-strong">{SN.format.count(track.playlists_found || 0)}</strong> playlists</span>
-                          <span className="sn-track-cell__sep" aria-hidden="true">·</span>
                           <span className="data"><strong className="data-strong">{SN.format.count(track.adjacencies_found || 0)}</strong> transitions</span>
-                          {track.last_searched ? (
-                            <>
-                              <span className="sn-track-cell__sep" aria-hidden="true">·</span>
-                              <span>Searched <time className="data">{SN.format.date(track.last_searched)}</time></span>
-                            </>
-                          ) : null}
                           {track.track_id ? (
                             <>
                               <span className="sn-track-cell__sep" aria-hidden="true">·</span>
@@ -595,28 +586,15 @@ const TargetTracksManager: React.FC<TargetTracksManagerProps> = ({ embedded = fa
                         {track.archived && <span className="sn-tag">Archived</span>}
                         {track.genres?.map((genre, idx) => <span key={idx} className="sn-tag">{genre}</span>)}
                       </div>
-                      <div className="ttm__progress">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <label className="label" htmlFor={`ttm-done-${id}`}>Progress:</label>
-                          <span className="data-strong">{completion}%</span>
-                        </div>
-                        <div className="ttm__progress-track">
-                          <div className="ttm__progress-bar" style={{ width: `${completion}%` }} />
-                        </div>
-                        <input
-                          id={`ttm-done-${id}`}
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={completion}
-                          onChange={(e) => handleUpdateCompletion(id, parseInt(e.target.value))}
-                        />
+                      <div className="ttm__search">
+                        <StatusPill status={search.status} label={search.label} />
+                        {search.detail ? <span className="ttm__search-detail body-s" title={search.detail}>{search.detail}</span> : null}
                       </div>
                     </div>
                     <div className="ttm__row-actions">
-                      <button type="button" className="sn-btn sn-btn--sm sn-btn--quiet" onClick={() => handleSearchNow(id)}>
+                      <button type="button" className="sn-btn sn-btn--sm sn-btn--quiet" onClick={() => handleSearchNow(id)} disabled={inFlight}>
                         <Search size={16} strokeWidth={2} aria-hidden="true" />
-                        Search now
+                        {search.retry ? 'Retry search' : 'Search now'}
                       </button>
                       <OverflowMenu
                         small
