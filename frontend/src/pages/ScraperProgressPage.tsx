@@ -6,6 +6,7 @@ import { ConfirmDialog, showToast, StatusPill } from '../components/ds';
 import { formatThroughput, JobResponse } from '../utils/dataLoaderUtils';
 import { usePipelineTelemetry, type ScrapeRun } from '../features/pipeline/usePipelineTelemetry';
 import { ScrapeJobStages } from '../features/pipeline/ScrapeJobStages';
+import { ScrapeWindowCard } from '../features/pipeline/ScrapeWindowCard';
 import { api } from '../services/api';
 import { usePageHeader } from '../shell/AppShell';
 
@@ -282,6 +283,8 @@ const ScraperProgressPage: React.FC = () => {
           </form>
         </section>
       )}
+
+      <ScrapeWindowCard />
 
       {/* Scrape runs: the jobs that fill bronze, newest first */}
       <section className="sn-page__section" style={{ marginBottom: 'var(--space-6)' }}>
