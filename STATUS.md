@@ -2200,3 +2200,14 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: the GitHub workflow itself (runs on the PR).
 - Next: none.
 <!-- SLOT:G1B END -->
+
+<!-- SLOT:IB1 BEGIN -->
+### IB1: Recommendation rows no longer overlap the reason text
+- Start: 2026-11-01 (branch ib1-track-row-reason-overlap off origin/main 07567b3). Brief: plan/agents/IB1_track_row_reason_overlap.md (added in this PR).
+- End: 2026-11-01.
+- Root cause: the Up next list is virtualised with absolutely positioned rows of a fixed 64px (`measureElement` is configured but rows never register for measuring), while each row was three lines tall: 32px thumb in the title line, a wrapping meta line, and the reason as `sn-track-cell__mix` outside `sn-track-cell__meta` (no ellipsis rule, so it wrapped). It spilled into the next row, whose thumb hid its first letters.
+- Changed: `TrackItem.tsx` uses the TrackCell card markup (`__title` > `__name`/`__artist`; one-line `__meta` with BPM, key, `__dur`, genre, `__sep`, `__mix` reason with full text in `title`); thumb beside the cell; exports `TRACK_ROW_HEIGHT` = row-two-line + 2 × space-2 = 72, used by `IntelligentBrowser.tsx` for the virtualiser. Module CSS: row clips (`overflow: hidden`), dead title/meta classes removed. New `TrackItem.test.tsx` (4 tests).
+- Checks run: tsc, oxlint (exit 0; warnings are older, none in TrackItem), vitest 427/427, vite build, `sync-design-system.sh --check` (1.7.0 in sync), `check_design_system.py --check`, scope guard.
+- Checks not run: E2E (no Docker). No visual baseline covers this panel (visual.spec.ts covers home, library, nav drawer, not found, pipeline, planned module, sets, settings).
+- Next: follow-up on scoring: without DJ-transition adjacency and with no energy data, the best possible score is 40 (25 key + 15 tempo), so every row bands as "weak" under the 80/60/40 bands.
+<!-- SLOT:IB1 END -->
