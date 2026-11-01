@@ -2200,3 +2200,13 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: E2E and a real scrape into Postgres (no Docker daemon).
 - Next: optionally backfill old bronze playlist rows (re-scrape, or parse the stored repr) so ingest sees their declared track counts.
 <!-- SLOT:BRZ2 END -->
+
+<!-- SLOT:G1B BEGIN -->
+### G1B: Scope guard recognises package codes without digits
+- Start: 2026-11-01 (branch g1b-scope-guard-codes off origin/main 62795a7). Brief: plan/agents/G1B_scope_guard_codes.md (added in this PR).
+- End: 2026-11-01.
+- Changed: `scripts/scope_guard.py` gains `find_brief` and `package_code`. The code is first the title prefix before the first colon (`^([A-Z][A-Z0-9]{1,11}):`) when plan/agents/<CODE>_*.md exists, so JOBDATE and JOBSTG are checked; otherwise the old title pattern and branch fallback, unchanged. Lower-case prefixes (`fix(deps):`) and code-shaped prefixes with no brief (`PLAN2B:`) stay "not a work package".
+- Checks run: `python -m pytest tests/scope_guard` (26 passed; 18 new in `test_package_code.py`, including an end-to-end JOBDATE repo that the old script let through). Guard on real merges: JOBDATE fc0a8e6 passes (was "not a work package"); DS24C 50e59b7, TX1C cdb008c pass; 50e59b7 under a "JOBDATE:" title fails listing the DS24C files; scope guard on this branch.
+- Checks not run: the GitHub workflow itself (runs on the PR).
+- Next: none.
+<!-- SLOT:G1B END -->
