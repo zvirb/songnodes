@@ -2053,6 +2053,17 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Next: run the frontend checks and `scripts/e2e-docker.sh` on the host before merging; app code does not use the new classes yet (follow-up packages migrate field help to InfoTip and add source links to warnings).
 <!-- SLOT:DS25 END -->
 
+<!-- SLOT:PLAN2 BEGIN -->
+### PLAN2: Refresh plan/RESTRUCTURE.md with the finished waves and the next wave
+- Start: 2026-11-01. Base `main` 2427bf9. Step 0 (the candidate list) answered by Markus on 1 Nov 2026.
+- End: 2026-11-01.
+- Changed: `plan/RESTRUCTURE.md` marks waves Pre-1 to 9, `up`, `up-legacy`, held U7 and the 30 Oct work queue done with date ranges (no rows dropped), adds wave 10 (10A, 10B, 10C) and section 4.1 with one-job packages, owned paths, dependencies and the overlap check, and moves the section 1 header to `2427bf9`. New hand-written briefs in `plan/agents/` for DS23, DS24B, DS24C, SC2B, TX1C, U17B, JOBDATE, BRZ1, MDB1 and M6S. "DS24B" is split into DS24B (backend) and DS24C (card) to stay inside the file budget and to wait for DS23 on the same page.
+- Found: `scripts/scope_guard.py` does not recognise codes without a digit (JOBDATE, JOBSTG): it prints "not a work package" and checks nothing. All other wave 10 codes resolve to their brief.
+- Checks run: `git diff --check`; the owned-path overlap check (no overlap inside 10A or 10B; DS23/DS24C and BRZ1/MDB1 are in different sub-waves); each brief parsed with scope_guard's code and owned-path rules; `scope_guard.py` on this branch.
+- Checks not run: frontend, backend and E2E checks (docs only).
+- Next: Markus confirms the DS24B window meaning (days on which scheduled scrapes run) and the DS24B/DS24C split, then sends 10A once JOBSTG (#477) is merged for DS23, SC2B and JOBDATE.
+<!-- SLOT:PLAN2 END -->
+  
 <!-- SLOT:M6S BEGIN -->
 ### M6S: One harmonic scoring and energy move spec
 - Start: 2026-11-01. Base `main` 2427bf9. Docs only, no code.
