@@ -291,7 +291,7 @@ export const DateRangeField = React.forwardRef<HTMLFieldSetElement, DateRangeFie
           title={calendarProps.title ?? label}
           outcome={calendarProps.outcome ?? 'Use these dates'}
           marks={calendarProps.marks}
-          // Week and page presets passed here show in the popover only (Q13 default).
+          // Week and page presets passed here show in the popover only (DR-046).
           presets={[...presets, ...(calendarProps.presets ?? [])]}
           onChange={(v, id) => { setPresetId(id); onChange(v); }}
           // The boxes already hold the dates; the outcome only closes (with only From, a one-day range).
