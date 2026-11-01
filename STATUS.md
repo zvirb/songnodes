@@ -2035,6 +2035,16 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Next: remove the TIDAL step from the external musicLibrary weekly run; sets saved before TX1 with `tidal: true` in device storage still carry it in `artifact_sets.json`.
 <!-- SLOT:TX1C END -->
 
+<!-- SLOT:JOBDATE BEGIN -->
+### JOBDATE: GET /api/v1/jobs filters by a created date span
+- Start: 2026-11-01. Base `main` 527c5a7. Follows the DS24 decision note (`docs/integration/DS24/decision.md`): a /pipeline "Started between" filter needs a date span on the jobs list.
+- End: 2026-11-01.
+- Changed: `services/rest_api/routers/jobs.py` list endpoint takes optional `created_from` / `created_to` (YYYY-MM-DD, Australia/Melbourne days, both inclusive). From is the start of that Melbourne day, to is the start of the next one (exclusive); Postgres turns the local midnights into instants with `AT TIME ZONE 'Australia/Melbourne'`, so DST days are 23 or 25 hours. 422 for a malformed or impossible date and for from after to. `status`, `kind`, `limit`, `offset` unchanged; with no dates the existing `common.datalayer.jobs.list_jobs` query still runs. The parameter description notes that succeeded jobs are deleted after `JOB_RETENTION_DAYS` (default 14). Added `tests/rest_api/test_jobs_date_span.py` (14 tests).
+- Checks run: new tests pass; `pytest tests/rest_api tests/security/test_rest_auth.py` (91 pass); `services: pytest common/tests` (144 pass); root `pytest` minus integration/live: 178 pass, 1 fail + 2 errors in `tests/enrichment_local` and `tests/library_importer` (missing `common.metadata` on that test's path, DB fixtures; not touched here). The span query ran against a local Postgres 16 with migration 013 and rows on both sides of the 4 Oct 2026 DST start and 1 Nov: all six spans returned exactly the expected jobs. Scope guard.
+- Checks not run: against the laptop stack and E2E (no Docker here).
+- Next: the /pipeline "Started between" filter (DS24 A2) can pass these parameters; moving the span query into `common/datalayer/jobs.py` is a follow-up for a package that owns it.
+<!-- SLOT:JOBDATE END -->
+
 <!-- SLOT:SC2B BEGIN -->
 ### SC2B: A target track records how many playlists the scrape found
 - Start: 2026-11-01. Base `main` 527c5a7. Follow-up listed in SC2's slot (`target_tracks.playlists_found` never written).
@@ -2107,6 +2117,17 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Next: on the stack, trigger a MixesDB scrape and poll `/api/v1/jobs/<id>/stages`: `progress.pages` should rise about every 15 s. Then DS23 (after DS-SP14) renders it.
 <!-- SLOT:JOBSTG END -->
 
+<!-- SLOT:U17B BEGIN -->
+### U17B: graphql-api starts on strawberry-graphql 0.337
+- Start: 2026-11-01. Base `main` 527c5a7. Follows U17 (stopped at `'FastAPI' object has no attribute 'add_websocket_route'`, `services/graphql-api/main.py`).
+- End: 2026-11-01.
+- Deployment: `graphql-api` is not a service in `compose.dev.yaml`; only the legacy `start-docker.sh` and `deploy/build-and-push-images.sh` name it. The fix makes the module importable; nothing in the running stack uses it.
+- Changed: `services/graphql-api/main.py` mounts the schema with `strawberry.fastapi.GraphQLRouter` (`subscription_protocols` graphql-transport-ws and graphql-ws) via `app.include_router(..., prefix="/graphql")` instead of `strawberry.asgi.GraphQL` with `add_route`/`add_websocket_route`. Added `services/graphql-api/tests/unit/test_graphql_mount.py`: the router has GET, POST and WebSocket routes, a POST `{ __typename }` answers, and a graphql-transport-ws `connection_init` gets `connection_ack` on `/graphql`. No dependency changes.
+- Checks run: `python -m pytest tests --no-cov` in `services/graphql-api` with the pinned requirements (fastapi 0.162.0, strawberry-graphql 0.337.2) in a sandbox venv on Python 3.13: 4 passed; before the fix the import fails with the U17 AttributeError. Scope guard.
+- Checks not run: Python 3.15 image build (no Docker here).
+- Next: decide whether graphql-api stays (it is not deployed and its resolvers return fixed example rows) or is removed in its own package.
+<!-- SLOT:U17B END -->
+
 <!-- SLOT:DS23 BEGIN -->
 ### DS23: /pipeline shows every stage of a running scrape, including stalled
 - Start: 2026-11-01 (branch ds23-pipeline-scrape-stages off origin/main 5610049; SP14 #475 and JOBSTG #477 are on main).
@@ -2126,3 +2147,13 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: the migration against Postgres and the reviewer's curl check (no Docker here).
 - Next: DS24C (the /pipeline card) after DS23 merges.
 <!-- SLOT:DS24B END -->
+
+<!-- SLOT:DSQ1A BEGIN -->
+### DSQ1A: Design system 1.7.0: the owner's answers to the open questions
+- Start: 2026-11-01 (branch dsq1-design-answers off origin/main 5610049; rebased on origin/main 920beb6 after DS25 took 1.6.0 and DR-034 to DR-042, so this is now 1.7.0 with DR-043 to DR-050). Job: record Markus's answers of 2 Nov 2026 (Melbourne) to Q9, Q11–Q16 and Q18 at the design-system source, bump, rebuild and re-sync.
+- End: 2026-11-01.
+- Changed: `17-governance.md` gains DR-043 to DR-050, the 1.7.0 change log entry, a "Closed on 2 Nov 2026" table (Q23–Q27 from 1.6.0 stay open) and a "Text inset (rendered)" conformance row. Answers: Q9 fitted bands (DR-043); Q11 DateRange outcome always primary, the one exception to one primary per view, inside its popover or sheet (DR-044); Q12 stays open (DR-045); Q13 week presets in the picker only (DR-046); Q14 two stacked codes (DR-047, new `[data-marks="2"]`); Q15 bottom sheet (DR-048); Q16 no limit (DR-049); Q18 tight inset fails the check (DR-050). Source: `bundle.src.js` (outcome `sn-btn--primary`, up to two codes, version), `css/25-date-range.css`, `types/20-inputs.d.ts`, `build_tokens.py` version. Cards and sections: DateRange, DateField, 05, 11, 12, 18, README; `docs/sdlc/SDLC.md` open row. Rebuilt with build_tokens.py and build_bundle.py; synced with sync-design-system.sh.
+- Checks run: build_tokens (contrast: all pairs pass), build_bundle, `sync-design-system.sh --check` (1.7.0 in sync), `check_design_system.py --check`, tsc, oxlint (exit 0), vitest 411/411, vite build, a jsdom run of the synced `SongNodes.dateRange` (two codes stacked, apply is primary), scope guard.
+- Checks not run: E2E and preview screenshots (no Docker or browser here).
+- Next: DSQ1B (React DateRange outcome primary and stacked codes; the Q18 inset check, which does not exist yet).
+<!-- SLOT:DSQ1A END -->
