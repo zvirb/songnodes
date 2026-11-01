@@ -12,6 +12,10 @@ const STEPS: StagedProgressStep[] = [
   { name: 'Look up key and BPM', state: 'waiting' },
 ];
 
+const matchingAfter = (gap: number): StagedProgressStep[] => [
+  { name: 'Match plays to tracks', state: 'running', done: 10, total: 50, secondsSinceProgress: gap },
+];
+
 const stepOf = (name: string) => screen.getByText(name).closest('li');
 
 describe('StagedProgress', () => {
@@ -68,5 +72,78 @@ describe('StagedProgress', () => {
   it('shows the background notice when the job survives navigation', () => {
     render(<StagedProgress lead="Weekly build" title="Sat 24 Oct" steps={STEPS} elapsedSeconds={1} runsInBackground />);
     expect(screen.getByText(/You can leave this page/)).toBeTruthy();
+  });
+
+  it('renders a stalled step as a warning with its meter kept where it stopped', () => {
+    const steps: StagedProgressStep[] = [
+      { name: 'Read the library', state: 'done', seconds: 9, detail: '2,410 tracks' },
+      { name: 'Look up key and BPM', state: 'stalled', done: 1204, total: 2410, detail: 'Stopped at 1,204 of 2,410 tracks.' },
+      { name: 'Draw the crate', state: 'waiting' },
+    ];
+    render(<StagedProgress lead="Loading the library" title="2,410 tracks" steps={steps} elapsedSeconds={167} remainingSeconds={120} onCancel={() => {}} />);
+    const step = stepOf('Look up key and BPM');
+    expect(step.getAttribute('data-state')).toBe('stalled');
+    expect(step.getAttribute('aria-current')).toBe('step');
+    expect(step.querySelector('.sn-staged-progress__state')?.textContent).toBe('▲ No progress for 60 s');
+    const meter = screen.getByRole('progressbar', { name: 'Look up key and BPM' });
+    expect(meter.getAttribute('aria-valuenow')).toBe('1204');
+    expect(meter.getAttribute('aria-valuetext')).toBe('1,204 of 2,410, no progress for 60 s');
+    expect(meter.querySelector('i')?.getAttribute('style')).toContain('--p: 50.0%');
+    expect(screen.getByText(/Elapsed/).textContent).toBe('Elapsed 2:47');
+    expect(screen.queryByText(/min left/)).toBeNull();
+    expect(stepOf('Read the library').textContent).toContain('● Done · 0:09');
+  });
+
+  it('turns a running step stalled after stallSeconds without progress, never on elapsed time', () => {
+    const { rerender } = render(<StagedProgress lead="Import" title="Set" steps={matchingAfter(59)} elapsedSeconds={3600} />);
+    expect(stepOf('Match plays to tracks').getAttribute('data-state')).toBe('running');
+    rerender(<StagedProgress lead="Import" title="Set" steps={matchingAfter(75)} elapsedSeconds={3600} />);
+    expect(stepOf('Match plays to tracks').getAttribute('data-state')).toBe('stalled');
+    expect(stepOf('Match plays to tracks').textContent).toContain('▲ No progress for 75 s');
+    rerender(<StagedProgress lead="Import" title="Set" steps={matchingAfter(75)} elapsedSeconds={3600} stallSeconds={90} />);
+    expect(stepOf('Match plays to tracks').getAttribute('data-state')).toBe('running');
+  });
+
+  it('puts Try again and Cancel in the stalled step and calls them', () => {
+    const onResume = vi.fn<(i: number) => void>();
+    const onCancel = vi.fn<() => void>();
+    const steps: StagedProgressStep[] = [
+      STEPS[0],
+      { name: 'Match plays to tracks', state: 'stalled', done: 312, total: 500 },
+      STEPS[2],
+    ];
+    render(<StagedProgress lead="Weekly build" title="Sat 24 Oct" steps={steps} elapsedSeconds={90} onResume={onResume} onCancel={onCancel} cancelLabel="Cancel build" />);
+    const actions = stepOf('Match plays to tracks').querySelector('.sn-staged-progress__actions');
+    expect(actions).not.toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Try again from Match plays to tracks' }));
+    expect(onResume).toHaveBeenCalledWith(1);
+    const cancel = screen.getAllByRole('button', { name: 'Cancel build' });
+    expect(cancel).toHaveLength(1);
+    expect(cancel[0].className).toContain('sn-btn--quiet');
+    fireEvent.click(cancel[0]);
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('.sn-staged-progress__foot')).toBeNull();
+  });
+
+  it('announces a stall once, politely, and says when the step moves again', () => {
+    const running: StagedProgressStep[] = [{ name: 'Look up key and BPM', state: 'running', done: 1, total: 9, secondsSinceProgress: 5 }];
+    const { rerender } = render(<StagedProgress lead="Load" title="Library" steps={running} elapsedSeconds={5} />);
+    const live = screen.getByRole('status');
+    expect(live.getAttribute('aria-live')).toBe('polite');
+    rerender(<StagedProgress lead="Load" title="Library" steps={[{ ...running[0], secondsSinceProgress: 60 }]} elapsedSeconds={60} />);
+    expect(live.textContent).toBe('Look up key and BPM: no progress for 60 s. Try again carries on from this step.');
+    rerender(<StagedProgress lead="Load" title="Library" steps={[{ ...running[0], secondsSinceProgress: 70 }]} elapsedSeconds={70} />);
+    expect(live.textContent).toBe('Look up key and BPM: no progress for 60 s. Try again carries on from this step.');
+    rerender(<StagedProgress lead="Load" title="Library" steps={[{ ...running[0], done: 2, secondsSinceProgress: 0 }]} elapsedSeconds={71} />);
+    expect(live.textContent).toBe('Look up key and BPM is moving again.');
+  });
+
+  it('leaves the other states unchanged when no stall data is given', () => {
+    const onCancel = vi.fn<() => void>();
+    render(<StagedProgress lead="Weekly build" title="Sat 24 Oct" steps={STEPS} elapsedSeconds={258} remainingSeconds={150} onCancel={onCancel} onResume={() => {}} />);
+    expect(document.querySelector('[data-state="stalled"]')).toBeNull();
+    expect(screen.queryByRole('button', { name: /Try again/ })).toBeNull();
+    expect(screen.getByText('About 3 min left')).toBeTruthy();
+    expect(document.querySelector('.sn-staged-progress__foot button')?.textContent).toBe('Cancel');
   });
 });
