@@ -7,7 +7,7 @@ import React, { useRef, useMemo } from 'react';
 import { CurrentTrack } from './CurrentTrack';
 import { SearchBar } from './SearchBar';
 import { FilterTabs } from './FilterTabs';
-import { TrackItem } from './TrackItem';
+import { TrackItem, TRACK_ROW_HEIGHT } from './TrackItem';
 import {
   useBrowserState,
   useKeyboardNavigation,
@@ -86,7 +86,7 @@ export const IntelligentBrowser: React.FC<IntelligentBrowserProps> = ({
     return filtered.slice(0, finalConfig.maxRecommendations);
   }, [allRecommendations, debouncedSearch, state.sortBy, currentTrack, finalConfig.maxRecommendations]);
 
-  const virtualizer = useVirtualization(recommendations, parentRef, 64);
+  const virtualizer = useVirtualization(recommendations, parentRef, TRACK_ROW_HEIGHT);
 
   const handleSelect = (track: Track, multi: boolean = false) => {
     dispatch({ type: 'SELECT_TRACK', payload: { trackId: track.id, multi } });
