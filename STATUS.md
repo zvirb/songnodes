@@ -2202,6 +2202,16 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Next: close U17B; a design-system package drops the GraphiQL rows; a small package removes the stale GraphQL section, load-test task and test deps.
 <!-- SLOT:U17C END -->
 
+<!-- SLOT:HS8 BEGIN -->
+### HS8: Remove the dead harmonic-matching copies
+- Start: 2026-11-01 (branch hs8-remove-dead-matching off origin/main 62795a7). Brief: plan/agents/HS8_remove_dead_matching.md (spec package M6-F3, docs/specs/HARMONIC_SCORING.md).
+- End: 2026-11-01.
+- Changed: deleted `utils/harmonicMatching.ts`, `utils/harmonicUtils.ts`, `utils/intelligentBrowserUtils.ts` and `components/IntelligentBrowser.legacy.tsx` after a repo-wide search found no importer (static, dynamic, `import.meta.glob`, tests, routes, oxlint and vite config). No test file tested them. `frontend/design-system-pending.txt` already holds commented `# migrated` lines for two of them, kept as its header asks.
+- Checks run: see the PR body.
+- Checks not run: E2E (no Docker daemon).
+- Next: stale mentions in design-system docs and `frontend/LINTING.md` belong to their owners (follow-ups in the PR).
+<!-- SLOT:HS8 END -->
+
 <!-- SLOT:G1B BEGIN -->
 ### G1B: Scope guard recognises package codes without digits
 - Start: 2026-11-01 (branch g1b-scope-guard-codes off origin/main 62795a7). Brief: plan/agents/G1B_scope_guard_codes.md (added in this PR).
