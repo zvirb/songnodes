@@ -2288,5 +2288,9 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 <!-- SLOT:HS6 BEGIN -->
 ### HS6: Route finder prefers proven transitions
 - Start: 2026-11-02 (branch hs6-pathfinder-cost off origin/main a071a2e). Brief: plan/agents/HS6_pathfinder_cost.md (spec package M6-R1, docs/specs/HARMONIC_SCORING.md §2.6).
-- Next: cost edges with the HS1 `path_cost` in `services/rest_api/routers/pathfinder.py`, with tests in `tests/rest_api/test_pathfinder_cost.py`.
+- End: 2026-11-02.
+- Changed: `services/rest_api/routers/pathfinder.py` reads `GraphEdge.weight` as the occurrence count (documented on the field) and costs each edge with the HS1 `path_cost(compat_score(key, BPM), n)`: always > 0, falling as compatibility and plays rise; ANN fallback edges count as inferred (n = 0); unknown key/BPM uses U = 0.5. The −1.0 waypoint reward is now a positive 0.5× cost discount. Removed the unused `get_key_compatibility_bonus`/`get_bpm_difference`. Tests in `tests/rest_api/test_pathfinder_cost.py` (root REST test folder, collected by pytest.ini; the spec's `services/rest_api/tests/` is not).
+- Checks run: new tests plus `tests/security/test_pathfinder_security.py` (annoy built locally), `tests/rest_api` + `tests/security` (431 passed), `services/common/tests` (181 passed), root `pytest` (failures only in live-stack integration, library_importer and enrichment_local tests, none touching the pathfinder), scope guard. On main the same request routes through the once-played edge; here through the 50-play edge.
+- Checks not run: E2E (no Docker daemon).
+- Next: follow-ups in the PR (admissible heuristic, `key_compatible` from `key_verdict`, consistent `connection_strength`).
 <!-- SLOT:HS6 END -->
