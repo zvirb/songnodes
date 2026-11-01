@@ -22,8 +22,10 @@ Usage:
 """
 import asyncio
 import asyncpg
+import json
 import logging
 import threading
+from collections.abc import Mapping
 from datetime import datetime, date
 from typing import Dict, List, Any, Optional
 from scrapy import Spider
@@ -57,6 +59,24 @@ if METRICS_AVAILABLE:
         'Total tracks extracted',
         ['source']
     )
+
+
+def _plain(value: Any) -> Any:
+    """Scrapy Items (and other mappings) become dicts and tuples become lists, recursively."""
+    if isinstance(value, Mapping):
+        return {str(k): _plain(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_plain(v) for v in value]
+    return value
+
+
+def _bronze_raw_json(item: Any) -> str:
+    """BRZ2: raw_json text for a bronze row, always a JSON object for an Item or dict.
+
+    ``json.dumps`` on a scrapy Item falls back to ``str(item)`` (an Item is not a dict),
+    which stored a JSON string of the Item repr that ingest could not read.
+    """
+    return json.dumps(_plain(item), default=str)
 
 
 class PersistencePipeline:
@@ -1036,7 +1056,7 @@ class PersistencePipeline:
 
                 # Serialize complete item as raw_json
                 try:
-                    raw_json = json.dumps(item, default=str)
+                    raw_json = _bronze_raw_json(item)
                 except (TypeError, ValueError) as e:
                     self.logger.error(
                         f"❌ Failed to serialize item #{idx} to JSON: {e}",
@@ -1173,8 +1193,8 @@ class PersistencePipeline:
             source_playlist_id = item.get('source_playlist_id') or item.get('playlist_id') or item.get('setlist_id')
             scraper_version = item.get('scraper_version', 'v1.0.0')
 
-            # Serialize complete item as raw_json
-            raw_json = json.dumps(item, default=str)
+            # Serialize complete item as raw_json (a JSON object, BRZ2)
+            raw_json = _bronze_raw_json(item)
 
             # Extract fields for indexing
             playlist_name = item.get('setlist_name') or item.get('name', '')
