@@ -20,6 +20,12 @@ The design system has one version number, [semver](https://semver.org) `MAJOR.MI
 
 Newest first. Each entry: version, date (Melbourne), one line per change, prefixed Added / Changed / Deprecated / Removed / Fixed, with the decision record if any.
 
+**1.8.0 — 2 Nov 2026: the design system speaks the accepted harmonic scoring (`harmonic-1`, Markus, 2 Nov 2026)**
+- Changed `bpmStep`: gaps round half up on the absolute value, so a gap judges the same in both directions (125.5 → 123 is "−3 BPM" compatible, was "−2 BPM" perfect; Q-B2). A half- or double-time move (the halved or doubled target strictly closer and within 8) is judged on that gap, never better than compatible, worded "half time" / "double time" (87 → 174 was a "+87 BPM" clash; Q-B1). DR-056.
+- Changed `energyStep`: the one-decimal delta is rounded half away from zero before judging (6.4 → 7.9 is +2, was "energy hold"; Q-E3); "trough reset" narrows to drops of 2–4, and a drop of 5 or more is a clash, "jarring"; a rise of 4 or more reads "jarring" (still a clash; Q-E2). Energy outside 1–10 is "energy ?". DR-056.
+- Added: `energyStep` returns `move` (the `energy-move-1` identifier: `hold`, `step_up`, `lift`, `jarring`, `reset_drop`, `step_down` (new, Q-E1), `unknown`) and `bpmStep` returns `relation` and `gap`; helper `SongNodes.energyMove(move)` gives a stored move's words ("step up", "push" for `lift` so it never reads like the "+7 lift" key move, "trough reset", "step down"; Q-E6) and its verdict without set context. Type `EnergyMove`. Added fields and a helper, so a minor.
+- Changed 11-data-display: the missing "−2 energy drop" row in the key-move table; the BPM rounding and half/double-time words; a note that the energy tiers (Low 1–4, Building 5–7, High 8–10) are not the energy contract's provisional bands, settled in the milestone 3 ratification (Q-E5). 18-music-domain wave rules, transition table and energy-move table, `CompatibilityBadge` and `TransitionNote` updated. No token changed.
+
 **1.7.1 — 2 Nov 2026: the 1.6.0 fitted choices answered (Markus, 2 Nov 2026)**
 - Changed `InfoTip`: the tooltip form opens after **500 ms** on mouse hover, the same as `Tooltip`; keyboard focus and a tap still open it at once, and the 300 ms leave grace is unchanged. `SongNodes.infoTips` waits so; a pointer that leaves first opens nothing (DR-055, closes Q27; not the fitted default "at once"). A changed value, so a patch.
 - Recorded DR-051 (a dismissed warning stays down until the next Melbourne calendar day, Q23), DR-052 (source links to another page open in a new tab, Q24), DR-053 (dismissed info and ok banners go entirely until their fact changes, Q25), DR-054 (InfoTip button 24px, 44px hit area on touch, Q26): the fitted defaults, now decided, already built in 1.6.0. InfoTip, Banner, 06 and 08 updated. No token changed. No open questions remain.
@@ -221,6 +227,13 @@ Markus's BeanAlliance decisions of 1 Nov 2026, brought into SongNodes at his req
 | DR-054 | The `InfoTip` button is **24px** (`space-6`, the WCAG 2.5.8 minimum) with a **44px hit area on touch** (`touch-min`) (closes Q26). |
 | DR-055 | The `InfoTip` tooltip form opens **after 500 ms on mouse hover**, the same as `Tooltip`, so a pointer sweeping across a row of labels does not flash tips; keyboard focus and a tap open it at once. This is not the fitted default ("at once") (closes Q27). |
 
+### DR-056 — harmonic scoring answers of 2 Nov 2026 (Melbourne), 1.8.0
+2 Nov 2026 · Markus. Context: the accepted spec `docs/specs/HARMONIC_SCORING.md` (`harmonic-1`), §5 questions Q-E1 to Q-E6 and Q-B1 to Q-B3, and the classifier `services/common/metadata/transition_scoring.py` (HS1). Options: those listed in the spec's §5.
+
+| # | Decision |
+|---|---|
+| DR-056 | `bpmStep`, `energyStep` and the new `energyMove` agree with `harmonic-1`: BPM gaps round half up on the absolute value (Q-B2); half or double time is judged on the halved or doubled gap, capped at compatible and worded "half time" / "double time" (Q-B1); thresholds stay absolute (Q-B3); the energy delta is rounded half away from zero (Q-E3); a −1 move is `step_down`, "step down" (Q-E1); drops of 2–4 are the "trough reset", drops of 5 or more and rises of 4 or more are "jarring" clashes (Q-E2); the energy move `lift` is shown as "push" (Q-E6); tiers stay as shown until the milestone 3 ratification settles them against the energy contract's bands (Q-E5). A +2 or +3 rise stays a clash ("too steep", wave rule 2), as no answer changed it. |
+
 ## How rules are derived
 
 1. Markus's own decisions (DR-001…DR-016) and his past corrections win.
@@ -231,7 +244,7 @@ Markus's BeanAlliance decisions of 1 Nov 2026, brought into SongNodes at his req
 
 ## Open questions
 
-None are open. All questions raised at the 1.0.0 release were answered on 24 Oct 2026 (DR-018 revised, DR-021 to DR-030); Q10 and Q17 on 28 Oct 2026 (DR-031, DR-032); Q9, Q11–Q16 and Q18 on 2 Nov 2026 (DR-043 to DR-050); Q23–Q27 on 2 Nov 2026 (DR-051 to DR-055). A new question goes in a table here, with its options and the default until answered.
+None are open. All questions raised at the 1.0.0 release were answered on 24 Oct 2026 (DR-018 revised, DR-021 to DR-030); Q10 and Q17 on 28 Oct 2026 (DR-031, DR-032); Q9, Q11–Q16 and Q18 on 2 Nov 2026 (DR-043 to DR-050); Q23–Q27 on 2 Nov 2026 (DR-051 to DR-055); the harmonic scoring questions on 2 Nov 2026 (DR-056). A new question goes in a table here, with its options and the default until answered.
 
 Closed on 2 Nov 2026:
 

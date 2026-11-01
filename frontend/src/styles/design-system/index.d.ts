@@ -2093,6 +2093,8 @@ export interface PrintSheetProps {
 export type ModuleKey = "graph" | "library" | "sets" | "paths" | "harmony" | "sources" | "pipeline" | "services";
 export type DesignStatus = "ok" | "fair" | "warn" | "bad" | "info" | "running" | "idle";
 export type CompatLevel = "perfect" | "compatible" | "possible" | "clash" | "unknown";
+/** Energy move identifiers (energy-move-1, 1.8.0). */
+export type EnergyMove = "hold" | "step_up" | "lift" | "jarring" | "reset_drop" | "step_down" | "unknown";
 export interface SongNodesHelpers {
   version: string; locale: "en-AU"; timeZone: "Australia/Melbourne";
   modules: { key: ModuleKey; label: string; icon: string; summary: string }[];
@@ -2113,7 +2115,10 @@ export interface SongNodesHelpers {
   keyName(code: string): string | null;
   compat(a: string, b: string): { level: CompatLevel; label: string };
   tier(energy: number): "low" | "building" | "high" | null;
-  energyStep(prev: number, next: number, before?: number): { level: CompatLevel; label: string };
+  /** Energy step a → b (harmonic-1): delta rounded half away from zero; `move` is the energy-move-1 identifier (1.8.0). */
+  energyStep(prev: number, next: number, before?: number): { level: CompatLevel; label: string; move: EnergyMove };
+  /** Words and context-free verdict for a stored energy move ("push" for lift, "trough reset" for reset_drop) (1.8.0). */
+  energyMove(move: string): { level: CompatLevel; label: string; move: EnergyMove };
   /** Strength band 1–4 of a link weight 0–1 (GraphStyles, 1.5.0). */
   edgeBand(weight: number, cuts?: [number, number, number]): GraphEdgeBand;
   EDGE_BAND_LABEL: Record<GraphEdgeBand, "Weak" | "Fair" | "Strong" | "Very strong">;
@@ -2126,7 +2131,8 @@ export interface SongNodesHelpers {
   seatBox(radius: number, labelWidth?: number, nowPlaying?: boolean): [number, number, number, number];
   /** Ring layout (DR-034). Same input, same output. */
   ringLayout(nodes: Array<{ id: string | number; box?: [number, number, number, number] }>, links: Array<{ source: string | number; target: string | number; weight: number }>, opts?: { anchor?: string | number; first?: number; step?: number; aspect?: number; seatGap?: number; prev?: Record<string, GraphSeat> }): { pos: Record<string, GraphSeat>; anchor: string | number; rings: number };
-  bpmStep(a: number, b: number): { level: CompatLevel; label: string };
+  /** Tempo move a → b (harmonic-1): gap rounded half up; half/double time judged on that gap, never better than compatible (1.8.0). */
+  bpmStep(a: number, b: number): { level: CompatLevel; label: string; relation: "direct" | "half_time" | "double_time" | null; gap: number | null };
   format: { date(d: Date | string): string; day(d: Date | string): string; month(d: Date | string): string; time(d: Date | string): string; dateTime(d: Date | string): string; zone(d: Date | string): string; stamp(d: Date | string): string; relative(d: Date | string, now?: Date): string; duration(seconds: number): string; span(seconds: number): string; count(n: number): string; bpm(b: number): string; percent(x: number, digits?: number): string; dateOnly(isoDate: string): string; dayLong(d: Date | string): string; range(from: string, to: string): string };
   calendar: { today(now?: Date): string; iso(y: number, m: number, d: number): string; month(y: number, m: number): ({ iso: string; y: number; m: number; d: number; wd: number } | null)[][]; addDays(iso: string, n: number): string; addMonths(iso: string, n: number): string; compare(a: string, b: string): -1 | 0 | 1; days(a: string, b: string): number; weekStart(iso: string): string; preset(id: DateRangePresetId, today?: string): [string, string] | null; PRESET_LABELS: Record<DateRangePresetId, string>; MONTHS_LONG: string[]; WDAYS_LONG: string[] };
   dateRange(el: HTMLElement, opts?: { from?: string | null; to?: string | null; today?: string; title?: string; outcome?: string; preset?: string | null; presets?: (DateRangePresetId | { id: string; label: string; range: [string, string] | (() => [string, string]) })[]; marks?: DateRangeMark[]; onChange?(from: string | null, to: string | null, presetId: string | null): void; onApply?(from: string, to: string): void; onClear?(): void; onClose?(): void }): { el: HTMLElement; get(): { from: string | null; to: string | null; preset: string | null }; set(from: string | null, to: string | null, presetId?: string | null): void; focus(): void; show(iso: string): void };
