@@ -11,7 +11,7 @@ from uuid import UUID
 
 import httpx
 
-from . import backfill, enrichment, er, evidence, ingest, outbox, projection, graph_projection, target_scrape
+from . import backfill, enrichment, er, evidence, ingest, outbox, projection, graph_projection, target_scrape, transition_scores
 from .errors import CatalogError
 
 
@@ -147,6 +147,18 @@ async def camelot_repair(conn, ctx: Context, payload: Dict[str, Any]) -> Dict[st
     follow_ups = []
     if result['examined'] >= limit:
         follow_ups.append(after('camelot_repair', payload, {'limit': limit, 'after': result['last_id']}, tag='camelot-next'))
+    return {**result, 'enqueue': follow_ups}
+
+
+@handler('transition_scoring')
+async def transition_scoring(conn, ctx: Context, payload: Dict[str, Any]) -> Dict[str, Any]:
+    """HS4 backfill: store harmonic scoring on existing Silver transitions, one keyset batch per job, chained."""
+    limit = int(payload.get('limit', 500))
+    result = await transition_scores.backfill(conn, limit, UUID(payload['after']) if payload.get('after') else None)
+    follow_ups = []
+    if result['examined'] >= limit:
+        follow_ups.append(after('transition_scoring', payload, {'limit': limit, 'after': result['last_id']},
+                                tag='transition-scoring-next'))
     return {**result, 'enqueue': follow_ups}
 
 

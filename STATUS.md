@@ -2250,3 +2250,13 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: the e2e job against the real stack (no Docker here). Its result is unknown until CI runs; the first run is the offender list.
 - Next: read the first CI run's list and open fix packages per component or page (or exclusions with a card citation where the system intends the inset).
 <!-- SLOT:INS1 END -->
+
+<!-- SLOT:HS4 BEGIN -->
+### HS4: Silver transitions store their harmonic scoring
+- Start: 2026-11-01 (branch hs4-silver-transition-scoring off origin/main a071a2e). Brief: plan/agents/HS4_silver_transition_scoring.md (added in this PR). Spec package M6-P1.
+- End: 2026-11-01.
+- Changed: migration 270 adds 21 nullable scoring columns to `silver_track_transitions` (spec 2.7 plus energy provenance and `scored_at`); new `common/datalayer/transition_scores.py` maps `score_transition` onto them; the ingest N -> N+1 upsert writes them; new job kind `transition_scoring` backfills existing rows in chained keyset batches and writes only rows whose scoring changed. `start-dev.sh` applies 270 and queues the backfill once per scoring version (`backfill:harmonic-1`).
+- Checks run: `cd services && python -m pytest common/tests`; scope guard.
+- Checks not run: the migration and job against a real Postgres (no Docker here); integration tests.
+- Next: M6-P2 projects the stored fields; rescoring when track metadata changes after ingest is a follow-up.
+<!-- SLOT:HS4 END -->
