@@ -13,6 +13,8 @@ DS24A (#476) added frontend/src/components/ds/DateField.tsx (`DateField`, `DateR
 - frontend/src/features/pipeline/ScrapeWindowCard.test.tsx (new)
 - frontend/src/pages/ScraperProgressPage.tsx (mount the card only)
 - frontend/src/pages/ScraperProgressPage.test.tsx
+- frontend/tests/e2e/visual.spec.ts (stub `/api/v1/scrape/window` in `stubEmptyPipeline` only)
+- frontend/tests/e2e/visual.spec.ts-snapshots/pipeline-*-chromium-linux.png (the card makes /pipeline taller)
 
 (Complete list. Anything else is read-only for you. You may also add a dated note under docs/integration/DS24C/ if you need to record a decision.)
 

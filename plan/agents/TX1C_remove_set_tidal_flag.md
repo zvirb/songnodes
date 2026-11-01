@@ -12,6 +12,8 @@ TX1 replaced "Send to TIDAL on the weekly run" with an instant Send to TIDAL dia
 - frontend/src/features/musicLibrary/data.ts (the SavedSet interface only)
 - frontend/src/features/musicLibrary/setBuilder.ts (the Draft type and its mappings only)
 - frontend/src/features/musicLibrary/SetBuilderPage.tsx (the copy-set line only)
+- frontend/src/pages/HomePage.tsx (the Sets launcher figure only: it was the flag's only reader)
+- frontend/tests/e2e/visual.spec.ts-snapshots/home-*-phone-chromium-linux.png (the Sets card loses its figure)
 - frontend/src/features/musicLibrary/data.test.ts
 - frontend/src/features/musicLibrary/setBuilder.test.ts
 - frontend/src/features/setBuilder/ExportDialog.test.tsx

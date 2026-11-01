@@ -1,6 +1,6 @@
 # DateRange
 
-The calendar popover for choosing a from–to span: two months side by side, presets beside them, the range in words underneath. Use it for a span to export, print or filter by ("Plays to export", "Last heard between", "Gig dates"), past or future. Ported from the BeanAlliance `DateRange` (v4.17.3) and fitted to SongNodes in 1.3.0; every departure is marked **fitted, Markus to confirm**.
+The calendar popover for choosing a from–to span: two months side by side, presets beside them, the range in words underneath. Use it for a span to export, print or filter by ("Plays to export", "Last heard between", "Gig dates"), past or future. Ported from the BeanAlliance `DateRange` (v4.17.3) and fitted to SongNodes in 1.3.0; every departure is marked **fitted, Markus to confirm** until he answers it. His answers of 2 Nov 2026 (1.7.0) are cited by decision record (DR-044 to DR-049, 17-governance).
 
 **Consumer provides:** the popover title (what the span is for), the current range or none, the day marks the page uses, its presets, the outcome button's label and what to do with the range. **The system provides:** the months, picking, keys, the live announcement, the range in words, and "today" as the Melbourne date.
 
@@ -46,7 +46,7 @@ Typing is always possible (GOV.UK, USWDS): the calendar is a second way in, neve
   <ul class="sn-date-range__key" aria-label="Key"><li><span class="sn-date-range__code">PH</span> Public holiday</li> … <li><span class="sn-date-range__now-bar"></span> Today</li></ul>
   <div class="sn-date-range__foot">
     <p class="sn-date-range__sum"><b>Mon 9 – Fri 13 Nov 2026</b> · 5 days</p>
-    <button class="sn-btn sn-btn--quiet">Clear</button><button class="sn-btn">Download CSV</button>
+    <button class="sn-btn sn-btn--quiet">Clear</button><button class="sn-btn sn-btn--primary">Download CSV</button>
   </div>
   <p class="sn-sr" role="status" aria-live="polite"></p>
 </div>
@@ -64,7 +64,7 @@ Typing is always possible (GOV.UK, USWDS): the calendar is a second way in, neve
 
 - First click (or Enter / Space) sets **From**; the second sets **To**. A second pick before From swaps them, so From is always the earlier date. A third pick starts again from From.
 - While only From is picked the footer reads "Tue 3 Nov 2026 · pick the end date". The outcome button with only From uses a one-day range.
-- A preset sets both ends, shows them in the months and **leaves the popover open**. Picking a day, typing in the DateField or Clear unpresses it.
+- A preset sets both ends, shows them in the months and **leaves the popover open**. The popover stays open until the outcome button, the close button, Escape or a click outside; never on the second pick (DR-045). Picking a day, typing in the DateField or Clear unpresses it.
 - Changes apply as they happen (`onChange`); the outcome button does the thing the page is for (`onApply`). An outcome that downloads or opens a tab runs synchronously inside that button's click, so the browser treats it as the person's own gesture.
 
 ## Colour and marks
@@ -75,6 +75,7 @@ Typing is always possible (GOV.UK, USWDS): the calendar is a second way in, neve
 | Days between (`data-range="in"`) | `brand-soft` fill, square corners so the span reads as one band | "in range" in the name; `aria-selected` on the cell |
 | Today (`data-today`, `aria-current="date"`) | a 16 × 3px amber `now` bar along the top of the cell and a bold numeral; Today in the key | ", today" in the name and "Today" in `title` |
 | Day mark with a code (`data-mark`) | the code in `fg-2` small data type under the number (`fg` inside the range), the number underlined in `line-strong` | the code itself; its name and kind in `title` and in the name |
+| Two coded marks on one day (`data-mark`, `data-marks="2"`) | both codes stacked under the number in the order the page passed them, packed (no gap, the number's line height 1) so the cell keeps its `control-md` height (DR-047) | both codes; every mark's name and kind in `title` and in the name |
 | Data dot (a mark with no code) | a 4px `fg-2` dot under the number ("this day has records", such as plays heard) | its name in the announced name and `title` |
 | Hover | `hover-bg` (over `brand-soft` in the range) | — |
 | Focus | the system's 2px `focus` ring, 2px offset (3px in booth) | — |
@@ -104,7 +105,7 @@ Typing is always possible (GOV.UK, USWDS): the calendar is a second way in, neve
 
 - `sn-chip` toggles with `aria-pressed` (the pressed chip inverts to `fg` with ✓, as FilterChip does), in a column beside the months; under them on narrower windows. Chips, not menu items: SongNodes has no menu-toggle item, and DateField's presets are already chips (fitted, Markus to confirm).
 - Default set, in DateField's order: **Last 7 days · Last 30 days · This year**. Then the page's own named spans ("Summer 2026–27").
-- Optional week presets for pages that plan or report by week: **Last week · This week · Next week**, Monday to Sunday, Melbourne dates (`SongNodes.calendar.preset`). A page offers only the presets that make sense for it and never reorders them.
+- Optional week presets for pages that plan or report by week, **in this popover only**, never mirrored in DateField's chip row (DR-046): **Last week · This week · Next week**, Monday to Sunday, Melbourne dates (`SongNodes.calendar.preset`). A page offers only the presets that make sense for it and never reorders them.
 - "Last 7 days" is today and the 6 days before; "Last 30 days" today and the 29 before; "This year" 1 January to today.
 
 ## Keyboard (WAI-ARIA APG date picker grid)
@@ -132,9 +133,15 @@ Typing is always possible (GOV.UK, USWDS): the calendar is a second way in, neve
 - Dates are date-only ISO values ("2026-11-03"): never converted through a time zone. "Today" is the Melbourne date (`SongNodes.calendar.today()`), never the device's UTC date.
 - No emoji, no exclamation marks, sentence case.
 
-## The outcome button is not primary
+## The outcome button is always primary (exception to one primary per view)
 
-`sn-btn` (default), Clear `sn-btn--quiet` (fitted, Markus to confirm). The popover is non-modal and sits over a page or dialog that already has its one primary (the form's Save, the export dialog's Export), and Popover's own footers use default and quiet buttons. Making the popover's button primary would put two primaries in one view. If DateRange is ever used as the whole of a view (a page that only picks dates), its outcome becomes the primary.
+`sn-btn sn-btn--primary`, Clear `sn-btn--quiet` (DR-044, Markus, 2 Nov 2026). This is the one stated exception to "one primary button per view" (12-inputs, Buttons): the outcome button is the filled primary on every page, whether the popover opens over a filter, a form or an export dialog.
+
+How it coexists with the page's own primary:
+- The outcome button lives only inside the popover or the bottom sheet, never in the page. The page keeps its one primary (the form's Save, the export dialog's Export, the page's "Queue scrape"); the popover adds no second primary to the page itself.
+- The popover counts as its own view while it is open, as a dialog does. It sits over the page (and below 480px covers it as a sheet), so the two primaries are never read as one row of choices. When the popover closes, its primary goes with it.
+- Clear stays quiet and the close button an icon button, so the popover itself still has exactly one primary.
+- Checks: a check that counts primaries per view treats an open `.sn-date-range` as its own view. While closed the popover is `hidden` and adds nothing to a count of visible primaries.
 
 ## Responsive
 
@@ -145,7 +152,7 @@ Viewport queries on SongNodes breakpoints (the popover sizes to its content, so 
 | ≥ 1100px (`bp-desktop`) | Two months, presets beside | — |
 | 768–1099px | Two months, presets under them in a wrapping row | `sn-date-range--stacked` |
 | < 768px (`bp-tablet`) | One month; the first month carries its own Next month button (`__next`) | `sn-date-range--one` |
-| < 480px (`bp-phone`) | Full-width bottom sheet (`radius-sheet` top corners, `shadow-3`, up to 90dvh, scrolls inside), as Popover does on phones; the footer's range line takes its own row and Clear and the outcome share the next at equal widths | `sn-date-range--sheet` |
+| < 480px (`bp-phone`) | Full-width bottom sheet (DR-048) (`radius-sheet` top corners, `shadow-3`, up to 90dvh, scrolls inside), as Popover does on phones; the footer's range line takes its own row and Clear and the outcome share the next at equal widths | `sn-date-range--sheet` |
 
 - On touch (`pointer: coarse`) every day cell, preset and month button is 44px (`touch-min`).
 - `sn-date-range--static` puts the popover in the flow (documentation and previews only).
@@ -156,7 +163,8 @@ Viewport queries on SongNodes breakpoints (the popover sizes to its content, so 
 - Do keep the typed path (DateField) beside the calendar.
 - Don't grey weekends or disable days to show a calendar's working days; this is a span picker, not a roster.
 - Don't use a status colour for a mark, or brand for today.
-- Don't close the popover on a preset or on the second pick: the person checks the range and presses the outcome.
+- Don't close the popover on a preset or on the second pick: the person checks the range and presses the outcome (DR-045).
+- Don't limit future days with `max` or grey days after the last data: a span may run into the future on every page, exports included (DR-049).
 
 ## In SongNodes
 
@@ -166,17 +174,19 @@ Scrape history and "Recently scraped data" exports; the planned monitoring page'
 
 "Plays to export" from the weekly run's plays, with RUN marks on run days and a dot on days with plays heard; gig dates for a set list with the week presets; "Last heard between" in the filter rail.
 
-## Fitted decisions (BeanAlliance → SongNodes), Markus to confirm
+## Fitted decisions (BeanAlliance → SongNodes)
+
+Markus confirmed or changed the items below on 2 Nov 2026 where a decision record is cited; the rest are still fitted, Markus to confirm.
 
 1. Selection colour: BA's terracotta `accent-wash` / `accent` → SongNodes `brand-soft` / `brand` with `fg` numerals; never solid.
 2. Today: BA's teal `today` → amber `now` bar + "today" in the name (DR-024).
 3. Weekends: BA greys them (non-working) → not greyed (club nights are weekends).
-4. Marks: BA's fixed plant calendar (PH, CL closures) → data the page passes in (`{date, code?, name, kind}`), with PH and RUN as the preview examples and a plain dot for "this day has records".
-5. Count: BA's "working days" (holidays and closures excluded) → calendar days, inclusive.
-6. Presets: BA's Last week · This week · Next week · Last 30 days · closures → DateField's Last 7 days · Last 30 days · This year, then the page's spans; the week presets optional.
+4. Marks: BA's fixed plant calendar (PH, CL closures) → data the page passes in (`{date, code?, name, kind}`), with PH and RUN as the preview examples and a plain dot for "this day has records". A day with two coded marks shows both codes stacked (DR-047, closes Q14).
+5. Count: BA's "working days" (holidays and closures excluded) → calendar days, inclusive (DR-031, closes Q10).
+6. Presets: BA's Last week · This week · Next week · Last 30 days · closures → DateField's Last 7 days · Last 30 days · This year, then the page's spans; the week presets optional and in the popover only (DR-046, closes Q13).
 7. Presets as `sn-chip` toggles (BA used `.mi.tog` menu toggles).
-8. Footer: BA's two `.btn` → Clear quiet, outcome default (one-primary rule).
-9. Responsive: BA's single 760px step → SongNodes' 1100 / 768 / 480 steps, a bottom sheet below 480px, 44px touch targets (BA kept control height on phones).
+8. Footer: BA's two `.btn` → Clear quiet, outcome always primary (DR-044, closes Q11; an exception to the one-primary rule, see above).
+9. Responsive: BA's single 760px step → SongNodes' 1100 / 768 / 480 steps, a bottom sheet below 480px (DR-048, closes Q15), 44px touch targets (BA kept control height on phones).
 10. Month buttons: BA's `ph-caret-*` → Lucide `chevron-left` / `chevron-right` (SongNodes has no caret icons; chevrons step time in `PeriodNav`).
 11. Grid semantics: BA's `div` grid of buttons → a `table role="grid"` with `th abbr` weekday names, `aria-selected` cells and `aria-current="date"` on today (APG).
 12. Shift + Page Up / Page Down step a year (APG; BA had none).

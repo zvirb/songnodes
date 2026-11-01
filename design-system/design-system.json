@@ -850,9 +850,9 @@
  ],
  "lastChange": {
   "by": "Markus",
-  "at": "2026-11-01T20:40:00Z",
-  "via": "Claude (claude.ai, artifact comment)",
-  "note": "1.6.0: imported beanAlliance v4.18–v4.20.2, fitted to SongNodes: InfoTip (explanations and every field's help behind an info button), every warning links to its source and can be dismissed to its icon in place, go icons on source links. DR-038 to DR-042; fitted choices Q23–Q27. zebra/PrintLabel and warn toasts not adopted."
+  "at": "2026-11-01T22:30:00Z",
+  "via": "Claude Code",
+  "note": "1.7.0: Markus answered Q9, Q11-Q16 and Q18 on 2 Nov 2026 (DR-043 to DR-050): DateRange outcome always primary, two stacked mark codes, tight text inset fails the check. Before that, 1.6.0: imported beanAlliance v4.18–v4.20.2, fitted to SongNodes: InfoTip (explanations and every field's help behind an info button), every warning links to its source and can be dismissed to its icon in place, go icons on source links. DR-038 to DR-042; fitted choices Q23–Q27. zebra/PrintLabel and warn toasts not adopted."
  },
  "layout": "files",
  "libraries": [],
