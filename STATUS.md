@@ -2013,3 +2013,13 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: against the laptop stack (no Docker here).
 - Next: owner runs `bash scripts/load-library-targets.sh --dry-run`, then without `--dry-run`, then DATA1's batch of 10.
 <!-- SLOT:TGT1 END -->
+
+<!-- SLOT:SP14 BEGIN -->
+### SP14: StagedProgress stalled state (design system 1.4.0)
+- Start: 2026-11-01. Base `main` f2bdc9b.
+- End: 2026-11-01.
+- Changed: `frontend/src/components/ds/StagedProgress.tsx` follows the 1.4.0 card. A step is `stalled` when passed as such, or when a running step's new `secondsSinceProgress` reaches the new `stallSeconds` prop (default 60); elapsed time never stalls it. Stalled renders `data-state="stalled"` (bundle.css gives the ▲ status-warn glyph and state colour), "▲ No progress for N s", `aria-current="step"`, the meter kept where it stopped with "…, no progress for N s" in `aria-valuetext`, and in `__actions` Try again (new `onResume(stepIndex)`, labelled "Try again from <step>") and the job's Cancel (quiet); the foot Cancel and the estimate are hidden while stalled. The polite live region says the stall once and "<step> is moving again." once on recovery. Other states and props are unchanged.
+- Checks run: `tsc --noEmit`, `oxlint src` (exit 0; no new findings), `vitest run src` (53 files, 380 tests; 5 new in `StagedProgress.test.tsx`, DS21 and DS22 tests pass), `vite build`, `sync-design-system.sh --check`, `check_design_system.py --check`, `check_feature_imports.py --check`, scope guard.
+- Checks not run: E2E and a real-browser look (no Docker daemon here).
+- Next: follow-up for TracklistImporter (DS22) to pass `secondsSinceProgress` or state `stalled` plus `onResume`/`onCancel` instead of its STALL_MS detail message.
+<!-- SLOT:SP14 END -->
