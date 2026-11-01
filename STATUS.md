@@ -2023,3 +2023,14 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: E2E and a real-browser look (no Docker daemon here).
 - Next: follow-up for TracklistImporter (DS22) to pass `secondsSinceProgress` or state `stalled` plus `onResume`/`onCancel` instead of its STALL_MS detail message.
 <!-- SLOT:SP14 END -->
+
+<!-- SLOT:TX1C BEGIN -->
+### TX1C: Remove the leftover SavedSet.tidal field and weekly TIDAL step
+- Start: 2026-11-01
+- End: 2026-11-01
+- Changed: `SavedSet.tidal` (`frontend/src/features/musicLibrary/data.ts`) and `Draft.tidal` (`setBuilder.ts`: type, `blankDraft`, `savedSetFromDraft`, `draftFromSaved`, `sanitiseDraft`) are removed, with the `tidal: false` in `SetBuilderPage.tsx` duplicate. Since TX1 nothing set the flag. Its one reader, the Home sets card figure "send to TIDAL" (`frontend/src/pages/HomePage.tsx`), now shows the design system's "tracks in the latest" figure. Set fixtures in 5 tests drop the field. Track-level `tidal` links (LibraryTrack, SavedSetTrack) stay, since Send to TIDAL and the exporters use them.
+- Not changed: `pipeline/run_weekly.py` never had a TIDAL send step (checked its whole history). Its only TIDAL code is `choose_version`, which prefers TIDAL metadata over Deezer and is used by `build_record` and tests, so it stays. The weekly run that sent sets marked for TIDAL lives in the external musicLibrary folder (`MUSIC_LIBRARY_DIR`, see `scripts/import-music-library.sh`), not in this repo.
+- Checks run: `tsc --noEmit`, `oxlint src` (exit 0, no new findings), `vitest run src` (53 files, 380 tests), `vite build`, `sync-design-system.sh --check`, `check_design_system.py --check`, `pytest pipeline/test_pipeline.py` (16 passed), scope guard.
+- Checks not run: E2E (no Docker daemon here).
+- Next: remove the TIDAL step from the external musicLibrary weekly run; sets saved before TX1 with `tidal: true` in device storage still carry it in `artifact_sets.json`.
+<!-- SLOT:TX1C END -->
