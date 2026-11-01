@@ -2262,6 +2262,14 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks run: tsc, oxlint (exit 0), vitest 58 files / 437 tests, vite build, `sync-design-system.sh --check`, `check_design_system.py --check`, scope guard.
 - Checks not run: E2E (no Docker daemon). No visual baseline covers /graph.
 - Next: Pause layout holding seats for new tracks, the 320ms re-seat move, drag to nearest free seat, labels only above zoom 1.5, and removing the unused `hooks/useForceSimulation.ts` / `useGraphLayout.ts`.
+### GR1 follow-up: Graph anchor, link bands and no stored camera
+- Start: 2026-11-01 (branch gr1-anchor-edge-bands off origin/main 33dcc5a). Brief: plan/agents/GR1_anchor_edge_bands.md. Source: docs/integration/REAL-DATA-TEST-2026-11-02.md section 2, problem 1.
+- End: 2026-11-01.
+- Changed: `lib/graphLayout.ts` adds `pickAnchor` (now playing, else first selected, else the anchor in use), an anchor argument to `seatTracks`, `edgeBandStyles` and `edgeBandOf` (DR-035 bands; occurrence counts scaled by the strongest link). `GraphVisualization.tsx` seats around that anchor, re-seats and fits only when the anchor changes, and draws links at band width and opacity. `store/useStore.ts` no longer persists the camera and drops an old one without the "extreme viewport" warning. Tests: 6 new in `graphLayout.test.ts`, new `useStore.persist.test.ts` (2).
+- Browser check (vite preview, synthetic graph shaped like the report: 463 linked tracks, 23 components, weights 1–3, positions 0,0; not live data), /graph?mode=plan at 1440×900, nothing selected: 463/463 seated and drawn, 1 at (0,0) (the anchor), median nearest neighbour 75px world (p90 102px), no viewport warning (main at 33dcc5a: same seats, warning present). Fit stops at the 25% floor, so 412/463 are inside the 754×761 canvas: left for GR2.
+- Checks run: tsc, oxlint (exit 0), vitest 61 files / 463 tests, vite build, `sync-design-system.sh --check` (1.7.1 in sync), `check_design_system.py --check`, scope guard.
+- Checks not run: E2E (no Docker here); needs `scripts/e2e-docker.sh` on the host.
+- Next: GR2 graph controls dock; Weak-link visibility (`SN.edgeVisibility`); the 320ms re-seat move.
 <!-- SLOT:GR1 END -->
 
 <!-- SLOT:IB1 BEGIN -->
