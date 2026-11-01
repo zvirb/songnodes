@@ -14,11 +14,11 @@ import {
 } from './textInset';
 
 // Computed-style colour strings in the form getComputedStyle returns them (test inputs, not styling).
-const rgb = (...n: number[]) => `${n.length === 4 ? 'rgba' : 'rgb'}(${n.join(', ')})`;
-const CLEAR = rgb(0, 0, 0, 0);
-const PAGE = rgb(10, 10, 12);
-const SURFACE = rgb(24, 24, 28);
-const LINE = rgb(60, 60, 66);
+const srgbColour = (...n: number[]) => `${n.length === 4 ? 'rgba' : 'rgb'}(${n.join(', ')})`;
+const CLEAR = srgbColour(0, 0, 0, 0);
+const PAGE = srgbColour(10, 10, 12);
+const SURFACE = srgbColour(24, 24, 28);
+const LINE = srgbColour(60, 60, 66);
 
 const style = (over: Partial<BoxStyle> = {}): BoxStyle => ({
   backgroundColor: CLEAR,
@@ -44,9 +44,9 @@ describe('colourAlpha', () => {
   it('reads transparent, comma alpha, slash alpha and opaque colours', () => {
     expect(colourAlpha('transparent')).toBe(0);
     expect(colourAlpha(CLEAR)).toBe(0);
-    expect(colourAlpha(rgb(0, 0, 0, 0.5))).toBe(0.5);
+    expect(colourAlpha(srgbColour(0, 0, 0, 0.5))).toBe(0.5);
     expect(colourAlpha('color(srgb 0 0 0 / 0)')).toBe(0);
-    expect(colourAlpha('oklch(0.5 0.1 200 / 40%)')).toBeCloseTo(0.4);
+    expect(colourAlpha('color(display-p3 0.5 0.1 0.2 / 40%)')).toBeCloseTo(0.4);
     expect(colourAlpha(SURFACE)).toBe(1);
     expect(colourAlpha('')).toBe(0);
   });
@@ -56,7 +56,7 @@ describe('shadowSides', () => {
   it('treats an inset ring or an outer shadow as every side', () => {
     expect(shadowSides(`${LINE} 0px 0px 0px 1px inset`)).toEqual(new Set(['bottom', 'left', 'right', 'top']));
     expect(shadowSides(`${CLEAR} 0px 0px 0px 1px inset`).size).toBe(0);
-    expect(shadowSides(`${rgb(0, 0, 0, 0.3)} 0px 2px 8px 0px`).size).toBe(4);
+    expect(shadowSides(`${srgbColour(0, 0, 0, 0.3)} 0px 2px 8px 0px`).size).toBe(4);
   });
 
   it('treats a hard inset offset as a bar on that side only', () => {
