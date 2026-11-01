@@ -172,6 +172,8 @@ class PersistencePipeline:
             'bronze_playlists_written': 0,
             'bronze_tracks_queued': 0,
             'bronze_tracks_written': 0,
+            # Playlists flagged bronze_incomplete because one of their track rows could not be saved.
+            'bronze_playlists_incomplete': 0,
             'failed_items': 0,
             'silent_failures': 0,  # NEW: Track silent failures
             'items_by_type': {}
@@ -877,18 +879,23 @@ class PersistencePipeline:
         try:
             if not self.connection_pool:
                 raise RuntimeError("Connection pool not initialized")
+            committed_summary = None
             async with self.connection_pool.acquire() as conn:
                 async with conn.transaction():
                     if batch_type == 'bronze_tracks':
-                        results = await self._insert_bronze_tracks_batch(conn, batch)
-                        self.stats['bronze_tracks_written'] += len(results)
-                        # Store bronze_ids in items for silver layer linkage
-                        for result in results:
-                            result['item']['_bronze_id'] = result['bronze_id']
+                        results, skipped_count, error_count = await self._insert_bronze_tracks_batch(conn, batch)
+                        committed_summary = (
+                            'bronze_tracks_written', len(results),
+                            f"✓ Inserted {len(results)} tracks to bronze layer "
+                            f"(skipped={skipped_count}, errors={error_count})",
+                        )
                     elif batch_type == 'bronze_playlists':
-                        # _bronze_id already set inside _insert_bronze_playlists_batch (line 1059)
+                        # _bronze_id already set inside _insert_bronze_playlists_batch
                         results = await self._insert_bronze_playlists_batch(conn, batch)
-                        self.stats['bronze_playlists_written'] += len(results)
+                        committed_summary = (
+                            'bronze_playlists_written', len(results),
+                            f"✓ Inserted {len(results)} playlists to bronze layer (total)",
+                        )
                     elif batch_type == 'artists':
                         await self._insert_artists_batch(conn, batch)
                     elif batch_type == 'tracks':
@@ -900,6 +907,16 @@ class PersistencePipeline:
                     elif batch_type == 'song_adjacency':
                         await self._insert_song_adjacency_batch(conn, batch)
 
+            # BRZ1: the transaction has committed. Only now are bronze rows counted and the
+            # "Inserted N ... to bronze layer" line logged (its format is parsed by the scraper API).
+            if committed_summary:
+                stat_key, written, summary_line = committed_summary
+                self.stats[stat_key] += written
+                self.logger.info(summary_line)
+                if batch_type == 'bronze_tracks':
+                    # Store bronze_ids in items for silver layer linkage
+                    for result in results:
+                        result['item']['_bronze_id'] = result['bronze_id']
             self.stats['records_written'] += len(batch)
             self.logger.info(
                 f"✅ Successfully flushed {len(batch)} {batch_type} items to {target_table} "
@@ -918,13 +935,20 @@ class PersistencePipeline:
         Insert raw track data to bronze_scraped_tracks (medallion layer 1).
 
         Preserves complete raw item data in raw_json for replay capability.
-        Returns list of bronze IDs for linking to silver layer.
+        Returns (rows, skipped_count, error_count); rows hold the bronze IDs for linking
+        to the silver layer.
+
+        BRZ1: each row's statements run in their own savepoint (a nested transaction), so a
+        bad row rolls back alone and the batch transaction still commits the good rows. A
+        playlist that loses a track row this way is flagged incomplete (see
+        _flag_incomplete_playlists) rather than left looking complete.
         """
         import json
 
         results = []
         skipped_count = 0
         error_count = 0
+        failed_positions: Dict[Any, List[Any]] = {}
 
         for idx, item in enumerate(batch):
             try:
@@ -954,12 +978,13 @@ class PersistencePipeline:
                         if not bronze_playlist_id:
                             # Fallback: Query database directly
                             try:
-                                bronze_playlist_id = await conn.fetchval("""
-                                    SELECT id FROM bronze_scraped_playlists
-                                    WHERE playlist_name = $1
-                                    ORDER BY scraped_at DESC
-                                    LIMIT 1
-                                """, playlist_name)
+                                async with conn.transaction():  # savepoint: a failure must not abort the batch
+                                    bronze_playlist_id = await conn.fetchval("""
+                                        SELECT id FROM bronze_scraped_playlists
+                                        WHERE playlist_name = $1
+                                        ORDER BY scraped_at DESC
+                                        LIMIT 1
+                                    """, playlist_name)
                                 if bronze_playlist_id:
                                     self.logger.info(
                                         f"✅ Flush-time database fallback: Found playlist_id={bronze_playlist_id} "
@@ -1041,22 +1066,24 @@ class PersistencePipeline:
 
                 # Insert with RETURNING id
                 # CRITICAL: Include playlist_id and position for FK relationship and transition creation
-                bronze_id = await conn.fetchval("""
-                    INSERT INTO bronze_scraped_tracks (
-                        source, source_url, source_track_id, scraper_version,
-                        raw_json, artist_name, track_title, playlist_id, position
-                    )
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-                    ON CONFLICT (source, source_url, source_track_id) DO UPDATE SET
-                        raw_json = EXCLUDED.raw_json,
-                        artist_name = EXCLUDED.artist_name,
-                        track_title = EXCLUDED.track_title,
-                        playlist_id = COALESCE(EXCLUDED.playlist_id, bronze_scraped_tracks.playlist_id),
-                        position = COALESCE(EXCLUDED.position, bronze_scraped_tracks.position),
-                        scraped_at = NOW()
-                    RETURNING id
-                """, source, source_url, source_track_id, scraper_version, raw_json, artist_name, track_title,
-                     bronze_playlist_id, track_position)
+                # BRZ1: own savepoint, so a failing row rolls back alone (see docstring)
+                async with conn.transaction():
+                    bronze_id = await conn.fetchval("""
+                        INSERT INTO bronze_scraped_tracks (
+                            source, source_url, source_track_id, scraper_version,
+                            raw_json, artist_name, track_title, playlist_id, position
+                        )
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                        ON CONFLICT (source, source_url, source_track_id) DO UPDATE SET
+                            raw_json = EXCLUDED.raw_json,
+                            artist_name = EXCLUDED.artist_name,
+                            track_title = EXCLUDED.track_title,
+                            playlist_id = COALESCE(EXCLUDED.playlist_id, bronze_scraped_tracks.playlist_id),
+                            position = COALESCE(EXCLUDED.position, bronze_scraped_tracks.position),
+                            scraped_at = NOW()
+                        RETURNING id
+                    """, source, source_url, source_track_id, scraper_version, raw_json, artist_name, track_title,
+                         bronze_playlist_id, track_position)
 
                 results.append({'item': item, 'bronze_id': bronze_id})
 
@@ -1066,8 +1093,14 @@ class PersistencePipeline:
 
             except Exception as e:
                 error_count += 1
+                if item.get('_track_position') is not None:
+                    failed_playlist_id = (item.get('_bronze_playlist_id')
+                                          or self._playlist_id_map.get(item.get('_playlist_name')))
+                    failed_positions.setdefault(failed_playlist_id, []).append(item.get('_track_position'))
                 self.logger.error(
-                    f"❌ Error inserting bronze track #{idx}: {e}",
+                    f"❌ Error inserting bronze track #{idx} "
+                    f"({item.get('artist_name')} - {item.get('track_name') or item.get('title')}, "
+                    f"position={item.get('_track_position')}): {e}; row not saved",
                     extra={
                         'artist_name': item.get('artist_name'),
                         'track_title': item.get('track_name') or item.get('title'),
@@ -1077,11 +1110,49 @@ class PersistencePipeline:
                     exc_info=True
                 )
 
-        self.logger.info(
-            f"✓ Inserted {len(results)} tracks to bronze layer "
-            f"(skipped={skipped_count}, errors={error_count})"
-        )
-        return results
+        if failed_positions:
+            await self._flag_incomplete_playlists(conn, failed_positions)
+        return results, skipped_count, error_count
+
+    async def _flag_incomplete_playlists(self, conn, failed_positions: Dict[Any, List[Any]]):
+        """
+        BRZ1: mark bronze playlists that lost a track row in this batch.
+
+        Playlist-level behaviour: the playlist row and its good track rows stay in bronze
+        (raw evidence, and a re-scrape can complete them), but the playlist is not left
+        looking complete. Its raw_json gains
+        ``bronze_incomplete: {reason: 'track_insert_failed', failed_positions: [...]}``
+        and an error is logged. The missing position is also a gap that the bronze -> silver
+        ingest already rejects. A re-scrape of the playlist rewrites raw_json, which clears
+        the flag. raw_json that is not a JSON object is kept under ``raw``.
+        """
+        import json
+
+        for playlist_id, positions in failed_positions.items():
+            if playlist_id is None:
+                self.logger.error(
+                    f"❌ Bronze track rows at positions {sorted(positions)} failed and have no playlist id; "
+                    f"their playlist cannot be flagged incomplete"
+                )
+                continue
+            marker = json.dumps({'bronze_incomplete': {
+                'reason': 'track_insert_failed', 'failed_positions': sorted(positions),
+            }})
+            try:
+                async with conn.transaction():  # savepoint
+                    await conn.execute("""
+                        UPDATE bronze_scraped_playlists
+                        SET raw_json = (CASE WHEN jsonb_typeof(raw_json) = 'object' THEN raw_json
+                                             ELSE jsonb_build_object('raw', raw_json) END) || $2::jsonb
+                        WHERE id = $1
+                    """, playlist_id, marker)
+                self.stats['bronze_playlists_incomplete'] += 1
+                self.logger.error(
+                    f"❌ Playlist {playlist_id} is incomplete in bronze: track rows at positions "
+                    f"{sorted(positions)} could not be saved; flagged bronze_incomplete"
+                )
+            except Exception as e:
+                self.logger.error(f"❌ Could not flag bronze playlist {playlist_id} incomplete: {e}")
 
     async def _insert_bronze_playlists_batch(self, conn, batch: List[Dict[str, Any]]):
         """
@@ -1156,7 +1227,6 @@ class PersistencePipeline:
                 f"(current_bronze_playlist_id updated, map size={len(self._playlist_id_map)})"
             )
 
-        self.logger.info(f"✓ Inserted {len(results)} playlists to bronze layer (total)")
         return results
 
     async def _insert_artists_batch(self, conn, batch: List[Dict[str, Any]]):
@@ -1782,6 +1852,7 @@ class PersistencePipeline:
             self.logger.info(f"  Bronze playlists written: {self.stats['bronze_playlists_written']}")
             self.logger.info(f"  Bronze tracks queued: {self.stats['bronze_tracks_queued']}")
             self.logger.info(f"  Bronze tracks written: {self.stats['bronze_tracks_written']}")
+            self.logger.info(f"  Bronze playlists flagged incomplete: {self.stats['bronze_playlists_incomplete']}")
             self.logger.info(f"  Pipeline records written (all tables): {self.stats['records_written']}")
             self.logger.info(f"  ❌ Items failed: {self.stats['failed_items']}")
             self.logger.info(f"  🚨 Silent failures detected: {self.stats.get('silent_failures', 0)}")
