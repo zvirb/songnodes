@@ -1,5 +1,5 @@
 /**
- * DateRange (design system 1.3.0, Inputs).
+ * DateRange (design system 1.3.0, Inputs; 1.7.0: outcome always primary, two stacked mark codes).
  *
  * The calendar popover for a from–to span: two months (Monday first), presets beside them, a key
  * for the page's day marks, and the range in words with its day count. Mirrors the markup, ARIA
@@ -266,7 +266,8 @@ export const DateRange = React.forwardRef<HTMLDivElement, DateRangeProps>(({
                           if (!c) return <td key={`b${i}`} role="gridcell" />;
                           const r = rangeOf(c.iso);
                           const mk = byDay.get(c.iso) ?? [];
-                          const code = mk.find((x) => x.code);
+                          // Up to two coded marks show as stacked codes (DR-047); every mark is in the name and title.
+                          const codes = mk.filter((x) => x.code).slice(0, 2);
                           const dot = mk.find((x) => !x.code);
                           const tip = [...mk.map((x) => x.name), ...(c.iso === today ? ['Today'] : [])].join(' · ');
                           return (
@@ -280,14 +281,15 @@ export const DateRange = React.forwardRef<HTMLDivElement, DateRangeProps>(({
                                 data-range={r ?? undefined}
                                 data-today={c.iso === today ? '' : undefined}
                                 aria-current={c.iso === today ? 'date' : undefined}
-                                data-mark={code ? '' : undefined}
+                                data-mark={codes.length ? '' : undefined}
+                                data-marks={codes.length > 1 ? '2' : undefined}
                                 title={tip || undefined}
                                 aria-label={nameOf(c.iso, r)}
                                 onClick={() => pick(c.iso)}
                                 onKeyDown={(e) => onDayKey(e, c.iso)}
                               >
                                 <span className="sn-date-range__n">{c.d}</span>
-                                {code ? <span className="sn-date-range__mark" aria-hidden="true">{code.code}</span> : null}
+                                {codes.map((x) => <span key={`${x.kind}|${x.code}`} className="sn-date-range__mark" aria-hidden="true">{x.code}</span>)}
                                 {dot ? <span className="sn-date-range__dot" aria-hidden="true" /> : null}
                               </button>
                             </td>
@@ -326,7 +328,8 @@ export const DateRange = React.forwardRef<HTMLDivElement, DateRangeProps>(({
             : 'No dates picked'}
         </p>
         <button type="button" className="sn-btn sn-btn--quiet" onClick={() => { emit([null, null], null); setSaid('Dates cleared.'); }}>Clear</button>
-        <button type="button" className="sn-btn" aria-disabled={!from} onClick={() => { if (from) onApply([from, to ?? from]); }}>{outcome}</button>
+        {/* Always the filled primary, inside the popover only (DR-044: the one exception to one primary per view). */}
+        <button type="button" className="sn-btn sn-btn--primary" aria-disabled={!from} onClick={() => { if (from) onApply([from, to ?? from]); }}>{outcome}</button>
       </div>
       <p className="sn-sr" role="status" aria-live="polite">{said}</p>
     </div>

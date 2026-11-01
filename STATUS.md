@@ -2146,3 +2146,14 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: E2E and preview screenshots (no Docker or browser here).
 - Next: DSQ1B (React DateRange outcome primary and stacked codes; the Q18 inset check, which does not exist yet).
 <!-- SLOT:DSQ1A END -->
+
+<!-- SLOT:DSQ1B BEGIN -->
+### DSQ1B: React DateRange follows the owner's answers (design system 1.7.0)
+- Start: 2026-11-01 (branch dsq1b-react-answers off dsq1a-design-answers, which needs to merge first).
+- End: 2026-11-01.
+- Changed: `ds/DateRange.tsx`: the outcome button is `sn-btn sn-btn--primary` (DR-044, Q11); a day with two coded marks renders both codes with `data-marks="2"` (DR-047, Q14), a third code stays in the name and title only. `ds/DateField.tsx` and its test: comments cite DR-045/DR-046 instead of the Q defaults (no behaviour change; Q12, Q13, Q15, Q16 were already the answers). Two new tests in `DateRange.test.tsx`.
+- Not done (Q18, DR-050): there is no text-inset check in `scripts/check_design_system.py`, `frontend/tests/e2e/design-rules.spec.ts` or the design-system build to switch from warn to fail. Inset needs a rendered (Playwright) check, which cannot run here (no Docker or browsers), so none was landed.
+- Checks run: tsc, oxlint (exit 0; DateRange.tsx warnings are older), vitest 413/413, vite build, `sync-design-system.sh --check`, `check_design_system.py --check`, scope guard. Rebased on DSQ1A 1.7.0 (DR-043 to DR-050).
+- Checks not run: E2E (no Docker daemon).
+- Next: a package that adds a rendered text-inset check (4–7px fails) to `design-rules.spec.ts`, run on a Docker host, fixing or listing what it finds.
+<!-- SLOT:DSQ1B END -->

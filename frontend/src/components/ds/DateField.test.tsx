@@ -175,7 +175,7 @@ describe('DateRangeField', () => {
     expect(spy).toHaveBeenLastCalledWith(['2026-11-09', '2026-11-13']);
     expect(values('From')).toEqual(['9', '11', '2026']);
     expect(shown('To')).toBe('Fri 13 Nov 2026');
-    // Q12 default: the popover stays open after the second pick.
+    // DR-045: the popover stays open after the second pick.
     expect(dialog.querySelector('.sn-date-range__sum')?.textContent).toBe('Mon 9 – Fri 13 Nov 2026 · 5 days');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Use these dates' }));
     expect(screen.queryByRole('dialog')).toBeNull();
