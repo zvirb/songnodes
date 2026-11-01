@@ -1,4 +1,4 @@
-<!-- @dsCard group="Inputs" height=349 subtitle="Label with help, optional marking, character count, error with aria-invalid, read-only, disabled with reason, multi-line" -->
+<!-- @dsCard group="Inputs" height=349 subtitle="Label with its help in an InfoTip, optional marking, character count, error with aria-invalid, read-only, disabled with reason, multi-line" -->
 <!doctype html>
 <html>
 <head><meta charset="utf-8"><title>TextField — preview</title>
@@ -8,28 +8,24 @@
 <div class="sn-preview" id="root">
   <div class="pv-grid">
     <div class="sn-field sn-text-field">
-      <label class="sn-text-field__label" for="tf-name"><span>Set name</span><span class="sn-text-field__count" id="tf-name-count" aria-hidden="true">18 / 40</span></label>
-      <span class="sn-field__help" id="tf-name-help">Shown on the saved sets list and in the TIDAL playlist title.</span>
+      <div class="sn-text-field__head"><label class="sn-text-field__label" for="tf-name"><span>Set name</span></label><span class="sn-infotip"><button type="button" class="sn-infotip__btn" aria-label="About set name" aria-expanded="false" aria-controls="tf-name-help" aria-describedby="tf-name-help" data-icon="info"></button><span class="sn-tooltip sn-infotip__tip" id="tf-name-help" role="tooltip" hidden>Shown on the saved sets list and in the TIDAL playlist title.</span></span><span class="sn-text-field__count" id="tf-name-count" aria-hidden="true">18 / 40</span></div>
       <input class="sn-input" id="tf-name" value="Peak time Friday 3" maxlength="60" data-max="40" aria-describedby="tf-name-help tf-name-sr">
       <span class="sn-sr" id="tf-name-sr" aria-live="polite"></span>
     </div>
 
     <div class="sn-field sn-text-field">
-      <label class="sn-text-field__label" for="tf-venue"><span>Venue <span class="sn-text-field__optional">(optional)</span></span></label>
-      <span class="sn-field__help" id="tf-venue-help">For your notes only, for example “Miscellania, Sat 24 Oct”.</span>
+      <div class="sn-text-field__head"><label class="sn-text-field__label" for="tf-venue"><span>Venue <span class="sn-text-field__optional">(optional)</span></span></label><span class="sn-infotip"><button type="button" class="sn-infotip__btn" aria-label="About venue" aria-expanded="false" aria-controls="tf-venue-help" aria-describedby="tf-venue-help" data-icon="info"></button><span class="sn-tooltip sn-infotip__tip" id="tf-venue-help" role="tooltip" hidden>For your notes only, for example “Miscellania, Sat 24 Oct”.</span></span></div>
       <input class="sn-input" id="tf-venue" aria-describedby="tf-venue-help" placeholder="">
     </div>
 
     <div class="sn-field sn-text-field">
-      <label class="sn-text-field__label" for="tf-isrc"><span>ISRC</span></label>
-      <span class="sn-field__help" id="tf-isrc-help">12 characters, letters and numbers, for example GBCEN2300412.</span>
+      <div class="sn-text-field__head"><label class="sn-text-field__label" for="tf-isrc"><span>ISRC</span></label><span class="sn-infotip"><button type="button" class="sn-infotip__btn" aria-label="About ISRC" aria-expanded="false" aria-controls="tf-isrc-help" aria-describedby="tf-isrc-help" data-icon="info"></button><span class="sn-tooltip sn-infotip__tip" id="tf-isrc-help" role="tooltip" hidden>12 characters, letters and numbers, for example GBCEN2300412.</span></span></div>
       <input class="sn-input sn-input--data" id="tf-isrc" value="GBCEN23004" aria-invalid="true" aria-describedby="tf-isrc-help tf-isrc-err" spellcheck="false" autocapitalize="characters">
       <span class="sn-field__error" id="tf-isrc-err">ISRC must be 12 characters. This one has 10.</span>
     </div>
 
     <div class="sn-field sn-text-field">
-      <label class="sn-text-field__label" for="tf-sid"><span>Spotify ID</span></label>
-      <span class="sn-field__help" id="tf-sid-help">Read-only: set by the Spotify match. Unlink the track to change it.</span>
+      <div class="sn-text-field__head"><label class="sn-text-field__label" for="tf-sid"><span>Spotify ID</span></label><span class="sn-infotip"><button type="button" class="sn-infotip__btn" aria-label="About Spotify ID" aria-expanded="false" aria-controls="tf-sid-help" aria-describedby="tf-sid-help" data-icon="info"></button><span class="sn-tooltip sn-infotip__tip" id="tf-sid-help" role="tooltip" hidden>Read-only: set by the Spotify match. Unlink the track to change it.</span></span></div>
       <input class="sn-input sn-input--data" id="tf-sid" value="2b8fOow8UzyDFAE27YhOZM" readonly aria-describedby="tf-sid-help">
     </div>
 
@@ -48,6 +44,8 @@
 </div>
 <script>
   var S = window.SongNodes;
+  document.querySelectorAll('[data-icon]').forEach(function (b) { b.innerHTML = S.icon(b.getAttribute("data-icon")); b.removeAttribute("data-icon"); });
+  S.infoTips();
   document.getElementById("tf-pl-why").innerHTML = S.icon("lock", { size: 14 }) + '<span>Connect TIDAL in Services to name the playlist.</span>';
   function count(el) {
     var max = +el.dataset.max, n = el.value.length, out = document.getElementById(el.id + "-count"), sr = document.getElementById(el.id + "-sr");

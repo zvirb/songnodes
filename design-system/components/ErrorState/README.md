@@ -36,6 +36,9 @@ Explains a failed load in a panel: what happened, what it affects, whether retry
 - A single request (not a staged load) keeps the 15 s read / 30 s write timeout and the *Timeout* variant.
 - A refresh that fails never becomes an ErrorState while data is on screen: the data stays and the `FreshnessStamp` turns ▲ ("Couldn’t refresh, showing 24 Oct, 06:00 AEDT") with Retry (07-feedback-status).
 
+## Data-caused errors link to their source (1.6.0)
+When the cause is missing or wrong data rather than a connection (a track that is not in the library, a set that was deleted, a source with no match), the error ends with a source link to the page where that is changed, as every warning does (`Banner`): "This set was deleted on another device. Open Set builder · Saved sets". Connection errors keep Retry and need no link. An ErrorState that stands in for a region's data is never dismissable.
+
 ## Content rules
 Say what happened, what is safe, what to do next. No apologies, no "Oops", no exclamation marks, no raw codes as the title (the code goes in the text or reference). Reference IDs in `data-s` mono: "ref 7f3a-92c1".
 

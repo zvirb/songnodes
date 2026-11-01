@@ -86,7 +86,7 @@ One icon, one meaning. If the meaning is not in this table, use text.
 | `download` | Download a file | Export actions |
 | `ellipsis` | More actions (page, header) | `OverflowMenu` in `AppHeader`, `PageHeader` |
 | `ellipsis-vertical` | More actions (row, card) | `DataTable` rows, card footers |
-| `external-link` | Opens another site | Beatport, TIDAL, Grafana links |
+| `external-link` | Opens another site; as a go icon's badge, opens that SongNodes page in a new tab (1.6.0) | Beatport, TIDAL, Grafana links; `SongNodes.goIcon` |
 | `eye` | Show | `SecretField`, graph layers |
 | `eye-off` | Hide | `SecretField`, graph layers |
 | `file-input` | Import a file | `FileDrop`, import actions |
@@ -103,7 +103,7 @@ One icon, one meaning. If the meaning is not in this table, use text.
 | `history` | Run history | `LogPage`, recent |
 | `house` | Home | Drawer first row |
 | `image` | Image | `MediaViewer`, artwork placeholders |
-| `info` | Information | `InlineMessage` info, `Banner` info |
+| `info` | Information; the `InfoTip` button, "about this" (1.6.0) | `Banner` info, `InfoTip` |
 | `keyboard` | Keyboard shortcuts | More menu, `ShortcutSheet` |
 | `layers` | Graph layers | `GraphControls` |
 | `layout-grid` | Grid view | View switch |
@@ -180,11 +180,22 @@ No emoji anywhere in UI text, buttons, tabs, placeholders, empty states, toasts 
 | ⚡ energy, 📊 stats, 🔄 refresh, ⚙ settings | `gauge`, `chart-column`, `refresh-cw`, `settings` |
 | 🎉 success flourish | Nothing |
 
+## Go icons (1.6.0)
+
+Imported from BeanAlliance v4.20–v4.20.2 (Markus, 1 Nov 2026), drawn from Lucide here instead of Phosphor.
+
+- A **go icon** is the target module's own icon (the module table above) drawn at 84% toward the top left, with a half-size `external-link` badge in its lower right corner. Only the badge's own corner is cut from the module icon, so both read. It means **opens that page in a new tab**.
+- One helper makes it from any module: `SongNodes.goIcon("harmony")`. No separate files; a new module gets its go icon for free.
+- **Where:** it leads every source link to another page (`sn-link--src`, `SongNodes.sourceLink`), before the words: `[go icon] Add keys in Key & mood`. A source on the same page has no icon. A source outside SongNodes links to the SongNodes page where that data comes in, so it takes that page's go icon. It is not used on ordinary navigation links, which open in the same tab.
+- **Colour:** the target module's colour (`--m` through `sn-m-<key>`, DR-005), glyph and badge alike; the link's words are the same colour (DR-009). Every module colour holds 3:1 as an icon on every ground in every theme.
+- Size follows the text (18px default); the badge's stroke is thickened so it does not look thinner than the glyph.
+- Decorative: `aria-hidden="true"`; the link text says where it goes and "(opens in a new tab)" is in `sn-sr` text.
+
 ## Icon-only controls and accessible names
 
 - Decorative icons (next to a label): `aria-hidden="true"` and `focusable="false"` (the `SongNodes.icon()` default).
 - Meaningful standalone icons (not in a button): `SongNodes.icon(name, { label })` gives `role="img"` and `aria-label`.
-- Icon-only buttons: the name goes on the `button` (`aria-label="Remove Overmono – So U Kno from set"`), the SVG stays hidden. Add a `Tooltip` with the same words.
+- Icon-only buttons: the name goes on the `button` (`aria-label="Remove Overmono – So U Kno from set"`), the SVG stays hidden. Add a `Tooltip` with the same words. Two exceptions (1.6.0): the `InfoTip` button has no separate Tooltip or `title`, because its own tip carries the words; a dismissed warning's icon (`.sn-dismissed`) carries its name in `aria-label` and `title` ("Show warning: TIDAL disconnected").
 - Never rely on `title` alone for a name.
 - Toggle buttons keep one name and change `aria-pressed`; do not swap the label between "Show" and "Hide".
 

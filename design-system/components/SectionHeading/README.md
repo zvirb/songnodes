@@ -17,7 +17,7 @@ A heading for a section inside a page: the thin–bold title at `title-m` or `ti
 ```
 
 ## Content rules
-Lead-in in sentence case with a colon, then the bold title: the lead names the module or object, the title names this section. Give the count its noun when it isn't obvious ("47 tracks"). A caveat says in one sentence what limits the data, without "Note:". Right-side links go to the module that owns the full list, in that module's colour ("See all sets").
+Lead-in in sentence case with a colon, then the bold title: the lead names the module or object, the title names this section. Give the count its noun when it isn't obvious ("47 tracks"). A caveat says in one sentence what limits the data, without "Note:". A caveat that only explains (how the figure is worked out, what a scale means) is an `InfoTip` after the title instead (1.6.0); the `__caveat` line stays for a fact about the data right now that the person should see without asking ("47 tracks need a check"). Right-side links go to the module that owns the full list, in that module's colour ("See all sets").
 
 ## Accessibility
 Use the real heading level for the page outline (h2 under the page h1, h3 inside that). The count follows the heading in reading order rather than sitting inside it. One action per heading.

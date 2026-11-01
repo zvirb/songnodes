@@ -2,6 +2,7 @@ import logging
 import os
 from datetime import date, datetime, timezone
 from typing import Any, Dict, Optional, Tuple
+from uuid import UUID
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from . import jobs
@@ -130,3 +131,48 @@ async def scrape_targets(conn) -> Dict[str, Any]:
     logger.info('scrape_targets run: selected=%d, enqueued=%d, skipped_existing=%d', selected, enqueued, skipped_existing)
 
     return {'selected': selected, 'enqueued': enqueued, 'skipped_existing': skipped_existing}
+
+
+async def record_playlists_found(conn, payload: Dict[str, Any], bronze_playlists: int) -> Optional[int]:
+    """Write `target_tracks.playlists_found` once a scrape job for a target has its result.
+
+    The count is the latest search's count, not a running total: the bronze playlists persisted by every
+    succeeded scrape job for this target created since the scheduler last stamped `last_searched` (one job per
+    source), plus this job's own. A running total would grow on every weekly re-search, because the scraper
+    upserts a playlist it has seen before and reports it again.
+
+    Retries cannot double count: the runner calls the handler, this update and `jobs.complete` in one
+    transaction, so a failed attempt rolls the update back, and the sum only reads jobs that already succeeded
+    (this job is added once, by its own count). A job from an older search (created before `last_searched`)
+    leaves the count alone. The target row is locked first, so two source jobs finishing together see each
+    other's committed result. The scraper reports playlists the source search returned for the target's
+    query; it does not check each tracklist for the track itself.
+
+    Returns the new count, or None when the payload names no target or the target was not updated.
+    """
+    try:
+        target_id = UUID(str(payload['target_track_id']))
+    except (KeyError, ValueError):
+        return None   # not a target scrape (or a hand-made payload with a bad id): nothing to record
+    job_id = payload.get('job_id')
+    job_id = UUID(str(job_id)) if job_id else None
+    async with conn.transaction():
+        locked = await conn.fetchrow(
+            'SELECT last_searched FROM target_tracks WHERE track_id = $1::uuid FOR UPDATE', target_id)
+        if locked is None:
+            return None
+        return await conn.fetchval("""
+            UPDATE target_tracks t
+            SET playlists_found = $2 + COALESCE((
+                    SELECT SUM(COALESCE((j.result->>'bronze_playlists')::int, 0))
+                    FROM ingestion_jobs j
+                    WHERE j.kind = 'scrape' AND j.status = 'succeeded'
+                      AND j.payload->>'target_track_id' = t.track_id::text
+                      AND (t.last_searched IS NULL OR j.created_at >= t.last_searched)
+                      AND ($3::uuid IS NULL OR j.id <> $3::uuid)), 0),
+                updated_at = NOW()
+            WHERE t.track_id = $1::uuid
+              AND ($3::uuid IS NULL OR t.last_searched IS NULL OR NOT EXISTS (
+                    SELECT 1 FROM ingestion_jobs own WHERE own.id = $3::uuid AND own.created_at < t.last_searched))
+            RETURNING t.playlists_found
+        """, target_id, int(bronze_playlists), job_id)

@@ -85,9 +85,17 @@ Every word in SongNodes and the music library reads like a knowledgeable booth-m
 
 ## Caveats and method text
 
-- A one-line caveat lives in the `SectionHeading` subtitle: "Energy is Mixed In Key's 1–10 scale; 12 tracks are estimates."
-- Longer method text ("How the set is built", "How confidence is scored") goes in a `Disclosure` placed directly under the chart or table it qualifies. Never above the data and never in a separate help page.
+**Explain once, then get out of the way** (1.6.0, imported from BeanAlliance v4.18 and v4.19.1, Markus 1 Nov 2026). Text a person reads once and then knows is an `InfoTip`: one `info` button after the heading, label or figure it explains, with the words moved verbatim into a tooltip (40 words or fewer) or a panel (more, or a list).
+
+- A caveat that always holds, or how a figure is worked out ("Energy is Mixed In Key's 1–10 scale; 12 tracks are estimates"), is an InfoTip after the `SectionHeading` title, the column header or the `FigureTile` label. A caveat about today may be one too ("Plays from 3RRR are a day behind this week").
+- Longer method text ("How the set is built", "How confidence is scored") is the InfoTip's panel form after the heading of the chart or table it qualifies. Never above the data and never in a separate help page. Text already behind a closed `Disclosure` stays there.
+- Every field's help is an InfoTip after its label (12-inputs).
+- What stays as text: anything the person must act on or must not miss (a warning, an error, a clash, a locked slot's reason), and a one-line subtitle. A warning is a `Banner` or `InlineMessage` and ends with its source link.
 - Footnotes reference a column by its header text, not by colour.
+
+## Warnings name where to fix them
+
+A warning's last words are a link to the page, and the place on it, where its cause is changed (1.6.0, imported from BeanAlliance v4.19): "Add keys in Key & mood", "Open Settings · Streaming services", "Open Sources · Radio". The sentence runs fact, consequence, link. Never "Click here", "Details" or a bare icon. Another page opens in a new tab, led by its go icon; a place on this page is a plain same-page link. A cause outside SongNodes names the service and links to the page where that data comes in. Rules in `Banner`.
 
 ## External identifiers
 

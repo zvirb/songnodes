@@ -112,8 +112,15 @@ export interface BannerProps {
   text?: ReactNode;
   /** One or two actions (secondary buttons or a module button). */
   actions?: ReactNode;
-  /** Dismiss handler; not allowed for status "bad". Dismissal is remembered per person. */
+  /** Dismiss handler (every status since 1.6.0, "bad" included). A dismissed warn or bad banner shrinks to its status icon in
+   *  place (`.sn-dismissed`); it shows again the next day (Melbourne), when its fact changes, or, for "bad", when the blocked
+   *  action is tried again. Kept on this device with `SongNodes.dismissal`; nothing is recorded. */
   onDismiss?: () => void;
+  /** Stable key of the fact, including its value ("tidal-token:2026-11-02"), so a changed fact shows again. Required with onDismiss. */
+  factKey?: string;
+  /** warn and bad: the link that ends the sentence, to the page and place where the cause is changed (1.6.0).
+   *  Another module opens in a new tab led by its go icon; omit only when `actions` fixes it here in one step. */
+  source?: SourceLinkProps;
   /** Full-bleed under the page header (no side borders or radius). */
   page?: boolean;
 }
@@ -123,8 +130,13 @@ export interface InlineMessageProps {
   status: FeedbackStatus;
   /** Message text; bold the key part with <strong>. */
   children: ReactNode;
-  /** Optional link that jumps to the thing ("Show them"). No dismiss. */
+  /** Optional link that jumps to the thing ("Show them"). For warn and bad this is the source link (`source`). */
   action?: ReactNode;
+  /** warn and bad (1.6.0): where the cause is changed. */
+  source?: SourceLinkProps;
+  /** warn and bad, boxed only (1.6.0): dismiss to the status icon in place, until the next day or the fact changes. */
+  onDismiss?: () => void;
+  factKey?: string;
   /** Tinted box for card sections; plain under fields and in rows. */
   boxed?: boolean;
   /** id so a field can point aria-describedby at the message. */
@@ -279,4 +291,29 @@ export interface PopoverProps {
   align?: "start" | "end";
   /** Open below (default) or above. */
   side?: "bottom" | "top";
+}
+
+/** A source link (1.6.0, BeanAlliance v4.19): the last words of a warning, naming the page and place where its cause is changed. */
+export interface SourceLinkProps {
+  /** Words that name the page and place: "Open Settings · Streaming services", "Add keys in Track detail". Never "Click here" or "Details". */
+  text: string;
+  /** The route, opened at the record, tab or field (`/settings/streaming-services`, `/tracks/123?tab=analysis`). */
+  href: string;
+  /** Module that owns the target page: its colour (DR-009) and, for another page, its go icon. */
+  module?: ModuleKey;
+  /** The place is on this page: a same-page link that scrolls to the control and focuses it, with no icon and no new tab. */
+  samePage?: boolean;
+}
+
+/** InfoTip (1.6.0, BeanAlliance v4.18 / v4.19.1): an explanatory notice shrunk to one info button.
+ *  The words move verbatim; 40 words or fewer is the tooltip form, more (or a list) the panel form. */
+export interface InfoTipProps {
+  /** Unique id of the tip (aria-controls, aria-describedby). */
+  id: string;
+  /** The button's name: "About" + the subject ("About the energy tiers", "How the set is built"). Never "Info" or "Help" alone. */
+  about: string;
+  /** Tooltip form: the words, plain text, 40 words or fewer. Opens on hover, keyboard focus and tap. */
+  text?: string;
+  /** Panel form: a title and the content (may hold a list, links, mono file names). Opens on click, tap, Enter or Space only. */
+  panel?: { title: string; content: ReactNode };
 }

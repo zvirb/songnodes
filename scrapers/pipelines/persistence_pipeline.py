@@ -422,9 +422,12 @@ class PersistencePipeline:
                 if len(self.item_batches['bronze_tracks']) >= self.batch_size:
                     await self._flush_batch('bronze_tracks')
         else:
+            # A standalone track has no bronze row, so it cannot reach silver (no layer skipping).
+            # Leave the title::artist slot free for the positioned item that follows it.
             self.logger.debug(
-                f"⊘ Track '{track_name}' skipped for bronze_tracks (no playlist context - standalone track)"
+                f"⊘ Track '{track_name}' skipped for bronze_tracks and silver (no playlist context - standalone track)"
             )
+            return
 
         # Silver and artist writes stay de-duplicated on title::artist within the job.
         if track_key in self.processed_items['tracks']:
@@ -506,6 +509,8 @@ class PersistencePipeline:
         self.item_batches['tracks'].append(silver_item)
 
         if len(self.item_batches['tracks']) >= self.batch_size:
+            # Bronze first, so every queued silver track already has its _bronze_id.
+            await self._flush_batch('bronze_tracks')
             await self._flush_batch('tracks')
 
     async def _process_playlist_item(self, item: Dict[str, Any]):
