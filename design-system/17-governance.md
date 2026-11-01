@@ -289,7 +289,7 @@ Automated (CI on SongNodes, script on the design system):
 | Page container | `scripts/check_design_system.py` | A `<main>` without `sn-page__main`, `sn-page-error` or `sn-page-auth` (exception comment allowed only for the graph canvas) |
 | Undefined classes | `scripts/check_design_system.py` | An `sn-*` class in app code that no stylesheet defines; existing debt is listed in `frontend/design-system-layout-baseline.txt`, which may only shrink |
 | Page gutter (rendered) | Playwright `design-rules.spec.ts` on every shell route except the graph | The page has no side gutter, or visible text starts within the gutter of the window edge |
-| Text inset (rendered, DR-050) | Playwright on every shell route (SongNodes: not built yet, follow-up to DSQ1) | Text in a box that draws an edge sits 4–7px from that edge (tight) or closer; the PR is blocked until the inset is at least `space-2` (8px) |
+| Text inset (rendered, DR-050) | Playwright `design-rules.spec.ts` on every shell route and `/sources/import` at 390 and 1440px (SongNodes: built in INS1; geometry and exclusions in `frontend/src/lib/textInset.ts`) | Text in a box that draws an edge sits 4–7px from that edge (tight) or closer; the PR is blocked until the inset is at least `space-2` (8px) |
 
 Manual: run the pre-release checklist in Accessibility and quality (section 09) before each minor or major release.
 
