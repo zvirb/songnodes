@@ -368,7 +368,7 @@
       (key.length ? '<ul class="sn-date-range__key" aria-label="Key">' + key.map(function (mk) { return "<li>" + (mk.code ? '<span class="sn-date-range__code">' + esc(mk.code) + "</span>" : '<span class="sn-date-range__dot" aria-hidden="true"></span>') + " " + esc(mk.kind) + "</li>"; }).join("") + '<li><span class="sn-date-range__now-bar" aria-hidden="true"></span> Today</li></ul>' : "") +
       '<div class="sn-date-range__foot"><p class="sn-date-range__sum"></p>' +
       '<button type="button" class="sn-btn sn-btn--quiet" data-dr="clear">Clear</button>' +
-      '<button type="button" class="sn-btn" data-dr="apply">' + esc(opts.outcome || "Use these dates") + "</button></div>" +
+      '<button type="button" class="sn-btn sn-btn--primary" data-dr="apply">' + esc(opts.outcome || "Use these dates") + "</button></div>" +
       '<p class="sn-sr" role="status" aria-live="polite" id="' + uid + '-live"></p>';
     el.setAttribute("role", el.getAttribute("role") || "dialog");
     el.setAttribute("aria-labelledby", uid + "-t");
@@ -398,14 +398,15 @@
       var rows = C.month(y, m).map(function (w) {
         return "<tr>" + w.map(function (c) {
           if (!c) return '<td role="gridcell" class="sn-date-range__blank"></td>';
-          var r = rangeOf(c.iso), mk = marks[c.iso] || [], code = mk.filter(function (x) { return x.code; })[0], dot = mk.filter(function (x) { return !x.code; })[0];
+          // up to two coded marks show as stacked codes (DR-047); every mark is in the name and title
+          var r = rangeOf(c.iso), mk = marks[c.iso] || [], codes = mk.filter(function (x) { return x.code; }).slice(0, 2), dot = mk.filter(function (x) { return !x.code; })[0];
           var tip = mk.map(function (x) { return x.name; }).concat(c.iso === today ? ["Today"] : []).join(" · ");
           return '<td role="gridcell"' + (r ? ' aria-selected="true"' : "") + ">" +
             '<button type="button" class="sn-date-range__day" data-iso="' + c.iso + '" tabindex="' + (c.iso === focusIso ? 0 : -1) + '"' +
-            (r ? ' data-range="' + r + '"' : "") + (c.iso === today ? ' data-today aria-current="date"' : "") + (code ? ' data-mark' : "") +
+            (r ? ' data-range="' + r + '"' : "") + (c.iso === today ? ' data-today aria-current="date"' : "") + (codes.length ? ' data-mark' : "") + (codes.length > 1 ? ' data-marks="2"' : "") +
             (tip ? ' title="' + esc(tip) + '"' : "") + ' aria-label="' + esc(nameOf(c.iso, r)) + '">' +
             '<span class="sn-date-range__n">' + c.d + "</span>" +
-            (code ? '<span class="sn-date-range__mark" aria-hidden="true">' + esc(code.code) + "</span>" : "") +
+            codes.map(function (x) { return '<span class="sn-date-range__mark" aria-hidden="true">' + esc(x.code) + "</span>"; }).join("") +
             (dot ? '<span class="sn-date-range__dot" aria-hidden="true"></span>' : "") + "</button></td>";
         }).join("") + "</tr>";
       }).join("");
@@ -629,7 +630,7 @@
   };
 
   window.SongNodes = {
-    version: "1.6.0", DOMAIN_MAP: DOMAIN_MAP,
+    version: "1.7.0", DOMAIN_MAP: DOMAIN_MAP,
     locale: LOCALE, timeZone: TZ,
     modules: MODULES, module: function (k) { for (var i = 0; i < MODULES.length; i++) if (MODULES[i].key === k) return MODULES[i]; return null; },
     icons: ICONS, icon: icon, iconNames: Object.keys(ICONS),

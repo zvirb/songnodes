@@ -139,6 +139,8 @@ Scores are 0–100 (normalise 0–1 scores from `utils/harmonicMatching.ts` ×10
 | 40–59 | Workable with care | possible ○ |
 | < 40 | Hard mix | clash ✕ |
 
+The edges are 80/60/40 until enough accepted suggestions exist, then fitted to Markus's own accepted picks (DR-043, 18-music-domain).
+
 This replaces `getScoreColor` in `components/IntelligentBrowser/utils.ts` (#7ED321 / #F5A623 / #FFA500).
 
 ## Headline figures

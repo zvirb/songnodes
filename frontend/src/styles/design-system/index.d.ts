@@ -658,7 +658,7 @@ export interface DateRangeProps {
   value: [string | null, string | null];
   /** Called after each pick, preset or Clear; presetId is the pressed preset, or null. */
   onChange: (value: [string | null, string | null], presetId: string | null) => void;
-  /** The outcome button: called with the range when pressed (To defaults to From). */
+  /** The outcome button (always the filled primary, DR-044): called with the range when pressed (To defaults to From). */
   onApply: (value: [string, string]) => void;
   /** Escape or the close button; return focus to the control that opened it. */
   onClose: () => void;
@@ -668,7 +668,7 @@ export interface DateRangeProps {
   outcome?: string;
   /** Presets in this order; default ["last-7-days", "last-30-days", "this-year"]; week presets are optional. Then the page's own spans. */
   presets?: (DateRangePresetId | DateRangePreset)[];
-  /** Day marks; the key lists only the kinds used here. */
+  /** Day marks; the key lists only the kinds used here. A day with two coded marks shows both codes stacked (DR-047). */
   marks?: DateRangeMark[];
   /** "Today" as a Melbourne ISO date; defaults to SongNodes.calendar.today(). */
   today?: string;

@@ -112,7 +112,7 @@ Edge types (`adjacency`, `similarity`, `collaboration`, `genre`, `key_compatibil
 
 ## Recommendation scores
 
-Scores 0–100 (normalise 0–1 ×100). Bands: ≥ 80 Excellent match (perfect ●), 60–79 Good match (compatible ◐), 40–59 Workable with care (possible ○), < 40 Hard mix (clash ✕). Show the band word in lists, the number and its breakdown (harmonic, BPM, energy, genre, played together) in detail. Sort by score, ties by "played together" count.
+Scores 0–100 (normalise 0–1 ×100). Bands: ≥ 80 Excellent match (perfect ●), 60–79 Good match (compatible ◐), 40–59 Workable with care (possible ○), < 40 Hard mix (clash ✕). These 80/60/40 edges hold until enough accepted suggestions exist to fit them; then the band edges are fitted to Markus's own accepted picks (DR-043). The bands keep their names, glyphs and order; only the edges move. Show the band word in lists, the number and its breakdown (harmonic, BPM, energy, genre, played together) in detail. Sort by score, ties by "played together" count.
 
 ## Data confidence
 

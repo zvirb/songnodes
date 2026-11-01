@@ -21,12 +21,12 @@ The calendar popover for a from–to span: two months (Monday first), presets be
 | --- | --- | --- |
 | `value` * | `[string \| null, string \| null]` | [from, to] ISO dates; to is null while only From is picked. |
 | `onChange` * | `(value: [string \| null, string \| null], presetId: string \| null) => void` | Called after each pick, preset or Clear; presetId is the pressed preset, or null. |
-| `onApply` * | `(value: [string, string]) => void` | The outcome button: called with the range when pressed (To defaults to From). |
+| `onApply` * | `(value: [string, string]) => void` | The outcome button (always the filled primary, DR-044): called with the range when pressed (To defaults to From). |
 | `onClose` * | `() => void` | Escape or the close button; return focus to the control that opened it. |
 | `title` | `string` | Popover title naming what the span is for ("Plays to export"). Default "Pick the dates". |
 | `outcome` | `string` | Outcome button label, named for what it does: "Use these dates" (default), "Download CSV", "Print". |
 | `presets` | `(DateRangePresetId \| DateRangePreset)[]` | Presets in this order; default last-7-days, last-30-days, this-year; week presets are optional. Then the page's own spans. |
-| `marks` | `DateRangeMark[]` | Day marks; the key lists only the kinds used here. |
+| `marks` | `DateRangeMark[]` | Day marks; the key lists only the kinds used here. A day with two coded marks shows both codes stacked (DR-047). |
 | `today` | `string` | "Today" as a Melbourne ISO date; defaults to SongNodes.calendar.today(). |
 | `presetId` | `string \| null` | Show the pressed preset (for a value that came from one). |
 

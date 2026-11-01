@@ -34,7 +34,7 @@ Pages are built from a small set of regions on a 4px grid. These rules decide wi
 
 Any box that draws an edge (a border, a fill different from what is behind it, or an inset ring) keeps its text off that edge:
 
-- Inline (left/right): at least `space-2` (8px) for chips, tags, badges, counts and key caps; `space-3` for table cells, menu items and inputs; card and panel padding per the table above. 4–7px counts as tight; under `space-1` (4px) is a defect.
+- Inline (left/right): at least `space-2` (8px) for chips, tags, badges, counts and key caps; `space-3` for table cells, menu items and inputs; card and panel padding per the table above. 4–7px counts as tight and fails the design check, blocking the pull request until the inset is at least 8px (DR-050); under `space-1` (4px) is a defect.
 - Block (top/bottom): at least `space-0.5` (2px) of clear space above and below the glyphs. Table cells pad `space-1` top and bottom so wrapped text never sits on the row rule.
 - Small labelled objects (tags, pills, counts, key caps, badges) never wrap; a group of them wraps instead.
 - On a phone no text runs closer than the 16px gutter to the screen edge, unless it is inside a box that scrolls sideways. One exception: the AppHeader bar pads `space-2` (8px) under a 560px container so its actions fit (DR-032).

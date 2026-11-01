@@ -28,7 +28,7 @@ Every control says what it does, shows its state without colour alone, and can b
 
 | Variant | Class | Use | Limit |
 |---|---|---|---|
-| Primary | `.sn-btn--primary` | The single main action of the view: "Build set", "Save set", "Import 24 tracks" | One per view (dialog counts as its own view) |
+| Primary | `.sn-btn--primary` | The single main action of the view: "Build set", "Save set", "Import 24 tracks" | One per view (dialog counts as its own view). One exception: the `DateRange` outcome button is always primary, inside its popover or sheet (DR-044) |
 | Default | `.sn-btn` | Other actions: "Try another take", "Copy tracklist" | Up to two beside the primary |
 | Module | `.sn-btn--mod` in `.sn-m-<key>` | "Open in Set builder": go to or act in that module | Inside tonal cards and launcher areas |
 | Quiet | `.sn-btn--quiet` | Toolbar and row actions, "Cancel" | Any |
@@ -93,9 +93,9 @@ Never use a `Switch` inside a form that has a Save button; never use a `Checkbox
 Added in 1.3.0, ported from the BeanAlliance `DateRange` (v4.17.3) and fitted to SongNodes.
 
 - Typing is always possible; the calendar is the second way in. A span in a form or filter is a `DateField` range with its calendar button; a span behind an export or print is `DateRange` opened from that button, with the outcome named for what it does ("Download CSV", "Print").
-- Picking: the first pick is From, the second To; picking before From swaps them. A preset sets both and leaves the popover open; typing or picking a day unpresses it.
-- Presets in order: Last 7 days · Last 30 days · This year, then the page's own spans. Pages that work by week may add Last week · This week · Next week (Monday–Sunday, Melbourne dates).
-- Selection is `brand-soft` with `brand`-edged ends, never a solid fill; today is amber `now` plus the word. Weekends are not greyed (club nights are weekends). Day marks are a code, an underline and a name, never a status colour.
+- Picking: the first pick is From, the second To; picking before From swaps them. A preset sets both and leaves the popover open; typing or picking a day unpresses it. The popover stays open until the outcome button (DR-045), whose button is always the filled primary inside the popover or sheet (DR-044).
+- Presets in order: Last 7 days · Last 30 days · This year, then the page's own spans. Pages that work by week may add Last week · This week · Next week (Monday–Sunday, Melbourne dates), in the popover only (DR-046). No limit on future days: a span may run past today or the last data (DR-049).
+- Selection is `brand-soft` with `brand`-edged ends, never a solid fill; today is amber `now` plus the word. Weekends are not greyed (club nights are weekends). Day marks are a code, an underline and a name, never a status colour; a day with two coded marks shows both codes stacked (DR-047). Below 480px the popover is a bottom sheet (DR-048).
 - The range in words comes from `SongNodes.format.range` ("Mon 9 – Fri 13 Nov 2026 · 5 days"); date-only values never pass through a time zone; today is `SongNodes.calendar.today()` (Melbourne).
 - Keys follow the WAI-ARIA date picker grid: arrows, Page Up / Page Down (Shift for a year), Home / End, Enter or Space, Escape returns focus to the opener.
 
