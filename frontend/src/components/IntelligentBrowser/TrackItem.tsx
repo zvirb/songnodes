@@ -1,8 +1,8 @@
 /**
  * TrackItem Component
- * Standardized track item row according to TrackCell specs:
- * Album artwork thumb / fallback, artist - title, key pill, BPM tag,
- * duration, genre chips, and compatibility badges.
+ * One recommendation row: artwork thumb, a design-system TrackCell
+ * (`sn-track-cell`: "Artist – Title" on line one; BPM, key, duration, genre
+ * and the top reason on line two, ellipsised) and the compatibility badges.
  */
 
 import React, { useRef } from 'react';
@@ -12,6 +12,13 @@ import { scoreBand, formatDuration } from './utils';
 import { Bpm, KeyBadge } from '../../lib/songnodes';
 import { CompatibilityBadge, KeyCompat } from '../ds';
 import styles from './IntelligentBrowser.module.css';
+
+/**
+ * Virtual row height in px: the TrackCell's two-line height (--row-two-line,
+ * 56) plus --space-2 (8) above and below. The list positions rows absolutely
+ * at this height, so the row content must fit inside it (IB1).
+ */
+export const TRACK_ROW_HEIGHT = 56 + 2 * 8;
 
 interface TrackItemProps {
   recommendation: TrackRecommendation;
@@ -66,31 +73,37 @@ export const TrackItem = React.memo<TrackItemProps>(({
       tabIndex={isFocused ? 0 : -1}
       style={style}
     >
-      <div className={styles.rowMain}>
-        <div className={styles.rowTitleRow}>
-          <div className={styles.artworkThumb} aria-hidden="true">
-            {(track as { artwork_url?: string }).artwork_url ? (
-              <img
-                src={(track as { artwork_url?: string }).artwork_url}
-                alt=""
-                className={styles.artworkImg}
-              />
-            ) : (
-              <Disc size={18} strokeWidth={1.5} />
-            )}
-          </div>
-          <span className={`${styles.trackTitleText} body-strong`} title={`${track.artist} – ${track.name}`}>
-            <span className={`${styles.trackArtistText} body color-fg-2`}>{track.artist} –</span> {track.name}
-          </span>
-        </div>
+      <div className={styles.artworkThumb} aria-hidden="true">
+        {(track as { artwork_url?: string }).artwork_url ? (
+          <img
+            src={(track as { artwork_url?: string }).artwork_url}
+            alt=""
+            className={styles.artworkImg}
+          />
+        ) : (
+          <Disc size={18} strokeWidth={1.5} />
+        )}
+      </div>
 
-        <div className={`${styles.rowMetaRow} caption color-fg-3`}>
+      <div className={`sn-track-cell ${styles.rowMain}`}>
+        <span className="sn-track-cell__title">
+          <span className="sn-track-cell__name" title={`${track.artist} – ${track.name}`}>
+            <span className="sn-track-cell__artist">{track.artist} –</span> {track.name}
+          </span>
+        </span>
+
+        <span className="sn-track-cell__meta">
           {track.bpm ? <Bpm value={track.bpm} /> : null}
           {track.key ? <KeyBadge value={track.key} /> : null}
-          {length !== '–' ? <span className="data-s color-fg-3">{length}</span> : null}
+          {length !== '–' ? <span className="sn-track-cell__dur">{length}</span> : null}
           {track.genre ? <span className="sn-tag">{track.genre}</span> : null}
-          {topReason ? <span className="sn-track-cell__mix">{topReason}</span> : null}
-        </div>
+          {topReason ? (
+            <>
+              <span className="sn-track-cell__sep" aria-hidden="true">·</span>
+              <span className="sn-track-cell__mix" title={topReason}>{topReason}</span>
+            </>
+          ) : null}
+        </span>
       </div>
 
       <div className={styles.rowBadges}>
