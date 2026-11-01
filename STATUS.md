@@ -2023,3 +2023,15 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: E2E and a real-browser look (no Docker daemon here).
 - Next: follow-up for TracklistImporter (DS22) to pass `secondsSinceProgress` or state `stalled` plus `onResume`/`onCancel` instead of its STALL_MS detail message.
 <!-- SLOT:SP14 END -->
+
+<!-- SLOT:SC2B BEGIN -->
+### SC2B: A target track records how many playlists the scrape found
+- Start: 2026-11-01. Base `main` 527c5a7. Follow-up listed in SC2's slot (`target_tracks.playlists_found` never written).
+- End: 2026-11-01.
+- Changed: `services/common/datalayer/target_scrape.py` gains `record_playlists_found`; the `scrape` handler in `services/common/datalayer/handlers.py` calls it (one line) once the scraper's `bronze_playlists_persisted` is known. `last_searched` is already written by the scheduler and is left alone.
+- Meaning: the latest search's count, not a running total. It is this job's bronze playlists plus those of every other succeeded scrape job for the same target created since `last_searched` (one job per source). A running total would grow on every weekly re-search, because the scraper upserts playlists it has already seen and reports them again. It counts playlists the source search returned for the target's query; the scraper does not check each tracklist for the track.
+- Retries: the runner wraps handler and `jobs.complete` in one transaction, so a failed attempt rolls the write back; the sum reads only succeeded jobs and excludes this job, so it is added once. A job from an older search leaves the count alone. The target row is locked (`FOR UPDATE`) before the sum, so two source jobs finishing together see each other's result.
+- Checks run: `cd services && python -m pytest common/tests` (150 passed; 6 new tests in `test_target_scrape.py`), scope guard. Root `python -m pytest`: unrelated failures only (missing `annoy` module; `tests/integration` and `tests/library_importer` need the running stack).
+- Checks not run: the SQL against a real Postgres (no Docker daemon, and the local server could not be started from this sandbox); E2E.
+- Next: owner check on the stack (see PR). Possible follow-up: count only playlists whose bronze tracks match the target, which needs the scraper to return the playlist ids it persisted.
+<!-- SLOT:SC2B END -->

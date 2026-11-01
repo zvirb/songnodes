@@ -89,6 +89,7 @@ async def scrape(conn, ctx: Context, payload: Dict[str, Any]) -> Dict[str, Any]:
     persisted = {'bronze_playlists': int(result.get('bronze_playlists_persisted') or 0),
                  'bronze_tracks': int(result.get('bronze_tracks_persisted') or 0)}
     found_nothing = not any(persisted.values())
+    await target_scrape.record_playlists_found(conn, payload, persisted['bronze_playlists'])
     job_result = {'scraper': result, **persisted, 'found_nothing': found_nothing,
                   'enqueue': [after('ingest_pending', payload, tag='ingest-after-scrape')]}
     if found_nothing:
