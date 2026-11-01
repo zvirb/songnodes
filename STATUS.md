@@ -2040,3 +2040,13 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks run: `sync-design-system.sh` then `--check` (in sync, VERSION 1.6.0); `check_design_system.py --check` (pass). Not run: frontend tsc/oxlint/vitest/vite build, E2E (no node_modules or Docker in this session).
 - Next: run the frontend checks and `scripts/e2e-docker.sh` on the host before merging; app code does not use the new classes yet (follow-up packages migrate field help to InfoTip and add source links to warnings).
 <!-- SLOT:DS25 END -->
+
+<!-- SLOT:JOBSTG BEGIN -->
+### JOBSTG: A scrape job reports its stages, with live scrape progress
+- Start: 2026-11-01. Base `main` f2bdc9b. Brief: DS23 Step 0 (stall rule dishonest while a scrape reports nothing for up to 15 min).
+- End: 2026-11-01.
+- Changed: `scrapers/unified_scraper_api.py` reads the spider's log as it arrives (was: only after exit), runs scrapy with `LOGSTATS_INTERVAL=10`, and keeps an in-memory progress record per worker job (pages fetched, bronze playlists and tracks written; `updated_at` moves only when a count changes), served at `GET /scrape/progress/{job_id}`. `handlers.py`: the scrape handler sends `job_id` in the `POST /scrape` body. `routers/jobs.py`: `GET /api/v1/jobs/{job_id}/stages` (queued, scrape with live progress, ingest via `ingest-after-scrape:<id>`, projection via `proj-after-ingest`/`graph-proj-after-ingest`; a recurring-run ingest is `done` only when no bronze playlist from that source written during the scrape is still un-ingested; fixed failure details only; 404/422 fixed messages).
+- Checks run: `pytest tests/rest_api` (86 passed, 12 new), `pytest scrapers/tests` (14 passed, 5 new), `cd services && pytest common/tests` (146 passed, 2 new). Root `pytest`: 181 passed; failures and errors only in Docker-backed `tests/integration/test_dev_*`, `tests/library_importer`, `tests/enrichment_local` and `tests/security/test_pathfinder_security.py` (no `annoy`), none in files this package touches.
+- Checks not run: a real crawl against the running stack, E2E (no Docker daemon in the cloud sandbox). The scope guard reports "not a work package" (the code JOBSTG has no digit, and there is no `plan/agents/JOBSTG_*.md`).
+- Next: on the stack, trigger a MixesDB scrape and poll `/api/v1/jobs/<id>/stages`: `progress.pages` should rise about every 15 s. Then DS23 (after DS-SP14) renders it.
+<!-- SLOT:JOBSTG END -->
