@@ -107,13 +107,13 @@ Compatibility of a move from key a to key b (`SongNodes.compat`):
 
 | Edge type | Meaning | Stroke |
 |---|---|---|
-| `adjacency` | Played next to each other in real sets | Solid, width by count |
-| `similarity` | Audio/metadata similarity | Dashed 4 3 |
-| `collaboration` | Shared artists | Dotted 1 3 |
-| `genre` | Same genre | Thin solid 1px |
-| `key_compatibility` | Harmonic neighbours | Solid, in `compat-*` of the verdict, only when the key layer is on |
+| `adjacency` | Played next to each other in real sets | Solid |
+| `similarity` | Audio/metadata similarity | Dash 6 4 |
+| `collaboration` | Shared artists | Double line |
+| `genre` | Same genre | Solid |
+| `key_compatibility` | Harmonic neighbours | Round dots, only when the key layer is on |
 
-All edges use `fg-3` at `opacity-edge` by default; selection `brand`; path edges `mod-paths`; faded `opacity-faded`. Dash pattern carries the meaning, never colour alone. Node states are in Music domain.
+Width and opacity come from the link's strength band (Weak, Fair, Strong, Very strong; cut points fitted to the library), never from its type. All edges are `fg-3`; selection `brand`; path edges `mod-paths`; faded `opacity-faded`. Dash pattern carries the type, width the strength, never colour. Full spec, layout and node states: GraphStyles.
 
 ## Graph node colour modes
 

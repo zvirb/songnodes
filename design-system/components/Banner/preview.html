@@ -1,4 +1,4 @@
-<!-- @dsCard group="Feedback" height=532 subtitle="Under a page header; warn, info, ok (dismissible) and bad (not dismissible); one per page" -->
+<!-- @dsCard group="Feedback" height=740 subtitle="Under a page header; one per page; every warning ends with a source link (go icon opens the page in a new tab) and can be dismissed to its icon in place" -->
 <!doctype html>
 <html>
 <head><meta charset="utf-8"><title>Banner — preview</title>
@@ -16,33 +16,54 @@
   </div>
   <div class="sn-preview__label">Other kinds (each shown alone on its own page)</div>
   <div class="sn-stack" id="more"></div>
+  <div class="sn-preview__label">After dismissing a warning: its icon in place, press it to show the warning again</div>
+  <div id="dismissed-demo"></div>
 </div>
 <script>
   var S = window.SongNodes, I = S.icon;
   var ICON = { ok: "circle-check", warn: "triangle-alert", bad: "circle-x", info: "info" };
+  var store = {};
   function banner(o) {
     return '<div class="sn-banner" data-status="' + o.status + '" role="' + (o.status === "bad" ? "alert" : "status") + '" id="' + o.id + '">' +
       '<span class="sn-banner__icon">' + I(ICON[o.status]) + '</span>' +
-      '<div class="sn-banner__body"><p class="sn-banner__content"><span class="sn-banner__title">' + o.title + '</span>' + o.text + '</p>' +
+      '<div class="sn-banner__body"><p class="sn-banner__content"><span class="sn-banner__title">' + o.title + '</span>' + o.text +
+      (o.source ? " " + S.sourceLink(o.source) : "") + '</p>' +
       (o.actions ? '<div class="sn-banner__actions">' + o.actions + '</div>' : "") + '</div>' +
-      (o.dismiss ? '<button class="sn-btn sn-btn--sm sn-btn--icon sn-btn--quiet sn-banner__dismiss" type="button" aria-label="Dismiss: ' + o.dismiss + '" data-dismiss="' + o.id + '">' + I("x") + '</button>' : '<span></span>') +
+      '<button class="sn-btn sn-btn--sm sn-btn--icon sn-btn--quiet sn-banner__dismiss" type="button" aria-label="Dismiss: ' + o.fact + '" title="Dismiss" data-dismiss="' + o.id + '">' + I("x") + '</button>' +
       '</div>';
   }
+  function iconOnly(o) {
+    return '<button type="button" class="sn-dismissed" data-status="' + o.status + '" aria-label="Show warning: ' + o.fact + '" title="Show warning: ' + o.fact + '" aria-expanded="false" data-restore="' + o.id + '">' + I(ICON[o.status]) + '</button>';
+  }
+  var B = {
+    bn1: { id: "bn1", status: "warn", title: "Sets are shaped on energy alone.", fact: "key and BPM missing",
+      text: " Only 611 of 1,284 tracks have a key and BPM so far, so the rest are placed by energy.",
+      source: { text: "Add keys in Key & mood", href: "#harmony", module: "harmony" } },
+    bn2: { id: "bn2", status: "bad", title: "TIDAL is disconnected.", fact: "TIDAL disconnected", text: " Sets can’t be sent on Saturday’s weekly run until you reconnect.",
+      actions: '<span class="sn-m-services"><button class="sn-btn sn-btn--sm sn-btn--mod" type="button">Reconnect TIDAL</button></span>' },
+    bn5: { id: "bn5", status: "warn", title: "3RRR plays are 9 days old.", fact: "3RRR plays stale", text: " Rotation leaves out this week’s Superfreak shows.",
+      source: { text: "Open Sources · Radio", href: "#sources-radio", module: "sources" } },
+    bn3: { id: "bn3", status: "info", title: "Next weekly build: Sat 31 Oct, 06:00.", fact: "weekly build notice", text: " Radio plays from PBS, 3RRR and triple j until Friday night are included." },
+    bn4: { id: "bn4", status: "ok", title: "This week’s build is in.", fact: "build finished notice", text: " 48 new tracks and 12 new edges were added to the crate.",
+      actions: '<button class="sn-btn sn-btn--sm" type="button">See new tracks</button>' }
+  };
   document.getElementById("head").innerHTML = '<button class="sn-btn sn-btn--icon sn-btn--quiet" type="button" aria-label="Open menu">' + I("menu") + '</button>' + S.html.title("Set builder", "Peak time Friday", "title-s");
-  document.getElementById("b1").innerHTML = banner({ id: "bn1", status: "warn", title: "Sets are shaped on energy alone.",
-    text: " Only 611 of 1,284 tracks have a key and BPM so far. The rest are placed by energy until the next weekly build adds them.",
-    actions: '<button class="sn-btn sn-btn--sm" type="button">Show tracks without a key</button>', dismiss: "key and BPM notice" }) +
+  document.getElementById("b1").innerHTML = '<div data-slot="bn1">' + banner(B.bn1) + '</div>' +
     '<div class="sn-card sn-card--flat"><span class="sn-dim">Running order, energy wave and transitions sit below the banner.</span></div>';
-  document.getElementById("more").innerHTML =
-    banner({ id: "bn2", status: "bad", title: "TIDAL is disconnected.", text: " Sets can’t be sent on Saturday’s weekly run until you reconnect.",
-      actions: '<span class="sn-m-services"><button class="sn-btn sn-btn--sm sn-btn--mod" type="button">Reconnect TIDAL</button></span>' }) +
-    banner({ id: "bn3", status: "info", title: "Next weekly build: Sat 31 Oct, 06:00.", text: " Radio plays from PBS, 3RRR and triple j until Friday night are included.", dismiss: "weekly build notice" }) +
-    banner({ id: "bn4", status: "ok", title: "This week’s build is in.", text: " 48 new tracks and 12 new edges were added to the crate.",
-      actions: '<button class="sn-btn sn-btn--sm" type="button">See new tracks</button>', dismiss: "build finished notice" });
+  document.getElementById("more").innerHTML = ["bn2", "bn5", "bn3", "bn4"].map(function (k) { return '<div data-slot="' + k + '">' + banner(B[k]) + '</div>'; }).join("");
+  document.getElementById("dismissed-demo").innerHTML = iconOnly(B.bn5);
+  document.getElementById("dismissed-demo").firstChild.removeAttribute("data-restore");
   document.addEventListener("click", function (e) {
-    var b = e.target.closest("[data-dismiss]"); if (!b) return;
-    var el = document.getElementById(b.getAttribute("data-dismiss")); el.hidden = true;
-    document.getElementById("head").querySelector("button").focus();
+    var a = e.target.closest('a[href^="#"]'); if (a) { e.preventDefault(); return; }
+    var b = e.target.closest("[data-dismiss]");
+    if (b) {
+      var o = B[b.getAttribute("data-dismiss")], slot = document.querySelector('[data-slot="' + o.id + '"]');
+      if (o.status === "warn" || o.status === "bad") { slot.innerHTML = iconOnly(o); slot.firstChild.focus(); }
+      else { slot.innerHTML = ""; document.getElementById("head").querySelector("button").focus(); }
+      return;
+    }
+    var r = e.target.closest("[data-restore]");
+    if (r) { var o2 = B[r.getAttribute("data-restore")], s2 = document.querySelector('[data-slot="' + o2.id + '"]'); s2.innerHTML = banner(o2); s2.querySelector(".sn-banner__dismiss").focus(); }
   });
 </script>
 </body>
