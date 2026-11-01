@@ -5,6 +5,7 @@ A short supplementary label shown on hover and keyboard focus: an icon button's 
 ## When to use
 - Names of icon-only buttons (with the shortcut), the full key name behind a Camelot code, the absolute time and source behind a relative time, a truncated track title.
 - Never for essential information, instructions, errors, or anything interactive (links, buttons): use Popover or put it on the page. Never on touch-only controls as the only label.
+- A sentence that explains (how a figure is worked out, a field's help, a caveat) is an `InfoTip` (1.6.0): its own `info` button opens the same tooltip look on hover, focus and tap, and a panel for longer text.
 
 ## Anatomy
 ```html

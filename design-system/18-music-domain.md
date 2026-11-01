@@ -101,14 +101,14 @@ House, Techno, UK garage. Neutral `CategoryTag`s; the genre mix control sets wei
 | Node state | Treatment |
 |---|---|
 | Default | Fill set by the "Colour by" control in `GraphControls`: Neutral (default, `fg-2`; only the states below carry colour), Energy (`energy-1…10`), Key (`key-*` Camelot colours) or Genre (`chart-1…8`). The legend changes with the mode |
-| Hovered | 1.5px `fg` ring, label shown |
-| Selected | 2px `brand` ring + label |
+| Hovered | 2px `fg` ring, label shown |
+| Selected | 3px `brand` ring + label |
 | Now playing | 3px amber `now` ring + "Now" tag; one at a time. Now and selected differ by hue (amber vs lavender) and by the "Now" word |
 | In path | `mod-paths` ring |
 | Waypoint / start / finish | `mod-paths` fill with `map-pin` label; start and finish labelled "Start", "Finish" in text |
 | Outside filter or selection | `opacity-faded` |
 
-Edge types (`adjacency`, `similarity`, `collaboration`, `genre`, `key_compatibility`) are distinguished by stroke pattern, defined in Data display. Edge weight maps to width (1–4px) and opacity (`opacity-edge` → 0.9 for strong).
+Edge types (`adjacency`, `similarity`, `collaboration`, `genre`, `key_compatibility`) are distinguished by stroke pattern, defined in GraphStyles. Edge weight maps to one of four strength bands, drawn by width and opacity: Weak 1px · 0.35, Fair 2px · 0.55, Strong 3.5px · 0.8, Very strong 6px · 1. The cut points between bands are the quartiles of the library's own link weights, refitted each weekly run with natural breaks as the cross-check (DR-036). Weak links show only when one of a track's two strongest, touching now playing, or touching the hovered or selected track. Distance never encodes weight: tracks sit on rings around now playing, strongest links nearest (GraphStyles → Layout, DR-034).
 
 ## Recommendation scores
 

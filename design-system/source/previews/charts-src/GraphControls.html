@@ -3,8 +3,8 @@
 <html>
 <head><meta charset="utf-8"><title>GraphControls — preview</title></head>
 <body>
-<div class="sn-preview sn-m-graph" id="root">
-  <div class="sn-preview__label">Play mode canvas · try the buttons and Colour by; layers opens a popover</div>
+<div class="sn-preview sn-m-graph sn-graph-styles" id="root">
+  <div class="sn-preview__label">Play mode canvas · tracks seated on rings around now playing; try the buttons and Colour by; layers opens a popover</div>
   <div class="sn-graph-controls" style="height: 420px" id="gc">
     <svg class="sn-graph-controls__canvas" id="canvas" role="img" aria-label="Track graph, 1,284 nodes and 5,210 links"><g id="world"></g></svg>
     <div class="sn-graph-controls__count" id="count">1,284 nodes · 5,210 links</div>
@@ -50,12 +50,23 @@
   for (var i = 0; i < 90; i++) { var c = centres[i % 5]; nodes.push({ x: c[0] + (rnd() - 0.5) * 220, y: c[1] + (rnd() - 0.5) * 170, r: 2 + rnd() * rnd() * 9,
     e: rnd() < 0.06 ? 0 : 1 + Math.floor(rnd() * 10), k: rnd() < 0.06 ? "" : KEYS[Math.floor(rnd() * KEYS.length)], g: 1 + ((i % 5) + (rnd() < 0.25 ? Math.floor(rnd() * 8) : 0)) % 8 }); }
   nodes[0].x = 300; nodes[0].y = 260; nodes[0].r = 11; nodes[0].now = true; nodes[1].x = 640; nodes[1].y = 220; nodes[1].r = 9; nodes[1].sel = true;
-  for (var j = 0; j < 150; j++) { var a = Math.floor(rnd() * 90), b = (a + 5 * Math.floor(1 + rnd() * 3)) % 90; edges.push({ a: a, b: b, t: TYPES[Math.floor(rnd() * 5)][0] }); }
+  for (var j = 0; j < 150; j++) { var a = Math.floor(rnd() * 90), b = (a + 5 * Math.floor(1 + rnd() * 3)) % 90; edges.push({ a: a, b: b, t: TYPES[Math.floor(rnd() * 5)][0], w: +Math.pow(rnd(), 1.4).toFixed(2) }); }
+  /* ring layout around now playing (GraphStyles → Layout): strength sets the order, the seats keep spacing even */
+  var LAY = S.ringLayout(nodes.map(function (n, i) { return { id: i, box: S.seatBox(n.r, 120, !!n.now) }; }), edges.map(function (e) { return { source: e.a, target: e.b, weight: e.w }; }), { anchor: 0 });
+  var mnX = 1e9, mxX = -1e9, mnY = 1e9, mxY = -1e9;
+  nodes.forEach(function (n, i) { var p = LAY.pos[i]; n.x = p.x; n.y = p.y; mnX = Math.min(mnX, p.x); mxX = Math.max(mxX, p.x); mnY = Math.min(mnY, p.y); mxY = Math.max(mxY, p.y); });
+  nodes.forEach(function (n) { n.x += 40 - mnX; n.y += 40 - mnY; });
+  W = mxX - mnX + 80; H = mxY - mnY + 80;
   var world = $("world"), layerOn = { adjacency: true, similarity: true, key: true, collab: false, genre: false };
   var gE = K.el("g", null, world), gN = K.el("g", null, world);
+  /* links per GraphStyles: band width + opacity, dash by type; weak links only where DR-035 allows; the selected track's links in lavender */
   function drawEdges() {
     gE.textContent = "";
-    edges.forEach(function (e) { if (!layerOn[e.t]) return; var a = nodes[e.a], b = nodes[e.b]; K.el("line", { x1: a.x, y1: a.y, x2: b.x, y2: b.y, "class": "sn-graph-controls__edge" + (e.t === "similarity" ? " sn-graph-controls__edge--similarity" : e.t === "key" ? " sn-graph-controls__edge--key" : "") }, gE); });
+    var on = edges.filter(function (e) { return layerOn[e.t]; });
+    S.edgeVisibility(on.map(function (e) { return { source: e.a, target: e.b, weight: e.w, e: e }; }), { anchor: 0, focus: [1] }).forEach(function (v) {
+      if (!v.show) return; var e = v.link.e, a = nodes[e.a], b = nodes[e.b];
+      K.el("line", { x1: a.x, y1: a.y, x2: b.x, y2: b.y, "class": "sn-graph-styles__edge sn-graph-styles__edge--" + e.t + " sn-graph-styles__edge--b" + v.band + (v.focus ? " sn-graph-styles__edge--sel" : "") }, gE);
+    });
   }
   /* Colour by: Neutral (default) / Energy / Key / Genre. Selected (lavender) and now (amber + "Now" tag) sit on top in every mode. */
   var GENRES = ["House", "Techno", "UK garage", "Electro", "Breaks", "Drum and bass", "Ambient", "Other"], mode = "neutral";
@@ -84,7 +95,8 @@
     else if (mode === "key") { h = ["5A", "6A", "7A", "8A", "9A", "10A", "8B", "11B"].map(function (k) { return "<li>" + S.html.key(k) + "</li>"; }).join("") + '<li class="sn-graph-controls__legend-note">Camelot wheel colours. Hollow: key ?</li>'; }
     else if (mode === "genre") { h = GENRES.map(function (g, i) { return li('<span class="sn-graph-controls__dot" style="--c: var(--chart-' + (i + 1) + ')" aria-hidden="true"></span>', g); }).join(""); }
     else { h = '<li class="sn-graph-controls__legend-note">All tracks alike; only states carry colour.</li>'; }
-    h += li('<span class="sn-graph-controls__ring" style="--c: var(--brand)" aria-hidden="true"></span>', "Selected") + li('<span class="sn-graph-controls__ring" style="--c: var(--now)" aria-hidden="true"></span>', "Now playing");
+    h += li('<span class="sn-graph-controls__ring" style="--c: var(--brand)" aria-hidden="true"></span>', "Selected") + li('<span class="sn-graph-controls__ring" style="--c: var(--now)" aria-hidden="true"></span>', "Now playing") +
+      li('<svg width="40" height="12" aria-hidden="true">' + [1, 2, 3, 4].map(function (b, i) { return '<line x1="' + (2 + i * 10) + '" y1="11" x2="' + (8 + i * 10) + '" y2="1" class="sn-graph-styles__edge sn-graph-styles__edge--b' + b + '"/>'; }).join("") + "</svg>", "Thicker link, stronger");
     $("legend").innerHTML = h;
   }
   drawNodes(); drawLegend();

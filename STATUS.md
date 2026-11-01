@@ -2032,7 +2032,26 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks: tsc, oxlint (exit 0, no findings in the new files), vitest 392/392 (17 new, incl. Melbourne DST 4 Oct 2026 and a Melbourne-not-UTC "today"), vite build, sync-design-system --check, check_design_system --check, check_feature_imports --check, scope guard. Not run: E2E (no Docker; no page uses the component yet).
 - Next: DSQ answer on min/max (Q16), then the /pipeline scheduled-scrape window card with its backend setting.
 <!-- SLOT:DS24A END -->
+  
+<!-- SLOT:DS25 BEGIN -->
+### DS25: Design system 1.6.0: InfoTip, warnings link to their source and can be dismissed, go icons
+- Synced from the published SongNodes design-system artifact (1.6.0, which also carries 1.5.0's ring layout and link-strength bands, never synced before). 1.6.0 brings beanAlliance v4.18 to v4.20.2 into SongNodes: `InfoTip`, source links (`sn-link--src`), dismiss to icon (`.sn-dismissed`, `SongNodes.dismissal`), go icons (`SongNodes.goIcon`). DR-038 to DR-042; fitted choices Q23 to Q27 for Markus.
+- Kept from the repo (not in the artifact): `source/css/36-attribution.css` (rebuilt into bundle.css), the `sn-page-graph` and attribution lines in `13-page-patterns.md`, and the newer `api/components/*` cards and `manifest.json`.
+- `tokens.css` regenerated with `build_tokens.py` (the artifact's copy lacked 1.5.0's `graph-*` tokens).
+- Checks run: `sync-design-system.sh` then `--check` (in sync, VERSION 1.6.0); `check_design_system.py --check` (pass). Not run: frontend tsc/oxlint/vitest/vite build, E2E (no node_modules or Docker in this session).
+- Next: run the frontend checks and `scripts/e2e-docker.sh` on the host before merging; app code does not use the new classes yet (follow-up packages migrate field help to InfoTip and add source links to warnings).
+<!-- SLOT:DS25 END -->
 
+<!-- SLOT:M6S BEGIN -->
+### M6S: One harmonic scoring and energy move spec
+- Start: 2026-11-01. Base `main` 2427bf9. Docs only, no code.
+- End: 2026-11-01.
+- Added `docs/specs/HARMONIC_SCORING.md` (`harmonic-1`, provisional): inventory with file:line of every key/BPM/energy rule (design-system `SN.compat`/`bpmStep`/`energyStep`, 12 frontend sites incl. 4 dead copies, REST pathfinder, graph projection, migration 006, scraper and gold helpers) and where they disagree; one canonical spec (key table identical to `SN.compat`, BPM with half/double time, energy move labels, compatibility score separate from energy, positive monotone path cost); 24 worked examples; 8 implementation packages with owned paths; 12 open questions with evidence. Found: the REST pathfinder receives `occurrence_count` as a cost (more-played transitions cost more) and can produce negative costs; graph projection links every pair within 10 BPM with `key_compatibility` 1.0 and writes unknown energy as 0.0.
+- Checks run: example scores and costs computed with a scratch script (not committed); cited line numbers re-read on 2427bf9; scope guard.
+- Checks not run: frontend and backend suites (no code changed).
+- Next: Markus answers Q-E1…Q-S3 (Q-E1, Q-E2, Q-B1 change labels in the examples); then M6-F1 (classifier and golden tests).
+<!-- SLOT:M6S END -->
+  
 <!-- SLOT:JOBSTG BEGIN -->
 ### JOBSTG: A scrape job reports its stages, with live scrape progress
 - Start: 2026-11-01. Base `main` f2bdc9b. Brief: DS23 Step 0 (stall rule dishonest while a scrape reports nothing for up to 15 min).
@@ -2052,3 +2071,13 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: E2E and the reviewer check on the running stack (no Docker daemon here).
 - Next: on the stack, queue "Deadmau5 Strobe" and watch the card; stop the unified scraper mid-scrape and expect "No progress for N s" within about a minute.
 <!-- SLOT:DS23 END -->
+  
+<!-- SLOT:DS24B BEGIN -->
+### DS24B: Scheduled scrapes honour a date window
+- Start: 2026-11-01 (branch ds24b-scrape-window-backend off origin/main 5610049). Brief: plan/agents/DS24B_scrape_window_backend.md (on plan2-next-wave).
+- End: 2026-11-01.
+- Changed: migration 260 adds the one-row `scrape_window` (`starts_on`, `ends_on`, `updated_at`, order CHECK), applied by `scripts/start-dev.sh`. New router `routers/scrape_window.py` (G3 `register`): `GET`/`PUT /api/v1/scrape/window`, dates as `YYYY-MM-DD` or null (one null end is open-ended, both null is every day); a bad date or reversed span is a 422 with a sentence; PUT on a missing table is 503 naming migration 260. `scrape_targets` reads the window first; outside it (Melbourne day, inclusive) it runs no selection query, so `last_searched` stays, and returns `outside_window: true` with the dates, logged. A missing table or row means no window. Melbourne day via zoneinfo; python:3.15-slim may have no tz data and no tzdata package is installed, so then Postgres `NOW() AT TIME ZONE 'Australia/Melbourne'` answers.
+- Checks run: `services/common/tests` 154 passed (8 new window tests in `test_target_scrape.py`: inside, before, after, open-ended, 2026-10-03T15:30Z is 4 Oct, DST boundaries, no-tz fallback, missing table); `tests/rest_api` 95 passed (7 new in `test_scrape_window.py`, 4 parametrised 422s); `bash -n scripts/start-dev.sh`.
+- Checks not run: the migration against Postgres and the reviewer's curl check (no Docker here).
+- Next: DS24C (the /pipeline card) after DS23 merges.
+<!-- SLOT:DS24B END -->

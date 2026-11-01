@@ -266,7 +266,15 @@ DUR = [("duration-instant","0ms","Reduced motion: every duration collapses to th
 EASE = [("ease-standard","cubic-bezier(0.2, 0, 0, 1)","Everything that moves in or changes size."),("ease-exit","cubic-bezier(0.3, 0, 1, 1)","Elements leaving (drawer close, toast out).")]
 BP = [("bp-phone","480px","Below: one column, drawer navigation, tables become cards or scroll in their box."),("bp-tablet","768px","Tablet: rails collapse to a Filters button; two-column cards."),
       ("bp-desktop","1100px","Desktop: filter rail + content; side panels open beside, not over."),("bp-wide","1440px","Wide: three-region layouts (library, graph, panel)."),("bp-wall","1920px","Wall/kiosk: booth theme recommended, type scale steps up one size.")]
-OP = [("opacity-disabled","0.45","Disabled controls (with aria-disabled)."),("opacity-faded","0.15","Graph nodes and edges outside the current selection or filter."),("opacity-edge","0.6","Default graph edge opacity; strong edges 0.9.")]
+OP = [("opacity-disabled","0.45","Disabled controls (with aria-disabled)."),("opacity-faded","0.15","Graph nodes and edges outside the current selection or filter."),("opacity-edge","0.6","Graph edges drawn without a strength band: legend line samples and the layer toggles. Graph links on the canvas use graph-edge-op-1…4.")]
+GRAPH = [("graph-edge-w-1","1px","Link width, Weak band (below the first fitted cut). Shown only when it is one of either track's two strongest links, touches now playing, or touches the hovered or selected track."),
+         ("graph-edge-w-2","2px","Link width, Fair band."),("graph-edge-w-3","3.5px","Link width, Strong band."),("graph-edge-w-4","6px","Link width, Very strong band (at or above the third fitted cut)."),
+         ("graph-edge-op-1","0.35","Link opacity, Weak band; backs up the width, never carries strength alone."),("graph-edge-op-2","0.55","Link opacity, Fair band."),("graph-edge-op-3","0.8","Link opacity, Strong band."),("graph-edge-op-4","1","Link opacity, Very strong band."),
+         ("graph-edge-dim","0.25","Multiplier on a link's band opacity while a track is hovered or selected and the link does not touch it."),
+         ("graph-ring-first","58px","Ring layout: radius of the first ring around the anchor track (vertical radius; the horizontal radius is this × graph-ring-aspect)."),
+         ("graph-ring-step","40px","Ring layout: distance between rings."),("graph-ring-aspect","1.7","Ring layout: horizontal stretch of every ring, so rows of left-to-right labels fit."),
+         ("graph-seat-gap","30px","Ring layout: arc length between neighbouring seats on a ring (at least 8 seats per ring)."),
+         ("graph-label-zoom","1.5","Zoom at which every label shows; each seat keeps clear the node plus its label as drawn at this zoom.")]
 
 def fam(lst, note=None):
     d = {"tokens": [{"name": n, "value": v, "usage": u} for n, v, u in lst]}
@@ -304,7 +312,7 @@ TYPE = {
     {"name": "data-s", "fontSize": "0.6875rem", "lineHeight": 1.35, "fontWeight": 400, "sample": "trk_01HF9Z", "usage": "External IDs (ISRC, Spotify ID), chart tick labels."}]}]}
 
 tok = {
- "name": "SongNodes", "version": "1.4.0",
+ "name": "SongNodes", "version": "1.6.0",
  "meta": {"source": "Decisions page 24 Oct 2026 + songnodes repo audit + Naarm Set Builder", "generator": "source/build_tokens.py"},
  "color": {"themes": [{"id": t, "name": n} for t, n in THEMES], "tokens": tokens},
  "type": TYPE,
@@ -317,6 +325,7 @@ tok = {
  "easing": fam(EASE),
  "breakpoint": fam(BP),
  "opacity": fam(OP),
+ "graph": fam(GRAPH, "Graph visualiser (GraphStyles): link strength is drawn as four width-and-opacity bands; distance only orders tracks on rings. Band cut points are fitted to the library each weekly run, not stored here."),
 }
 with open(os.path.join(OUT, "tokens.json"), "w", encoding="utf-8") as f:
     json.dump(tok, f, ensure_ascii=False, indent=1)
@@ -347,7 +356,7 @@ lines.append(block(f':root, [data-theme="{first}"]', first, False))
 for th, _ in THEMES[1:]:
     lines.append(block(f'[data-theme="{th}"]', th, True))
 other = []
-for famname in ("spacing", "radius", "size", "zIndex", "duration", "easing", "breakpoint", "opacity"):
+for famname in ("spacing", "radius", "size", "zIndex", "duration", "easing", "breakpoint", "opacity", "graph"):
     for t in tok[famname]["tokens"]:
         other.append(f"  --{t['name'].replace('.', '\\.')}: {t['value']};")
 for k, v in TYPE["families"].items(): other.append(f"  --font-{k}: {v};")

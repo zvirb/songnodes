@@ -2,7 +2,7 @@
 
 The overlay controls on the graph canvas: zoom in and out, fit, reset, pause or resume the layout, link layers, the "Colour by" choice with its legend, a minimap and the node and link count. A vertical dock bottom-right on desktop; a bottom bar on phones.
 
-**Use** on every full graph canvas (Play mode, Graph module, Pathfinder map). **Don't** put filters or search here; those live in the graph filter panel and quick search.
+**Use** on every full graph canvas (Play mode, Graph module, Pathfinder map). The graph inside is laid out on rings and its links drawn in strength bands, per `GraphStyles`. **Don't** put filters or search here; those live in the graph filter panel and quick search.
 
 ## Anatomy
 ```html
@@ -43,10 +43,10 @@ A `SegmentedControl` (`.sn-seg`, `aria-pressed`) top-right of the canvas: Neutra
 | Energy | `energy-1…10`; unknown hollow | 1–10 ramp with gaps after 4 and 7, "Low 1–4 · Building 5–7 · High 8–10" |
 | Key | `key-*` Camelot colours; unknown hollow | key-wheel dots with codes ("● 8A") |
 | Genre | `chart-1…8` fixed order (House, Techno, UK garage, Electro, Breaks, Drum and bass, Ambient, Other) | dot + genre name |
-Selected = 3px lavender `brand` ring; now playing = 3px amber `now` ring + "Now" tag, in every mode. Full encoding in `GraphStyles`.
+Selected = 3px lavender `brand` ring; now playing = 3px amber `now` ring + "Now" tag, in every mode. The legend ends with one strength sample: four lines rising from Weak to Very strong, "Thicker link, stronger". Full encoding in `GraphStyles`.
 
 ## States
-Paused: icon swaps to play, label "Resume layout", "Layout paused" idle pill at the top. Loading graph: count reads "Loading…" and buttons stay enabled except fit.
+Paused: icon swaps to play, label "Resume layout", "Layout paused" idle pill at the top. With the ring layout, pausing holds every seat: links and colours still update, new tracks wait until Resume (GraphStyles → Layout). Loading graph: count reads "Loading…" and buttons stay enabled except fit.
 
 ## Accessibility
 Every icon button has an `aria-label` naming the action and a matching `title`. Labels change with state ("Pause layout" ↔ "Resume layout") rather than using `aria-pressed`. Layers: `aria-expanded`, focus moves into the popover, Escape closes and returns focus, outside click closes. Zoom, layout and colour changes are announced in the live line ("Zoom 125%", "Layout paused", "Colour by energy"). The Colour by group is named by its visible label. Keyboard shortcuts on the canvas: + and − zoom, 0 fits, Space pauses.
