@@ -2241,6 +2241,18 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Next: none.
 <!-- SLOT:G1B END -->
 
+<!-- SLOT:GR1 BEGIN -->
+### GR1: Graph nodes sit at the spacing the design system defines
+- Start: 2026-11-01 (branch gr1-graph-node-spacing off origin/main 07567b3). Brief: plan/agents/GR1_graph_node_spacing.md (added in this PR). Owner report 2 Nov 2026: nodes far apart and not findable.
+- End: 2026-11-01.
+- Cause: `GraphVisualization.tsx` still ran the d3 force layout GraphStyles retired (DR-034): link distance 150–900px from weight (real weights are occurrence counts, nearly all 1, so about 900px), charge −2500, collide r + 50; the camera opened at 100% with no fit, and Fit added the canvas centre twice. d738d2d did not change spacing.
+- Changed: new `lib/graphLayout.ts` (ring tokens, GraphStyles node size, `SN.ringLayout` seating anchored on now playing, fit within 25–400%, ease from the `ease-standard` token) with 14 tests; `GraphVisualization.tsx` drops the forces and pre-compute pass, pins nodes to seats, fits on load and on a new now playing, fixes the double centring in Fit and centre-on-node.
+- Fixture reproduction (vite preview, 294 library-fixture tracks, 600 generated transitions; not the owner's data), 1440 wide: nearest-neighbour median 217px → 23px, p90 428px → 30px; layout 8594×7402px → 837×484px; tracks in view 8/250 → 250/250; centre track click selects: no → yes. At 390 wide the route shows the mobile track list, no canvas (unchanged).
+- Checks run: tsc, oxlint (exit 0), vitest 58 files / 437 tests, vite build, `sync-design-system.sh --check`, `check_design_system.py --check`, scope guard.
+- Checks not run: E2E (no Docker daemon). No visual baseline covers /graph.
+- Next: Pause layout holding seats for new tracks, the 320ms re-seat move, drag to nearest free seat, labels only above zoom 1.5, and removing the unused `hooks/useForceSimulation.ts` / `useGraphLayout.ts`.
+<!-- SLOT:GR1 END -->
+
 <!-- SLOT:IB1 BEGIN -->
 ### IB1: Recommendation rows no longer overlap the reason text
 - Start: 2026-11-01 (branch ib1-track-row-reason-overlap off origin/main 07567b3). Brief: plan/agents/IB1_track_row_reason_overlap.md (added in this PR).
