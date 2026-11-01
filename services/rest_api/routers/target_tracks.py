@@ -55,15 +55,42 @@ async def target_suggestions(limit: int = 20):
     pool = get_pool()
     return await get_target_suggestions(pool, limit=limit)
 
+SEARCH_JOB_COLUMNS = ('queued', 'running', 'succeeded', 'dead', 'finished_at', 'last_error')
+
+
+def with_search_jobs(row) -> dict:
+    """The target row plus `search_jobs`: its latest search's scrape jobs, or None when never searched."""
+    target = dict(row)
+    summary = {name: target.pop(f'search_{name}', None) for name in SEARCH_JOB_COLUMNS}
+    target['search_jobs'] = None if target.get('last_searched') is None else summary
+    return target
+
+
 @router.get('')
 async def list_targets():
+    # The latest search is every scrape job for the target created at or after `last_searched` (one job per
+    # source; the search stamps `last_searched` in the transaction that enqueues them). This is the rule
+    # target_scrape.record_playlists_found uses for `playlists_found`, so the counts and the playlists agree.
     async with get_pool().acquire() as conn:
         rows = await conn.fetch("""
-            SELECT * FROM target_tracks
-            ORDER BY CASE priority WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END,
-                     added_at DESC, track_id
+            SELECT t.*, s.* FROM target_tracks t
+            LEFT JOIN LATERAL (
+                SELECT COUNT(*) FILTER (WHERE j.status = 'queued') AS search_queued,
+                       COUNT(*) FILTER (WHERE j.status = 'running') AS search_running,
+                       COUNT(*) FILTER (WHERE j.status = 'succeeded') AS search_succeeded,
+                       COUNT(*) FILTER (WHERE j.status = 'dead') AS search_dead,
+                       MAX(j.finished_at) AS search_finished_at,
+                       (ARRAY_AGG(j.last_error ORDER BY j.updated_at DESC)
+                            FILTER (WHERE j.status = 'dead'))[1] AS search_last_error
+                FROM ingestion_jobs j
+                WHERE j.kind = 'scrape'
+                  AND t.last_searched IS NOT NULL AND j.created_at >= t.last_searched
+                  AND j.payload->>'target_track_id' = t.track_id::text
+            ) s ON TRUE
+            ORDER BY CASE t.priority WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END,
+                     t.added_at DESC, t.track_id
         """)
-    return [dict(row) for row in rows]
+    return [with_search_jobs(row) for row in rows]
 
 
 @router.post('', status_code=201)

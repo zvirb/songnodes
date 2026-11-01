@@ -2294,3 +2294,14 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: E2E (no Docker daemon).
 - Next: M6-F2 parity test can drop its expected differences; a +2/+3 energy rise is still a clash ("too steep", wave rule 2) since no answer changed it.
 <!-- SLOT:HS3 END -->
+
+<!-- SLOT:TT1 BEGIN -->
+### TT1: Target tracks show real search progress, not a hand-set slider
+- Start: 2026-11-01 (branch tt1-target-real-progress off origin/main ae56475, rebased on 33dcc5a). Brief: plan/agents/TT1_target_real_progress.md (added in this PR).
+- End: 2026-11-01.
+- Changed: `GET /api/v1/target-tracks` adds `search_jobs` per target (counts of the latest search's scrape jobs by status, newest finish time, newest failure; null when never searched). The latest search is every scrape job for the target created at or after `last_searched`, the rule `record_playlists_found` uses. On /sources/targets the "Progress: N%" bar and its range slider (a hand-set `completion_percentage` saved by `handleUpdateCompletion`) are gone; each row shows a StatusPill and one detail line from `targetSearchStatus.ts`: Never searched / Search started (no job on record) / Queued / Searching… (n of m sources done) / Searched (date, time · N playlists found) / Partly done / Search failed (cause). Failed rows offer "Retry search"; Search now is disabled while queued or running; the list refreshes every 10 s while a search is in flight. The embedded pending queue on /pipeline now hides only targets whose last search finished.
+- Left alone: the `completion_percentage` column (sql/migrations/012) and the PUT field (tests/integration/test_dev_workflows.py still sends it). Nothing reads it now.
+- Checks run: tsc, oxlint (exit 0), vitest run src (61 files, 466 tests), vite build, `sync-design-system.sh --check` (1.7.1), `check_design_system.py --check`, `python -m pytest tests/rest_api` (4 new), scope guard.
+- Checks not run: E2E (no Docker daemon); the new SQL against a real Postgres (none running here).
+- Next: a package that drops `completion_percentage` (migration, PUT field, integration test line).
+<!-- SLOT:TT1 END -->

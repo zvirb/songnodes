@@ -97,33 +97,22 @@
   gap: var(--space-2);
 }
 
-.ttm__progress {
+/* Search status from real jobs (TT1): a StatusPill plus one detail line. */
+.ttm__search {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
   color: var(--fg-2);
-  max-width: var(--drawer-w);
 }
 
-.ttm__progress-track {
-  height: var(--space-1);
-  width: 100%;
-  background-color: var(--progress-track);
-  border-radius: var(--radius-pill);
+.ttm__search-detail {
+  min-width: 0;
+  max-width: 100%;
   overflow: hidden;
-}
-
-.ttm__progress-bar {
-  height: 100%;
-  background-color: var(--progress-fill);
-  border-radius: var(--radius-pill);
-  transition: width var(--duration-base) var(--ease-standard);
-}
-
-.ttm__progress input[type="range"] {
-  width: 100%;
-  accent-color: var(--brand);
-  cursor: pointer;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ttm__row-actions {
