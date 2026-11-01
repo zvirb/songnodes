@@ -46,6 +46,8 @@ Data is the product. Show the value, its unit and its meaning in that order, in 
 
 - Render with `EnergyBar` (`.sn-energy` from `SongNodes.html.energy(e)`): ten segments, lit up to the value, the integer printed beside it in `data`, screen-reader text "7 of 10, building tier". The colour is a mark, never text.
 - Tier names are "Low", "Building", "High"; ranges "Low 1–4" from `TIER_LABEL`.
+- Tiers are not the stored energy contract's bands (Warm 1.0–3.9, Building 4.0–6.9, Peak 7.0–10.0, provisional): only the tiers are shown, until the milestone 3 ratification settles the boundaries (18-music-domain, DR-056).
+- Energy moves between tracks come from `energyStep` (and `energyMove` for a stored move): see 18-music-domain "Transitions".
 - Stored scales (`energy_scale` in `types/index.ts`, `utils/trackMetadata.ts`):
 
 | Stored | Meaning | Show |
@@ -87,6 +89,7 @@ Compatibility of a move from key a to key b (`SongNodes.compat`):
 | Same number, other letter | 8A → 8B | perfect ● | "relative A↔B" |
 | ±1, same letter | 8A → 9A, 8A → 7A | compatible ◐ | "+1 key", "−1 key" |
 | +2, same letter | 8A → 10A | possible ○ | "+2 energy boost" |
+| −2, same letter | 10A → 8A | possible ○ | "−2 energy drop" |
 | +7, same letter | 8A → 3A | possible ○ | "+7 lift" |
 | Anything else | 8A → 11B | clash ✕ | "key clash" |
 | Either unknown | – | unknown ? | "key ?" |
@@ -94,7 +97,7 @@ Compatibility of a move from key a to key b (`SongNodes.compat`):
 ## BPM and durations
 
 - `BpmReadout`: `.sn-bpm`, mono, "124" with "BPM" in column headers and "124 BPM" in prose. One decimal only when not whole: "128.5".
-- Changes: "+2 BPM", "−3 BPM", "same BPM". Verdict thresholds from `bpmStep`: ≤2 perfect, 3–4 compatible, 5–8 possible, >8 clash.
+- Changes: "+2 BPM", "−3 BPM", "same BPM", "half time", "double time". Verdict thresholds from `bpmStep`: ≤2 perfect, 3–4 compatible, 5–8 possible, >8 clash, on the gap rounded half up (125.5 → 123 is "−3 BPM"). A half- or double-time move (87 → 174) is judged on the halved or doubled gap and is never better than compatible (18-music-domain, DR-056).
 - Track durations `format.duration(sec)` "6:12"; set lengths `format.span(sec)` "1 h 52 min". Right-align in tables (`td.num`).
 
 ## Sources, rotation and pillars

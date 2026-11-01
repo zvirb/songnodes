@@ -28,6 +28,8 @@ The words and judgements of a working DJ, fixed so both products say and show th
 
 Tier boundaries are drawn as gaps in `EnergyBar` and as `chart-grid` bands at 4.5 and 7.5 in `EnergyWave`.
 
+These tiers are what people see. The stored energy contract (`energy-1`, `services/common/metadata/energy.py`) has its own provisional bands (Warm 1.0–3.9, Building 4.0–6.9, Peak 7.0–10.0); they are not shown and do not change the tiers. The boundaries are settled in the milestone 3 ratification, and the design system decides the words (harmonic-1 Q-E5, DR-056). Energy moves never depend on either.
+
 ## Set shapes
 
 Shape names are fixed; the target wave is drawn dashed (`chart-ref`) behind the slot bars. The descriptions below summarise the intent; the numeric curves in the Naarm Set Builder are the reference, and SongNodes' path builder presets must be refitted to reproduce them, not tuned by hand.
@@ -43,8 +45,8 @@ Shape names are fixed; the target wave is drawn dashed (`chart-ref`) behind the 
 ### Wave rules
 
 1. Energy climbs +1 at a time and may hold (+0) for any number of slots.
-2. A climb of +2 or more in one transition is a clash: "energy +2: too steep, step up one at a time".
-3. After a peak, drop 2–3 points at once ("drop −3: trough reset", perfect). A single −1 is compatible; a second −1 in a row is flagged possible: "second −1 in a row: drop 2–3 at once instead".
+2. A climb of +2 or more in one transition is a clash: "energy +2: too steep, step up one at a time"; +4 or more is also jarring ("energy +5: jarring, step up one at a time").
+3. After a peak, drop 2–4 points at once ("drop −3: trough reset", perfect); a drop of 5 or more is jarring, a clash ("drop −6: jarring, drop 2–4 at once"). A single −1 is compatible; a second −1 in a row is flagged possible: "second −1 in a row: drop 2–3 at once instead".
 4. Genre switches (House → Techno → UK garage) happen in the Building tier, after a run of three or more tracks in the current genre.
 5. Locked slots never move; rebuilds ("Try another take") fill around them.
 
@@ -54,10 +56,24 @@ A `TransitionNote` judges four dimensions and shows the worst verdict as its ove
 
 | Dimension | Perfect ● | Compatible ◐ | Possible ○ | Clash ✕ |
 |---|---|---|---|---|
-| Energy (`energyStep`) | +1, hold, drop of 2 or more | −1 (single) | second −1 in a row | +2 or more |
+| Energy (`energyStep`) | +1, hold, drop of 2–4 | −1 (single) | second −1 in a row | +2 or more; drop of 5 or more |
 | Key (`compat`) | same key; relative A↔B | ±1, same letter | +2 same letter ("+2 energy boost"); +7 same letter ("+7 lift") | anything else |
-| BPM (`bpmStep`) | gap ≤ 2 | 3–4 | 5–8 | > 8 |
+| BPM (`bpmStep`) | gap ≤ 2 | 3–4; half or double time with a gap ≤ 4 | 5–8 (direct or half/double time) | > 8 |
 | Genre | same genre | switch in Building tier after 3+ | switch elsewhere | — (genre never clashes alone) |
+
+- Energy is judged on the one-decimal delta rounded half away from zero (+0.5 is +1, −1.5 is −2); BPM on the gap rounded half up on its absolute value (2.5 is 3 in both directions).
+- Half and double time: when the halved or doubled target BPM is strictly closer than the direct gap and within 8, the move is "half time" or "double time", judged on that gap and never better than compatible (the groove changes even when the tempo locks). `bpmStep` returns `relation` (`direct`, `half_time`, `double_time`) and `gap` with the verdict.
+- Energy moves (`energy-move-1`): `energyStep` also returns `move`, the stored identifier of the move. Show a stored move with `SongNodes.energyMove(move)`:
+
+| `move` | Delta (rounded) | Words | Verdict without set context |
+|---|---|---|---|
+| `hold` | 0 | "hold" | perfect ● |
+| `step_up` | +1 | "step up" | perfect ● |
+| `lift` | +2, +3 | "push" (never "lift", which is the +7 key move) | clash ✕ |
+| `jarring` | +4 or more; −5 or less | "jarring" | clash ✕ |
+| `reset_drop` | −2 to −4 | "trough reset" | perfect ● |
+| `step_down` | −1 | "step down" | compatible ◐ |
+| `unknown` | either energy missing | "energy ?" | unknown ? |
 
 - Missing data gives "unknown" with "?" ("key ?", "BPM ?", "energy ?") and never counts as a clash. Show `fg-3` and offer "Add key" where editable.
 - Words beat glyphs, glyphs beat colours: every verdict shows glyph + word; the colour comes from `compat-*`, the same traffic light in every theme (dark, light and booth). No theme is colour-blind-safe on its own, so the glyph and the word are never dropped.

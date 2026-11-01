@@ -24,8 +24,8 @@ Levels and labels come from `SongNodes.compat(a, b)`, `bpmStep(a, b)` and `energ
 
 ## Rules
 Key (Camelot): same key → perfect; ±1 on the wheel, same letter → compatible; relative major/minor (8A↔8B) → perfect; +2, same letter → possible ("energy boost"); +7, same letter → possible ("lift"); anything else → clash.
-BPM: within 2 perfect, within 4 compatible, within 8 possible, more is a clash.
-Energy: +1 or hold perfect; −1 compatible; a second −1 in a row possible; +2 or more clash; a drop of 2 or more (after a peak) perfect.
+BPM: within 2 perfect, within 4 compatible, within 8 possible, more is a clash (gap rounded half up); half or double time ("half time", "double time") at best compatible.
+Energy (delta rounded half away from zero): +1 or hold perfect; −1 compatible; a second −1 in a row possible; +2 or more clash; a drop of 2–4 (after a peak) perfect "trough reset"; a drop of 5 or more clash "jarring".
 
 ## Accessibility
 The glyph and the words carry the verdict; the hue is the same traffic light in dark, light and booth, so the badge never relies on colour alone. Where space allows, the label names the move ("+1 key"), not only "Compatible".
