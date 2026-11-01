@@ -2284,3 +2284,9 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: the e2e job against the real stack (no Docker here). Its result is unknown until CI runs; the first run is the offender list.
 - Next: read the first CI run's list and open fix packages per component or page (or exclusions with a card citation where the system intends the inset).
 <!-- SLOT:INS1 END -->
+
+<!-- SLOT:HS6 BEGIN -->
+### HS6: Route finder prefers proven transitions
+- Start: 2026-11-02 (branch hs6-pathfinder-cost off origin/main a071a2e). Brief: plan/agents/HS6_pathfinder_cost.md (spec package M6-R1, docs/specs/HARMONIC_SCORING.md §2.6).
+- Next: cost edges with the HS1 `path_cost` in `services/rest_api/routers/pathfinder.py`, with tests in `tests/rest_api/test_pathfinder_cost.py`.
+<!-- SLOT:HS6 END -->
