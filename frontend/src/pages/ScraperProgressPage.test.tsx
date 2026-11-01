@@ -1,9 +1,11 @@
 /** @vitest-environment jsdom */
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { vi, describe, beforeEach, afterEach, it, expect } from 'vitest';
 import ScraperProgressPage from './ScraperProgressPage';
 import { showToast } from '../components/ds';
+
+const telemetryState = vi.hoisted(() => ({ scrapeRuns: [] as any[] }));
 
 // Mock the telemetry hook
 vi.mock('../features/pipeline/usePipelineTelemetry', () => ({
@@ -19,13 +21,18 @@ vi.mock('../features/pipeline/usePipelineTelemetry', () => ({
     stages: [],
     workers: [],
     jobs: [],
-    scrapeRuns: [],
+    scrapeRuns: telemetryState.scrapeRuns,
     isLoading: false,
     error: null,
     lastUpdated: Date.now(),
     source: 'live',
     refresh: vi.fn(),
   })),
+}));
+
+// The stages card has its own tests; here only which jobs get one matters.
+vi.mock('../features/pipeline/ScrapeJobStages', () => ({
+  ScrapeJobStages: ({ jobId, query }: { jobId: string; query: string }) => <div data-testid="job-stages">{jobId} {query}</div>,
 }));
 
 // Mock the API helper since some things use it (retry job)
@@ -65,11 +72,13 @@ describe('ScraperProgressPage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    telemetryState.scrapeRuns = [];
     fetchMock = vi.fn();
     global.fetch = fetchMock;
   });
 
   afterEach(() => {
+    cleanup();
     global.fetch = originalFetch;
   });
 
@@ -172,5 +181,21 @@ describe('ScraperProgressPage', () => {
 
     expect(screen.getAllByText('MixesDB').length).toBeGreaterThan(0);
     expect(screen.getAllByText('1001Tracklists').length).toBeGreaterThan(0);
+  });
+
+  it('shows a stages card for each queued or running scrape and keeps it after the job finishes', () => {
+    const run = (id: string, state: string) => ({ id, source: 'mixesdb', query: `Query ${id}`, state, createdAt: '2026-11-01T10:00:00Z', finishedAt: null, seconds: null, playlists: null, tracks: null, error: null });
+    telemetryState.scrapeRuns = [run('r1', 'running'), run('q1', 'queued'), run('d1', 'done'), run('f1', 'failed')];
+    const { rerender } = render(<ScraperProgressPage />);
+    expect(screen.getAllByTestId('job-stages').map((n) => n.textContent)).toEqual(['r1 Query r1', 'q1 Query q1']);
+
+    telemetryState.scrapeRuns = [run('r1', 'done'), run('q1', 'running')];
+    rerender(<ScraperProgressPage />);
+    expect(screen.getAllByTestId('job-stages')).toHaveLength(2);
+  });
+
+  it('shows no stages card when no scrape is unfinished', () => {
+    render(<ScraperProgressPage />);
+    expect(screen.queryByTestId('job-stages')).toBeNull();
   });
 });

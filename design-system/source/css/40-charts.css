@@ -197,15 +197,19 @@
 .sn-graph-styles__ring-path--outer { stroke-width: 1.5; }
 .sn-graph-styles__badge { fill: var(--mod-paths); }
 .sn-graph-styles__badge-text { fill: var(--on-mod-paths); font-family: var(--font-data); font-size: 0.625rem; font-weight: 700; text-anchor: middle; dominant-baseline: central; }
-.sn-graph-styles__edge { fill: none; stroke: var(--g-edge); stroke-linecap: round; opacity: var(--opacity-edge); }
-.sn-graph-styles__edge--strong { opacity: 0.9; }
-.sn-graph-styles__edge--adjacency { stroke-width: 1.5; }
-.sn-graph-styles__edge--similarity { stroke-width: 1.5; stroke-dasharray: 6 4; stroke-linecap: butt; }
-.sn-graph-styles__edge--key { stroke-width: 2; stroke-dasharray: 0.1 4; }
-.sn-graph-styles__edge--collab { stroke-width: 1; }
-.sn-graph-styles__edge--genre { stroke-width: 0.75; }
-.sn-graph-styles__edge--path { stroke: var(--mod-paths); opacity: 1; stroke-width: 3; }
+/* Links: width and opacity come from the strength band (b1 Weak … b4 Very strong, cut points fitted per library); dash carries type (DR-035). */
+.sn-graph-styles__edge { --g-w: var(--graph-edge-w-2); --g-op: var(--opacity-edge); fill: none; stroke: var(--g-edge); stroke-linecap: round; stroke-width: var(--g-w); opacity: var(--g-op); }
+.sn-graph-styles__edge--b1 { --g-w: var(--graph-edge-w-1); --g-op: var(--graph-edge-op-1); }
+.sn-graph-styles__edge--b2 { --g-w: var(--graph-edge-w-2); --g-op: var(--graph-edge-op-2); }
+.sn-graph-styles__edge--b3 { --g-w: var(--graph-edge-w-3); --g-op: var(--graph-edge-op-3); }
+.sn-graph-styles__edge--b4, .sn-graph-styles__edge--strong { --g-w: var(--graph-edge-w-4); --g-op: var(--graph-edge-op-4); } /* --strong: deprecated in 1.5.0 (use --b4), removed in 2.0.0 */
+.sn-graph-styles__edge--dim { opacity: calc(var(--g-op) * var(--graph-edge-dim)); }
+.sn-graph-styles__edge--similarity { stroke-dasharray: 6 4; stroke-linecap: butt; }
+.sn-graph-styles__edge--key { stroke-dasharray: 0.1 calc(var(--g-w) + 3px); }
+.sn-graph-styles__edge--collab { stroke-width: max(1px, calc(var(--g-w) / 2)); }
+.sn-graph-styles__edge--path { stroke: var(--mod-paths); opacity: 1; stroke-width: max(3px, var(--g-w)); }
 .sn-graph-styles__edge--sel { stroke: var(--brand); opacity: 1; }
+.sn-graph-styles__ring-guide { fill: none; stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 4; } /* documentation only: the renderer draws no ring guides */
 .sn-graph-styles__label { fill: var(--fg); font-family: var(--font-body); font-size: 0.75rem; paint-order: stroke; stroke: var(--g-canvas); stroke-width: 3px; stroke-linejoin: round; }
 .sn-graph-styles__label b, .sn-graph-styles__label-artist { font-weight: 600; }
 .sn-graph-styles__label-title { fill: var(--fg-2); }

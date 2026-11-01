@@ -44,7 +44,7 @@ Never use it for: "now", status, a chart series, a module identity, decorative h
 
 ## Module colours
 
-Each module owns one hue for identity: its drawer icon, links that lead to it, its tonal cards (`.sn-card--tonal` inside `.sn-m-<key>`) and the `PageHeader` band. Values are `mod-<key>` / `mod-<key>-bg`.
+Each module owns one hue for identity: its drawer icon, links that lead to it, its go icon on a source link (1.6.0, 14-identity-icons), its tonal cards (`.sn-card--tonal` inside `.sn-m-<key>`) and the `PageHeader` band. Values are `mod-<key>` / `mod-<key>-bg`.
 
 | Module | Scope class | Dark | Light | Booth |
 |---|---|---|---|---|

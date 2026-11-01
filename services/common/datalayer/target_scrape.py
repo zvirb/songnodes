@@ -1,18 +1,70 @@
 import logging
 import os
-from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from datetime import date, datetime, timezone
+from typing import Any, Dict, Optional, Tuple
 from uuid import UUID
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from . import jobs
 
 logger = logging.getLogger('songnodes.target_scrape')
+
+# DS24B: the owner's scheduled-scrape window (table scrape_window, migration 260). Melbourne calendar days,
+# both ends inclusive; a null end is open. No table or no row means no window. Manual scrapes never read it.
+TIMEZONE = 'Australia/Melbourne'
+Window = Tuple[Optional[date], Optional[date]]
+WINDOW_SQL = 'SELECT starts_on, ends_on, updated_at FROM scrape_window LIMIT 1'
+
+
+def melbourne_date(now: datetime) -> date:
+    """The Melbourne calendar day for an aware instant (AEST/AEDT from the tz database)."""
+    return now.astimezone(ZoneInfo(TIMEZONE)).date()
+
+
+async def today_in_melbourne(conn, now: Optional[datetime] = None) -> date:
+    """Today in Melbourne. python:3.15-slim may have no tz database and no tzdata package is installed,
+    so without one Postgres (which always has it) answers instead."""
+    try:
+        return melbourne_date(now or datetime.now(timezone.utc))
+    except ZoneInfoNotFoundError:
+        return await conn.fetchval(f"SELECT (NOW() AT TIME ZONE '{TIMEZONE}')::date")
+
+
+def is_missing_table(error: Exception) -> bool:
+    return type(error).__name__ == 'UndefinedTableError'
+
+
+async def read_window(conn) -> Optional[Any]:
+    """The window row, or None when the table or the row is missing."""
+    try:
+        return await conn.fetchrow(WINDOW_SQL)
+    except Exception as error:
+        if is_missing_table(error):
+            logger.warning('scrape_window table is missing (apply sql/migrations/260_scrape_window_up.sql); no window')
+            return None
+        raise
+
+
+def inside_window(window: Window, today: date) -> bool:
+    starts_on, ends_on = window
+    return (starts_on is None or today >= starts_on) and (ends_on is None or today <= ends_on)
 
 
 async def scrape_targets(conn) -> Dict[str, Any]:
     enabled = os.getenv('SCRAPE_TARGETS_ENABLED', 'true').lower() == 'true'
     if not enabled:
         return {'selected': 0, 'enqueued': 0, 'skipped_existing': 0}
+
+    row = await read_window(conn)
+    window: Window = (row['starts_on'], row['ends_on']) if row else (None, None)
+    if window != (None, None):
+        today = await today_in_melbourne(conn)
+        if not inside_window(window, today):
+            starts_on, ends_on = (d.isoformat() if d else None for d in window)
+            logger.info('scrape_targets skipped: today %s (%s) is outside the window %s to %s',
+                        today.isoformat(), TIMEZONE, starts_on or 'open', ends_on or 'open')
+            return {'selected': 0, 'enqueued': 0, 'skipped_existing': 0, 'outside_window': True,
+                    'starts_on': starts_on, 'ends_on': ends_on}
 
     limit = int(os.getenv('SCRAPE_TARGETS_PER_RUN', '2'))
     days = int(os.getenv('TARGET_RESEARCH_DAYS', '7'))

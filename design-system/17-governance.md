@@ -20,6 +20,26 @@ The design system has one version number, [semver](https://semver.org) `MAJOR.MI
 
 Newest first. Each entry: version, date (Melbourne), one line per change, prefixed Added / Changed / Deprecated / Removed / Fixed, with the decision record if any.
 
+**1.6.0 — 2 Nov 2026: explain once, every warning links to its source, go icons (imported from BeanAlliance v4.18 to v4.20.2, asked for by Markus 2 Nov 2026)**
+- Added `InfoTip` (Feedback): an explanatory notice shrunk to one `info` button (24px, `fg-2`, no `title`) where the text was; the words move verbatim into a tooltip (40 words or fewer, the `Tooltip` look, opens on hover, keyboard focus and tap, a tap pins it) or a panel (the `Popover` look, 24rem, click, tap, Enter or Space only, never hover); one open per page; Escape closes; under 768px both sit at the bottom of the screen; never printed. Classes `.sn-infotip`, `__btn`, `__tip` (`--up`, `--end`, `--static`), `__panel` (`--static`), `__close`; helpers `SongNodes.infoTip`, `SongNodes.infoTips` (DR-038).
+- Changed: every field's help is an `InfoTip` after its label, however short; a caveat on a figure, today's included, may be one; long method text is the panel form (DR-039). New `.sn-text-field__head` / `.sn-field__head` (label, InfoTip, count). 01-writing, 09-cognitive-load, 12-inputs, `TextField`, `SectionHeading`, `Tooltip` updated.
+- Deprecated `.sn-field__help` for guidance (kept for a value a field reports back), removed in 2.0.0. Still to move to InfoTips (their help or notes still sit under the control in this release): `Checkbox` (`__hint`), `Switch` (`__desc`), `PreferencesPanel` (`__note`), `PeriodNav` (`__hint`), `ChartFrame` (`__note`), `PageHeader` (`__desc` when over one line), and the field help in `SettingsPage`; in the app, `SettingsPanel.tsx` and `APIKeyManager.tsx` move in phase 4 of the migration. Each needs its words checked against the never-list before it moves.
+- Added: every warning links to its source. Warn and bad `Banner`s and `InlineMessage`s, a stale `FreshnessStamp` phrase, a flagged row's reason and a data-caused `ErrorState` end with one `a.sn-link.sn-link--src` naming the page and place where the cause is changed; another module opens in a new tab; a banner whose own button fixes it here needs none (DR-040). Helper `SongNodes.sourceLink`.
+- Changed: every banner can be dismissed, `bad` included (was: not dismissable); a dismissed warn or bad banner, or boxed warn or bad `InlineMessage`, shrinks to its status icon in place (`.sn-dismissed`), until the next day in Melbourne or until its fact changes; a bad banner also returns when the blocked action is tried again; info and ok banners go entirely (DR-041). Helper `SongNodes.dismissal`; `BannerProps.factKey`, `BannerProps.source`, `InlineMessageProps.source`, `onDismiss`, `factKey`.
+- Added go icons: the target module's icon at 84% with a half-size `external-link` badge, in the module colour, leading every source link to another page (`.sn-go`, `__glyph`, `__badge`; `SongNodes.goIcon`). No new icon file: built from the existing set (DR-042).
+- Not adopted from BeanAlliance, with the reason: warn and crit toasts and their source links (SongNodes toasts are confirmations only, 07-feedback-status); `zebra` and `PrintLabel` (v4.17.4: thermal carton labels for Zebra printers; SongNodes prints no labels); the board-specific "next working day" (SongNodes has no plant calendar, so a dismissal lasts until the next calendar day, Q23).
+- No token changed; every new class uses existing tokens. Contrast: module colours hold 4.5:1 as text on `bg`, `surface-1` and every `status-*-bg`, and 3:1 as icons on every ground; source links are kept off `surface-2`, where dark Pathfinder text is 4.02:1.
+
+**1.5.0 — 30 Oct 2026: graph layout and link strength (chosen by Markus from the Graph Strength Options page, 30 Oct 2026)**
+- Changed: the graph is laid out on rings around now playing, not by a force simulation. Distance only orders tracks: the strongest links take the closest seats, weaker ones move out when those are taken, and every seat keeps its node and label clear (GraphStyles → Layout; DR-034).
+- Changed: link strength is drawn as four bands of width and opacity (1 / 2 / 3.5 / 6px, 0.35 / 0.55 / 0.8 / 1), replacing "width = 0.5 + 7.5 × weight" in GraphStyles and "1–4px" in Music domain. Weak links show only when one of a track's two strongest, touching now playing, or touching the hovered or selected track (DR-035).
+- Added: band cut points fitted to the library each weekly run: quartiles, cross-checked by natural breaks (DR-036).
+- Added tokens `graph-edge-w-1…4`, `graph-edge-op-1…4`, `graph-edge-dim`, `graph-ring-first`, `graph-ring-step`, `graph-ring-aspect`, `graph-seat-gap`, `graph-label-zoom` (new `graph` family); classes `.sn-graph-styles__edge--b1…b4`, `--dim`, `.sn-graph-styles__ring-guide`; helpers `SongNodes.edgeBand`, `fitEdgeCuts`, `edgeVisibility`, `seatBox`, `ringLayout`, `EDGE_BAND_LABEL`, `EDGE_CUTS_DEFAULT`.
+- Deprecated `.sn-graph-styles__edge--strong` (now an alias of `--b4`), removed in 2.0.0. `opacity-edge` now applies only to link samples drawn without a band.
+- Fixed: Data display's edge table (dash 4 3, dotted collaboration, compat-coloured key links) and Music domain's hovered/selected ring widths now match GraphStyles.
+- Labels keep today's rule: shown on hover, selection, now playing and for all nodes at zoom > 1.5 (DR-037).
+- GraphStyles, GraphControls and GraphExplorerPage previews redrawn with the ring layout and strength bands.
+
 **1.4.0 — 28 Oct 2026: drag and drop, stalled loads, CSV guard, no printed paths (imported from BeanAlliance v4.15, v4.17 and v4.17.1, chosen by Markus 28 Oct 2026)**
 - Added `DragDrop` (Inputs): one pattern for reordering the running order and dragging crate tracks into a set: `grip-vertical` handle, 4px threshold, name-only ghost, dashed `brand` target with the outcome in words, insertion line, locked slots refuse and say why, Space / arrows / Enter / Escape, Undo toast (`.sn-drag-handle`, `.sn-drag-origin`, `.sn-drag-ghost`, `__name`, `--static`, `[data-locked]`, `.sn-drop-target`, `.sn-drop-text`, `.sn-drop-line` in the new `source/css/35-drag-drop.css`).
 - Added `SongNodes.csv` (`cell`, `row`, `file`, `BOM`, `EOL`): the formula guard prefixes typed or scraped text starting with `=`, `+`, `-`, `@`, tab or carriage return with an apostrophe, before quoting; numbers the export writes are untouched; the BOM, sentence-case header and timestamped name stay (DR-033). 15-print-export updated.
@@ -144,6 +164,28 @@ Consequences: brand lavender has one meaning. If Markus prefers lavender for Key
 | DR-032 | The AppHeader keeps `space-2` (8px) side padding under a 560px container, so its actions fit; it is the one exception to the 16px phone gutter (closes Q17). |
 | DR-033 | CSV exports keep the SongNodes convention (UTF-8 with BOM, sentence-case headers, timestamped file names); BeanAlliance's no-BOM, lowercase-header, period-named files are not adopted. Its formula-injection guard is adopted (1.4.0). |
 
+### DR-034 to DR-037 — graph choices of 30 Oct 2026
+Chosen from four layouts and three link styles compared on the same 40 tracks (Graph Strength Options page). Scores there for the rings layout, against today's force layout: 0 name clashes (was 47), spacing spread ±25% (was ±41%), rank correlation between strength and shortness +0.39 (was +0.94), so distance deliberately carries less.
+
+| # | Decision |
+|---|---|
+| DR-034 | Layout: rings around the anchor track (now playing, else selected, else the most-linked track). Seats sit a regular distance apart; the strongest link takes the nearest free seat and weaker ones move outward when there is no room. Distance orders, never measures. |
+| DR-035 | Link strength: four width bands with matching opacity (E3). Weak links are drawn only when one of either track's two strongest, touching now playing, or touching the hovered or selected track. |
+| DR-036 | Band cut points: fitted to the library (quartiles of all link weights, refitted each weekly run; natural breaks as the cross-check, a mismatch over 0.10 flagged on Monitoring). Defaults 0.25 / 0.50 / 0.75 until 200 links exist. |
+| DR-037 | Labels: unchanged (hover, selection, now playing; all at zoom > 1.5). Seats reserve each label at zoom 1.5, so they never overlap once shown. |
+
+### DR-038 to DR-042 — imported from BeanAlliance v4.18 to v4.20.2 (2 Nov 2026)
+
+Markus's BeanAlliance decisions of 1 Nov 2026, brought into SongNodes at his request ("collect, transform and integrate those more recent updates"). Each is his rule, fitted to SongNodes; where the fit needed a choice of its own, the choice is an open question below (Q23–Q27).
+
+| DR | Decision |
+|---|---|
+| DR-038 | InfoTip: a notice that only explains becomes one `info` button with its words verbatim in a tooltip (40 words or fewer) or a panel. Banners, errors, toasts, legends, a one-line subtitle and anything that must not be missed are never InfoTips. |
+| DR-039 | Every field's help is an InfoTip after its label, however short; a caveat on a figure, today's included, may be one. |
+| DR-040 | Every warning ends with one source link to the page and place where its cause is changed; another page opens in a new tab; no page to change it is a gap on the open-questions list, never a dead link. |
+| DR-041 | Every warning can be dismissed; a dismissed warning shrinks to its status icon in place (icon only, no word) and returns the next day or when its fact changes; a bad one also returns when the blocked action is tried again. Nothing is recorded. |
+| DR-042 | Go icon: the target module's icon at 84% with a half-size new-tab badge, in the target module's colour, leading the words of every source link to another page. |
+
 ## How rules are derived
 
 1. Markus's own decisions (DR-001…DR-016) and his past corrections win.
@@ -154,7 +196,7 @@ Consequences: brand lavender has one meaning. If Markus prefers lavender for Key
 
 ## Open questions
 
-All questions raised at the 1.0.0 release were answered on 24 Oct 2026 (DR-018 revised, DR-021 to DR-030). Q9 remains open; Q11–Q16 and Q18 were fitted in 1.3.0 and wait for Markus (Q10 and Q17 answered as DR-031 and DR-032):
+All questions raised at the 1.0.0 release were answered on 24 Oct 2026 (DR-018 revised, DR-021 to DR-030). Q9 remains open; Q11–Q16 and Q18 were fitted in 1.3.0 and Q23–Q27 in 1.6.0, and wait for Markus (Q10 and Q17 answered as DR-031 and DR-032):
 
 | # | Question | Options | Default until answered |
 |---|---|---|---|
@@ -166,6 +208,11 @@ All questions raised at the 1.0.0 release were answered on 24 Oct 2026 (DR-018 r
 | Q15 | DateRange on phones | Bottom sheet below 480px · full-screen Dialog sheet (DR-029) | Bottom sheet |
 | Q16 | Limit future days in exports | None · `max` greys days after the last data with a reason | None |
 | Q18 | "Tight" text inset (4–7px) | Warn only · fail the check | Warn only |
+| Q23 | How long a dismissed warning stays down (DR-041) | Until the next calendar day in Melbourne · until the next weekly run · until the fact changes only | Next calendar day (BeanAlliance's "next working day" has no SongNodes calendar to follow) |
+| Q24 | Source links in a single-page app (DR-040) | New tab, as BeanAlliance · same tab, since Back restores filters, tab and scroll (08-motion) | New tab, so the page with the warning keeps its place |
+| Q25 | Info and ok banners when dismissed | Go entirely until their fact changes (SongNodes 1.0) · shrink to their icon like a warning | Go entirely |
+| Q26 | InfoTip button size | 24px (WCAG 2.5.8 minimum, matches BeanAlliance's `control-h-sm`) · 32px `control-sm` like other small icon buttons | 24px, 44px hit area on touch |
+| Q27 | InfoTip hover delay | Opens at once on hover (the info button is pointed at on purpose, as BeanAlliance) · 500 ms like `Tooltip` | At once |
 
 ### Approved exceptions
 
