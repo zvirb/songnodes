@@ -179,6 +179,9 @@ async def ingest_playlist(conn, bronze_playlist_id: UUID) -> Dict[str, Any]:
         entries = await load_entries(conn, bronze_playlist_id, raw)
         declared = as_int(raw.get('total_tracks') or raw.get('track_count'))
         errors = completeness_errors(entries, declared)
+        flag = raw.get('bronze_incomplete')  # BRZ1: a track row could not be saved to bronze
+        if not errors and isinstance(flag, dict):
+            errors = {'reason': 'bronze_incomplete', 'failed_positions': flag.get('failed_positions') or []}
         dj_raw = clean_name(bronze['artist_name'])
         dj_valid = bool(dj_raw) and not is_placeholder_artist(dj_raw)
         dj_name = await resolve_artist(conn, dj_raw, 'ingest') if dj_valid else (dj_raw or 'Unknown')

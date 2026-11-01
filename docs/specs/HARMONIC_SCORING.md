@@ -1,14 +1,15 @@
-# Harmonic scoring and energy moves (spec `harmonic-1`, provisional)
+# Harmonic scoring and energy moves (spec `harmonic-1`, accepted)
 
-Status: **proposed** (M6S, 1 Nov 2026). Milestone 6 in `docs/IMPLEMENTATION_PLAN.md` asks for one tested
+Status: **accepted** (proposed M6S, 1 Nov 2026; owner answers to every §5 question 2 Nov 2026, recorded in §5;
+implemented as pure functions by M6-F1, work package HS1). Milestone 6 in `docs/IMPLEMENTATION_PLAN.md` asks for one tested
 harmonic scoring spec, energy move labels on edges, and tested score-versus-cost semantics. This document
 lists every rule the code has today, defines one canonical rule set, gives the worked examples later
-packages turn into tests, and splits the implementation into packages. It changes no code.
+packages turn into tests, and splits the implementation into packages. The spec itself changes no code.
 
 Authority: the design system (`SN.compat`, `SN.bpmStep`, `SN.energyStep` in
 `design-system/source/bundle.src.js`, described in `design-system/18-music-domain.md` and
 `11-data-display.md`) decides the **levels and words shown to people**. Where this spec needs a different
-verdict or word, it is listed under [Open questions](#5-open-questions) and must be settled as a
+verdict or word, it is listed under [Questions and answers](#5-questions-and-answers) and is settled as a
 design-system change (`design-system/17-governance.md`), never patched in app code.
 
 ---
@@ -107,9 +108,10 @@ Scores per level are the ones already in migration 006 and `scrapers/camelot_whe
 1. `direct = |b − a|`; `as_double = |b / 2 − a|` (target is double time); `as_half = |2b − a|` (target is half time).
 2. Round each gap to a whole BPM, **half away from zero on the absolute value** (Python `Decimal` `ROUND_HALF_UP`).
 3. If the smaller octave gap is strictly less than the direct gap and ≤ 8, relation is `double_time` / `half_time` and that gap is used; otherwise relation is `direct`.
-4. Level from the gap: ≤ 2 perfect, 3–4 compatible, 5–8 possible, > 8 clash (SN thresholds). An octave move is **capped at compatible** (the groove changes even when the tempo locks). See Q-B1.
+4. Level from the gap: ≤ 2 perfect, 3–4 compatible, 5–8 possible, > 8 clash (SN thresholds). An octave move is **capped at compatible**, never perfect (the groove changes even when the tempo locks; Q-B1, answered).
 5. `bpm_score` = level score (1.0 / 0.8 / 0.5 / 0.0); unknown → null, label "BPM ?".
-6. Label: the signed direct gap as SN words it ("+3 BPM", "−2 BPM", "same BPM"); octave labels wait on Q-B1.
+6. Label: the signed direct gap as SN words it ("+3 BPM", "−2 BPM", "same BPM"); an octave move has its own wording,
+   "double time" / "half time" (the gap is in `bpm_gap`), with the final words from the design system (M6-DS).
 
 Tempo tolerance for **evidence** (`tempo_agreement`, 0.5 %) and genre folding (`fold_tempo`) are unchanged and are not used here.
 
@@ -122,9 +124,9 @@ Tempo tolerance for **evidence** (`tempo_agreement`, 0.5 %) and genre folding (`
 | `hold` | 0 (−0.4 … +0.4) | Plateau |
 | `step_up` | +1 | Climb one level |
 | `lift` | +2, +3 | Deliberate push |
-| `jarring` | ≥ +4, or ≤ −5 | Rise or fall big enough to break the floor |
-| `reset_drop` | −2 … −4 | Trough reset after a peak |
-| `step_down` | −1 | Ease off (proposed sixth label, Q-E1) |
+| `jarring` | ≥ +4, or ≤ −5 | Rise or fall big enough to break the floor (Q-E2) |
+| `reset_drop` | −2 … −4 | Trough reset after a peak (Q-E2; the design system's "trough reset" narrows to this) |
+| `step_down` | −1 | Ease off (sixth label, mirrors `step_up`; Q-E1) |
 | `unknown` | either energy unknown | Never classified as a known move; delta null |
 
 The label is a fact about the edge's inputs. It carries no set context: the "second −1 in a row" rule (`energyStep`'s `before`) and whether a drop suits the moment belong to the route finder and the UI, not to the stored label. Recalibration publishes `energy-move-2`; stored labels are never edited in place.
@@ -137,7 +139,7 @@ Energy is **not** part of the compatibility score (plan: "compatibility strength
 - `compat_score = key_score^0.6 × bpm_score^0.4` (weighted geometric mean), so any clash gives 0 and lands in "Hard mix", matching the worst-verdict rule of the transition note.
 - `compat_coverage` = sum of the weights of the known parts (1.0, 0.6, 0.4 or 0).
 - `compat_score` is stored and shown **only when coverage is 1.0**; otherwise it is null and the UI shows the part verdicts ("key ?"). `partial_score` (same formula, exponents renormalised over the known parts) is kept for cost only.
-- Display: `100 × compat_score` rounded half up to a whole number (91.5 → 92), with the Q9 bands.
+- Display: `100 × compat_score` rounded half up to a whole number (87.5 → 88; 0.8^0.4 = 0.9146 → 91), with the Q9 bands.
 
 ### 2.6 Cost for pathfinding
 
@@ -161,7 +163,10 @@ Required properties (each becomes a test): cost > 0 for every input; cost strict
 
 ## 3. Worked examples
 
-Score shown ×100; cost to three decimals. "Today (SN)" is what the current bundle shows where it differs from the spec.
+Score shown ×100; cost to three decimals. "Today (SN)" is what the current bundle shows where it differs from the spec;
+those differences close when M6-DS lands. The golden copy of this table, read by the tests, is
+`tests/fixtures/harmonic_scoring/examples.json`. Scores in rows 10, 11, 13, 15, 16 and 19 were corrected on
+2 Nov 2026: the first draft rounded 0.8^0.6 = 0.8747 up to 88 and 0.8^0.4 = 0.9146 up to 92; they are 87 and 91.
 
 | # | From → to (key, BPM, energy, n) | Key | BPM | Energy move | Score | Cost | Today (SN) |
 |---|---|---|---|---|---|---|---|
@@ -172,21 +177,21 @@ Score shown ×100; cost to three decimals. "Today (SN)" is what the current bund
 | 5 | 8A → 10A, 125 → 130, 5 → 7, n 1 | possible, +2 | direct 5, possible | lift (+2) | 50 | 1.050 | energy clash "too steep" |
 | 6 | 10A → 8A, 130 → 125, 7 → 5, n 1 | possible, −2 | direct 5, possible | reset_drop (−2) | 50 | 1.050 | same |
 | 7 | 8A → 3A, 124 → 124, 7 → 8, n 4 | possible, +7 | direct 0, perfect | step_up (+1) | 66 | 0.691 | same |
-| 8 | 3A → 8A, 124 → 124, 8 → 7, n 0 (inferred) | clash (−7) | direct 0, perfect | step_down (−1) | 0 | 2.050 | same |
+| 8 | 3A → 8A, 124 → 124, 8 → 7, n 0 (inferred) | clash (−7) | direct 0, perfect | step_down (−1, Q-E1) | 0 | 2.050 | same |
 | 9 | 8A → 9B, 124 → 124, 6 → 6, n 1 | clash (diagonal) | direct 0, perfect | hold (0) | 0 | 1.550 | same |
-| 10 | 12A → 1A, 128 → 128, 6 → 7, n 5 | compatible, +1 (wrap) | direct 0, perfect | step_up (+1) | 88 | 0.454 | same |
-| 11 | 1B → 12B, 128 → 126, 8 → 5, n 2 | compatible, −1 (wrap) | direct 2, perfect | reset_drop (−3) | 88 | 0.562 | same |
+| 10 | 12A → 1A, 128 → 128, 6 → 7, n 5 | compatible, +1 (wrap) | direct 0, perfect | step_up (+1) | 87 | 0.454 | same |
+| 11 | 1B → 12B, 128 → 126, 8 → 5, n 2 | compatible, −1 (wrap) | direct 2, perfect | reset_drop (−3) | 87 | 0.562 | same |
 | 12 | 8A → 11B, 128 → 140, 4 → 9, n 1 | clash | direct 12, clash | jarring (+5) | 0 | 1.550 | energy clash |
-| 13 | 5A → 5A, 87 → 174, 6 → 6, n 1 | perfect, same | double_time 0, compatible | hold (0) | 92 | 0.635 | BPM clash "+87 BPM" (Q-B1) |
-| 14 | 5A → 6A, 128 → 64, 8 → 5, n 1 | compatible, +1 | half_time 0, compatible | reset_drop (−3) | 80 | 0.750 | BPM clash "−64 BPM" (Q-B1) |
-| 15 | 8A → 8A, 123 → 125.5, 6 → 6, n 1 | perfect | direct 3 (2.5 rounds up), compatible | hold (0) | 92 | 0.635 | "+3 BPM" compatible |
-| 16 | 8A → 8A, 125.5 → 123, 6 → 6, n 1 | perfect | direct 3, compatible | hold (0) | 92 | 0.635 | "−2 BPM" perfect (JS rounding, Q-B2) |
+| 13 | 5A → 5A, 87 → 174, 6 → 6, n 1 | perfect, same | double_time 0, compatible (capped), "double time" | hold (0) | 91 | 0.635 | BPM clash "+87 BPM" (Q-B1) |
+| 14 | 5A → 6A, 128 → 64, 8 → 5, n 1 | compatible, +1 | half_time 0, compatible (capped), "half time" | reset_drop (−3) | 80 | 0.750 | BPM clash "−64 BPM" (Q-B1) |
+| 15 | 8A → 8A, 123 → 125.5, 6 → 6, n 1 | perfect | direct 3 (2.5 rounds up), compatible | hold (0) | 91 | 0.635 | "+3 BPM" compatible |
+| 16 | 8A → 8A, 125.5 → 123, 6 → 6, n 1 | perfect | direct 3, compatible, "−3 BPM" | hold (0) | 91 | 0.635 | "−2 BPM" perfect (JS rounding, Q-B2) |
 | 17 | ? → 8A, 128 → 129, 6 → 6, n 1 | unknown "key ?" | direct 1, perfect | hold (0) | – (coverage 0.4) | 0.850 | same |
 | 18 | 8A → 8A, ? → 128, 6 → 6, n 1 | perfect | unknown "BPM ?" | hold (0) | – (coverage 0.6) | 0.750 | same |
-| 19 | 8A → 9A, 128 → 128, ? → 7, n 1 | compatible, +1 | direct 0, perfect | unknown | 88 | 0.675 | same |
+| 19 | 8A → 9A, 128 → 128, ? → 7, n 1 | compatible, +1 | direct 0, perfect | unknown | 87 | 0.675 | same |
 | 20 | 8A → 8A, 128 → 128, 6.4 → 7.9, n 1 | perfect | perfect | lift (+1.5 → 2) | 100 | 0.550 | "energy hold" (fraction, Q-E3) |
-| 21 | 8A → 8A, 128 → 128, 9.0 → 3.0, n 1 | perfect | perfect | jarring (−6) | 100 | 0.550 | perfect "drop −6: trough reset" (Q-E2) |
-| 22 | 8A → 8A, 128 → 128, 6.0 → 5.5, n 1 | perfect | perfect | step_down (−0.5 → −1) | 100 | 0.550 | "energy hold" (Q-E3) |
+| 21 | 8A → 8A, 128 → 128, 9.0 → 3.0, n 1 | perfect | perfect | jarring (−6, Q-E2) | 100 | 0.550 | perfect "drop −6: trough reset" (Q-E2) |
+| 22 | 8A → 8A, 128 → 128, 6.0 → 5.5, n 1 | perfect | perfect | step_down (−0.5 → −1, Q-E1) | 100 | 0.550 | "energy hold" (Q-E3) |
 | 23 | 8A → 8A, 128 → 128, 6.0 → 6.4, n 1 | perfect | perfect | hold (+0.4 → 0) | 100 | 0.550 | same |
 | 24 | all unknown, n 9 | unknown | unknown | unknown | – (coverage 0) | 0.781 | same |
 
@@ -196,7 +201,7 @@ Also required as tests: all 576 ordered key pairs equal `SN.compat` level and la
 
 ## 4. Packages to implement it
 
-Each is one job within the ~400-line budget; owned paths only. Order: Q-answers → F1 → F2 → P1 → P2 → R1 → U1 → F3.
+Each is one job within the ~400-line budget; owned paths only. Order: Q-answers (done 2 Nov 2026) → F1 (HS1) → F2 → P1 → P2 → R1 → U1 → F3.
 
 | Code | Job | Owned paths |
 |---|---|---|
@@ -213,21 +218,23 @@ Later, not in this split: client pathfinder (`frontend/src/utils/pathfinding.ts`
 
 ---
 
-## 5. Open questions
+## 5. Questions and answers
 
-None of these is resolved here. Each lists the evidence and a proposed default used in §3.
+Every question was answered by the owner (Markus) on 2 Nov 2026. Each row keeps the evidence and the proposed
+default; the answer column is binding for `harmonic-1`. Answers that change shown words are design-system changes
+(M6-DS), never app-code patches.
 
-| # | Question | Evidence | Proposed default |
-|---|---|---|---|
-| Q-E1 | The plan names five labels; a −1 move fits none. | `IMPLEMENTATION_PLAN.md:170–171`; SN treats −1 as its own verdict (`bundle.src.js:82`). | Add `step_down`. Alternative: fold −1 into `hold` (then rows 8 and 22 read `hold`). |
-| Q-E2 | SN calls every drop of 2 or more a perfect "trough reset"; the plan's `jarring` implies very large drops are not. | `bundle.src.js:81`, `18-music-domain.md:47` ("drop 2–3 at once"). | Drops of 2–4 `reset_drop`; 5 or more `jarring`. Rises of 4 or more `jarring`. |
-| Q-E3 | `energyStep` compares exact integers, so a delta of ±0.5 or ±1.5 reads "energy hold". Energy is stored at one decimal. | `bundle.src.js:78–83`, `energy.py:18`. | Round the delta half away from zero before judging, in both SN and the classifier. |
-| Q-E4 | Do uncalibrated readings (legacy 0–1, provider) get a move label? The contract gives them no band. | `energy.py:1–9`, `DATA_LAYER.md:85–87`. | Label them, and store each side's source and calibration flag; routing may ignore uncalibrated moves. |
-| Q-E5 | Tier boundaries disagree: DS Low 1–4 / Building 5–7 / High 8–10 vs contract Warm 1.0–3.9 / Building 4.0–6.9 / Peak 7.0–10.0. Moves do not depend on bands, but the wave chart and route phases do. | `bundle.src.js:73–74`, `11-data-display.md:42–44`, `energy.py:29–33`. | Settle in milestone 3 ratification; the design system wins for wording. |
-| Q-E6 | "Lift" is used both for the key move "+7 lift" and the energy move `lift`; "+2 energy boost" is a key move named after energy. | `bundle.src.js:63–65`, `IMPLEMENTATION_PLAN.md:171`. | Keep both identifiers; show the energy move in UI with a different word (for example "push") chosen by the design system. |
-| Q-B1 | SN has no half/double time: 87 → 174 is a clash. Should an octave move be compatible, possible, or stay a clash, and how is it worded? | `bundle.src.js:85–89`; pathfinder and force layout already fold (`pathfinder.py:134`, `harmonicCompatibility.ts:190`); plan asks for half/double cases (`IMPLEMENTATION_PLAN.md:168`). | Octave gap judged like a direct gap, capped at compatible; label words from the design system. |
-| Q-B2 | `Math.round` rounds −2.5 to −2 and +2.5 to 3, so a gap judges differently by direction. | `bundle.src.js:87`. | Round the absolute gap half up in SN and the classifier. |
-| Q-B3 | Absolute thresholds are looser at 174 BPM than at 120. Keep absolute (SN), or move to percent (browser, transition finder)? | `IntelligentBrowser/utils.ts:117`, `transitions.ts:31`. | Keep SN absolute thresholds in `harmonic-1`; revisit with real-set calibration. |
-| Q-S1 | Weights 0.6/0.4, geometric mean, U = 0.5, ε = 0.05 and the log evidence curve are proposals. | No calibration data yet (ordered real sets pending, `IMPLEMENTATION_PLAN.md:474`). | Use them for `harmonic-1`; fit later as `harmonic-2`. |
-| Q-S2 | Score bands 80/60/40 are still open (Q9). | `17-governance.md:161`. | Use 80/60/40. |
-| Q-S3 | Genre is a TransitionNote dimension but is left out of `compat_score`. | `18-music-domain.md:60`. | Keep genre out of milestone 6 scoring; the route finder may use it. |
+| # | Question | Evidence | Proposed default | Answer (2 Nov 2026) |
+|---|---|---|---|---|
+| Q-E1 | The plan names five labels; a −1 move fits none. | `IMPLEMENTATION_PLAN.md:170–171`; SN treats −1 as its own verdict (`bundle.src.js:82`). | Add `step_down`. Alternative: fold −1 into `hold` (then rows 8 and 22 read `hold`). | Add `step_down` for a −1 move, mirroring `step_up` (rows 8 and 22). |
+| Q-E2 | SN calls every drop of 2 or more a perfect "trough reset"; the plan's `jarring` implies very large drops are not. | `bundle.src.js:81`, `18-music-domain.md:47` ("drop 2–3 at once"). | Drops of 2–4 `reset_drop`; 5 or more `jarring`. Rises of 4 or more `jarring`. | Drops of 2–4 are `reset_drop`; drops of 5 or more are `jarring`; rises of 4 or more are `jarring`. The design system's "trough reset" wording narrows to match (M6-DS). |
+| Q-E3 | `energyStep` compares exact integers, so a delta of ±0.5 or ±1.5 reads "energy hold". Energy is stored at one decimal. | `bundle.src.js:78–83`, `energy.py:18`. | Round the delta half away from zero before judging, in both SN and the classifier. | Proposed default. |
+| Q-E4 | Do uncalibrated readings (legacy 0–1, provider) get a move label? The contract gives them no band. | `energy.py:1–9`, `DATA_LAYER.md:85–87`. | Label them, and store each side's source and calibration flag; routing may ignore uncalibrated moves. | Proposed default. |
+| Q-E5 | Tier boundaries disagree: DS Low 1–4 / Building 5–7 / High 8–10 vs contract Warm 1.0–3.9 / Building 4.0–6.9 / Peak 7.0–10.0. Moves do not depend on bands, but the wave chart and route phases do. | `bundle.src.js:73–74`, `11-data-display.md:42–44`, `energy.py:29–33`. | Settle in milestone 3 ratification; the design system wins for wording. | Proposed default. |
+| Q-E6 | "Lift" is used both for the key move "+7 lift" and the energy move `lift`; "+2 energy boost" is a key move named after energy. | `bundle.src.js:63–65`, `IMPLEMENTATION_PLAN.md:171`. | Keep both identifiers; show the energy move in UI with a different word (for example "push") chosen by the design system. | Proposed default. |
+| Q-B1 | SN has no half/double time: 87 → 174 is a clash. Should an octave move be compatible, possible, or stay a clash, and how is it worded? | `bundle.src.js:85–89`; pathfinder and force layout already fold (`pathfinder.py:134`, `harmonicCompatibility.ts:190`); plan asks for half/double cases (`IMPLEMENTATION_PLAN.md:168`). | Octave gap judged like a direct gap, capped at compatible; label words from the design system. | Judge the halved/doubled BPM like a direct gap, capped at compatible (never perfect), worded "half time" / "double time"; final words from the design system (M6-DS). |
+| Q-B2 | `Math.round` rounds −2.5 to −2 and +2.5 to 3, so a gap judges differently by direction. | `bundle.src.js:87`. | Round the absolute gap half up in SN and the classifier. | Proposed default. |
+| Q-B3 | Absolute thresholds are looser at 174 BPM than at 120. Keep absolute (SN), or move to percent (browser, transition finder)? | `IntelligentBrowser/utils.ts:117`, `transitions.ts:31`. | Keep SN absolute thresholds in `harmonic-1`; revisit with real-set calibration. | Proposed default. |
+| Q-S1 | Weights 0.6/0.4, geometric mean, U = 0.5, ε = 0.05 and the log evidence curve are proposals. | No calibration data yet (ordered real sets pending, `IMPLEMENTATION_PLAN.md:474`). | Use them for `harmonic-1`; fit later as `harmonic-2`. | Proposed default. |
+| Q-S2 | Score bands 80/60/40 are still open (Q9). | `17-governance.md:161`. | Use 80/60/40. | Proposed default. |
+| Q-S3 | Genre is a TransitionNote dimension but is left out of `compat_score`. | `18-music-domain.md:60`. | Keep genre out of milestone 6 scoring; the route finder may use it. | Proposed default. |
