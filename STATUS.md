@@ -535,6 +535,13 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 - Sanitized raw exception strings (`detail=f"...: {str(e)}"`) across playlist management endpoints in `services/rest_api/routers/tidal_playlists.py`. Replaced internal trace detail responses with generic sanitized error messages while preserving server-side logging.
 - Added security regression unit tests in `tests/security/test_tidal_playlists_security.py`.
 - Checks: `PYTHONPATH=services/rest_api python3 -m pytest -o addopts="" --noconftest tests/rest_api/test_tidal_playlists.py tests/security/test_tidal_playlists_security.py` passed (22/22).
+
+### SEC: Pathfinder Router Exception Leakage Remediation (2026-10-31)
+- Start: 2026-10-31
+- End: 2026-10-31
+- Sanitized raw exception string (`detail=f"Pathfinding failed: {str(e)}"`) in `services/rest_api/routers/pathfinder.py`. Replaced internal trace detail response with a generic sanitized error message ("Pathfinding failed") while preserving server-side logging (`logger.error(..., exc_info=True)`).
+- Added security regression unit tests in `tests/security/test_pathfinder_security.py`.
+- Checks: `PYTHONPATH=services/rest_api python3 -m pytest -o addopts="" --noconftest tests/security/ tests/rest_api/` passed (93/93).
 <!-- SLOT:SEC_SENTINEL END -->
 
 <!-- SLOT:QA1 BEGIN -->
