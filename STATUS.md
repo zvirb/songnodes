@@ -2284,3 +2284,9 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: the e2e job against the real stack (no Docker here). Its result is unknown until CI runs; the first run is the offender list.
 - Next: read the first CI run's list and open fix packages per component or page (or exclusions with a card citation where the system intends the inset).
 <!-- SLOT:INS1 END -->
+
+<!-- SLOT:TT1 BEGIN -->
+### TT1: Target tracks show real search progress, not a hand-set slider
+- Start: 2026-11-01 (branch tt1-target-real-progress off origin/main ae56475). Brief: plan/agents/TT1_target_real_progress.md (added in this PR).
+- Next: frontend status from `search_jobs`, `last_searched` and `playlists_found`; remove the slider.
+<!-- SLOT:TT1 END -->
