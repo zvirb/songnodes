@@ -71,7 +71,7 @@ Never use a `Switch` inside a form that has a Save button; never use a `Checkbox
 
 - Labels above the field (`.sn-field > label`), always visible, sentence case, no colon. Placeholders show an example format only ("e.g. 92"), never the label.
 - Mark the minority: if most fields are required, mark optional ones "(optional)" after the label; never use asterisks alone.
-- Help text sits under the label in `.sn-field__help`, linked to the input with `aria-describedby`.
+- **A field's help is an `InfoTip` after its label, however short** (1.6.0, imported from BeanAlliance v4.19.1): its words move verbatim into the tooltip, and the input points `aria-describedby` at the tip so the help is still read with the field. No guidance text stays under a field. `.sn-field__help` is deprecated for guidance (removed in 2.0.0) and remains only for a value the field reports back. A disabled field's reason (`sn-text-field__reason`) and an error stay as visible text: they report a state, they do not explain.
 - Validate on blur and on submit, not on every keystroke. Clear an error as soon as the value becomes valid.
 - Errors in `.sn-field__error` (✕ glyph + text) say what is wrong and how to fix it: "Enter a length between 30 and 360 minutes". Set `aria-invalid="true"`.
 - Forms with more than five fields show an error summary `InlineMessage` (bad) at the top on submit, listing each error as a link to its field, and move focus to it.

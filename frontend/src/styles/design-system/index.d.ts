@@ -1330,9 +1330,21 @@ export interface CamelotWheelProps {
 export type GraphColourMode = "none" | "energy" | "key" | "genre";
 export type GraphEdgeType = "adjacency" | "similarity" | "key_compatibility" | "collaboration" | "genre";
 
+/** Strength band of a link (DR-035): 1 Weak, 2 Fair, 3 Strong, 4 Very strong. */
+export type GraphEdgeBand = 1 | 2 | 3 | 4;
+
+/** One seat from the ring layout (DR-034). ring 0 = the anchor. */
+export interface GraphSeat { x: number; y: number; ring: number; }
+
 export interface GraphStylesProps {
   /** Current node colour mode; the legend mirrors it. */
   colourMode: GraphColourMode;
+  /** Band cut points the latest weekly run fitted (quartiles of all link weights); the legend note prints them. Default [0.25, 0.5, 0.75]. */
+  strengthCuts?: [number, number, number];
+  /** Track the rings are centred on: now playing, else selected, else the most-linked track. */
+  anchorId?: string;
+  /** Seats from the previous layout, kept on refresh so nothing re-shuffles. */
+  seats?: Record<string, GraphSeat>;
   /** Genres in fixed slot order (max 7 + Other) for the genre legend. */
   genres?: string[];
   /** Edge types currently drawn (from the layer toggles). */
@@ -1525,8 +1537,15 @@ export interface BannerProps {
   text?: ReactNode;
   /** One or two actions (secondary buttons or a module button). */
   actions?: ReactNode;
-  /** Dismiss handler; not allowed for status "bad". Dismissal is remembered per person. */
+  /** Dismiss handler (every status since 1.6.0, "bad" included). A dismissed warn or bad banner shrinks to its status icon in
+   *  place (`.sn-dismissed`); it shows again the next day (Melbourne), when its fact changes, or, for "bad", when the blocked
+   *  action is tried again. Kept on this device with `SongNodes.dismissal`; nothing is recorded. */
   onDismiss?: () => void;
+  /** Stable key of the fact, including its value ("tidal-token:2026-11-02"), so a changed fact shows again. Required with onDismiss. */
+  factKey?: string;
+  /** warn and bad: the link that ends the sentence, to the page and place where the cause is changed (1.6.0).
+   *  Another module opens in a new tab led by its go icon; omit only when `actions` fixes it here in one step. */
+  source?: SourceLinkProps;
   /** Full-bleed under the page header (no side borders or radius). */
   page?: boolean;
 }
@@ -1536,8 +1555,13 @@ export interface InlineMessageProps {
   status: FeedbackStatus;
   /** Message text; bold the key part with <strong>. */
   children: ReactNode;
-  /** Optional link that jumps to the thing ("Show them"). No dismiss. */
+  /** Optional link that jumps to the thing ("Show them"). For warn and bad this is the source link (`source`). */
   action?: ReactNode;
+  /** warn and bad (1.6.0): where the cause is changed. */
+  source?: SourceLinkProps;
+  /** warn and bad, boxed only (1.6.0): dismiss to the status icon in place, until the next day or the fact changes. */
+  onDismiss?: () => void;
+  factKey?: string;
   /** Tinted box for card sections; plain under fields and in rows. */
   boxed?: boolean;
   /** id so a field can point aria-describedby at the message. */
@@ -1692,6 +1716,31 @@ export interface PopoverProps {
   align?: "start" | "end";
   /** Open below (default) or above. */
   side?: "bottom" | "top";
+}
+
+/** A source link (1.6.0, BeanAlliance v4.19): the last words of a warning, naming the page and place where its cause is changed. */
+export interface SourceLinkProps {
+  /** Words that name the page and place: "Open Settings · Streaming services", "Add keys in Track detail". Never "Click here" or "Details". */
+  text: string;
+  /** The route, opened at the record, tab or field (`/settings/streaming-services`, `/tracks/123?tab=analysis`). */
+  href: string;
+  /** Module that owns the target page: its colour (DR-009) and, for another page, its go icon. */
+  module?: ModuleKey;
+  /** The place is on this page: a same-page link that scrolls to the control and focuses it, with no icon and no new tab. */
+  samePage?: boolean;
+}
+
+/** InfoTip (1.6.0, BeanAlliance v4.18 / v4.19.1): an explanatory notice shrunk to one info button.
+ *  The words move verbatim; 40 words or fewer is the tooltip form, more (or a list) the panel form. */
+export interface InfoTipProps {
+  /** Unique id of the tip (aria-controls, aria-describedby). */
+  id: string;
+  /** The button's name: "About" + the subject ("About the energy tiers", "How the set is built"). Never "Info" or "Help" alone. */
+  about: string;
+  /** Tooltip form: the words, plain text, 40 words or fewer. Opens on hover, keyboard focus and tap. */
+  text?: string;
+  /** Panel form: a title and the content (may hold a list, links, mono file names). Opens on click, tap, Enter or Space only. */
+  panel?: { title: string; content: ReactNode };
 }
 /* SongNodes design system — Pages A (documentation types: route-level page props and the data each page loads). */
 
@@ -2048,6 +2097,16 @@ export interface SongNodesHelpers {
   version: string; locale: "en-AU"; timeZone: "Australia/Melbourne";
   modules: { key: ModuleKey; label: string; icon: string; summary: string }[];
   icon(name: string, opts?: { size?: number; label?: string; cls?: string }): string;
+  /** Go icon (1.6.0): the module's icon at 84% with a half-size external-link badge, in the module's colour. "Opens that page in a new tab." */
+  goIcon(module: ModuleKey, opts?: { size?: number }): string;
+  /** Source link markup (1.6.0): another module opens in a new tab, led by its go icon. */
+  sourceLink(link: { text: string; href: string; module?: ModuleKey; samePage?: boolean }): string;
+  /** InfoTip markup (1.6.0): tooltip form with `text`, panel form with `panel` (its html is trusted markup). */
+  infoTip(tip: { id: string; about: string; text?: string; panel?: { title: string; html: string } }): string;
+  /** Installs InfoTip behaviour once per page (document-level; safe to call again). */
+  infoTips(): void;
+  /** Dismissed warnings on this device, per page and fact key, until the next day in Melbourne (1.6.0). */
+  dismissal: { key(page: string, fact: string): string; isDismissed(page: string, fact: string): boolean; dismiss(page: string, fact: string): void; restore(page: string, fact: string): void };
   /** The 109 icon names in the set. An unknown name draws circle-help and logs one console warning (1.3.0). */
   iconNames: string[];
   camelot(input: string | null | undefined): string | null;
@@ -2055,6 +2114,18 @@ export interface SongNodesHelpers {
   compat(a: string, b: string): { level: CompatLevel; label: string };
   tier(energy: number): "low" | "building" | "high" | null;
   energyStep(prev: number, next: number, before?: number): { level: CompatLevel; label: string };
+  /** Strength band 1–4 of a link weight 0–1 (GraphStyles, 1.5.0). */
+  edgeBand(weight: number, cuts?: [number, number, number]): GraphEdgeBand;
+  EDGE_BAND_LABEL: Record<GraphEdgeBand, "Weak" | "Fair" | "Strong" | "Very strong">;
+  EDGE_CUTS_DEFAULT: [number, number, number];
+  /** Fit band cut points to the library: quartiles (used), cross-checked by 4-class natural breaks; agree = every cut within 0.10. Under 200 links: defaults. */
+  fitEdgeCuts(weights: number[]): { cuts: [number, number, number]; quartiles: number[] | null; breaks: number[] | null; agree: boolean | null; links: number; method: "quartiles" | "default" };
+  /** Band and visibility for each link: Weak links only when one of either end's two strongest, touching the anchor, or touching a focused track. Weakest first (draw order). */
+  edgeVisibility<L extends { source: string | number; target: string | number; weight: number }>(links: L[], opts?: { cuts?: [number, number, number]; anchor?: string | number; focus?: Array<string | number> }): Array<{ link: L; band: GraphEdgeBand; show: boolean; focus: boolean }>;
+  /** Box a track keeps clear around its seat: node + state ring, its label at zoom 1.5 (at 100% for now playing) and the Now tag. [left, top, right, bottom] from the centre. */
+  seatBox(radius: number, labelWidth?: number, nowPlaying?: boolean): [number, number, number, number];
+  /** Ring layout (DR-034). Same input, same output. */
+  ringLayout(nodes: Array<{ id: string | number; box?: [number, number, number, number] }>, links: Array<{ source: string | number; target: string | number; weight: number }>, opts?: { anchor?: string | number; first?: number; step?: number; aspect?: number; seatGap?: number; prev?: Record<string, GraphSeat> }): { pos: Record<string, GraphSeat>; anchor: string | number; rings: number };
   bpmStep(a: number, b: number): { level: CompatLevel; label: string };
   format: { date(d: Date | string): string; day(d: Date | string): string; month(d: Date | string): string; time(d: Date | string): string; dateTime(d: Date | string): string; zone(d: Date | string): string; stamp(d: Date | string): string; relative(d: Date | string, now?: Date): string; duration(seconds: number): string; span(seconds: number): string; count(n: number): string; bpm(b: number): string; percent(x: number, digits?: number): string; dateOnly(isoDate: string): string; dayLong(d: Date | string): string; range(from: string, to: string): string };
   calendar: { today(now?: Date): string; iso(y: number, m: number, d: number): string; month(y: number, m: number): ({ iso: string; y: number; m: number; d: number; wd: number } | null)[][]; addDays(iso: string, n: number): string; addMonths(iso: string, n: number): string; compare(a: string, b: string): -1 | 0 | 1; days(a: string, b: string): number; weekStart(iso: string): string; preset(id: DateRangePresetId, today?: string): [string, string] | null; PRESET_LABELS: Record<DateRangePresetId, string>; MONTHS_LONG: string[]; WDAYS_LONG: string[] };

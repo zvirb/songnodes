@@ -11,7 +11,7 @@ The graph workspace: what to play next from the track that is on now, with the g
 | Shell | `AppHeader` with the Play/Plan `SegmentedControl` (`--sm`, sentence case "Play" / "Plan") and `ConnectionStatus` "Live"; `NavDrawer` | Mode in the header so it stays reachable in booth use |
 | Compact header | One line: `h1` `title-s` "Graph: **Neighbourhood of Bicep – Glue**", mono counts, "Filters (1)" button, `OverflowMenu` | `.sn-page-graph__bar` |
 | Up next (first) | Now-playing block (`TrackCell` with Now, `EnergyBar`, `KeyBadge` with name, `BpmReadout`, 3px amber `--now` bar), `SectionHeading`, ranked list: `TrackCell` + reason, `KeyBadge`, BPM, `EnergyBar`, `TransitionNote` from now (energy, key, BPM), "Play next" | `.sn-page-graph__recs` (320px, 360px on wall) |
-| Canvas | `GraphControls` frame holding the graph drawn per `GraphStyles` (node fill set by the "Colour by" control: Neutral by default, or Energy, Key, Genre, with the legend matching the mode; amber now ring + "Now" tag, lavender selected ring, edge types and weights, labels with halo), count chip, compact legend, dock: zoom in/out, reset, centre on now playing | `.sn-page-graph__stage` |
+| Canvas | `GraphControls` frame holding the graph drawn per `GraphStyles`: tracks seated on rings around now playing (strongest links on the first ring), links in four strength bands with weak ones shown on hover (node fill set by the "Colour by" control: Neutral by default, or Energy, Key, Genre, with the legend matching the mode; amber now ring + "Now" tag, lavender selected ring, edge types and weights, labels with halo), count chip, compact legend, dock: zoom in/out, reset, centre on now playing | `.sn-page-graph__stage` |
 | Track details | `SideSheet` (non-modal ≥768px, bottom sheet below): `KeyValueGrid` with ISRC `CopyButton`, connected tracks with `CompatibilityBadge`, links; foot "Path from here" (Pathfinder module button) and primary "Set as now playing" | `--sheet-w` 340px (420px on wall) |
 
 ## Data
@@ -19,7 +19,7 @@ The graph workspace: what to play next from the track that is on now, with the g
 
 ## States
 - First load: recommendations skeleton (6 two-line rows); canvas shows `LoadingState` inline "Laying out 48 tracks…".
-- Refresh: live updates swap recommendations in place; the layout keeps positions (no re-shuffle).
+- Refresh: live updates swap recommendations in place; every track keeps its seat and new tracks take free seats (no re-shuffle). "Set as now playing" re-seats the graph around the new track over 320ms (a jump with reduced motion).
 - Empty: no now playing → `EmptyState` "Pick a track to start" with search; canvas shows the whole graph.
 - Error: canvas region only: `ErrorState` "SongNodes couldn’t load the graph (503)" with Try again and reference; recommendations from cache stay.
 - Offline: `ConnectionStatus` offline in the header, banner under it; graph frozen at the last data.

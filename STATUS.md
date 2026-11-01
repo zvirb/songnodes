@@ -2032,3 +2032,11 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks: tsc, oxlint (exit 0, no findings in the new files), vitest 392/392 (17 new, incl. Melbourne DST 4 Oct 2026 and a Melbourne-not-UTC "today"), vite build, sync-design-system --check, check_design_system --check, check_feature_imports --check, scope guard. Not run: E2E (no Docker; no page uses the component yet).
 - Next: DSQ answer on min/max (Q16), then the /pipeline scheduled-scrape window card with its backend setting.
 <!-- SLOT:DS24A END -->
+<!-- SLOT:DS25 BEGIN -->
+### DS25: Design system 1.6.0: InfoTip, warnings link to their source and can be dismissed, go icons
+- Synced from the published SongNodes design-system artifact (1.6.0, which also carries 1.5.0's ring layout and link-strength bands, never synced before). 1.6.0 brings beanAlliance v4.18 to v4.20.2 into SongNodes: `InfoTip`, source links (`sn-link--src`), dismiss to icon (`.sn-dismissed`, `SongNodes.dismissal`), go icons (`SongNodes.goIcon`). DR-038 to DR-042; fitted choices Q23 to Q27 for Markus.
+- Kept from the repo (not in the artifact): `source/css/36-attribution.css` (rebuilt into bundle.css), the `sn-page-graph` and attribution lines in `13-page-patterns.md`, and the newer `api/components/*` cards and `manifest.json`.
+- `tokens.css` regenerated with `build_tokens.py` (the artifact's copy lacked 1.5.0's `graph-*` tokens).
+- Checks run: `sync-design-system.sh` then `--check` (in sync, VERSION 1.6.0); `check_design_system.py --check` (pass). Not run: frontend tsc/oxlint/vitest/vite build, E2E (no node_modules or Docker in this session).
+- Next: run the frontend checks and `scripts/e2e-docker.sh` on the host before merging; app code does not use the new classes yet (follow-up packages migrate field help to InfoTip and add source links to warnings).
+<!-- SLOT:DS25 END -->

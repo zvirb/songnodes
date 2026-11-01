@@ -19,6 +19,8 @@ The look: Elektronauts' charcoal ground and plain reading type, YourEDM's single
 - **Time:** Australia/Melbourne is the time zone of record, 24-hour: "24 Oct 2026, 06:00 AEDT", "Sat 24 Oct". Relative times ("3 h ago") always carry the absolute stamp in a tooltip.
 - **No emoji** anywhere in the interface: not in buttons, tabs, empty states or toasts. Status glyphs (● ◐ ○ ▲ ✕ ↻ –) and Lucide icons do that work.
 - **Confirmations** name the object and the consequence: "Delete “Peak time Friday”? This removes the set for everyone. Tracks stay in the library." Never `alert()` or `confirm()`.
+- **Explain once, then get out of the way** (1.6.0, from BeanAlliance v4.18): a notice that only explains (a subtitle over one line, how a figure is worked out, every field's help, a how-to block, the steps under an empty state) is an `InfoTip`: one `info` button where the text was, the words moved verbatim into a tooltip (40 words or fewer) or a panel. A notice that reports a state the person must act on stays as text.
+- **Every warning says where to fix it, and can be put away** (1.6.0, from BeanAlliance v4.19–v4.20.2): a warning's last words are a source link to the page and place where its cause is changed ("Add keys in Key & mood"); another page opens in a new tab, led by that module's go icon. Every warning can be dismissed: it shrinks to its status icon in place and comes back the next day or when the fact changes (`Banner`).
 
 The full rules are in *Writing and content*.
 
@@ -59,7 +61,7 @@ The full rules are in *Writing and content*.
 | Inputs | Inputs | DragDrop, Button, TextLink, CopyButton, FilterChip, SearchField, AutocompleteSearchField, FilterRail, TextField, NumberField, SelectField, Checkbox, Switch, RangeSlider, DateField, DateRange, SecretField, FileDrop, PhotoCapture, ChipInput, KeyPicker, TracklistPaste |
 | Data and music | Data display, Music domain | FigureTile, StatusPill, CategoryTag, EnergyBar, KeyBadge, BpmReadout, CompatibilityBadge, TransitionNote, TrackCell, MiniAudioPreview, DataTable, KeyValueGrid, SourceBadge, ServiceStatus, FreshnessStamp, ConnectionStatus, Checklist, Disclosure, SectionHeading, Card, SetCard, SetSlot |
 | Charts and graph | Colour, Data display | ChartFrame, EnergyWave, ProgressBar, ProgressRing, Heatmap, CamelotWheel, GraphStyles, GraphControls, Sparkline, WaveformStrip |
-| Feedback | Feedback and system status, Motion | EmptyState, LoadingState, StagedProgress, ErrorState, Banner, InlineMessage, Toast, Dialog, ConfirmDialog, SideSheet, MediaViewer, Tooltip, Popover |
+| Feedback | Feedback and system status, Motion | EmptyState, LoadingState, StagedProgress, ErrorState, Banner, InlineMessage, Toast, Dialog, ConfirmDialog, SideSheet, MediaViewer, Tooltip, InfoTip, Popover |
 | Pages | Page patterns | HomePage, LibraryPage, SetBuilderPage, GraphExplorerPage, TrackDetailPage, LogPage, DailyViewPage, WeeklyGridPage, MatrixPage, MonitoringPage, SettingsPage, RetiredPageNotice, ErrorPage, AuthCallbackPage, PrintSheet |
 | Rules about rules | Cognitive load (with the pre-release checklist), Interaction and accessibility, Platform, Print and export, Governance (decisions, open questions, change log), SongNodes migration | — |
 
