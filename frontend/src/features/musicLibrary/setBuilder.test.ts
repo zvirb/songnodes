@@ -219,7 +219,7 @@ describe('saved sets', () => {
     const d = draft({ name: 'Peak time Friday', shape: 'peak', seed: 5 });
     d.slots = buildSlots(TRACKS, d, true, BYID);
     const s: SavedSet = savedSetFromDraft(d, BYID, [], new Date('2026-10-24T10:30:00Z'));
-    expect(s).toMatchObject({ name: 'Peak time Friday', shape: 'peak', minutes: 90, pool: 'active', tidal: false, seed: 5, updated: '2026-10-24T10:30:00.000Z', created: '2026-10-24T10:30:00.000Z' });
+    expect(s).toMatchObject({ name: 'Peak time Friday', shape: 'peak', minutes: 90, pool: 'active', seed: 5, updated: '2026-10-24T10:30:00.000Z', created: '2026-10-24T10:30:00.000Z' });
     expect(s.id).toMatch(/^set-/);
     expect(s.tracks).toHaveLength(d.slots.filter((x) => x.id).length);
     expect(s.tracks[0].move).toBeNull();

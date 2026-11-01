@@ -268,7 +268,6 @@ export interface Draft {
   /** Genre mix in percent, keyed by pillar id (House, Techno, UKG). */
   mix: Record<string, number>;
   pool: PoolKey;
-  tidal: boolean;
   slots: Slot[];
   seed: number;
   /** Library filters that define the pool when pool is "crate". */
@@ -276,7 +275,7 @@ export interface Draft {
 }
 
 export function blankDraft(): Draft {
-  return { id: null, name: 'New set', shape: 'journey', minutes: 90, mix: { ...DEFAULT_MIX }, pool: 'active', tidal: false, slots: [], seed: 1, crate: null };
+  return { id: null, name: 'New set', shape: 'journey', minutes: 90, mix: { ...DEFAULT_MIX }, pool: 'active', slots: [], seed: 1, crate: null };
 }
 
 export const shapeOf = (key: string): Shape => SHAPES[key] ?? SHAPES.journey;
@@ -473,7 +472,7 @@ export function savedSetFromDraft(d: Draft, byId: Map<string, LibraryTrack>, exi
   const id = d.id || newSetId(now.getTime());
   return {
     id, name: d.name.trim() || 'Untitled set', shape: d.shape, minutes: d.minutes, mix: { ...d.mix }, pool: d.pool,
-    tidal: !!d.tidal, seed: d.seed || 1, tracks, updated: iso, created: existing.find((x) => x.id === id)?.created || iso,
+    seed: d.seed || 1, tracks, updated: iso, created: existing.find((x) => x.id === id)?.created || iso,
   };
 }
 
@@ -482,7 +481,7 @@ export function draftFromSaved(s: SavedSet, byId: Map<string, LibraryTrack>): Dr
   return {
     id: s.id, name: s.name, shape: s.shape in SHAPES ? s.shape : 'journey', minutes: s.minutes || 90,
     mix: normaliseMix(s.mix), pool: (POOLS.some((p) => p.id === s.pool) ? s.pool : 'active') as PoolKey,
-    tidal: !!s.tidal, seed: s.seed || 1, crate: null,
+    seed: s.seed || 1, crate: null,
     slots: (s.tracks || []).map((t) => ({ id: t.id, lock: true, tgt: t.tgt ?? byId.get(t.id)?.e ?? 5 })),
   };
 }
@@ -499,7 +498,6 @@ export function sanitiseDraft(raw: unknown): Draft {
     minutes: Number.isFinite(r.minutes) ? Math.max(MIN_MINUTES, Math.min(MAX_MINUTES, Number(r.minutes))) : b.minutes,
     mix: r.mix && typeof r.mix === 'object' ? { ...DEFAULT_MIX, ...r.mix } : b.mix,
     pool: POOLS.some((p) => p.id === r.pool) ? (r.pool as PoolKey) : b.pool,
-    tidal: !!r.tidal,
     seed: Number.isFinite(r.seed) ? Number(r.seed) : 1,
     slots: Array.isArray(r.slots) ? r.slots.filter((s) => s && typeof s === 'object').map((s) => ({ id: typeof s.id === 'string' ? s.id : null, lock: !!s.lock, tgt: Number(s.tgt) || 5 })) : [],
     crate: r.crate ? sanitiseFilters(r.crate) : null,
