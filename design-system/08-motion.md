@@ -41,7 +41,7 @@ This meets WCAG 2.3.3 (Animation from interactions, AAA) and 2.2.2 (Pause, stop,
 - No entrance animation for data: table rows, cards, set slots, figure values and chart marks appear in place on load. No staggered fade-ins, no count-up numbers.
 - `NavDrawer` and `SideSheet` slide 200 ms from their edge; `Dialog` fades and scales from 0.98 in 200 ms; `Toast` slides up 200 ms and leaves with `ease-exit`.
 - `Disclosure` expands with a 200 ms height-free reveal (opacity + `grid-template-rows: 0fr → 1fr`), or instantly in reduced motion.
-- `Tooltip` appears after 500 ms hover (immediately on keyboard focus) without animation.
+- `Tooltip` and the `InfoTip` tooltip form appear after 500 ms hover (immediately on keyboard focus) without animation (DR-055).
 
 ## Layout stability when data changes
 

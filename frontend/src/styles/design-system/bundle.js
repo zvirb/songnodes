@@ -574,12 +574,13 @@
     return '<span class="sn-infotip">' + btn + '<span class="sn-tooltip sn-infotip__tip" id="' + id + '" role="tooltip" hidden>' + esc(o.text) + "</span></span>";
   }
   /** InfoTip behaviour, installed once per page (document-level, so tips added later work too):
-      tooltip form opens on hover, keyboard focus and tap (a tap pins it); panel form on click, tap, Enter or Space only.
+      tooltip form opens after 500 ms on hover (as Tooltip, DR-055), at once on keyboard focus and tap (a tap pins it);
+      panel form on click, tap, Enter or Space only.
       One open at a time; Escape closes and returns focus; a click outside closes; it flips up or left near the viewport edge. */
   var infoTipsOn = false;
   function infoTips() {
     if (infoTipsOn || typeof document === "undefined") return; infoTipsOn = true;
-    var open = null, timer = null, touch = false;
+    var open = null, timer = null, pending = null, showTimer = null, touch = false, HOVER_DELAY = 500;
     function parts(w) { return [w.querySelector(":scope > .sn-infotip__btn"), w.querySelector(":scope > .sn-infotip__tip, :scope > .sn-infotip__panel")]; }
     function isPanel(w) { var t = parts(w)[1]; return !!t && t.classList.contains("sn-infotip__panel"); }
     function place(w) {
@@ -591,6 +592,7 @@
       if (r.right > window.innerWidth - 8) t.classList.add(end);
     }
     function show(w, pin) {
+      clearTimeout(showTimer); pending = null;
       if (open && open !== w) hide(open, false);
       var p = parts(w); if (!p[1]) return;
       p[1].hidden = false; p[0].setAttribute("aria-expanded", "true"); w.dataset.pin = pin ? "1" : ""; open = w; place(w);
@@ -608,11 +610,15 @@
     });
     document.addEventListener("mouseover", function (e) {
       if (touch) return; var w = e.target.closest(".sn-infotip");
-      if (w && !isPanel(w)) { clearTimeout(timer); if (open !== w) show(w, false); }
+      if (!w || isPanel(w)) return;
+      if (open === w) { clearTimeout(timer); return; }
+      if (pending !== w) { clearTimeout(showTimer); pending = w; showTimer = setTimeout(function () { show(w, false); }, HOVER_DELAY); }
     });
     document.addEventListener("mouseout", function (e) {
       if (touch) return; var w = e.target.closest(".sn-infotip");
-      if (w && !w.contains(e.relatedTarget) && !w.dataset.pin && !isPanel(w)) timer = setTimeout(function () { hide(w, false); }, 300);
+      if (!w || w.contains(e.relatedTarget) || isPanel(w)) return;
+      if (pending === w) { clearTimeout(showTimer); pending = null; }
+      if (open === w && !w.dataset.pin) timer = setTimeout(function () { hide(w, false); }, 300);
     });
     document.addEventListener("focusin", function (e) {
       var w = e.target.closest(".sn-infotip");
@@ -631,7 +637,7 @@
   };
 
   window.SongNodes = {
-    version: "1.7.0", DOMAIN_MAP: DOMAIN_MAP,
+    version: "1.7.1", DOMAIN_MAP: DOMAIN_MAP,
     locale: LOCALE, timeZone: TZ,
     modules: MODULES, module: function (k) { for (var i = 0; i < MODULES.length; i++) if (MODULES[i].key === k) return MODULES[i]; return null; },
     icons: ICONS, icon: icon, iconNames: Object.keys(ICONS),
