@@ -2285,6 +2285,16 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Next: read the first CI run's list and open fix packages per component or page (or exclusions with a card citation where the system intends the inset).
 <!-- SLOT:INS1 END -->
 
+<!-- SLOT:HS3 BEGIN -->
+### HS3: Design system speaks the accepted harmonic scoring
+- Start: 2026-11-02 (branch hs3-design-system-scoring off origin/main a071a2e). Brief: plan/agents/HS3_design_system_scoring.md (added in this PR). Spec package M6-DS.
+- End: 2026-11-02.
+- Changed: design system 1.8.0 (DR-056). `bpmStep` rounds gaps half up and judges half/double time on the octave gap, capped at compatible ("half time"/"double time"), returning `relation` and `gap`. `energyStep` rounds the delta half away from zero, narrows "trough reset" to drops of 2–4, makes drops of 5+ a "jarring" clash, words rises of 4+ "jarring", and returns `move` (energy-move-1, with the new `step_down`). New `SongNodes.energyMove(move)` gives a stored move's words ("push" for `lift`). 11-data-display gains the −2 key row, BPM rounding and the tiers-vs-bands note; 18-music-domain, CompatibilityBadge, TransitionNote, index.d.ts updated; rebuilt and re-synced.
+- Checks run: an uncommitted node script ran the built bundle on all 24 rows of tests/fixtures/harmonic_scoring/examples.json: key level/label, BPM level/label/relation/gap and energy move all agree. tsc, oxlint, vitest run src (58 files, 437 tests), vite build, `sync-design-system.sh --check` (1.8.0), `check_design_system.py --check`, scope guard.
+- Checks not run: E2E (no Docker daemon).
+- Next: M6-F2 parity test can drop its expected differences; a +2/+3 energy rise is still a clash ("too steep", wave rule 2) since no answer changed it.
+<!-- SLOT:HS3 END -->
+
 <!-- SLOT:HS4 BEGIN -->
 ### HS4: Silver transitions store their harmonic scoring
 - Start: 2026-11-01 (branch hs4-silver-transition-scoring off origin/main a071a2e). Brief: plan/agents/HS4_silver_transition_scoring.md (added in this PR). Spec package M6-P1.

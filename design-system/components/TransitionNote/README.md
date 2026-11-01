@@ -17,7 +17,7 @@ The thin strip between two running-order rows that says how the move lands: ener
 Expanded: add `sn-transition-note--expanded`; each item holds `__what` (the label) and `__why` (one sentence).
 
 ## Rules it shows
-Energy climbs +1 at a time and holds; drops after a peak are 2–3 points at once; a second −1 in a row is "possible". Genre switches are fine in the Building tier after a run of 3+, "possible" earlier. Key and BPM verdicts come from `SongNodes.compat` and `bpmStep`.
+Energy climbs +1 at a time and holds; drops after a peak are 2–4 points at once (5 or more is jarring); a second −1 in a row is "possible". Genre switches are fine in the Building tier after a run of 3+, "possible" earlier. Key and BPM verdicts come from `SongNodes.compat` and `bpmStep`.
 
 ## Content rules
 Short labels: "energy +1", "energy hold", "+1 key 8A→9A", "+2 BPM", "House → UK garage". Leave out what doesn't change, except energy (always shown). Reasons in the expanded form say what to do ("Keys fight; cut on a break or pick a spare.").
