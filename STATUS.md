@@ -2024,6 +2024,17 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Next: follow-up for TracklistImporter (DS22) to pass `secondsSinceProgress` or state `stalled` plus `onResume`/`onCancel` instead of its STALL_MS detail message.
 <!-- SLOT:SP14 END -->
 
+<!-- SLOT:MDB1 BEGIN -->
+### MDB1: MixesDB tracks reach silver instead of being skipped for a missing bronze_id
+- Start: 2026-11-01. Base `main` 527c5a7.
+- End: 2026-11-01.
+- Cause: MixesDB (and 1001Tracklists) yield a standalone `EnhancedTrackItem` before each positioned `EnhancedSetlistTrackItem`. `PersistencePipeline._process_track_item` sent the standalone item to silver (it has no bronze row) and took the title::artist slot, so the positioned item that does get a bronze row was deduped away; `_insert_songs_batch` then skipped every silver track with "Missing bronze_id FK reference". Second cause: a full silver batch flushed before the bronze rows it points to.
+- Changed: `scrapers/pipelines/persistence_pipeline.py` (`_process_track_item` only): a track with no playlist context returns before silver; a full silver batch flushes `bronze_tracks` first. Added `scrapers/tests/test_persistence_silver_bronze_id.py` (fails on `main` with 0 silver rows; passes now). Same file as BRZ1, but outside the bronze batch insert and error handling.
+- Checks run: `pytest scrapers/tests` (11 pass), `pytest tests/unit/scrapers` (35 pass; the 2 `test_1001tracklists_spider` start_requests failures also fail on `main`), root `pytest` (failures are integration tests that need the running stack, a missing `annoy` module and library importer tests; none touch the pipeline), scope guard.
+- Checks not run: a real MixesDB scrape against the stack and E2E (no Docker here).
+- Next: on the stack, run the MixesDB scrape for "Deadmau5 Strobe" and check `silver_enriched_tracks` gains rows with `bronze_id` set and the log has no "Missing bronze_id".
+<!-- SLOT:MDB1 END -->
+  
 <!-- SLOT:DS24A BEGIN -->
 ### DS24A: React DateRange and DateField from the design system
 - Start: 2026-11-01 (branch ds24a-react-daterange off origin/main f2bdc9b). Job: the React date components the scheduled-scrape window card will use.
