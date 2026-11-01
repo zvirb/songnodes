@@ -73,6 +73,8 @@ async def scrape(conn, ctx: Context, payload: Dict[str, Any]) -> Dict[str, Any]:
             body[key] = payload[key]
     if payload.get('limit') is not None:
         body['limit'] = int(payload['limit'])
+    if payload.get('job_id'):
+        body['job_id'] = str(payload['job_id'])  # the scraper keys its live progress record by it
     client = ctx.http or httpx.AsyncClient(timeout=SCRAPE_TIMEOUT_SECONDS)
     try:
         response = await client.post(f'{ctx.scraper_url.rstrip("/")}/scrape', json=body)
