@@ -1,4 +1,4 @@
-<!-- @dsCard group="Graph" height=1340 subtitle="Force-graph encoding: node states, size by connections, fill modes, labels, edge types and weights, and the corrected legend" -->
+<!-- @dsCard group="Graph" height=1600 subtitle="Graph encoding: ring layout around now playing (strength sets order, not distance), node states, size by connections, fill modes, labels, link types and strength bands, and the legend" -->
 <!doctype html>
 <html>
 <head><meta charset="utf-8"><title>GraphStyles — preview</title>
@@ -11,16 +11,16 @@
 <body>
 <div class="sn-preview sn-graph-styles sn-m-graph" id="root">
   <div class="sn-row" style="justify-content: space-between">
-    <div class="sn-preview__label">Live cluster · selected, now playing, hovered, faded by filter</div>
+    <div class="sn-preview__label">Live cluster · ring layout around now playing; point at a track to trace its links</div>
     <div class="sn-row"><span class="body-s sn-muted" id="modeLabel">Colour by</span>
       <div class="sn-seg" role="group" aria-labelledby="modeLabel" id="mode"></div></div>
   </div>
   <div class="pv-top">
-    <svg class="sn-graph-styles__canvas" id="cluster" viewBox="0 0 560 300" role="img" aria-labelledby="clusterDesc" style="width:100%;height:auto;display:block"><desc id="clusterDesc">Twelve tracks around Bicep – Glue, which is playing now. Overmono – So U Kno is selected. Two tracks are faded by the energy filter.</desc></svg>
+    <svg class="sn-graph-styles__canvas" id="cluster" viewBox="0 0 560 340" role="img" aria-labelledby="clusterDesc" style="width:100%;height:auto;display:block"><desc id="clusterDesc">Eleven tracks seated on rings around Bicep – Glue, which is playing now; its strongest links take the first ring. Overmono – So U Kno is selected. Two tracks are faded by the energy filter.</desc></svg>
     <aside class="sn-graph-styles__legend" aria-label="Graph legend" id="legend"></aside>
   </div>
   <div class="sn-preview__label">Specimen sheet · values for PIXI</div>
-  <div class="pv-sheet"><svg class="sn-graph-styles__canvas" id="sheet" viewBox="0 0 880 650" role="img" aria-label="Specimen of node states, node sizes, fills, labels and edge types"></svg></div>
+  <div class="pv-sheet"><svg class="sn-graph-styles__canvas" id="sheet" viewBox="0 0 880 730" role="img" aria-label="Specimen of node states, node sizes, fills, link types, strength bands, labels and the ring layout"></svg></div>
 </div>
 <script>
 /*KIT*/
@@ -59,16 +59,16 @@
   }
   function edge(g, x1, y1, x2, y2, type, w, opt) {
     opt = opt || {};
-    var cls = "sn-graph-styles__edge sn-graph-styles__edge--" + type + (w >= 0.8 ? " sn-graph-styles__edge--strong" : "") + (opt.extra ? " " + opt.extra : "");
-    var width = opt.width != null ? opt.width : (0.5 + 7.5 * w);
+    /* width and opacity come from the strength band class (b1 Weak … b4 Very strong); dash carries the type */
+    var band = opt.band || S.edgeBand(w);
+    var cls = "sn-graph-styles__edge sn-graph-styles__edge--" + type + (opt.noBand ? "" : " sn-graph-styles__edge--b" + band) + (opt.extra ? " " + opt.extra : "");
     if (type === "collab") { // double line: two strokes offset along the normal
       var dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy) || 1, nx = -dy / L * 2, ny = dx / L * 2;
       K.el("line", { x1: x1 + nx, y1: y1 + ny, x2: x2 + nx, y2: y2 + ny, "class": cls }, g);
       K.el("line", { x1: x1 - nx, y1: y1 - ny, x2: x2 - nx, y2: y2 - ny, "class": cls }, g);
       return;
     }
-    var st = (type === "adjacency" || type === "similarity") ? "stroke-width:" + width.toFixed(2) : "";
-    K.el("line", { x1: x1, y1: y1, x2: x2, y2: y2, "class": cls, style: st }, g);
+    K.el("line", { x1: x1, y1: y1, x2: x2, y2: y2, "class": cls }, g);
   }
   function label(g, x, y, artist, title) {
     var t = K.el("text", { x: x, y: y, "class": "sn-graph-styles__label" }, g);
@@ -78,31 +78,44 @@
 
   /* ---------- live cluster ---------- */
   var N = [
-    { id: 0, x: 280, y: 150, d: 120, e: 8, k: "8A", g: 1, a: "Bicep", t: "Glue", now: true },
-    { id: 1, x: 170, y: 95, d: 64, e: 8, k: "8A", g: 3, a: "Overmono", t: "So U Kno", sel: true },
-    { id: 2, x: 395, y: 90, d: 40, e: 9, k: "9A", g: 3, a: "Interplanetary Criminal", t: "Slow Burner" },
-    { id: 3, x: 410, y: 215, d: 30, e: 9, k: "9A", g: 3, a: "Sammy Virji", t: "If U Need It" },
-    { id: 4, x: 150, y: 215, d: 22, e: 6, k: "7A", g: 1, a: "Fred again..", t: "Delilah (pull me out of this)" },
-    { id: 5, x: 285, y: 255, d: 18, e: 5, k: "7A", g: 1, a: "Ross From Friends", t: "Talk To Me You'll Drown" },
-    { id: 6, x: 70, y: 140, d: 9, e: 4, k: "6A", g: 1, a: "Peggy Gou", t: "(It Goes Like) Nanana", faded: true },
-    { id: 7, x: 500, y: 150, d: 12, e: 7, k: "10A", g: 2, a: "Overmono", t: "Good Lies" },
-    { id: 8, x: 270, y: 45, d: 8, e: 5, k: "8B", g: 4, a: "Josh Baker", t: "Lost In Muzik" },
-    { id: 9, x: 60, y: 255, d: 5, e: 3, k: "5A", g: 1, a: "Mall Grab", t: "Spirit Wave", faded: true },
-    { id: 10, x: 505, y: 255, d: 6, e: 10, k: "11A", g: 2, a: "Skee Mask", t: "Rev8617" }
+    { id: 0, d: 120, e: 8, k: "8A", g: 1, a: "Bicep", t: "Glue", now: true },
+    { id: 1, d: 64, e: 8, k: "8A", g: 3, a: "Overmono", t: "So U Kno", sel: true },
+    { id: 2, d: 40, e: 9, k: "9A", g: 3, a: "Interplanetary Criminal", t: "Slow Burner" },
+    { id: 3, d: 30, e: 9, k: "9A", g: 3, a: "Sammy Virji", t: "If U Need It" },
+    { id: 4, d: 22, e: 6, k: "7A", g: 1, a: "Fred again..", t: "Delilah (pull me out of this)" },
+    { id: 5, d: 18, e: 5, k: "7A", g: 1, a: "Ross From Friends", t: "Talk To Me You'll Drown" },
+    { id: 6, d: 9, e: 4, k: "6A", g: 1, a: "Peggy Gou", t: "(It Goes Like) Nanana", faded: true },
+    { id: 7, d: 12, e: 7, k: "10A", g: 2, a: "Overmono", t: "Good Lies" },
+    { id: 8, d: 8, e: 5, k: "8B", g: 4, a: "Josh Baker", t: "Lost In Muzik" },
+    { id: 9, d: 5, e: 3, k: "5A", g: 1, a: "Mall Grab", t: "Spirit Wave", faded: true },
+    { id: 10, d: 6, e: 10, k: "11A", g: 2, a: "Skee Mask", t: "Rev8617" }
   ];
   var E = [[0, 1, "adjacency", 0.95], [0, 2, "adjacency", 0.7], [0, 3, "similarity", 0.5], [0, 4, "key", 0.4], [0, 5, "key", 0.3], [1, 4, "adjacency", 0.45],
     [1, 8, "collab", 0.5], [2, 3, "collab", 0.6], [2, 7, "similarity", 0.35], [3, 10, "genre", 0.2], [7, 10, "genre", 0.2], [4, 6, "adjacency", 0.3], [5, 9, "similarity", 0.25], [1, 6, "genre", 0.2], [0, 8, "similarity", 0.85]];
+  /* ring layout (DR-034): seats keep the node + its label box clear as drawn at zoom 1.5 */
+  var ctx = document.createElement("canvas").getContext("2d"); ctx.font = "600 12px Inter, system-ui, sans-serif";
+  N.forEach(function (n) { n.r = radius(n.d, 120) * 0.8; n.box = S.seatBox(n.r, Math.min(ctx.measureText(n.a + " " + n.t).width + 5, 260), n.now); });
+  var L = S.ringLayout(N, E.map(function (e) { return { source: e[0], target: e[1], weight: e[3] }; }), { anchor: 0 });
+  var minX = 0, maxX = 0, minY = 0, maxY = 0;
+  N.forEach(function (n) { var p = L.pos[n.id]; n.x = p.x; n.y = p.y; n.ring = p.ring; minX = Math.min(minX, p.x + n.box[0]); maxX = Math.max(maxX, p.x + n.box[2]); minY = Math.min(minY, p.y - n.r - 24); maxY = Math.max(maxY, p.y + n.box[3]); });
+  var cx = (minX + maxX) / 2, cy = (minY + maxY) / 2, vw = Math.max(560, maxX - minX + 32), vh = Math.max(320, maxY - minY + 24), VB = [cx - vw / 2, cy - vh / 2, vw, vh];
+  var VIS = S.edgeVisibility(E.map(function (e, i) { return { source: e[0], target: e[1], weight: e[3], i: i }; }), { anchor: 0 });
   var mode = "neutral", hover = null, cl = document.getElementById("cluster");
+  cl.setAttribute("viewBox", VB.map(function (v) { return v.toFixed(0); }).join(" "));
   function drawCluster() {
     Array.prototype.slice.call(cl.childNodes).forEach(function (c) { if (c.tagName !== "desc") c.remove(); });
-    var ge = K.el("g", null, cl), gn = K.el("g", null, cl), gl = K.el("g", null, cl);
-    E.forEach(function (e) {
-      var a = N[e[0]], b = N[e[1]], faded = a.faded || b.faded;
-      edge(ge, a.x, a.y, b.x, b.y, e[2], e[3], { extra: (e[0] === 0 && e[1] === 1) ? "sn-graph-styles__edge--sel" : "" });
-      if (faded) ge.lastChild.style.opacity = "var(--opacity-faded)";
+    var gg = K.el("g", null, cl), ge = K.el("g", null, cl), gn = K.el("g", null, cl), gl = K.el("g", null, cl);
+    for (var rg = 1; rg <= L.rings; rg++) { var R = 58 + (rg - 1) * 40; K.el("ellipse", { cx: 0, cy: 0, rx: R * 1.7, ry: R, "class": "sn-graph-styles__ring-guide" }, gg); }
+    var focus = hover != null ? hover : 1; /* selected track, or the one pointed at */
+    S.edgeVisibility(VIS.map(function (v) { return v.link; }), { anchor: 0, focus: [focus] }).forEach(function (v) {
+      if (!v.show) return;
+      var e = E[v.link.i], a = N[e[0]], b = N[e[1]], faded = a.faded || b.faded;
+      edge(ge, a.x, a.y, b.x, b.y, e[2], e[3], { band: v.band, extra: v.focus ? "sn-graph-styles__edge--sel" : "sn-graph-styles__edge--dim" });
+      if (faded) Array.prototype.forEach.call(ge.querySelectorAll("line:not([data-done])"), function (l) { l.style.opacity = "var(--opacity-faded)"; });
+      Array.prototype.forEach.call(ge.querySelectorAll("line:not([data-done])"), function (l) { l.setAttribute("data-done", ""); });
     });
     N.forEach(function (n) {
-      var r = radius(n.d, 120) * 0.8;
+      var r = n.r;
       var g = K.el("g", { "data-id": n.id, style: "cursor:pointer" }, gn);
       node(g, n.x, n.y, r, { fill: fillFor(mode, n), selected: n.sel, now: n.now, hover: hover === n.id && !n.sel && !n.now, faded: n.faded });
       K.el("circle", { cx: n.x, cy: n.y, r: Math.max(12, r + 4), fill: "transparent" }, g);
@@ -115,8 +128,8 @@
   /* ---------- legend (replaces "Perfect Match / Compatible / Default") ---------- */
   function lineKey(type) {
     var s = '<svg width="28" height="10" aria-hidden="true">';
-    if (type === "collab") s += '<line x1="1" y1="3" x2="27" y2="3" class="sn-graph-styles__edge sn-graph-styles__edge--collab sn-graph-styles__edge--strong"/><line x1="1" y1="7" x2="27" y2="7" class="sn-graph-styles__edge sn-graph-styles__edge--collab sn-graph-styles__edge--strong"/>';
-    else s += '<line x1="1" y1="5" x2="27" y2="5" class="sn-graph-styles__edge sn-graph-styles__edge--' + type + ' sn-graph-styles__edge--strong"/>';
+    if (type === "collab") s += '<line x1="1" y1="3" x2="27" y2="3" class="sn-graph-styles__edge sn-graph-styles__edge--collab"/><line x1="1" y1="7" x2="27" y2="7" class="sn-graph-styles__edge sn-graph-styles__edge--collab"/>';
+    else s += '<line x1="1" y1="5" x2="27" y2="5" class="sn-graph-styles__edge sn-graph-styles__edge--' + type + '"/>';
     return s + "</svg>";
   }
   function drawLegend() {
@@ -136,8 +149,9 @@
       "<li>" + lineKey("similarity") + "Similar sound</li>" +
       "<li>" + lineKey("key") + "Compatible key</li>" +
       "<li>" + lineKey("collab") + "Same artists</li>" +
-      "<li>" + lineKey("genre") + "Same genre</li>" +
-      '<li><svg width="28" height="10" aria-hidden="true"><line x1="1" y1="5" x2="27" y2="5" class="sn-graph-styles__edge sn-graph-styles__edge--adjacency sn-graph-styles__edge--strong" style="stroke-width:6"/></svg>Thicker means stronger</li></ul>';
+      "<li>" + lineKey("genre") + "Same genre</li></ul>";
+    h += "<h4>Strength</h4><ul>" + [4, 3, 2, 1].map(function (b) { return '<li><svg width="28" height="10" aria-hidden="true"><line x1="3" y1="5" x2="25" y2="5" class="sn-graph-styles__edge sn-graph-styles__edge--b' + b + '"/></svg>' + S.EDGE_BAND_LABEL[b] + "</li>"; }).join("") +
+      '</ul><span class="caption sn-dim">Thicker means stronger. Closer rings mean a stronger route from now playing, not a score. Weak links appear when you point at a track.</span>';
     document.getElementById("legend").innerHTML = h;
   }
   var seg = document.getElementById("mode");
@@ -169,17 +183,19 @@
     });
   }
   sheetFill();
-  sec(400, "Links by type · width 0.5–8 px by weight");
-  var types = [["adjacency", "Adjacency · solid"], ["similarity", "Similarity · dash 6 4"], ["key", "Key compatibility · dots"], ["collab", "Collaboration · double"], ["genre", "Genre · 0.75 px"]];
-  types.forEach(function (t, i) { var x = 40 + i * 166; edge(sh, x, 440, x + 130, 440, t[0], 0.85, { width: 2 }); cap(x + 65, 464, t[1]); });
-  [0, 0.25, 0.5, 0.8, 1].forEach(function (w, i) { var x = 40 + i * 168; edge(sh, x, 505, x + 120, 505, "adjacency", w); cap(x + 60, 532, "weight " + w + " · " + (0.5 + 7.5 * w).toFixed(1) + " px", true); });
-  sec(580, "Labels and opacity");
-  node(sh, 60, 616, 8, { selected: true });
-  label(sh, 78, 620, "Overmono", "So U Kno");
-  K.text(sh, 250, 612, "Artist 600 + title 400, 12 px body font, 3 px canvas halo", { "class": "sn-graph-styles__cap", "text-anchor": "start" });
-  K.text(sh, 250, 630, "Shown on hover, selection, now playing, and for all nodes at zoom > 1.5", { "class": "sn-graph-styles__cap", "text-anchor": "start" });
-  K.text(sh, 660, 612, "Links at opacity 0.6", { "class": "sn-graph-styles__cap", "text-anchor": "start" });
-  K.text(sh, 660, 630, "Strong links (weight ≥ 0.8) at 0.9", { "class": "sn-graph-styles__cap", "text-anchor": "start" });
+  sec(400, "Links by type · dash carries the type, width the strength band");
+  var types = [["adjacency", "Adjacency · solid"], ["similarity", "Similarity · dash 6 4"], ["key", "Key compatibility · dots"], ["collab", "Collaboration · double"], ["genre", "Genre · solid"]];
+  types.forEach(function (t, i) { var x = 40 + i * 166; edge(sh, x, 440, x + 130, 440, t[0], 0.6, { band: 3 }); cap(x + 65, 464, t[1]); });
+  [[1, "1 px · 0.35"], [2, "2 px · 0.55"], [3, "3.5 px · 0.8"], [4, "6 px · 1"]].forEach(function (b, i) { var x = 40 + i * 210; edge(sh, x, 505, x + 150, 505, "adjacency", 0, { band: b[0] }); cap(x + 75, 532, S.EDGE_BAND_LABEL[b[0]] + " · " + b[1], true); });
+  K.text(sh, 40, 558, "Band cut points: quartiles of the library's own link strengths, refitted each weekly run; natural breaks is the cross-check.", { "class": "sn-graph-styles__cap", "text-anchor": "start" });
+  K.text(sh, 40, 576, "Weak links show only if one of a track's two strongest, touching now playing, or touching the track you point at.", { "class": "sn-graph-styles__cap", "text-anchor": "start" });
+  sec(600, "Labels and seats");
+  K.el("rect", { x: 47, y: 648, width: 132, height: 26, rx: 2, "class": "sn-graph-styles__ring-guide" }, sh);
+  node(sh, 60, 661, 8, { selected: true });
+  label(sh, 78, 665, "Overmono", "So U Kno");
+  K.text(sh, 250, 657, "Artist 600 + title 400, 12 px body font, 3 px canvas halo", { "class": "sn-graph-styles__cap", "text-anchor": "start" });
+  K.text(sh, 250, 675, "Shown on hover, selection, now playing, and for all nodes at zoom > 1.5", { "class": "sn-graph-styles__cap", "text-anchor": "start" });
+  K.text(sh, 250, 699, "Dotted box: the seat. It keeps the node, its ring and its label (at zoom 1.5) clear, so labels never overlap.", { "class": "sn-graph-styles__cap", "text-anchor": "start" });
 
   drawCluster(); drawLegend();
 })();

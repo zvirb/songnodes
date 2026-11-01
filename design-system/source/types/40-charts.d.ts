@@ -164,9 +164,21 @@ export interface CamelotWheelProps {
 export type GraphColourMode = "none" | "energy" | "key" | "genre";
 export type GraphEdgeType = "adjacency" | "similarity" | "key_compatibility" | "collaboration" | "genre";
 
+/** Strength band of a link (DR-035): 1 Weak, 2 Fair, 3 Strong, 4 Very strong. */
+export type GraphEdgeBand = 1 | 2 | 3 | 4;
+
+/** One seat from the ring layout (DR-034). ring 0 = the anchor. */
+export interface GraphSeat { x: number; y: number; ring: number; }
+
 export interface GraphStylesProps {
   /** Current node colour mode; the legend mirrors it. */
   colourMode: GraphColourMode;
+  /** Band cut points the latest weekly run fitted (quartiles of all link weights); the legend note prints them. Default [0.25, 0.5, 0.75]. */
+  strengthCuts?: [number, number, number];
+  /** Track the rings are centred on: now playing, else selected, else the most-linked track. */
+  anchorId?: string;
+  /** Seats from the previous layout, kept on refresh so nothing re-shuffles. */
+  seats?: Record<string, GraphSeat>;
   /** Genres in fixed slot order (max 7 + Other) for the genre legend. */
   genres?: string[];
   /** Edge types currently drawn (from the layer toggles). */
