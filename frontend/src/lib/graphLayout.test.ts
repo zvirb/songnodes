@@ -189,7 +189,7 @@ describe('seating the live graph shape (report 2 Nov 2026)', () => {
     expect(Object.keys(seats)).toHaveLength(463);
     const atOrigin = Object.entries(seats).filter(([, p]) => p.x === 0 && p.y === 0).map(([id]) => id);
     expect(atOrigin).toEqual([anchor]);
-    const gaps = nearest(seats).toSorted((a, b) => a - b);
+    const gaps = nearest(seats).sort((a, b) => a - b);
     const median = gaps[Math.floor(gaps.length / 2)];
     expect(median).toBeGreaterThanOrEqual(30);
     expect(median).toBeLessThanOrEqual(90);
