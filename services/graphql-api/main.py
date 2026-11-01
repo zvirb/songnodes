@@ -2,7 +2,8 @@
 from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 import strawberry
-from strawberry.asgi import GraphQL
+from strawberry.fastapi import GraphQLRouter
+from strawberry.subscriptions import GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL
 from typing import List, Optional
 import logging
 import sys
@@ -258,10 +259,13 @@ async def health_check():
             detail=f"Health check failed: {str(e)}"
         )
 
-# Mount GraphQL app
-graphql_app = GraphQL(schema)
-app.add_route("/graphql", graphql_app)
-app.add_websocket_route("/graphql", graphql_app)
+# Mount GraphQL over HTTP and WebSocket on /graphql. FastAPI no longer has
+# add_websocket_route; GraphQLRouter registers both routes itself.
+graphql_app = GraphQLRouter(
+    schema,
+    subscription_protocols=(GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL),
+)
+app.include_router(graphql_app, prefix="/graphql")
 
 if __name__ == "__main__":
     # Validate secrets before starting service

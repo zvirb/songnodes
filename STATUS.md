@@ -2096,6 +2096,17 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Next: on the stack, trigger a MixesDB scrape and poll `/api/v1/jobs/<id>/stages`: `progress.pages` should rise about every 15 s. Then DS23 (after DS-SP14) renders it.
 <!-- SLOT:JOBSTG END -->
 
+<!-- SLOT:U17B BEGIN -->
+### U17B: graphql-api starts on strawberry-graphql 0.337
+- Start: 2026-11-01. Base `main` 527c5a7. Follows U17 (stopped at `'FastAPI' object has no attribute 'add_websocket_route'`, `services/graphql-api/main.py`).
+- End: 2026-11-01.
+- Deployment: `graphql-api` is not a service in `compose.dev.yaml`; only the legacy `start-docker.sh` and `deploy/build-and-push-images.sh` name it. The fix makes the module importable; nothing in the running stack uses it.
+- Changed: `services/graphql-api/main.py` mounts the schema with `strawberry.fastapi.GraphQLRouter` (`subscription_protocols` graphql-transport-ws and graphql-ws) via `app.include_router(..., prefix="/graphql")` instead of `strawberry.asgi.GraphQL` with `add_route`/`add_websocket_route`. Added `services/graphql-api/tests/unit/test_graphql_mount.py`: the router has GET, POST and WebSocket routes, a POST `{ __typename }` answers, and a graphql-transport-ws `connection_init` gets `connection_ack` on `/graphql`. No dependency changes.
+- Checks run: `python -m pytest tests --no-cov` in `services/graphql-api` with the pinned requirements (fastapi 0.162.0, strawberry-graphql 0.337.2) in a sandbox venv on Python 3.13: 4 passed; before the fix the import fails with the U17 AttributeError. Scope guard.
+- Checks not run: Python 3.15 image build (no Docker here).
+- Next: decide whether graphql-api stays (it is not deployed and its resolvers return fixed example rows) or is removed in its own package.
+<!-- SLOT:U17B END -->
+
 <!-- SLOT:DS23 BEGIN -->
 ### DS23: /pipeline shows every stage of a running scrape, including stalled
 - Start: 2026-11-01 (branch ds23-pipeline-scrape-stages off origin/main 5610049; SP14 #475 and JOBSTG #477 are on main).
