@@ -2032,3 +2032,14 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks: tsc, oxlint (exit 0, no findings in the new files), vitest 392/392 (17 new, incl. Melbourne DST 4 Oct 2026 and a Melbourne-not-UTC "today"), vite build, sync-design-system --check, check_design_system --check, check_feature_imports --check, scope guard. Not run: E2E (no Docker; no page uses the component yet).
 - Next: DSQ answer on min/max (Q16), then the /pipeline scheduled-scrape window card with its backend setting.
 <!-- SLOT:DS24A END -->
+
+<!-- SLOT:PLAN2 BEGIN -->
+### PLAN2: Refresh plan/RESTRUCTURE.md with the finished waves and the next wave
+- Start: 2026-11-01. Base `main` 2427bf9. Step 0 (the candidate list) answered by Markus on 1 Nov 2026.
+- End: 2026-11-01.
+- Changed: `plan/RESTRUCTURE.md` marks waves Pre-1 to 9, `up`, `up-legacy`, held U7 and the 30 Oct work queue done with date ranges (no rows dropped), adds wave 10 (10A, 10B, 10C) and section 4.1 with one-job packages, owned paths, dependencies and the overlap check, and moves the section 1 header to `2427bf9`. New hand-written briefs in `plan/agents/` for DS23, DS24B, DS24C, SC2B, TX1C, U17B, JOBDATE, BRZ1, MDB1 and M6S. "DS24B" is split into DS24B (backend) and DS24C (card) to stay inside the file budget and to wait for DS23 on the same page.
+- Found: `scripts/scope_guard.py` does not recognise codes without a digit (JOBDATE, JOBSTG): it prints "not a work package" and checks nothing. All other wave 10 codes resolve to their brief.
+- Checks run: `git diff --check`; the owned-path overlap check (no overlap inside 10A or 10B; DS23/DS24C and BRZ1/MDB1 are in different sub-waves); each brief parsed with scope_guard's code and owned-path rules; `scope_guard.py` on this branch.
+- Checks not run: frontend, backend and E2E checks (docs only).
+- Next: Markus confirms the DS24B window meaning (days on which scheduled scrapes run) and the DS24B/DS24C split, then sends 10A once JOBSTG (#477) is merged for DS23, SC2B and JOBDATE.
+<!-- SLOT:PLAN2 END -->

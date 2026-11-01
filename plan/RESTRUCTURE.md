@@ -2,7 +2,7 @@
 
 Guide: *Architectural Modularity and Cognitive Sustainability in Generative Software Engineering* (the "vibe coding report"). Its claims are used as working heuristics, not as measured facts about this repo. This file replaces the wave plan in the laptop copy of `INTEGRATION_PLAN.md` for everything not yet merged. It is the single plan; `plan/launch_jules.py` in this repo is the single launcher.
 
-## 1. What the audit of main found (`5d1da0f`, 26 Oct 05:43, updated at `162c024`, 26 Oct 18:00, after wave 1)
+## 1. What the audit of main found (`5d1da0f`, 26 Oct 05:43, updated at `162c024`, 26 Oct 18:00, after wave 1; plan refreshed at `2427bf9`, 2 Nov 2026 08:02, after waves 1A–9, `up`, `up-legacy`, U7 and the 30 Oct work queue)
 
 The report's main warning is that a large changeset silently deletes working logic next to the change. That has already happened here several times:
 
@@ -74,22 +74,52 @@ Target structure (reached one package at a time):
 
 | Wave | Packages (one job each) | Waits on |
 |---|---|---|
-| **Pre-1 hotfix** (done, #175 #176) | Fix PR #158 circular import in `services/common/datalayer/handlers.py` and `COPY services/library /app/library` in `rest_api` + `worker` Dockerfiles | nothing (do before Wave 1A) |
-| **1A, guards & registries** (merged) | `G1` scope guard, `G2` route registry, `G3` router registry | Pre-1 hotfix; merge `G1` first so CI enforces scope on everything after |
-| **1B, recover & foundations** (merged) | `QA5` sync script, `R1` restore track bridge, `R2` restore route finder, `R3` restore graph projection, `C1` one resolver, `C2` root scripts, `S1` search service, `E2` web call log, `SB1` set exporters | Wave 1A merged |
-| **2, wire pages, next layer** | `QA4` refmb tests, `QA6` worker test, `P1` `/paths`, `P2` one Camelot page, `P3` AI setlists route, `FE9` add to targets, `S2` search proxy without mocks, `E1` local MB provider, `SB2` export dialog, `SEC6A` AI proxy route, `L1` importer fields, `L2` reconciliation view, `L3` saved-sets outbox | Wave 1B merged; each brief names its own dependency. Send `up`'s `U5` with it. |
-| **3** | `QA3` graph API tests, `S3` search UI errors, `L5` reconciliation, `E3` replay report, `SB3` reorder, `SEC5` REST token auth, `SEC6B` AI proxy client, `L4` start-dev migrations | Wave 2 merged |
-| **`up` & `up-legacy`** | `U1`–`U5` (running stack Python 3.15 + Redis 8.10), then `U6`, `U9`–`U29` | `U1`–`U4` merged on 26 Oct alongside 1B (owner's call); `U5` to resend. Send `up-legacy` only after the stack rebuilt from `main` passes `start-dev.sh` and the e2e smoke test on the 3.15 images. |
-| **4, design system per page** | `U8` Actions pins, `DS1` to `DS15`, then `DS16` (held) | Wave 3 merged. **First update `plan/build_ds_prompts.py`** so `ENTRIES` match `G2`/`P1`–`P3` AND `## Owned paths` includes `docs/design-system/audits/{code}.md` and `frontend/design-system-pending.txt` for `G1` compatibility. |
-| **5, search intelligence primitives** | `UX1` search history, `UX2` favorite queries, `UX3` lexicon trie, `UX4` autocomplete search field | Wave 4 merged (or Wave 3 merged; independent primitives) |
-| **6, contextual autocomplete** | `UX5` crate filter autocomplete, `UX6` pathfinder autocomplete, `UX7` music service history, `UX8` quick search palette | Wave 5 merged |
-| **7, target track auto-suggestions** | `TG1` target suggestions endpoint, `TG2` suggestions hook, `TG3` suggestions UI deck, `TG4` crate discovery banner | Wave 6 merged (and Wave 2 FE9 merged) |
-| **8, workflow velocity & transitions** | `FL1` table keyboard nav, `FL2` set transition suggestions, `FL3` crate filter presets, `FL4` mini audio preview | Wave 7 merged (and Wave 3 SB3 merged) |
-| **9, layout debt** | `LY1` AI setlists, `LY2` music library, `LY3` pathfinder and Camelot, `LY4` pipeline and export, `LY5` shared components; `DS16` (resend) | Wave 4 merged. Briefs from `plan/build_ly_prompts.py`. They share `frontend/design-system-layout-baseline.txt`, so merge one at a time and rebase each on main first. |
+| **Pre-1 hotfix** (done, 26 Oct; #175 #176) | Fix PR #158 circular import in `services/common/datalayer/handlers.py` and `COPY services/library /app/library` in `rest_api` + `worker` Dockerfiles | nothing (do before Wave 1A) |
+| **1A, guards & registries** (done, 26 Oct) | `G1` scope guard, `G2` route registry, `G3` router registry | Pre-1 hotfix; merge `G1` first so CI enforces scope on everything after |
+| **1B, recover & foundations** (done, 26 Oct) | `QA5` sync script, `R1` restore track bridge, `R2` restore route finder, `R3` restore graph projection, `C1` one resolver, `C2` root scripts, `S1` search service, `E2` web call log, `SB1` set exporters | Wave 1A merged |
+| **2, wire pages, next layer** (done, 26–29 Oct) | `QA4` refmb tests, `QA6` worker test, `P1` `/paths`, `P2` one Camelot page, `P3` AI setlists route, `FE9` add to targets, `S2` search proxy without mocks, `E1` local MB provider, `SB2` export dialog, `SEC6A` AI proxy route, `L1` importer fields, `L2` reconciliation view, `L3` saved-sets outbox | Wave 1B merged; each brief names its own dependency. Send `up`'s `U5` with it. |
+| **3** (done, 26–27 Oct) | `QA3` graph API tests, `S3` search UI errors, `L5` reconciliation, `E3` replay report, `SB3` reorder, `SEC5` REST token auth, `SEC6B` AI proxy client, `L4` start-dev migrations | Wave 2 merged |
+| **`up` & `up-legacy`** (done, 26–27 Oct) | `U1`–`U5` (running stack Python 3.15 + Redis 8.10), then `U6`, `U9`–`U29` | `U1`–`U4` merged on 26 Oct alongside 1B (owner's call); `U5` to resend. Send `up-legacy` only after the stack rebuilt from `main` passes `start-dev.sh` and the e2e smoke test on the 3.15 images. |
+| **4, design system per page** (done, 26–27 Oct) | `U8` Actions pins, `DS1` to `DS15`, then `DS16` (held) | Wave 3 merged. **First update `plan/build_ds_prompts.py`** so `ENTRIES` match `G2`/`P1`–`P3` AND `## Owned paths` includes `docs/design-system/audits/{code}.md` and `frontend/design-system-pending.txt` for `G1` compatibility. |
+| **5, search intelligence primitives** (done, 26–28 Oct) | `UX1` search history, `UX2` favorite queries, `UX3` lexicon trie, `UX4` autocomplete search field | Wave 4 merged (or Wave 3 merged; independent primitives) |
+| **6, contextual autocomplete** (done, 26–28 Oct) | `UX5` crate filter autocomplete, `UX6` pathfinder autocomplete, `UX7` music service history, `UX8` quick search palette | Wave 5 merged |
+| **7, target track auto-suggestions** (done, 27 Oct) | `TG1` target suggestions endpoint, `TG2` suggestions hook, `TG3` suggestions UI deck, `TG4` crate discovery banner | Wave 6 merged (and Wave 2 FE9 merged) |
+| **8, workflow velocity & transitions** (done, 27–28 Oct) | `FL1` table keyboard nav, `FL2` set transition suggestions, `FL3` crate filter presets, `FL4` mini audio preview | Wave 7 merged (and Wave 3 SB3 merged) |
+| **9, layout debt** (done, 27–28 Oct) | `LY1` AI setlists, `LY2` music library, `LY3` pathfinder and Camelot, `LY4` pipeline and export, `LY5` shared components; `DS16` (resend) | Wave 4 merged. Briefs from `plan/build_ly_prompts.py`. They share `frontend/design-system-layout-baseline.txt`, so merge one at a time and rebase each on main first. |
+| **Held U7, Postgres 18** (done, 28–30 Oct) | `U7` prepared the upgrade (28 Oct); the owner cut over in `PG1` (#448, 30 Oct). The old volume is kept. | owner run |
+| **Work queue of 30 Oct** (`WQ1` #446; done, 30 Oct–2 Nov) | `MRG1`, `DOC3`, `DOC4`, `PG1`, `AX2`, `SC5`, `SC6`, `SC7`, `DS21`, `DS22`, `DS24` (decision), `DS24A` (#476), `SP14` (#475), `WEB1` (the E2 `web_call_log` wrapper), `TGT1` (#474), `PV1`, `PV2`, `PF2`, `UNK1`, `UNK2`, `LINT1`. Still open: `JOBSTG` (#477), `DS23` (moved to wave 10), and the owner jobs `E2E2`, `DATA1`, `DSQ1`. | `plan/work-queue-2026-10-30/` |
+| **10A, follow-ups and the M6 spec** (approved by Markus 1 Nov 2026) | `DS23`, `DS24B`, `SC2B`, `TX1C`, `U17B`, `JOBDATE`, `BRZ1`, `M6S` (see 4.1) | each brief names its own dependency; `DS23`, `SC2B` and `JOBDATE` wait for `JOBSTG` (#477) |
+| **10B** | `DS24C`, `MDB1` (see 4.1) | `DS24C` after `DS23` and `DS24B`; `MDB1` after `BRZ1` (they share a file with those, so they cannot run beside them) |
+| **10C, milestone 6 code** | defined by `M6S` (for example one shared scoring module, the move label on projected edges, the frontend reading it) | `M6S` merged; briefs written then |
+
+### 4.1 Wave 10 (approved by Markus on 1 Nov 2026)
+
+Candidates came from the follow-ups in finished slots and PRs and from the milestones in `docs/IMPLEMENTATION_PLAN.md` that are not yet met. Markus picked these on 1 Nov 2026. Each package has a hand-written brief in `plan/agents/<CODE>_<slug>.md` with a `## Owned paths` list, so G1 can find it (but see the `JOBDATE` note). Base: `main` at `2427bf9`.
+
+| Code | One job | Owned paths (STATUS.md slot of the same code is always added) | Depends on | Sub-wave |
+|---|---|---|---|---|
+| `DS23` | Show each unfinished scrape job on /pipeline with StagedProgress, from the stages endpoint | `frontend/src/features/pipeline/{jobStages.ts, jobStages.test.ts, ScrapeJobStages.tsx, ScrapeJobStages.test.tsx}` (new), `frontend/src/pages/ScraperProgressPage.tsx` ("Scrape runs" only), `frontend/src/pages/ScraperProgressPage.test.tsx` | `SP14` (#475, merged), `JOBSTG` (#477) | 10A |
+| `DS24B` | Store one scheduled-scrape date window; the hourly target scheduler queues nothing outside it | `sql/migrations/260_scrape_window_{up,down}.sql` (new), `scripts/start-dev.sh` (one line), `services/rest_api/routers/scrape_window.py` (new), `services/common/datalayer/target_scrape.py`, `services/common/tests/test_target_scrape.py`, `tests/rest_api/test_scrape_window.py` (new) | `DS24A` (#476, merged) | 10A |
+| `SC2B` | After a target-track scrape, set `target_tracks.playlists_found` from bronze (a recount) | `services/common/datalayer/target_results.py` (new), `services/common/datalayer/handlers.py` (`scrape` handler only), `services/common/tests/test_target_results.py` (new) | `SC2`; rebase on `JOBSTG` (#477, also edits `handlers.py`) | 10A |
+| `TX1C` | Remove the set-level `tidal` flag from `SavedSet` and the set builder draft | `frontend/src/features/musicLibrary/{data.ts, setBuilder.ts, SetBuilderPage.tsx}` (the flag only), `frontend/src/features/musicLibrary/{data.test.ts, setBuilder.test.ts}`, `frontend/src/features/setBuilder/{ExportDialog.test.tsx, exporters.test.ts, sendToTidal.test.ts}` | `TX1` (#394, merged) | 10A |
+| `U17B` | Mount GraphQL HTTP and websocket on `/graphql` with strawberry 0.337's FastAPI router | `services/graphql-api/main.py` (the mount only), `services/graphql-api/tests/unit/test_graphql_mount.py` (new) | `U17` (merged) | 10A |
+| `JOBDATE` | Add `created_from`/`created_to` (Melbourne days) to `GET /api/v1/jobs` | `services/rest_api/routers/jobs.py` (list endpoint only), `services/common/datalayer/jobs.py` (`list_jobs` only), `tests/rest_api/test_jobs_date_span.py` (new) | rebase on `JOBSTG` (#477, also edits `routers/jobs.py`) | 10A |
+| `BRZ1` | One savepoint per bronze row, so one bad row is skipped and counted and the rest of the batch is written | `scrapers/pipelines/persistence_pipeline.py` (bronze inserts and their `_flush_batch` branches only), `scrapers/tests/test_bronze_batch_bad_row.py` (new), `scrapers/tests/test_scrape_counts_agree.py` (only if its fake needs savepoints) | `SC5`, `SC6` (merged) | 10A |
+| `M6S` | Write the transition scoring and energy move spec and name the M6 code packages (docs only) | `docs/TRANSITION_SCORING.md` (new) | nothing | 10A |
+| `DS24C` | /pipeline card that shows and sets the scheduled-scrape window with `DateRangeField` | `frontend/src/features/pipeline/{ScrapeWindowCard.tsx, ScrapeWindowCard.test.tsx}` (new), `frontend/src/pages/ScraperProgressPage.tsx` (mount only), `frontend/src/pages/ScraperProgressPage.test.tsx` | `DS24B`; `DS23` merged first (same page) | 10B |
+| `MDB1` | Link each MixesDB silver track to its positioned bronze row, so none is skipped for a missing `bronze_id` | `scrapers/pipelines/persistence_pipeline.py` (`_process_track_item`, `_insert_songs_batch` only), `scrapers/tests/test_silver_links_bronze.py` (new) | `BRZ1` merged first (same file) | 10B |
+| M6 code | Defined by `M6S` | from `M6S` | `M6S` | 10C |
+
+Notes:
+- **Overlap check.** Within 10A no two packages own the same path, and within 10B neither does. The pairs that share a file are split across sub-waves: `DS23`/`DS24C` (`ScraperProgressPage.tsx` and its test) and `BRZ1`/`MDB1` (`persistence_pipeline.py`). Every package also edits STATUS.md, each in its own slot only, which G1 allows.
+- **`DS24B` and `DS24C`.** Markus approved "DS24B" as a backend setting plus a /pipeline card. It is split in two so each part stays inside the 10-file budget, and so the card can wait for `DS23` on the same page without holding up the backend.
+- **`DS24B` window meaning (assumed).** The window limits the days on which scheduled target scrapes are queued (Melbourne dates). It does not filter mixes by date, and manual scrapes are never limited. Confirm before sending if that is not what was meant.
+- **`TX1C`.** The weekly run that read the set's `tidal` flag is in the owner's musicLibrary folder, not in this repo (`pipeline/run_weekly.py` has no TIDAL set step). Removing that step there is an owner follow-up.
+- **`JOBDATE` and G1.** `scripts/scope_guard.py` takes the code from the PR title with `\b([A-Z]{1,4}\d{1,2}[A-Z]?)\b`, or from the branch with `^([A-Za-z]{1,4}\d{1,2}[A-Za-z]?)`. A code with no digit (`JOBDATE`, like `JOBSTG`) matches neither, so the guard prints "not a work package" and exits 0 without checking owned paths. Its brief is in `plan/agents/` for the agent, but the reviewer checks its owned paths by hand. Every other wave 10 code (`DS23`, `DS24B`, `DS24C`, `SC2B`, `TX1C`, `U17B`, `BRZ1`, `MDB1`, `M6S`) matches and finds its brief.
 
 Retired because they were split or replaced: WP2 (ref_mb is a separate database), WP4 → E1/E2/E3, WP5 → merged in #158 (L1–L4 held for repair, L5 active), BE1 → S1/S2/S3, FE1 → R1, FE3 → R2 + P1, FE4 → SB1/SB2/SB3, FE11 and FEW (replaced by G2 plus P1 to P3), SEC6 → SEC6A/SEC6B. The laptop launcher in `E:\musicLibrary\plan` is retired; it refuses everything and points here.
 
-Briefs are generated: `python plan/build_rs_prompts.py` writes every R/G/C/S/L/E/SB/P/FE9/SEC brief and adds missing STATUS.md slots. The DS briefs come from `plan/build_ds_prompts.py`, the LY briefs from `plan/build_ly_prompts.py`. The QA briefs are hand-written.
+Briefs are generated: `python plan/build_rs_prompts.py` writes every R/G/C/S/L/E/SB/P/FE9/SEC brief and adds missing STATUS.md slots. The DS briefs come from `plan/build_ds_prompts.py`, the LY briefs from `plan/build_ly_prompts.py`. The QA briefs and the wave 10 briefs (4.1) are hand-written.
 
 ## 5. Merge protocol and review budget
 
@@ -117,10 +147,10 @@ Everything else is one-job Jules packages built by `plan/build_upgrade_prompts.p
 
 | Wave | Packages | Notes |
 |---|---|---|
-| `up` (after Wave 1B) | U1 rest_api, U2 graph-visualization-api, U3 worker, U4 scrapers (all Python 3.15), U5 Redis 8.10 | The running stack first, once Wave 1 recovery is green. |
-| `up-legacy` (after `up` is merged) | U6 RabbitMQ 4.3; U9–U18, U20–U24 Python services not in compose (3.15); U19 nlp-processor (3.14, since spaCy needs Python <3.15); U25 base template; U26–U28 Node services (Node 26); U29 graph projection (Python 3.15 and neo4j 6, after R3) | Keeps every image building. |
-| `4` | U8 GitHub Actions pinned by SHA to their latest releases | After waves 1–3, which edit workflows. |
-| held | U7 Postgres 18.6 | Prepares a new volume, a migration script and a runbook. Send it with `--only U7`. Merge it only after the owner has run `scripts/upgrade-postgres-18.sh`. The old volume is never removed. |
+| `up` (after Wave 1B; done, 26 Oct) | U1 rest_api, U2 graph-visualization-api, U3 worker, U4 scrapers (all Python 3.15), U5 Redis 8.10 | The running stack first, once Wave 1 recovery is green. |
+| `up-legacy` (after `up` is merged; done, 26–27 Oct) | U6 RabbitMQ 4.3; U9–U18, U20–U24 Python services not in compose (3.15); U19 nlp-processor (3.14, since spaCy needs Python <3.15); U25 base template; U26–U28 Node services (Node 26); U29 graph projection (Python 3.15 and neo4j 6, after R3) | Keeps every image building. |
+| `4` (done, 27 Oct) | U8 GitHub Actions pinned by SHA to their latest releases | After waves 1–3, which edit workflows. |
+| held (done, 28–30 Oct; cut over in PG1 #448) | U7 Postgres 18.6 | Prepares a new volume, a migration script and a runbook. Send it with `--only U7`. Merge it only after the owner has run `scripts/upgrade-postgres-18.sh`. The old volume is never removed. |
 
 Version rules applied:
 - Python 3.15 everywhere it installs. Packages without a cp315 wheel (annoy, PyYAML, ruamel.yaml.clib) compile from source, so their build stage needs a compiler.
