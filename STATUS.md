@@ -2032,6 +2032,7 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks: tsc, oxlint (exit 0, no findings in the new files), vitest 392/392 (17 new, incl. Melbourne DST 4 Oct 2026 and a Melbourne-not-UTC "today"), vite build, sync-design-system --check, check_design_system --check, check_feature_imports --check, scope guard. Not run: E2E (no Docker; no page uses the component yet).
 - Next: DSQ answer on min/max (Q16), then the /pipeline scheduled-scrape window card with its backend setting.
 <!-- SLOT:DS24A END -->
+  
 <!-- SLOT:DS25 BEGIN -->
 ### DS25: Design system 1.6.0: InfoTip, warnings link to their source and can be dismissed, go icons
 - Synced from the published SongNodes design-system artifact (1.6.0, which also carries 1.5.0's ring layout and link-strength bands, never synced before). 1.6.0 brings beanAlliance v4.18 to v4.20.2 into SongNodes: `InfoTip`, source links (`sn-link--src`), dismiss to icon (`.sn-dismissed`, `SongNodes.dismissal`), go icons (`SongNodes.goIcon`). DR-038 to DR-042; fitted choices Q23 to Q27 for Markus.
@@ -2050,6 +2051,7 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: frontend and backend suites (no code changed).
 - Next: Markus answers Q-E1…Q-S3 (Q-E1, Q-E2, Q-B1 change labels in the examples); then M6-F1 (classifier and golden tests).
 <!-- SLOT:M6S END -->
+  
 <!-- SLOT:JOBSTG BEGIN -->
 ### JOBSTG: A scrape job reports its stages, with live scrape progress
 - Start: 2026-11-01. Base `main` f2bdc9b. Brief: DS23 Step 0 (stall rule dishonest while a scrape reports nothing for up to 15 min).
@@ -2060,6 +2062,16 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Next: on the stack, trigger a MixesDB scrape and poll `/api/v1/jobs/<id>/stages`: `progress.pages` should rise about every 15 s. Then DS23 (after DS-SP14) renders it.
 <!-- SLOT:JOBSTG END -->
 
+<!-- SLOT:DS23 BEGIN -->
+### DS23: /pipeline shows every stage of a running scrape, including stalled
+- Start: 2026-11-01 (branch ds23-pipeline-scrape-stages off origin/main 5610049; SP14 #475 and JOBSTG #477 are on main).
+- End: 2026-11-01.
+- Changed: new `frontend/src/features/pipeline/jobStages.ts` (fetches `GET /api/v1/jobs/{id}/stages`, maps it to StagedProgress steps: API states as sent, live pages/playlists/tracks via `SN.format.count`, `progress: null` keeps the API's fixed detail, an unknown state is shown as "State not known", `secondsSinceProgress` from `last_progress_at` on the running step only) and `ScrapeJobStages.tsx` (one card per job, polls every 5 s while the tab is visible, stops when every stage is done or one failed; loading `LoadingPanel`, failure `ErrorPanel` with the cause, no stale stages). `/pipeline` "Scrape runs" shows a card for each scrape seen queued or running on this visit (at most 5), kept after it finishes as its record; the table is unchanged. No Cancel (no cancel API) and no Try again (the retry API is for dead jobs only, and dead jobs keep their Retry row).
+- Checks run: tsc, oxlint (no findings in DS23 files), vitest 56 files / 411 tests (14 new), vite build, sync-design-system --check, check_design_system --check, check_feature_imports --check, scope guard.
+- Checks not run: E2E and the reviewer check on the running stack (no Docker daemon here).
+- Next: on the stack, queue "Deadmau5 Strobe" and watch the card; stop the unified scraper mid-scrape and expect "No progress for N s" within about a minute.
+<!-- SLOT:DS23 END -->
+  
 <!-- SLOT:DS24B BEGIN -->
 ### DS24B: Scheduled scrapes honour a date window
 - Start: 2026-11-01 (branch ds24b-scrape-window-backend off origin/main 5610049). Brief: plan/agents/DS24B_scrape_window_backend.md (on plan2-next-wave).
