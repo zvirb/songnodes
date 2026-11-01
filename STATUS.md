@@ -2042,3 +2042,13 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: a real crawl against the running stack, E2E (no Docker daemon in the cloud sandbox). The scope guard reports "not a work package" (the code JOBSTG has no digit, and there is no `plan/agents/JOBSTG_*.md`).
 - Next: on the stack, trigger a MixesDB scrape and poll `/api/v1/jobs/<id>/stages`: `progress.pages` should rise about every 15 s. Then DS23 (after DS-SP14) renders it.
 <!-- SLOT:JOBSTG END -->
+
+<!-- SLOT:DS23 BEGIN -->
+### DS23: /pipeline shows every stage of a running scrape, including stalled
+- Start: 2026-11-01 (branch ds23-pipeline-scrape-stages off origin/main 5610049; SP14 #475 and JOBSTG #477 are on main).
+- End: 2026-11-01.
+- Changed: new `frontend/src/features/pipeline/jobStages.ts` (fetches `GET /api/v1/jobs/{id}/stages`, maps it to StagedProgress steps: API states as sent, live pages/playlists/tracks via `SN.format.count`, `progress: null` keeps the API's fixed detail, an unknown state is shown as "State not known", `secondsSinceProgress` from `last_progress_at` on the running step only) and `ScrapeJobStages.tsx` (one card per job, polls every 5 s while the tab is visible, stops when every stage is done or one failed; loading `LoadingPanel`, failure `ErrorPanel` with the cause, no stale stages). `/pipeline` "Scrape runs" shows a card for each scrape seen queued or running on this visit (at most 5), kept after it finishes as its record; the table is unchanged. No Cancel (no cancel API) and no Try again (the retry API is for dead jobs only, and dead jobs keep their Retry row).
+- Checks run: tsc, oxlint (no findings in DS23 files), vitest 56 files / 411 tests (14 new), vite build, sync-design-system --check, check_design_system --check, check_feature_imports --check, scope guard.
+- Checks not run: E2E and the reviewer check on the running stack (no Docker daemon here).
+- Next: on the stack, queue "Deadmau5 Strobe" and watch the card; stop the unified scraper mid-scrape and expect "No progress for N s" within about a minute.
+<!-- SLOT:DS23 END -->
