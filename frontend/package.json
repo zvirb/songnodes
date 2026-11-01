@@ -57,7 +57,7 @@
     "graphology-communities-louvain": "^2.0.2",
     "immer": "^11.2.9",
     "lucide-react": "^1.61.0",
-    "minimatch": "^10.2.6",
+    "minimatch": "^11.0.1",
     "pixi-viewport": "^6.0.3",
     "pixi.js": "^8.22.0",
     "react": "^19.3.1",
