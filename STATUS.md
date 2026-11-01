@@ -2191,6 +2191,17 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Next: a package that adds a rendered text-inset check (4–7px fails) to `design-rules.spec.ts`, run on a Docker host, fixing or listing what it finds.
 <!-- SLOT:DSQ1B END -->
 
+<!-- SLOT:U17C BEGIN -->
+### U17C: Remove the unused graphql-api service
+- Start: 2026-11-01 (branch u17c-remove-graphql-api off origin/main 62795a7). Owner decision (Markus, 2 Nov 2026): graphql-api is not in compose.dev.yaml and only returns example rows, so it goes. Supersedes U17B.
+- End: 2026-11-01.
+- Changed: deleted `services/graphql-api/` (10 files). Removed its line or entry from `start-docker.sh`, `deploy/build-and-push-images.sh`, `.github/dependabot.yml`, `services/api-gateway/routes/health.js` and `services/api-gateway/.env.example`. Added brief `plan/agents/U17C_remove_graphql_api.md`. No CI workflow, Helm or k8s file named it.
+- Left as is (not owned, reported): `design-system/16-platform.md` and `02-information-architecture.md` (GraphiQL rows, a design-system source change), `services/metadata-enrichment/INTEGRATION.md` (GraphQL example section), `tests/performance/load_tests.py` (`/graphql` task), `tests/requirements.txt` (graphql-core, hypothesis-graphql), GraphQL Playground flags in the env examples, plan history (U17, U17B, RESTRUCTURE.md, build_upgrade_prompts.py).
+- Checks run: root `pytest --collect-only` (263 collected, no graphql; one older collection error, `tests/security/test_pathfinder_security.py` needs `annoy`, not installed here), YAML parse of dependabot and every workflow, `bash -n` on both scripts, `node --check` on health.js, scope guard.
+- Checks not run: E2E and image builds (no Docker daemon).
+- Next: close U17B; a design-system package drops the GraphiQL rows; a small package removes the stale GraphQL section, load-test task and test deps.
+<!-- SLOT:U17C END -->
+
 <!-- SLOT:BRZ2 BEGIN -->
 ### BRZ2: Bronze playlists store raw_json as a JSON object
 - Start: 2026-11-01 (branch brz2-bronze-raw-json off origin/main 62795a7). Job: bronze playlist and track raw_json are JSON objects, so ingest sees fields such as `total_tracks`.

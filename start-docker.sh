@@ -143,7 +143,7 @@ start_app_services() {
     docker compose up -d db-connection-pool
     sleep 5
 
-    docker compose up -d rest-api graphql-api websocket-api graph-visualization-api enhanced-visualization-service
+    docker compose up -d rest-api websocket-api graph-visualization-api enhanced-visualization-service
     sleep 10
 
     # Start API gateway

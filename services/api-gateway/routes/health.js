@@ -47,7 +47,6 @@ router.get('/detailed', async (req, res) => {
   // Check downstream services
   const services = [
     { name: 'rest-api', url: 'http://rest-api:8082/health' },
-    { name: 'graphql-api', url: 'http://graphql-api:8081/health' },
     { name: 'websocket-api', url: 'http://websocket-api:8083/health' }
   ];
 
