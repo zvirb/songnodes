@@ -2148,6 +2148,16 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Next: DS24C (the /pipeline card) after DS23 merges.
 <!-- SLOT:DS24B END -->
 
+<!-- SLOT:DS24C BEGIN -->
+### DS24C: Pipeline page card for the scheduled-scrape window
+- Start: 2026-11-01 (branch ds24c-scrape-window-card off origin/main 920beb6, after DS24B #487 and DS23 #488). Brief: plan/agents/DS24C_scrape_window_card.md (on plan2-next-wave).
+- End: 2026-11-01.
+- Changed: new `features/pipeline/ScrapeWindowCard.tsx`, mounted on /pipeline above Scrape runs. It loads `GET /api/v1/scrape/window` and says "Scheduled scrapes run from Tue 1 – Thu 31 Dec 2026." (SN.format.range), open-ended forms, or "Scheduled scrapes run every day.". A StatusPill (SN.status: Every day / Running inside window / Paused) uses Melbourne today (SN.calendar.today()) and adds "Paused until 1 Dec 2026." or "Paused: the window ended on …". It edits with DateRangeField (no presets: the defaults look back, a window looks ahead; no min/max, Q16 open). Save is a default button (the page's primary is Queue scrape) and Clear is quiet. Save sends PUT and shows a Toast ("Scrape window saved" / "cleared"); a 422 or network failure is the field's `sn-field__error` (aria-describedby, aria-invalid). A load failure is an ErrorPanel naming the cause with Try again; loading is a LoadingPanel. The card says manual scrapes are not limited and when the window was saved. The page test mocks the card.
+- Checks run: `tsc --noEmit`, `oxlint src` (exit 0, no findings in the new files), `vitest run src` (57 files, 421 tests; 10 new in ScrapeWindowCard.test.tsx), `vite build`, `sync-design-system.sh --check` (1.6.0 in sync), `check_design_system.py --check`, `check_feature_imports.py --check`, scope guard against the brief.
+- Checks not run: E2E and a real-browser look (no Docker daemon here).
+- Next: owner check on the stack: set 1–31 Dec 2026 on /pipeline, reload, then clear.
+<!-- SLOT:DS24C END -->
+
 <!-- SLOT:DSQ1A BEGIN -->
 ### DSQ1A: Design system 1.7.0: the owner's answers to the open questions
 - Start: 2026-11-01 (branch dsq1-design-answers off origin/main 5610049; rebased on origin/main 920beb6 after DS25 took 1.6.0 and DR-034 to DR-042, so this is now 1.7.0 with DR-043 to DR-050). Job: record Markus's answers of 2 Nov 2026 (Melbourne) to Q9, Q11–Q16 and Q18 at the design-system source, bump, rebuild and re-sync.
