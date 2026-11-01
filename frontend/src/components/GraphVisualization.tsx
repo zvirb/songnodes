@@ -2,16 +2,9 @@ import React, { useRef, useEffect, useCallback, useState, useMemo } from 'react'
 import * as PIXI from 'pixi.js';
 import {
   forceSimulation,
-  forceLink,
-  forceManyBody,
-  forceCenter,
-  forceCollide,
-  forceX,
-  forceY,
   SimulationNodeDatum,
   SimulationLinkDatum,
   Simulation,
-  ForceLink,
 } from 'd3-force';
 import { zoom, zoomIdentity, zoomTransform, ZoomBehavior, ZoomTransform } from 'd3-zoom';
 import { select } from 'd3-selection';
@@ -22,6 +15,8 @@ import { ContextMenu, useContextMenu } from './ContextMenu';
 import { graphColours, onThemeChange, tokenHex } from '../lib/graphColours';
 import { Waypoints } from 'lucide-react';
 import { EmptyPanel } from './ds';
+import { seatTracks, fitTransform, cssEase } from '../lib/graphLayout';
+import type { GraphSeat } from '../styles/design-system/index';
 // import { GraphMiniMap } from './GraphMiniMap'; // DISABLED: Minimap commented out
 
 // Performance constants - updated for 2025 best practices
@@ -113,6 +108,8 @@ interface EnhancedGraphNode extends GraphNode, SimulationNodeDatum {
   isVisible: boolean;
   screenRadius: number;
   hitBoxRadius: number; // Extended hit box for zoom-aware clicking
+  labelWidth?: number; // Label width at 100%, kept clear by the seat box (GraphStyles)
+  seat?: GraphSeat; // Ring seat (graphLayout.seatTracks)
 }
 
 // Enhanced edge interface for PIXI rendering
@@ -1067,288 +1064,41 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     simulation.setSimulationSettled(true);
   }, [simulation]);
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // CLEAN SLATE: D3.js Defaults + Minimal Smart Modifications
-  // Strategy: Start with proven D3 defaults, add ONLY what's needed
-  // ═══════════════════════════════════════════════════════════════════════
+  // Layout: tracks are seated on rings around one anchor (design-system GraphStyles, "Layout: rings around one
+  // track", DR-034), not pulled apart by forces. The d3 simulation only carries the seats to the renderer: every
+  // node is pinned (fx/fy) to its seat and there are no forces.
   const initializeSimulation = useCallback(() => {
-    const simulation = forceSimulation<EnhancedGraphNode, EnhancedGraphEdge>()
+    const sim = forceSimulation<EnhancedGraphNode, EnhancedGraphEdge>();
+    sim.on('tick', handleSimulationTick);
+    sim.on('end', handleSimulationEnd);
 
-      // ──────────────────────────────────────────────────────────────────
-      // 1. LINK FORCE: Weight-based distance for cluster separation
-      // ──────────────────────────────────────────────────────────────────
-      .force('link', forceLink<EnhancedGraphNode, EnhancedGraphEdge>()
-        .id(d => d.id)
-        .distance(d => {
-          // Exponential scaling for more dramatic weight differences
-          const weight = d.weight || 1;
-          // REFINEMENT: Even larger distances for cleaner, less messy graph
-          // Strong edges (weight 10): 150px apart (tight clusters with clear separation)
-          // Medium edges (weight 5): 525px apart
-          // Weak edges (weight 1): 900px apart (dramatic separation)
-          const minDist = 150;
-          const maxDist = 900;
-          const normalizedWeight = Math.min(weight / 10, 1.0);
-          return maxDist - (normalizedWeight * normalizedWeight * (maxDist - minDist));
-        })
-        .strength(d => {
-          // REFINEMENT: Reduced link strength for more elasticity/flexibility
-          const weight = d.weight || 1;
-          const normalizedWeight = Math.min(weight / 10, 1.0);
-          return normalizedWeight * 0.6 + 0.1; // Range: 0.1 to 0.7 (more flexible)
-        })
-      )
+    simulationRef.current = sim;
+    return sim;
+  }, [handleSimulationTick, handleSimulationEnd]);
 
-      // ──────────────────────────────────────────────────────────────────
-      // 2. CHARGE FORCE: Stronger repulsion for better node distribution
-      // ──────────────────────────────────────────────────────────────────
-      .force('charge', forceManyBody<EnhancedGraphNode>()
-        .strength(-2500)  // REFINEMENT: 5x stronger repulsion (was -500) for cleaner graph
-        .distanceMax(2500)  // REFINEMENT: 5x larger repulsion range for dramatic separation
-        // D3 defaults for distanceMin, theta - KEEP THEM
-      )
+  const nowPlayingRef = useRef<string | null>(nowPlayingId);
 
-      // ──────────────────────────────────────────────────────────────────
-      // 3. COLLISION: Prevent overlap
-      // ──────────────────────────────────────────────────────────────────
-      .force('collision', forceCollide<EnhancedGraphNode>()
-        .radius(d => (d.radius || 8) + 50)  // REFINEMENT: Even larger padding (~58px total)
-        // D3 defaults for strength and iterations - KEEP THEM
-      )
-
-      // ──────────────────────────────────────────────────────────────────
-      // 4. CENTER FORCE: Weak centering to prevent linear spreading
-      // ──────────────────────────────────────────────────────────────────
-      .force('center', forceCenter<EnhancedGraphNode>(0, 0).strength(0.02))
-
-      // ──────────────────────────────────────────────────────────────────
-      // 5. EDGE REPULSION: Spread edges evenly around nodes
-      // ──────────────────────────────────────────────────────────────────
-      .force('edgeRepulsion', (alpha) => {
-        // Custom force: edges that share a node repel each other
-        // This creates more even distribution of edges around a node
-        const edges = Array.from(enhancedEdgesRef.current.values());
-        const edgeRepulsionStrength = 15; // Moderate repulsion force
-        const maxRepulsionDistance = 100; // Only repel nearby edges
-
-        // Build adjacency map: node -> array of connected edges
-        const nodeToEdges = new Map<string, EnhancedGraphEdge[]>();
-        edges.forEach(edge => {
-          const sourceId = typeof edge.source === 'object' ? edge.source.id : edge.source;
-          const targetId = typeof edge.target === 'object' ? edge.target.id : edge.target;
-
-          if (!nodeToEdges.has(sourceId)) nodeToEdges.set(sourceId, []);
-          if (!nodeToEdges.has(targetId)) nodeToEdges.set(targetId, []);
-
-          nodeToEdges.get(sourceId)!.push(edge);
-          nodeToEdges.get(targetId)!.push(edge);
-        });
-
-        // For each node with multiple edges, apply repulsion between those edges
-        nodeToEdges.forEach((nodeEdges, nodeId) => {
-          if (nodeEdges.length < 2) return; // Need at least 2 edges to repel
-
-          // Compare each pair of edges connected to this node
-          for (let i = 0; i < nodeEdges.length; i++) {
-            for (let j = i + 1; j < nodeEdges.length; j++) {
-              const edge1 = nodeEdges[i];
-              const edge2 = nodeEdges[j];
-
-              // Get the "other" node for each edge (the one not matching nodeId)
-              const source1 = typeof edge1.source === 'object' ? edge1.source : enhancedNodesRef.current.get(edge1.source);
-              const target1 = typeof edge1.target === 'object' ? edge1.target : enhancedNodesRef.current.get(edge1.target);
-              const source2 = typeof edge2.source === 'object' ? edge2.source : enhancedNodesRef.current.get(edge2.source);
-              const target2 = typeof edge2.target === 'object' ? edge2.target : enhancedNodesRef.current.get(edge2.target);
-
-              if (!source1 || !target1 || !source2 || !target2) continue;
-
-              // Get the endpoints opposite to the shared node
-              const otherNode1 = source1.id === nodeId ? target1 : source1;
-              const otherNode2 = source2.id === nodeId ? target2 : source2;
-
-              // Calculate distance between the "other" endpoints
-              const dx = (otherNode2.x || 0) - (otherNode1.x || 0);
-              const dy = (otherNode2.y || 0) - (otherNode1.y || 0);
-              const distance = Math.sqrt(dx * dx + dy * dy);
-
-              if (distance === 0 || distance > maxRepulsionDistance) continue;
-
-              // Apply repulsive force proportional to 1/distance
-              // Closer edges repel more strongly
-              const force = (edgeRepulsionStrength * alpha) / (distance * distance);
-              const fx = (dx / distance) * force;
-              const fy = (dy / distance) * force;
-
-              // Apply force to the "other" nodes (push them apart)
-              if (otherNode1.vx !== undefined && otherNode1.vy !== undefined) {
-                otherNode1.vx -= fx;
-                otherNode1.vy -= fy;
-              }
-              if (otherNode2.vx !== undefined && otherNode2.vy !== undefined) {
-                otherNode2.vx += fx;
-                otherNode2.vy += fy;
-              }
-            }
-          }
-        });
-      })
-
-      // REMOVED: edgeAvoidance force - O(N×E) complexity was causing severe performance issues
-      // The combination of forceManyBody (charge) + forceCollide provides sufficient node separation
-      // For graphs with 1000 nodes and 3000 edges, this eliminates 3M calculations per tick!
-
-      // ──────────────────────────────────────────────────────────────────
-      // 6. TIMING: Extended settling (30 seconds for cluster formation)
-      // ──────────────────────────────────────────────────────────────────
-      .velocityDecay(0.4)    // Lower friction allows more exploration
-      .alphaDecay(0.004)     // Slower cooldown = ~1800 iterations (~30 seconds @ 60fps)
-      .alphaMin(0.001);      // Standard threshold - simulation stops when alpha < this
-
-    // No additional modifications - let the forces work naturally
-
-    simulation.on('tick', handleSimulationTick);
-    simulation.on('end', handleSimulationEnd);
-
-    simulationRef.current = simulation;
-    return simulation;
-  }, [handleSimulationTick, handleSimulationEnd, forceSettings]);
-
-  // Fast pre-computation method using manual ticks for accurate positioning
-  const preComputeLayout = useCallback((nodes: EnhancedGraphNode[], maxTicks = 100) => {
-    // OPTIMIZATION NOTE: This runs synchronously but is already optimized:
-    // - Limited to 50 ticks (called with maxTicks=50 from updateGraphData)
-    // - Only runs on new nodes in incremental updates
-    // - Uses high friction (0.7) and fast cooldown (0.1) for quick convergence
-    // For graphs > 5000 nodes, consider moving to a Web Worker for true non-blocking
-
-    // Create a separate simulation for pre-computation (OPTIMIZED: simplified forces)
-    const preSimulation = forceSimulation<EnhancedGraphNode>(nodes)
-      .force('link', forceLink<EnhancedGraphNode, EnhancedGraphEdge>(Array.from(enhancedEdgesRef.current.values()))
-        .id(d => d.id)
-        .distance(d => {
-          // Use simplified weight-based distance for fast pre-computation
-          const weight = d.weight || 1;
-          const minDistance = 180;  // REFINEMENT: Match main simulation (150→180 for pre-comp)
-          const maxDistance = 950;  // REFINEMENT: Match main simulation (900→950 for pre-comp)
-          const normalizedWeight = Math.log(weight + 1) / Math.log(13);
-          return maxDistance - (normalizedWeight * (maxDistance - minDistance));
-        })
-        .strength(d => {
-          // Simplified quadratic strength with degree boost
-          const weight = d.weight || 1;
-          const normalizedWeight = Math.min(weight / 12, 1.0);
-          const baseStrength = 0.1 + 0.5 * Math.pow(normalizedWeight, 2);
-
-          // Degree boost for hub gravity wells (simplified for pre-computation)
-          const source = d.source as any;
-          const target = d.target as any;
-          const sourceDegree = source.degree || source.connections || 0;
-          const targetDegree = target.degree || target.connections || 0;
-          const maxDegree = Math.max(sourceDegree, targetDegree);
-          const degreeBoost = 1 + Math.min(maxDegree / 20, 1.5); // Up to 2.5x for pre-comp
-
-          return baseStrength * degreeBoost;
-        })
-      )
-      .force('charge', forceManyBody<EnhancedGraphNode>()
-        .strength(-2500)  // REFINEMENT: Match main simulation's stronger repulsion
-        .distanceMax(2500)  // REFINEMENT: Match main simulation's larger repulsion range
-        .theta(0.95) // OPTIMIZED: More approximation for speed
-      )
-      .force('center', forceCenter<EnhancedGraphNode>(0, 0).strength(0.02)) // Match main simulation's center force
-      .force('collision', forceCollide<EnhancedGraphNode>()
-        .radius(d => {
-          const baseRadius = (d.radius || DEFAULT_CONFIG.graph.defaultRadius) + 40;
-          const degree = d.degree || d.connections || 0;
-
-          // Hubs need more breathing room (same as main simulation)
-          if (degree >= 10) {
-            return baseRadius * 1.5;
-          } else if (degree >= 5) {
-            return baseRadius * 1.25;
-          }
-          return baseRadius;
-        })
-        .strength(0.7) // Stronger collision (was 0.3)
-        .iterations(2) // More iterations for better initial separation (was 1)
-      )
-      // Edge repulsion for pre-computation (simplified version)
-      .force('edgeRepulsion', (alpha) => {
-        const edges = Array.from(enhancedEdgesRef.current.values());
-        const edgeRepulsionStrength = 10; // Slightly weaker for faster convergence
-        const maxRepulsionDistance = 80; // Shorter range for pre-computation
-
-        const nodeToEdges = new Map<string, EnhancedGraphEdge[]>();
-        edges.forEach(edge => {
-          const sourceId = typeof edge.source === 'object' ? edge.source.id : edge.source;
-          const targetId = typeof edge.target === 'object' ? edge.target.id : edge.target;
-
-          if (!nodeToEdges.has(sourceId)) nodeToEdges.set(sourceId, []);
-          if (!nodeToEdges.has(targetId)) nodeToEdges.set(targetId, []);
-
-          nodeToEdges.get(sourceId)!.push(edge);
-          nodeToEdges.get(targetId)!.push(edge);
-        });
-
-        nodeToEdges.forEach((nodeEdges, nodeId) => {
-          if (nodeEdges.length < 2) return;
-
-          for (let i = 0; i < nodeEdges.length; i++) {
-            for (let j = i + 1; j < nodeEdges.length; j++) {
-              const edge1 = nodeEdges[i];
-              const edge2 = nodeEdges[j];
-
-              const source1 = typeof edge1.source === 'object' ? edge1.source : enhancedNodesRef.current.get(edge1.source);
-              const target1 = typeof edge1.target === 'object' ? edge1.target : enhancedNodesRef.current.get(edge1.target);
-              const source2 = typeof edge2.source === 'object' ? edge2.source : enhancedNodesRef.current.get(edge2.source);
-              const target2 = typeof edge2.target === 'object' ? edge2.target : enhancedNodesRef.current.get(edge2.target);
-
-              if (!source1 || !target1 || !source2 || !target2) continue;
-
-              const otherNode1 = source1.id === nodeId ? target1 : source1;
-              const otherNode2 = source2.id === nodeId ? target2 : source2;
-
-              const dx = (otherNode2.x || 0) - (otherNode1.x || 0);
-              const dy = (otherNode2.y || 0) - (otherNode1.y || 0);
-              const distance = Math.sqrt(dx * dx + dy * dy);
-
-              if (distance === 0 || distance > maxRepulsionDistance) continue;
-
-              const force = (edgeRepulsionStrength * alpha) / (distance * distance);
-              const fx = (dx / distance) * force;
-              const fy = (dy / distance) * force;
-
-              if (otherNode1.vx !== undefined && otherNode1.vy !== undefined) {
-                otherNode1.vx -= fx;
-                otherNode1.vy -= fy;
-              }
-              if (otherNode2.vx !== undefined && otherNode2.vy !== undefined) {
-                otherNode2.vx += fx;
-                otherNode2.vy += fy;
-              }
-            }
-          }
-        });
-      })
-      .velocityDecay(0.7)   // OPTIMIZED: High friction
-      .alphaDecay(0.1)      // OPTIMIZED: Fast cooldown
-      .alphaMin(0.05)       // OPTIMIZED: Stop early
-      .stop(); // Stop automatic ticking
-
-    // Run manual ticks until convergence
-    let tickCount = 0;
-
-    while (preSimulation.alpha() > preSimulation.alphaMin() && tickCount < maxTicks) {
-      preSimulation.tick();
-      tickCount++;
-    }
-
-    // Return the computed positions
-    return nodes.map(node => ({
-      id: node.id,
-      x: node.x || 0,
-      y: node.y || 0
-    }));
+  /** Seat every track (graphLayout.seatTracks); tracks keep their seats while the anchor stays the same. */
+  const applySeats = useCallback((anchor: string | null) => {
+    const nodes = Array.from(enhancedNodesRef.current.values());
+    if (!nodes.length) return;
+    const endId = (end: string | EnhancedGraphNode) => (typeof end === 'object' ? end.id : end);
+    const links = Array.from(enhancedEdgesRef.current.values())
+      .map(e => ({ source: endId(e.source), target: endId(e.target), weight: e.weight ?? 0 }));
+    const { seats, radius } = seatTracks(
+      nodes.map(n => ({ id: n.id, labelWidth: n.labelWidth, seat: n.seat })), links, anchor,
+    );
+    nodes.forEach(n => {
+      const seat = seats[n.id];
+      if (!seat) return;
+      n.seat = seat;
+      n.x = n.fx = seat.x;
+      n.y = n.fy = seat.y;
+      n.vx = n.vy = 0;
+      n.screenRadius = radius[n.id];
+    });
+    spatialIndexRef.current.rebuild(nodes);
+    frameRef.current++;
   }, []);
 
   // Initialize D3 zoom behavior
@@ -1882,6 +1632,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     titleLabel.anchor.set(0, 0.5);
     titleLabel.position.set(0, 1);
     labelContainer.addChild(titleLabel);
+    node.labelWidth = Math.max(artistLabel.width, titleLabel.width);
 
     container.addChild(labelContainer);
 
@@ -2508,84 +2259,22 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     }
   }, [onTrackSelect]);
 
-  // Helper function to fit all nodes in view with optimal zoom
+  // Fit every track in the canvas (GraphControls "Fit"). The camera moves over duration-slow with ease-standard
+  // (08-motion, "graph camera moves") and jumps under reduced motion. Edge padding is the space-8 token.
   const fitToContent = useCallback(() => {
-    if (!zoomBehaviorRef.current || !containerRef.current) {
-      console.warn('Cannot fit to content: zoom behavior or container not found');
-      return;
-    }
-
-    const nodes = Array.from(enhancedNodesRef.current.values());
-    if (nodes.length === 0) {
-      console.warn('Cannot fit to content: no nodes found');
-      return;
-    }
-
-    // Calculate bounding box of all nodes
-    let minX = Infinity, maxX = -Infinity;
-    let minY = Infinity, maxY = -Infinity;
-
-    nodes.forEach(node => {
-      if (typeof node.x === 'number' && typeof node.y === 'number') {
-        minX = Math.min(minX, node.x);
-        maxX = Math.max(maxX, node.x);
-        minY = Math.min(minY, node.y);
-        maxY = Math.max(maxY, node.y);
-      }
-    });
-
-    // Add padding around bounding box (20% on each side)
-    const padding = 0.2;
-    const width = maxX - minX;
-    const height = maxY - minY;
-    const paddedMinX = minX - width * padding;
-    const paddedMaxX = maxX + width * padding;
-    const paddedMinY = minY - height * padding;
-    const paddedMaxY = maxY + height * padding;
-    const paddedWidth = paddedMaxX - paddedMinX;
-    const paddedHeight = paddedMaxY - paddedMinY;
-
-    // Calculate optimal zoom to fit content
-    const viewport = viewportRef.current;
-    const scaleX = viewport.width / paddedWidth;
-    const scaleY = viewport.height / paddedHeight;
-    const optimalZoom = Math.min(scaleX, scaleY, DEFAULT_CONFIG.ui.maxZoom);
-
-    // Clamp zoom to reasonable bounds
-    const clampedZoom = Math.max(
-      DEFAULT_CONFIG.ui.minZoom,
-      Math.min(optimalZoom, DEFAULT_CONFIG.ui.maxZoom)
-    );
-
-    // Calculate center of bounding box
-    const centerX = (paddedMinX + paddedMaxX) / 2;
-    const centerY = (paddedMinY + paddedMaxY) / 2;
-
-    // Calculate transform to center the bounding box at zoom level
-    // Transform formula: screen = world * zoom + translate
-    // We want: screen_center = world_center * zoom + translate
-    // So: translate = screen_center - world_center * zoom
-    const translateX = viewport.width / 2 - centerX * clampedZoom;
-    const translateY = viewport.height / 2 - centerY * clampedZoom;
-
-    // Apply transform with smooth animation
-    const div = select(containerRef.current);
-    (div as any).transition()
-      .duration(750)
-      .ease((t: number) => t * (2 - t)) // easeOutQuad
-      .call(
-        zoomBehaviorRef.current.transform,
-        zoomIdentity.translate(translateX, translateY).scale(clampedZoom)
-      );
-
-    console.log('Fit to content:', {
-      boundingBox: { minX, maxX, minY, maxY, width, height },
-      paddedBox: { paddedMinX, paddedMaxX, paddedMinY, paddedMaxY, paddedWidth, paddedHeight },
-      viewport: { width: viewport.width, height: viewport.height },
-      center: { centerX, centerY },
-      zoom: clampedZoom,
-      translate: { x: translateX, y: translateY }
-    });
+    if (!zoomBehaviorRef.current || !containerRef.current) return;
+    const points = Array.from(enhancedNodesRef.current.values())
+      .filter(n => typeof n.x === 'number' && typeof n.y === 'number')
+      .map(n => ({ x: n.x, y: n.y, r: n.screenRadius }));
+    const root = getComputedStyle(document.documentElement);
+    const fit = fitTransform(points, viewportRef.current, parseFloat(root.getPropertyValue('--space-8')) || 0);
+    if (!fit) return;
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const duration = reduced ? 0 : parseFloat(root.getPropertyValue('--duration-slow')) || 0;
+    select(containerRef.current).transition()
+      .duration(duration)
+      .ease(cssEase(root.getPropertyValue('--ease-standard')))
+      .call(zoomBehaviorRef.current.transform, zoomIdentity.translate(fit.x, fit.y).scale(fit.k));
   }, []);
 
   // Helper function to center view on a specific node
@@ -2607,14 +2296,9 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       Math.min(zoomLevel, DEFAULT_CONFIG.ui.maxZoom)
     );
 
-    const viewport = viewportRef.current;
-
-    // Calculate transform to center the node at the specified zoom level
-    // Transform formula: screen = world * zoom + translate
-    // We want: screen_center = node_position * zoom + translate
-    // So: translate = screen_center - node_position * zoom
-    const translateX = viewport.width / 2 - node.x * clampedZoom;
-    const translateY = viewport.height / 2 - node.y * clampedZoom;
+    // The stage is already centred (stage = centre + offset), so the offset is -node × zoom.
+    const translateX = -node.x * clampedZoom;
+    const translateY = -node.y * clampedZoom;
 
     // Apply transform with smooth animation
     const div = select(containerRef.current);
@@ -3028,32 +2712,12 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       });
     }
 
-    // PRE-COMPUTE LAYOUT: Position nodes before showing them
-    // This prevents LOD from culling nodes that start at random positions
+    // Seat the tracks on rings (GraphStyles, DR-034). Seats already taken are kept; new tracks take free seats.
     const nodes = Array.from(nodeMap.values());
-
-    // OPTIMIZATION: Only pre-compute for new nodes in incremental updates
-    if (needsFullRebuild) {
-      if (process.env.NODE_ENV === 'development') {
-        // DEBUG: Pre-computation logging disabled (too noisy)
-        // console.log(`Layout: Pre-computing ${nodes.length} nodes (full rebuild)...`);
-      }
-      preComputeLayout(nodes, 50); // OPTIMIZED: Reduced from 300 for faster initial load
-    } else if (nodesToAdd.length > 0) {
-      // Only pre-compute positions for newly added nodes
-      const newNodes = nodesToAdd.map(n => enhancedNodesRef.current.get(n.id)).filter(Boolean) as EnhancedGraphNode[];
-      if (newNodes.length > 0) {
-        preComputeLayout(newNodes, 30); // Even faster for incremental additions
-      }
-    }
-
-    // START DYNAMIC SIMULATION: Begin continuous movement
-    // Update simulation with nodes/edges and START it
+    applySeats(nowPlayingRef.current);
     simulation.nodes(nodes);
-    const linkForce = simulation.force('link') as ForceLink<EnhancedGraphNode, EnhancedGraphEdge>;
-    if (linkForce) {
-      linkForce.links(Array.from(enhancedEdgesRef.current.values()));
-    }
+    // A new graph opens fitted to the canvas so every track can be found (GraphControls, "Fit").
+    if (needsFullRebuild) requestAnimationFrame(() => fitToContent());
 
     // START simulation for dynamic movement
     // CRITICAL FIX: Check the ref, not the state, to avoid closure issues
@@ -3080,7 +2744,15 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     spatialIndexRef.current.rebuild(Array.from(nodeMap.values()));
 
     frameRef.current++;
-  }, [createEnhancedNode, createPixiNode, createEnhancedEdge, createPixiEdge, generateDataHash, startAnimation]);
+  }, [createEnhancedNode, createPixiNode, createEnhancedEdge, createPixiEdge, generateDataHash, startAnimation, applySeats, fitToContent]);
+
+  // Now playing is the anchor: a new one re-seats every track around it, then the view fits again.
+  useEffect(() => {
+    nowPlayingRef.current = nowPlayingId;
+    if (!isInitialized || enhancedNodesRef.current.size === 0) return;
+    applySeats(nowPlayingId);
+    fitToContent();
+  }, [nowPlayingId, isInitialized, applySeats, fitToContent]);
 
   // CRITICAL FIX: Keep graphDataRef in sync with graphData state
   // This allows updateGraphData to access current data without being recreated on every state change

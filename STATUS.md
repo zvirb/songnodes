@@ -2191,6 +2191,17 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Next: a package that adds a rendered text-inset check (4–7px fails) to `design-rules.spec.ts`, run on a Docker host, fixing or listing what it finds.
 <!-- SLOT:DSQ1B END -->
 
+<!-- SLOT:U17C BEGIN -->
+### U17C: Remove the unused graphql-api service
+- Start: 2026-11-01 (branch u17c-remove-graphql-api off origin/main 62795a7). Owner decision (Markus, 2 Nov 2026): graphql-api is not in compose.dev.yaml and only returns example rows, so it goes. Supersedes U17B.
+- End: 2026-11-01.
+- Changed: deleted `services/graphql-api/` (10 files). Removed its line or entry from `start-docker.sh`, `deploy/build-and-push-images.sh`, `.github/dependabot.yml`, `services/api-gateway/routes/health.js` and `services/api-gateway/.env.example`. Added brief `plan/agents/U17C_remove_graphql_api.md`. No CI workflow, Helm or k8s file named it.
+- Left as is (not owned, reported): `design-system/16-platform.md` and `02-information-architecture.md` (GraphiQL rows, a design-system source change), `services/metadata-enrichment/INTEGRATION.md` (GraphQL example section), `tests/performance/load_tests.py` (`/graphql` task), `tests/requirements.txt` (graphql-core, hypothesis-graphql), GraphQL Playground flags in the env examples, plan history (U17, U17B, RESTRUCTURE.md, build_upgrade_prompts.py).
+- Checks run: root `pytest --collect-only` (263 collected, no graphql; one older collection error, `tests/security/test_pathfinder_security.py` needs `annoy`, not installed here), YAML parse of dependabot and every workflow, `bash -n` on both scripts, `node --check` on health.js, scope guard.
+- Checks not run: E2E and image builds (no Docker daemon).
+- Next: close U17B; a design-system package drops the GraphiQL rows; a small package removes the stale GraphQL section, load-test task and test deps.
+<!-- SLOT:U17C END -->
+
 <!-- SLOT:BRZ2 BEGIN -->
 ### BRZ2: Bronze playlists store raw_json as a JSON object
 - Start: 2026-11-01 (branch brz2-bronze-raw-json off origin/main 62795a7). Job: bronze playlist and track raw_json are JSON objects, so ingest sees fields such as `total_tracks`.
@@ -2240,6 +2251,29 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: the GitHub workflow itself (runs on the PR).
 - Next: none.
 <!-- SLOT:G1B END -->
+
+<!-- SLOT:GR1 BEGIN -->
+### GR1: Graph nodes sit at the spacing the design system defines
+- Start: 2026-11-01 (branch gr1-graph-node-spacing off origin/main 07567b3). Brief: plan/agents/GR1_graph_node_spacing.md (added in this PR). Owner report 2 Nov 2026: nodes far apart and not findable.
+- End: 2026-11-01.
+- Cause: `GraphVisualization.tsx` still ran the d3 force layout GraphStyles retired (DR-034): link distance 150–900px from weight (real weights are occurrence counts, nearly all 1, so about 900px), charge −2500, collide r + 50; the camera opened at 100% with no fit, and Fit added the canvas centre twice. d738d2d did not change spacing.
+- Changed: new `lib/graphLayout.ts` (ring tokens, GraphStyles node size, `SN.ringLayout` seating anchored on now playing, fit within 25–400%, ease from the `ease-standard` token) with 14 tests; `GraphVisualization.tsx` drops the forces and pre-compute pass, pins nodes to seats, fits on load and on a new now playing, fixes the double centring in Fit and centre-on-node.
+- Fixture reproduction (vite preview, 294 library-fixture tracks, 600 generated transitions; not the owner's data), 1440 wide: nearest-neighbour median 217px → 23px, p90 428px → 30px; layout 8594×7402px → 837×484px; tracks in view 8/250 → 250/250; centre track click selects: no → yes. At 390 wide the route shows the mobile track list, no canvas (unchanged).
+- Checks run: tsc, oxlint (exit 0), vitest 58 files / 437 tests, vite build, `sync-design-system.sh --check`, `check_design_system.py --check`, scope guard.
+- Checks not run: E2E (no Docker daemon). No visual baseline covers /graph.
+- Next: Pause layout holding seats for new tracks, the 320ms re-seat move, drag to nearest free seat, labels only above zoom 1.5, and removing the unused `hooks/useForceSimulation.ts` / `useGraphLayout.ts`.
+<!-- SLOT:GR1 END -->
+
+<!-- SLOT:IB1 BEGIN -->
+### IB1: Recommendation rows no longer overlap the reason text
+- Start: 2026-11-01 (branch ib1-track-row-reason-overlap off origin/main 07567b3). Brief: plan/agents/IB1_track_row_reason_overlap.md (added in this PR).
+- End: 2026-11-01.
+- Root cause: the Up next list is virtualised with absolutely positioned rows of a fixed 64px (`measureElement` is configured but rows never register for measuring), while each row was three lines tall: 32px thumb in the title line, a wrapping meta line, and the reason as `sn-track-cell__mix` outside `sn-track-cell__meta` (no ellipsis rule, so it wrapped). It spilled into the next row, whose thumb hid its first letters.
+- Changed: `TrackItem.tsx` uses the TrackCell card markup (`__title` > `__name`/`__artist`; one-line `__meta` with BPM, key, `__dur`, genre, `__sep`, `__mix` reason with full text in `title`); thumb beside the cell; exports `TRACK_ROW_HEIGHT` = row-two-line + 2 × space-2 = 72, used by `IntelligentBrowser.tsx` for the virtualiser. Module CSS: row clips (`overflow: hidden`), dead title/meta classes removed. New `TrackItem.test.tsx` (4 tests).
+- Checks run: tsc, oxlint (exit 0; warnings are older, none in TrackItem), vitest 427/427, vite build, `sync-design-system.sh --check` (1.7.0 in sync), `check_design_system.py --check`, scope guard.
+- Checks not run: E2E (no Docker). No visual baseline covers this panel (visual.spec.ts covers home, library, nav drawer, not found, pipeline, planned module, sets, settings).
+- Next: follow-up on scoring: without DJ-transition adjacency and with no energy data, the best possible score is 40 (25 key + 15 tempo), so every row bands as "weak" under the 80/60/40 bands.
+<!-- SLOT:IB1 END -->
 
 <!-- SLOT:INS1 BEGIN -->
 ### INS1: Design check fails text set 4–7 px from its box edge
