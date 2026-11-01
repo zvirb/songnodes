@@ -2042,3 +2042,13 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: a real crawl against the running stack, E2E (no Docker daemon in the cloud sandbox). The scope guard reports "not a work package" (the code JOBSTG has no digit, and there is no `plan/agents/JOBSTG_*.md`).
 - Next: on the stack, trigger a MixesDB scrape and poll `/api/v1/jobs/<id>/stages`: `progress.pages` should rise about every 15 s. Then DS23 (after DS-SP14) renders it.
 <!-- SLOT:JOBSTG END -->
+
+<!-- SLOT:DS24B BEGIN -->
+### DS24B: Scheduled scrapes honour a date window
+- Start: 2026-11-01 (branch ds24b-scrape-window-backend off origin/main 5610049). Brief: plan/agents/DS24B_scrape_window_backend.md (on plan2-next-wave).
+- End: 2026-11-01.
+- Changed: migration 260 adds the one-row `scrape_window` (`starts_on`, `ends_on`, `updated_at`, order CHECK), applied by `scripts/start-dev.sh`. New router `routers/scrape_window.py` (G3 `register`): `GET`/`PUT /api/v1/scrape/window`, dates as `YYYY-MM-DD` or null (one null end is open-ended, both null is every day); a bad date or reversed span is a 422 with a sentence; PUT on a missing table is 503 naming migration 260. `scrape_targets` reads the window first; outside it (Melbourne day, inclusive) it runs no selection query, so `last_searched` stays, and returns `outside_window: true` with the dates, logged. A missing table or row means no window. Melbourne day via zoneinfo; python:3.15-slim may have no tz data and no tzdata package is installed, so then Postgres `NOW() AT TIME ZONE 'Australia/Melbourne'` answers.
+- Checks run: `services/common/tests` 154 passed (8 new window tests in `test_target_scrape.py`: inside, before, after, open-ended, 2026-10-03T15:30Z is 4 Oct, DST boundaries, no-tz fallback, missing table); `tests/rest_api` 95 passed (7 new in `test_scrape_window.py`, 4 parametrised 422s); `bash -n scripts/start-dev.sh`.
+- Checks not run: the migration against Postgres and the reviewer's curl check (no Docker here).
+- Next: DS24C (the /pipeline card) after DS23 merges.
+<!-- SLOT:DS24B END -->
