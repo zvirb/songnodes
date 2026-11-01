@@ -2190,3 +2190,13 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: E2E (no Docker daemon).
 - Next: a package that adds a rendered text-inset check (4–7px fails) to `design-rules.spec.ts`, run on a Docker host, fixing or listing what it finds.
 <!-- SLOT:DSQ1B END -->
+
+<!-- SLOT:HS1 BEGIN -->
+### HS1: One transition scoring classifier with golden tests (spec package M6-F1)
+- Start: 2026-11-01 (branch hs1-transition-scoring off main 62795a7).
+- End: 2026-11-01.
+- Changed: `docs/specs/HARMONIC_SCORING.md` records the owner's answers of 2 Nov 2026 (§5 answer column; Q-E1 `step_down`, Q-E2 drop/rise bounds, Q-B1 octave capped at compatible and worded "half time"/"double time", the rest proposed defaults) and is marked accepted. Six §3 scores were arithmetic slips and are corrected (0.8^0.6 is 87, not 88; 0.8^0.4 is 91, not 92); every cost was already right. New `services/common/metadata/transition_scoring.py` (pure functions: key verdict, BPM verdict with half/double time, energy move, compat score, path cost, all stored edge fields), `services/common/tests/test_transition_scoring.py`, golden `tests/fixtures/harmonic_scoring/examples.json` (all 24 §3 rows) and the brief `plan/agents/HS1_transition_scoring.md`.
+- Checks run: `cd services && python -m pytest common/tests` (pass), scope guard (pass).
+- Checks not run: root `python -m pytest` (not touched by this package), E2E (no Docker daemon; no UI change).
+- Next: M6-F2 parity test (SN.compat/bpmStep/energyStep against `examples.json`, `sn_differs` rows as expected differences), then M6-DS for the octave words, rounding, fractional energy, drop bound and `step_down` word.
+<!-- SLOT:HS1 END -->
