@@ -1292,6 +1292,9 @@ html[data-motion="reduce"] .sn-autocomplete__popup { animation: none; }
 .sn-date-range__day[data-mark] .sn-date-range__n { text-decoration: underline; text-decoration-color: var(--line-strong); text-decoration-thickness: 1px; text-underline-offset: 2px; }
 .sn-date-range__mark { font: 600 0.625rem/1 var(--font-data); letter-spacing: 0.02em; color: var(--fg-2); }
 .sn-date-range__day[data-range] .sn-date-range__mark { color: var(--fg); }
+/* two coded marks on one day (1.7.0, DR-047): both codes stacked under the number, packed to fit the cell */
+.sn-date-range__day[data-marks="2"] { gap: 0; }
+.sn-date-range__day[data-marks="2"] .sn-date-range__n { line-height: 1; }
 .sn-date-range__dot { display: inline-block; width: 4px; height: 4px; border-radius: 50%; background: var(--fg-2); flex: none; }
 .sn-date-range__day[data-range] .sn-date-range__dot { background: var(--fg); }
 

@@ -32,7 +32,6 @@ describe('sendToTidal', () => {
       minutes: 60,
       mix: {},
       pool: 'all',
-      tidal: false,
       seed: 1,
       tracks: [
         { id: 't1', tgt: 1, a: 'Artist 1', t: 'Track 1', tidal: 'url1' },

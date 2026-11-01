@@ -32,6 +32,8 @@ async function stubEmptyPipeline(page: Page) {
   await page.route((url) => url.pathname === '/api/v1/outbox/status',
     (route) => route.fulfill(json({ consumers: [], dead_letters: 0, projection: {} })));
   await page.route((url) => url.pathname === '/api/v1/target-tracks', (route) => route.fulfill(json([])));
+  await page.route((url) => url.pathname === '/api/v1/scrape/window',
+    (route) => route.fulfill(json({ starts_on: null, ends_on: null, updated_at: null })));
 }
 
 /**

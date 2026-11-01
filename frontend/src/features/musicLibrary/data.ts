@@ -152,7 +152,6 @@ export interface SavedSet {
   minutes: number;
   mix: Record<string, number>;
   pool: string;
-  tidal: boolean;
   seed: number;
   tracks: SavedSetTrack[];
   updated: string;

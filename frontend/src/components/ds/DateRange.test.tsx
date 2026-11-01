@@ -155,6 +155,30 @@ describe('DateRange', () => {
     expect(screen.getByRole('button', { name: 'Download CSV' }).getAttribute('aria-disabled')).toBe('true');
   });
 
+  it('shows two coded marks on one day as stacked codes (DR-047)', () => {
+    const marks: DateRangeMark[] = [
+      { date: '2026-11-03', code: 'PH', name: 'Melbourne Cup', kind: 'Public holiday' },
+      { date: '2026-11-03', code: 'RUN', name: 'Weekly run', kind: 'Weekly library run' },
+      { date: '2026-11-04', code: 'RUN', name: 'Weekly run', kind: 'Weekly library run' },
+    ];
+    render(<Harness start={['2026-11-09', '2026-11-13']} marks={marks} />);
+    const cup = day('2026-11-03');
+    expect(cup.getAttribute('data-marks')).toBe('2');
+    expect([...cup.querySelectorAll('.sn-date-range__mark')].map((m) => m.textContent)).toEqual(['PH', 'RUN']);
+    expect(cup.getAttribute('aria-label')).toBe('Tuesday 3 November 2026, Melbourne Cup, public holiday, Weekly run, weekly library run');
+    expect(cup.getAttribute('title')).toBe('Melbourne Cup · Weekly run');
+    const one = day('2026-11-04');
+    expect(one.hasAttribute('data-marks')).toBe(false);
+    expect(one.querySelectorAll('.sn-date-range__mark')).toHaveLength(1);
+  });
+
+  it('makes the outcome the filled primary and keeps Clear quiet (DR-044)', () => {
+    render(<Harness start={['2026-11-09', '2026-11-13']} outcome="Download CSV" />);
+    expect(screen.getByRole('button', { name: 'Download CSV' }).className).toBe('sn-btn sn-btn--primary');
+    expect(screen.getByRole('button', { name: 'Clear' }).className).toBe('sn-btn sn-btn--quiet');
+    expect(document.querySelectorAll('.sn-date-range .sn-btn--primary')).toHaveLength(1);
+  });
+
   it('applies the responsive modifiers as classes', () => {
     render(<Harness modifiers={['one', 'sheet', 'static']} />);
     expect(screen.getByRole('dialog').className).toBe('sn-popover sn-date-range sn-date-range--one sn-date-range--sheet sn-date-range--static');

@@ -35,6 +35,11 @@ vi.mock('../features/pipeline/ScrapeJobStages', () => ({
   ScrapeJobStages: ({ jobId, query }: { jobId: string; query: string }) => <div data-testid="job-stages">{jobId} {query}</div>,
 }));
 
+// The scrape window card has its own tests and its own fetch; here only that the page mounts it matters.
+vi.mock('../features/pipeline/ScrapeWindowCard', () => ({
+  ScrapeWindowCard: () => <div data-testid="scrape-window-card" />,
+}));
+
 // Mock the API helper since some things use it (retry job)
 vi.mock('../services/api', () => ({
   api: {
@@ -86,6 +91,7 @@ describe('ScraperProgressPage', () => {
     render(<ScraperProgressPage />);
 
     expect(screen.getAllByRole('heading', { name: 'Queue a scrape' }).length).toBeGreaterThan(0);
+    expect(screen.getByTestId('scrape-window-card')).toBeTruthy();
 
     const artistInput = screen.getAllByLabelText('Artist')[0];
     expect(artistInput).toBeTruthy();

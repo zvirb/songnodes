@@ -14,7 +14,7 @@ The look: Elektronauts' charcoal ground and plain reading type, YourEDM's single
 
 - **Voice:** a knowledgeable booth-mate. Plain, direct, specific. "Energy climbs one point at a time, then drops two or three after a peak." Never cute, never apologetic, never an exclamation mark.
 - **Case and spelling:** sentence case everywhere, en-AU spelling (colour, analyse, centre). Uppercase only through the `label` style, and never typed in caps.
-- **Buttons:** a verb plus its object: "Build set", "Copy tracklist", "Delete set". One primary button per view.
+- **Buttons:** a verb plus its object: "Build set", "Copy tracklist", "Delete set". One primary button per view; the one exception is the `DateRange` outcome button, always primary inside its popover (DR-044).
 - **Numbers:** "1,284 tracks", "124 BPM", "8A", "6:12", "92 min", "+2 BPM", "−1" (true minus). Missing values are an en dash "–", never "N/A" or "Unknown".
 - **Time:** Australia/Melbourne is the time zone of record, 24-hour: "24 Oct 2026, 06:00 AEDT", "Sat 24 Oct". Relative times ("3 h ago") always carry the absolute stamp in a tooltip.
 - **No emoji** anywhere in the interface: not in buttons, tabs, empty states or toasts. Status glyphs (● ◐ ○ ▲ ✕ ↻ –) and Lucide icons do that work.

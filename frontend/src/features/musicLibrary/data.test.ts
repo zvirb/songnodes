@@ -104,7 +104,6 @@ describe('SavedSets', () => {
             minutes: 60,
             mix: {},
             pool: 'crate',
-            tidal: false,
             seed: 1,
             tracks: [{ id: 'track-123', tgt: 1 }],
             updated: '2023-01-01T00:00:00Z',
@@ -160,8 +159,8 @@ describe('SavedSets', () => {
         const fetchMock = fetch as Mock;
 
         const localSets: SavedSet[] = [
-            { id: '1', name: 'Server Set 1', shape: 'peak', minutes: 60, mix: {}, pool: 'crate', tidal: false, seed: 1, tracks: [], updated: '2023-01-01', created: '2023-01-01' },
-            { id: 'set-local', name: 'Local Only', shape: 'peak', minutes: 60, mix: {}, pool: 'crate', tidal: false, seed: 1, tracks: [], updated: '2023-01-01', created: '2023-01-01' }
+            { id: '1', name: 'Server Set 1', shape: 'peak', minutes: 60, mix: {}, pool: 'crate', seed: 1, tracks: [], updated: '2023-01-01', created: '2023-01-01' },
+            { id: 'set-local', name: 'Local Only', shape: 'peak', minutes: 60, mix: {}, pool: 'crate', seed: 1, tracks: [], updated: '2023-01-01', created: '2023-01-01' }
         ];
         writeSavedSets(localSets);
 
@@ -183,7 +182,7 @@ describe('SavedSets', () => {
     describe('a set saved on this device and on the server is listed once after a reload', () => {
         const localSet: SavedSet = {
             id: 'set-mh2x9k', name: 'New set', shape: 'journey', minutes: 90, mix: { house: 40 }, pool: 'active',
-            tidal: false, seed: 1, tracks: [{ id: 'h:aaa', tgt: 3 }, { id: 'h:bbb', tgt: 5 }],
+            seed: 1, tracks: [{ id: 'h:aaa', tgt: 3 }, { id: 'h:bbb', tgt: 5 }],
             updated: '2026-10-28T11:29:03.000Z', created: '2026-10-28T11:29:03.000Z',
         };
 
@@ -273,7 +272,6 @@ describe('SavedSets', () => {
             minutes: 60,
             mix: {},
             pool: 'crate',
-            tidal: false,
             seed: 1,
             tracks: [],
             updated: '2023-01-01T00:00:00Z',
