@@ -2023,3 +2023,14 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: E2E and a real-browser look (no Docker daemon here).
 - Next: follow-up for TracklistImporter (DS22) to pass `secondsSinceProgress` or state `stalled` plus `onResume`/`onCancel` instead of its STALL_MS detail message.
 <!-- SLOT:SP14 END -->
+
+<!-- SLOT:BRZ1 BEGIN -->
+### BRZ1: One bad row no longer loses or miscounts a bronze batch
+- Start: 2026-11-01. Base `main` 527c5a7. Follow-up named in SC5 (#464), builds on SC6 (#454).
+- Reproduced (new test, fails on main): a fake connection with Postgres transaction rules (a failed statement aborts the transaction, later statements fail, COMMIT of an aborted transaction is a silent ROLLBACK) and one bad track row out of the 10-track fixture batch. On main bronze kept 0 rows, the log said "Inserted 2 tracks to bronze layer" and `bronze_tracks_written` was 2.
+- End: 2026-11-01, branch `brz1-bronze-batch-row-error`, not pushed (orchestrator opens the PR). `scrapers/pipelines/persistence_pipeline.py`: each bronze track INSERT (and the flush-time playlist lookup) runs in its own savepoint, so a bad row rolls back alone and the other rows commit; the error line names artist, title and position and says the row was not saved. `bronze_*_written` and the "Inserted N ... to bronze layer" lines (format unchanged, parsed by the scraper API and JOBSTG #477) are now emitted after COMMIT, so a failed commit counts nothing and keeps the batch for the next flush.
+- Playlist-level rule: a playlist that loses a track row stays in bronze with its good rows (raw evidence; a re-scrape completes it and rewrites raw_json, clearing the flag) but is flagged `raw_json.bronze_incomplete = {reason: 'track_insert_failed', failed_positions: [...]}`, logged as an error and counted in `bronze_playlists_incomplete` (close summary "Bronze playlists flagged incomplete"). The missing position is also a gap the bronze -> silver ingest already rejects.
+- Checks run: `python -m pytest scrapers/tests` 12 passed (3 new in `test_bronze_batch_row_error.py`, SC5/SC6 tests unchanged and passing). `tests/unit/scrapers`: 35 passed, 2 failed (`test_1001tracklists_spider.py` start_requests: `scrapy_playwright` not installed in the sandbox, not owned, same as SC5). Scope guard.
+- Checks not run: real Postgres, live stack and E2E (no Docker).
+- Next: ingest (`services/common/datalayer/ingest.py`) should also reject on `bronze_incomplete` (covers a lost last track when the playlist declares no count); bronze playlist `raw_json` is stored as a JSON string of the scrapy Item's repr (json.dumps of an Item falls back to `str`), so ingest reads `{}` from it; skipped positioned rows (no artist) are not flagged.
+<!-- SLOT:BRZ1 END -->
