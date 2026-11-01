@@ -2023,3 +2023,12 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: E2E and a real-browser look (no Docker daemon here).
 - Next: follow-up for TracklistImporter (DS22) to pass `secondsSinceProgress` or state `stalled` plus `onResume`/`onCancel` instead of its STALL_MS detail message.
 <!-- SLOT:SP14 END -->
+
+<!-- SLOT:DS24A BEGIN -->
+### DS24A: React DateRange and DateField from the design system
+- Start: 2026-11-01 (branch ds24a-react-daterange off origin/main f2bdc9b). Job: the React date components the scheduled-scrape window card will use.
+- End: 2026-11-01. `DateRange` was already in React (DS19, `ds/DateRange.tsx`, matches its card), so this package adds only `frontend/src/components/ds/DateField.tsx`: `DateField` (three boxes, en-AU order, readable date, error on the wrong part, native variant) and `DateRangeField` (presets, From/To groups, order and real-date errors, calendar button opening `DateRange` with focus on the grid; Escape, close and "Use these dates" return focus, a click outside does not). Exported from `ds/index.tsx`. Value API follows the card: `[from, to]` date-only ISO tuples, not `{start, end}`. Q11–Q16 defaults: outcome default button, popover stays open until the outcome, week presets in the popover only, one code per day, bottom sheet below 480px (CSS), no `max`.
+- Not built: `min`/`max` disabled days. Neither card has them and Q16's default is "none", so they need a design-system change (17-governance) first.
+- Checks: tsc, oxlint (exit 0, no findings in the new files), vitest 392/392 (17 new, incl. Melbourne DST 4 Oct 2026 and a Melbourne-not-UTC "today"), vite build, sync-design-system --check, check_design_system --check, check_feature_imports --check, scope guard. Not run: E2E (no Docker; no page uses the component yet).
+- Next: DSQ answer on min/max (Q16), then the /pipeline scheduled-scrape window card with its backend setting.
+<!-- SLOT:DS24A END -->
