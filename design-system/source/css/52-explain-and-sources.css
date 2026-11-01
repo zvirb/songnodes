@@ -1,0 +1,63 @@
+/* ===== 52 InfoTip, dismissed warnings, source links and go icons ===== (source/css/52-explain-and-sources.css, added 1.6.0)
+   Imported from BeanAlliance v4.18 (InfoTip), v4.19 / v4.19.1 (dismiss, every warning links to its source)
+   and v4.20 / v4.20.2 (go icons), fitted to SongNodes: Lucide SVG icons instead of an icon font, the sn-
+   namespace, the existing Tooltip and Popover looks, module colour through --m. Tokens only. */
+
+/* -- InfoTip: an explanatory notice shrunk to one info button ---------------------------------------
+   Tooltip form (40 words or fewer): .sn-infotip > button + .sn-tooltip.sn-infotip__tip
+   Panel form (more, or a list):      .sn-infotip > button + .sn-popover.sn-infotip__panel
+   Behaviour: SongNodes.infoTips() (bundle.js), once per page. */
+.sn-infotip { position: relative; display: inline-flex; align-items: center; vertical-align: middle; margin-left: var(--space-1); font: 400 0.8125rem/1.4 var(--font-body); letter-spacing: 0; text-transform: none; color: var(--fg); }
+.sn-infotip__btn { position: relative; display: inline-grid; place-items: center; flex: none; width: var(--space-6); height: var(--space-6); padding: 0; border: 1px solid transparent; border-radius: var(--radius-chip); background: transparent; color: var(--fg-2); cursor: pointer; transition: background var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard); }
+.sn-infotip__btn .sn-icon { width: 16px; height: 16px; }
+.sn-infotip__btn:hover, .sn-infotip__btn[aria-expanded="true"] { color: var(--fg); background: var(--surface-1); border-color: var(--line-strong); }
+@media (pointer: coarse) { .sn-infotip__btn::before { content: ""; position: absolute; inset: calc((var(--touch-min) - var(--space-6)) / -2); } }
+.sn-infotip__tip { top: calc(100% + var(--space-1)); left: 0; width: max-content; max-width: 16rem; }
+.sn-infotip__tip--up { top: auto; bottom: calc(100% + var(--space-1)); }
+.sn-infotip__tip--end, .sn-infotip__panel.sn-popover--end { left: auto; right: 0; }
+.sn-popover.sn-infotip__panel { top: calc(100% + var(--space-1)); min-width: 0; max-width: min(24rem, calc(100vw - 2 * var(--space-4))); max-height: 60vh; overflow-y: auto; overscroll-behavior: contain; gap: var(--space-2); font-size: 0.8125rem; line-height: 1.45; }
+.sn-popover.sn-infotip__panel.sn-popover--up { top: auto; bottom: calc(100% + var(--space-1)); }
+.sn-infotip__panel ol, .sn-infotip__panel ul { margin: 0; padding-left: var(--space-5); display: grid; gap: var(--space-1); color: var(--fg-2); }
+.sn-infotip__panel p { margin: 0; color: var(--fg-2); }
+/* A field's head: label, its InfoTip, then (TextField) the character count pushed to the end. */
+.sn-text-field__head, .sn-field__head { display: flex; align-items: center; gap: var(--space-1); min-width: 0; }
+.sn-text-field__head > .sn-text-field__label { justify-content: flex-start; }
+.sn-text-field__head > .sn-text-field__count { margin-left: auto; }
+.sn-field__head > .sn-infotip, .sn-text-field__head > .sn-infotip { margin-left: 0; }
+/* A tip shown open for documentation only (previews), drawn in place. */
+.sn-infotip__tip--static, .sn-popover.sn-infotip__panel--static { position: relative; top: auto; left: auto; display: block; margin-top: var(--space-2); animation: none; }
+/* Phones and tablets: either form sits at the bottom of the screen, full width inside the gutter, where a toast sits. */
+@media (max-width: 767.98px) {
+  .sn-infotip__tip, .sn-infotip__tip--up, .sn-infotip__tip--end,
+  .sn-popover.sn-infotip__panel, .sn-popover.sn-infotip__panel.sn-popover--up, .sn-infotip__panel.sn-popover--end { position: fixed; top: auto; left: max(var(--space-4), env(safe-area-inset-left, 0px)); right: max(var(--space-4), env(safe-area-inset-right, 0px)); bottom: calc(var(--space-6) + env(safe-area-inset-bottom, 0px)); width: auto; max-width: none; }
+  .sn-infotip__tip--static, .sn-popover.sn-infotip__panel--static { position: relative; left: auto; right: auto; bottom: auto; }
+}
+@media print { .sn-infotip { display: none !important; } }
+
+/* -- Dismissed warning: its status icon in place, click to show it again ------------------------------ */
+.sn-dismissed { display: inline-grid; place-items: center; width: var(--control-sm); height: var(--control-sm); padding: 0; border: 1px solid transparent; border-radius: var(--radius-control); background: transparent; color: var(--fg-2); cursor: pointer; }
+.sn-dismissed:hover, .sn-dismissed:focus-visible { background: var(--surface-1); border-color: var(--line-strong); }
+.sn-dismissed[data-status="warn"] { color: var(--status-warn); }
+.sn-dismissed[data-status="bad"] { color: var(--status-bad); }
+.sn-dismissed .sn-icon { width: 20px; height: 20px; }
+.sn-inline-message__dismiss { flex: none; margin: -6px -6px -6px auto; color: var(--fg); }
+.sn-inline-message .sn-link--src { margin-left: var(--space-1); }
+@media print { .sn-banner__dismiss, .sn-inline-message__dismiss, .sn-dismissed { display: none !important; } }
+
+/* -- Source link: the last words of a warning, to the place its cause is changed ---------------------- */
+/* Colour follows DR-009: the destination module's hue through .sn-m-<key> on the link (--m). */
+.sn-link--src { white-space: normal; }
+.sn-link--src > .sn-go { margin-right: var(--space-1); vertical-align: -0.2em; }
+
+/* -- Go icon: the target module's icon at 84% with a half-size external-link badge in its lower right --
+   Means "opens that page in a new tab". Made from any module icon by one helper, SongNodes.goIcon(key).
+   Only the badge's own outline is cut from the module icon, so the icon stays readable. */
+.sn-go { position: relative; display: inline-block; flex: none; width: 1.125em; height: 1.125em; color: var(--m, currentColor); line-height: 0; }
+.sn-go > .sn-icon { position: absolute; display: block; }
+.sn-go__glyph { left: 0; top: 0; width: 84% !important; height: 84% !important;
+  -webkit-mask: linear-gradient(#000, #000), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='55' y='55' width='80' height='80' rx='12' fill='black'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
+  -webkit-mask-composite: source-out;
+  mask: linear-gradient(#000, #000), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='55' y='55' width='80' height='80' rx='12' fill='black'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
+  mask-composite: subtract; }
+.sn-go__badge { right: 0; bottom: 0; width: 50% !important; height: 50% !important; stroke-width: 3; }
+@media print { .sn-go { display: none; } }

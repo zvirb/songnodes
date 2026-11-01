@@ -13,6 +13,11 @@ Use for navigation: to another module, a detail page, an external source (1001tr
 - `sn-link` + `sn-m-<module>`: destination colour (`--m`). Without a module class it uses `link` (lavender: `brand-strong` on dark, decided, so it holds 4.5:1 on `surface-1` and `surface-2`; `brand` on light and booth), or the nearest `sn-m-*` scope it sits in.
 - `sn-link--ext`: appends " ↗" for links that leave SongNodes. Add the hidden ", opens in a new tab" text when you use `target="_blank"`.
 - `aria-current="page"`: dotted underline for "you are here".
+- `sn-link--src` (1.6.0, from BeanAlliance v4.19 and v4.20): a **source link**, the last words of a warning, to the page and place where its cause is changed. To another module it opens in a new tab and is led by that module's **go icon** (its icon at 84% with a half-size `external-link` badge, in the module colour); to a place on this page it is a plain same-page link with no icon. Build it with `SongNodes.sourceLink({ text, href, module })`:
+
+```html
+<a class="sn-link sn-link--src sn-m-harmony" href="/harmony?missing=key" target="_blank" rel="noopener"><span class="sn-go sn-m-harmony" aria-hidden="true">…</span>Add keys in Key &amp; mood<span class="sn-sr"> (opens in a new tab)</span></a>
+```
 
 ## Variants
 | Class | Use |
@@ -21,6 +26,7 @@ Use for navigation: to another module, a detail page, an external source (1001tr
 | `sn-text-link--path` | File names and IDs: `font-data`, breaks anywhere. Never a file or folder path (01-writing, 1.4.0); the class keeps its name. |
 | `sn-text-link--break` | Long URLs in prose: `overflow-wrap: anywhere`, never horizontal scroll. |
 | `sn-text-link-list` | A vertical list of related links. |
+| `sn-link--src` | A warning's source link (`Banner`, `InlineMessage`, a stale `FreshnessStamp`, a data-caused `ErrorState`). Not for ordinary navigation: a link in prose to another module opens in the same tab and has no go icon. |
 
 ## States
 Hover thickens the underline to 2px at full colour. Focus shows the `focus` ring. Visited links are not styled differently (decided): no `:visited` rule, because the colour encodes the destination module, not history.
@@ -29,7 +35,7 @@ Hover thickens the underline to 2px at full colour. Focus shows the `focus` ring
 Link text names the destination: "Open running order", "PBS Soul Time", "Get an API key". Never "click here" or a bare URL when a name exists; when you must show a URL, drop the protocol ("mixesdb.com/w/…"). Sentence case.
 
 ## Accessibility
-Destination colour is never the only cue: the underline is always present and the text names the place. Module hues pass 4.5:1 on `bg` and `surface-1`; on tonal cards use `--on-tonal`. External links announce that they open a new tab.
+Destination colour is never the only cue: the underline is always present and the text names the place. Module hues pass 4.5:1 on `bg`, `surface-1` and every `status-*-bg`; on tonal cards use `--on-tonal`. External links and source links announce that they open a new tab; the go icon is `aria-hidden`.
 
 ## Responsive
 Inline in prose at every width. Long file names and URLs wrap rather than overflow; on phones keep links at least 24px tall when they stand alone (WCAG 2.2 target size), for example in a `sn-text-link-list` with `gap: space-2`.

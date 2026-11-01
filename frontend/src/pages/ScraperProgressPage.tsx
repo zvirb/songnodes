@@ -4,7 +4,8 @@ import TargetTracksManager from '../components/TargetTracksManager';
 import { SN } from '../lib/songnodes';
 import { ConfirmDialog, showToast, StatusPill } from '../components/ds';
 import { formatThroughput, JobResponse } from '../utils/dataLoaderUtils';
-import { usePipelineTelemetry } from '../features/pipeline/usePipelineTelemetry';
+import { usePipelineTelemetry, type ScrapeRun } from '../features/pipeline/usePipelineTelemetry';
+import { ScrapeJobStages } from '../features/pipeline/ScrapeJobStages';
 import { api } from '../services/api';
 import { usePageHeader } from '../shell/AppShell';
 
@@ -26,6 +27,11 @@ const ScraperProgressPage: React.FC = () => {
   const artistRef = useRef<HTMLInputElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
   const idempotencyKeyRef = useRef<string | null>(null);
+  // Scrapes seen queued or running on this visit keep their stages card until the page is left (newest first, at most 5).
+  const [watched, setWatched] = useState<ScrapeRun[]>([]);
+  const activeRuns = scrapeRuns.filter(r => r.state === 'queued' || r.state === 'running').slice(0, 5);
+  const nextWatched = [...activeRuns, ...watched.filter(w => !activeRuns.some(a => a.id === w.id))].slice(0, 5);
+  if (nextWatched.map(w => w.id).join() !== watched.map(w => w.id).join()) setWatched(nextWatched);
 
   const handleRetryJob = async () => {
     if (!confirmRetryId) return;
@@ -280,6 +286,11 @@ const ScraperProgressPage: React.FC = () => {
       {/* Scrape runs: the jobs that fill bronze, newest first */}
       <section className="sn-page__section" style={{ marginBottom: 'var(--space-6)' }}>
         <SectionHeading title="Scrape runs" count={`${SN.format.count(scrapeRuns.length)} recent`} />
+        {watched.length > 0 && (
+          <div style={{ display: 'grid', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
+            {watched.map((r) => <ScrapeJobStages key={r.id} jobId={r.id} query={r.query} source={r.source} />)}
+          </div>
+        )}
         {scrapeRuns.length > 0 ? (
           <div className="sn-tablebox">
             <table className="sn-table" aria-label="Scrape runs">

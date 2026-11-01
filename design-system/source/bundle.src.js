@@ -89,6 +89,101 @@
     return { level: lvl, label: d === 0 ? "same BPM" : sign + Math.abs(d) + " BPM" };
   }
 
+  /* ---------- graph (GraphStyles 1.5.0, DR-034 to DR-037): strength bands and the ring layout ---------- */
+  var EDGE_CUTS_DEFAULT = [0.25, 0.5, 0.75];
+  var EDGE_BAND_LABEL = { 1: "Weak", 2: "Fair", 3: "Strong", 4: "Very strong" };
+  /** Strength band 1–4 of a link weight 0–1, using the cut points the weekly run fitted (default 0.25 / 0.50 / 0.75 until it has). */
+  function edgeBand(w, cuts) { cuts = cuts || EDGE_CUTS_DEFAULT; w = Number(w) || 0; return w < cuts[0] ? 1 : w < cuts[1] ? 2 : w < cuts[2] ? 3 : 4; }
+  /** Fit the band cut points to the library's own link weights by two methods: quartiles (used) and 4-class natural breaks
+   *  (Jenks, on weights rounded to 0.01) as the cross-check. agree = every cut within 0.10. Under 200 links: the defaults. */
+  function fitEdgeCuts(weights) {
+    var w = (weights || []).map(Number).filter(function (x) { return x >= 0 && x <= 1; }).sort(function (a, b) { return a - b; });
+    if (w.length < 200) return { cuts: EDGE_CUTS_DEFAULT.slice(), quartiles: null, breaks: null, agree: null, links: w.length, method: "default" };
+    function q(p) { var i = (w.length - 1) * p, lo = Math.floor(i), hi = Math.ceil(i); return +(w[lo] + (w[hi] - w[lo]) * (i - lo)).toFixed(2); }
+    var quart = [q(0.25), q(0.5), q(0.75)];
+    var bins = [], cnt = {}; w.forEach(function (x) { var k = Math.round(x * 100); cnt[k] = (cnt[k] || 0) + 1; });
+    Object.keys(cnt).map(Number).sort(function (a, b) { return a - b; }).forEach(function (k) { bins.push([k / 100, cnt[k]]); });
+    var n = bins.length, K = Math.min(4, n), INF = 1e18;
+    var cw = [0], cs = [0], cq = [0];
+    bins.forEach(function (b, i) { cw[i + 1] = cw[i] + b[1]; cs[i + 1] = cs[i] + b[0] * b[1]; cq[i + 1] = cq[i] + b[0] * b[0] * b[1]; });
+    function ssd(i, j) { var c = cw[j] - cw[i], s = cs[j] - cs[i]; return c ? (cq[j] - cq[i]) - s * s / c : 0; }
+    var D = [], P = [];
+    for (var k = 0; k <= K; k++) { D[k] = []; P[k] = []; for (var j = 0; j <= n; j++) D[k][j] = INF; }
+    D[0][0] = 0;
+    for (k = 1; k <= K; k++) for (j = k; j <= n; j++) for (var i = k - 1; i < j; i++) { var v = D[k - 1][i] + ssd(i, j); if (v < D[k][j]) { D[k][j] = v; P[k][j] = i; } }
+    var starts = [], jj = n; for (k = K; k >= 1; k--) { var ii = P[k][jj]; starts.unshift(ii); jj = ii; }
+    var brk = starts.slice(1).map(function (s) { return bins[s][0]; });
+    while (brk.length < 3) brk.push(1);
+    var agree = brk.every(function (b, x) { return Math.abs(b - quart[x]) <= 0.1; });
+    return { cuts: quart, quartiles: quart, breaks: brk, agree: agree, links: w.length, method: "quartiles" };
+  }
+  /** Which links to draw (DR-035). Every link gets its band; a Weak link is shown only when it is one of either end's two
+   *  strongest links, touches the anchor (now playing), or touches a focused track (hovered or selected).
+   *  links: [{source, target, weight}]; opts: {cuts, anchor, focus: [ids]}. Returns [{link, band, show, focus}] weakest first. */
+  function edgeVisibility(links, opts) {
+    opts = opts || {};
+    var cuts = opts.cuts || EDGE_CUTS_DEFAULT, focus = {}, top = {}, per = {};
+    (opts.focus || []).forEach(function (id) { if (id != null) focus[id] = 1; });
+    links.forEach(function (l, i) { [l.source, l.target].forEach(function (id) { (per[id] = per[id] || []).push(i); }); });
+    Object.keys(per).forEach(function (id) { per[id].sort(function (a, b) { return links[b].weight - links[a].weight || a - b; }).slice(0, 2).forEach(function (i) { top[i] = 1; }); });
+    return links.map(function (l, i) {
+      var band = edgeBand(l.weight, cuts), f = !!(focus[l.source] || focus[l.target]);
+      var show = band > 1 || f || top[i] === 1 || l.source === opts.anchor || l.target === opts.anchor;
+      return { link: l, band: band, show: show, focus: f, i: i };
+    }).sort(function (a, b) { return a.link.weight - b.link.weight || a.i - b.i; });
+  }
+  /** The box a track keeps clear around its seat: the node with its state ring (r + 4), its label as drawn at zoom 1.5
+   *  (12px text, 10px gap, 3px halo) and, for now playing, the "Now" tag above. labelWidth = the label's width in CSS px at 100%
+   *  (measureText of "Artist Title", max 40 characters). Now playing is always labelled, so its label is kept clear at 100%.
+   *  Returns [left, top, right, bottom] from the centre. */
+  function seatBox(r, labelWidth, now) { var h = Math.max(r + 5, 8); return [-h, now ? -(r + 24) : -h, Math.max(h, r + (labelWidth ? (10 + labelWidth) / (now ? 1 : 1.5) + 2 : 0)), h]; }
+  /** Ring layout (DR-034): seats tracks on rings around an anchor so link strength sets order, not distance.
+   *  nodes: [{id, box?: [l, t, r, b]}]; links: [{source, target, weight}];
+   *  opts: {anchor, first: 58, step: 40, aspect: 1.7, seatGap: 30, prev: {id: {x, y, ring}} (seats to keep)}.
+   *  Returns {pos: {id: {x, y, ring}}, anchor, rings}. Same input, same output. */
+  function ringLayout(nodes, links, opts) {
+    opts = opts || {};
+    var FIRST = opts.first || 58, STEP = opts.step || 40, ASP = opts.aspect || 1.7, GAP = opts.seatGap || 30, GOLD = 2.399963;
+    var byId = {}, adj = {}, order = [];
+    nodes.forEach(function (n) { byId[n.id] = n; adj[n.id] = []; order.push(n.id); });
+    links.forEach(function (l) { if (byId[l.source] && byId[l.target] && l.source !== l.target) { adj[l.source].push([l.target, +l.weight || 0]); adj[l.target].push([l.source, +l.weight || 0]); } });
+    if (!order.length) return { pos: {}, anchor: null, rings: 0 };
+    var anchor = opts.anchor != null && byId[opts.anchor] ? opts.anchor : order.slice().sort(function (a, b) { return adj[b].length - adj[a].length || String(a).localeCompare(String(b)); })[0];
+    var pos = {}, grid = {}, CELL = 64, best = {}, bestPar = {}, placedN = 0, maxRing = 0, seq = 0;
+    function boxOf(id, x, y) { var b = byId[id].box || [-12, -12, 12, 12]; return [x + b[0], y + b[1], x + b[2], y + b[3]]; }
+    function cells(bx, f) { for (var cx = Math.floor(bx[0] / CELL); cx <= Math.floor(bx[2] / CELL); cx++) for (var cy = Math.floor(bx[1] / CELL); cy <= Math.floor(bx[3] / CELL); cy++) f(cx + "," + cy); }
+    function free(bx) { var ok = true; cells(bx, function (k) { if (!ok || !grid[k]) return; for (var i = 0; i < grid[k].length; i++) { var o = grid[k][i]; if (bx[0] < o[2] && o[0] < bx[2] && bx[1] < o[3] && o[1] < bx[3]) { ok = false; return; } } }); return ok; }
+    function put(id, x, y, ring) {
+      pos[id] = { x: x, y: y, ring: ring }; placedN++; maxRing = Math.max(maxRing, ring);
+      var bx = boxOf(id, x, y); cells(bx, function (k) { (grid[k] = grid[k] || []).push(bx); });
+      adj[id].forEach(function (e) { var j = e[0]; if (!pos[j] && (best[j] == null || e[1] > best[j])) { best[j] = e[1]; bestPar[j] = id; } });
+    }
+    function angDiff(a, b) { var d = Math.abs(a - b) % (2 * Math.PI); return d > Math.PI ? 2 * Math.PI - d : d; }
+    put(anchor, 0, 0, 0);
+    var prev = opts.prev || {};
+    if (prev[anchor] && prev[anchor].ring === 0) order.forEach(function (id) { var p = prev[id]; if (!pos[id] && p && p.ring > 0 && free(boxOf(id, p.x, p.y))) put(id, p.x, p.y, p.ring); });
+    while (placedN < order.length) {
+      var id = null, bw = -1;
+      order.forEach(function (j) { if (!pos[j] && best[j] != null && (best[j] > bw || (best[j] === bw && adj[j].length > adj[id].length))) { bw = best[j]; id = j; } });
+      var par = id == null ? null : bestPar[id];
+      if (id == null) { var dg = -1; order.forEach(function (j) { if (!pos[j] && adj[j].length > dg) { dg = adj[j].length; id = j; } }); }
+      var minRing = par == null ? maxRing + 1 : par === anchor ? 1 : pos[par].ring;
+      var target = (par == null || par === anchor) ? -Math.PI / 2 + (seq++) * GOLD : Math.atan2(pos[par].y, pos[par].x / ASP);
+      var done = false;
+      for (var rg = Math.max(1, minRing); rg < minRing + 400 && !done; rg++) {
+        var R = FIRST + (rg - 1) * STEP, count = Math.max(8, Math.floor(2 * Math.PI * R / GAP)), seats = [];
+        for (var k = 0; k < count; k++) seats.push([2 * Math.PI * k / count - Math.PI / 2, k]);
+        seats.sort(function (a, b) { return angDiff(a[0], target) - angDiff(b[0], target) || a[1] - b[1]; });
+        for (var s = 0; s < seats.length; s++) {
+          var x = +(R * ASP * Math.cos(seats[s][0])).toFixed(1), y = +(R * Math.sin(seats[s][0])).toFixed(1);
+          if (free(boxOf(id, x, y))) { put(id, x, y, rg); done = true; break; }
+        }
+      }
+      if (!done) put(id, 0, FIRST + (maxRing + 1) * STEP, maxRing + 1);
+    }
+    return { pos: pos, anchor: anchor, rings: maxRing };
+  }
+
   /* ---------- formatting (en-AU, Melbourne time, 24-hour) ---------- */
   function toDate(d) { return d instanceof Date ? d : new Date(d); }
   var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -453,14 +548,96 @@
     get: function () { return { theme: read(PREF_KEYS.theme) || "system", textSize: read(PREF_KEYS.textSize) || "m", density: read(PREF_KEYS.density) || "comfortable", motion: read("sn-motion") || "system" }; }
   };
 
+
+  /* ---------- InfoTip, dismissed warnings, go icons, source links (1.6.0, imported from BeanAlliance v4.18–v4.20.2) ---------- */
+  function findModule(k) { for (var i = 0; i < MODULES.length; i++) if (MODULES[i].key === k) return MODULES[i]; return null; }
+  /** Go icon: the target module's icon at 84% with a half-size external-link badge. Means "opens that page in a new tab". */
+  function goIcon(key, opts) {
+    var m = findModule(key); if (!m) { if (window.console) console.warn("SongNodes.goIcon: no module \"" + key + "\"."); return ""; }
+    var size = (opts && opts.size) || 18;
+    return '<span class="sn-go sn-m-' + m.key + '" style="width:' + size + 'px;height:' + size + 'px" aria-hidden="true">' + icon(m.icon, { cls: "sn-go__glyph" }) + icon("external-link", { cls: "sn-go__badge" }) + "</span>";
+  }
+  /** Source link: the last words of a warning, naming the page (and place) where its cause is changed.
+      Another module opens in a new tab, led by its go icon; a place on this page is a plain same-page link with no icon. */
+  function sourceLink(o) {
+    var m = o.module ? findModule(o.module) : null, other = !!(m && !o.samePage);
+    return '<a class="sn-link sn-link--src' + (m ? " sn-m-" + m.key : "") + '" href="' + esc(o.href) + '"' + (other ? ' target="_blank" rel="noopener"' : "") + ">" +
+      (other ? goIcon(m.key) : "") + esc(o.text) + (other ? '<span class="sn-sr"> (opens in a new tab)</span>' : "") + "</a>";
+  }
+  /** InfoTip markup. text (40 words or fewer) gives the tooltip form; panel {title, html} gives the panel form. */
+  function infoTip(o) {
+    var id = esc(o.id), about = esc(o.about);
+    var btn = '<button type="button" class="sn-infotip__btn" aria-label="' + about + '" aria-expanded="false" aria-controls="' + id + '"' + (o.panel ? ' aria-haspopup="dialog"' : ' aria-describedby="' + id + '"') + ">" + icon("info") + "</button>";
+    if (o.panel) return '<span class="sn-infotip">' + btn + '<span class="sn-popover sn-infotip__panel" id="' + id + '" role="dialog" aria-label="' + esc(o.panel.title) + '" hidden><span class="sn-popover__head"><b class="sn-popover__title">' + esc(o.panel.title) + '</b><button type="button" class="sn-btn sn-btn--sm sn-btn--icon sn-btn--quiet sn-infotip__close" aria-label="Close">' + icon("x") + "</button></span>" + o.panel.html + "</span></span>";
+    return '<span class="sn-infotip">' + btn + '<span class="sn-tooltip sn-infotip__tip" id="' + id + '" role="tooltip" hidden>' + esc(o.text) + "</span></span>";
+  }
+  /** InfoTip behaviour, installed once per page (document-level, so tips added later work too):
+      tooltip form opens on hover, keyboard focus and tap (a tap pins it); panel form on click, tap, Enter or Space only.
+      One open at a time; Escape closes and returns focus; a click outside closes; it flips up or left near the viewport edge. */
+  var infoTipsOn = false;
+  function infoTips() {
+    if (infoTipsOn || typeof document === "undefined") return; infoTipsOn = true;
+    var open = null, timer = null, touch = false;
+    function parts(w) { return [w.querySelector(":scope > .sn-infotip__btn"), w.querySelector(":scope > .sn-infotip__tip, :scope > .sn-infotip__panel")]; }
+    function isPanel(w) { var t = parts(w)[1]; return !!t && t.classList.contains("sn-infotip__panel"); }
+    function place(w) {
+      var t = parts(w)[1], up = isPanel(w) ? "sn-popover--up" : "sn-infotip__tip--up", end = isPanel(w) ? "sn-popover--end" : "sn-infotip__tip--end";
+      t.classList.remove(up, end);
+      if (window.matchMedia && window.matchMedia("(max-width: 767.98px)").matches) return;
+      var r = t.getBoundingClientRect();
+      if (r.bottom > window.innerHeight - 8) t.classList.add(up);
+      if (r.right > window.innerWidth - 8) t.classList.add(end);
+    }
+    function show(w, pin) {
+      if (open && open !== w) hide(open, false);
+      var p = parts(w); if (!p[1]) return;
+      p[1].hidden = false; p[0].setAttribute("aria-expanded", "true"); w.dataset.pin = pin ? "1" : ""; open = w; place(w);
+      if (isPanel(w)) { var c = p[1].querySelector(".sn-infotip__close"); if (c) c.focus(); }
+    }
+    function hide(w, refocus) {
+      var p = parts(w); if (!p[1]) return;
+      p[1].hidden = true; p[0].setAttribute("aria-expanded", "false"); w.dataset.pin = ""; if (open === w) open = null; if (refocus) p[0].focus();
+    }
+    document.addEventListener("pointerdown", function (e) { touch = e.pointerType !== "mouse"; if (open && !open.contains(e.target)) hide(open, false); }, true);
+    document.addEventListener("click", function (e) {
+      var x = e.target.closest(".sn-infotip .sn-infotip__close"); if (x) { hide(x.closest(".sn-infotip"), true); return; }
+      var b = e.target.closest(".sn-infotip > .sn-infotip__btn"); if (!b) return;
+      var w = b.parentNode; (open === w && (w.dataset.pin || isPanel(w))) ? hide(w, false) : show(w, true);
+    });
+    document.addEventListener("mouseover", function (e) {
+      if (touch) return; var w = e.target.closest(".sn-infotip");
+      if (w && !isPanel(w)) { clearTimeout(timer); if (open !== w) show(w, false); }
+    });
+    document.addEventListener("mouseout", function (e) {
+      if (touch) return; var w = e.target.closest(".sn-infotip");
+      if (w && !w.contains(e.relatedTarget) && !w.dataset.pin && !isPanel(w)) timer = setTimeout(function () { hide(w, false); }, 300);
+    });
+    document.addEventListener("focusin", function (e) {
+      var w = e.target.closest(".sn-infotip");
+      if (open && open !== w) hide(open, false);
+      if (w && e.target === parts(w)[0] && !isPanel(w) && open !== w) show(w, false);
+    });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && open) { e.stopPropagation(); hide(open, true); } }, true);
+  }
+  /** Dismissed warnings: kept on this device, per page and fact key (include the value, so a changed fact shows again),
+      until the next day in Melbourne. Nothing is recorded anywhere else; storage failures simply show the warning. */
+  var dismissal = {
+    key: function (page, fact) { return "sn-dismiss:" + page + ":" + fact; },
+    isDismissed: function (page, fact) { var d = read(dismissal.key(page, fact)); return !!d && d === calendar.today(); },
+    dismiss: function (page, fact) { store(dismissal.key(page, fact), calendar.today()); },
+    restore: function (page, fact) { store(dismissal.key(page, fact), null); }
+  };
+
   window.SongNodes = {
-    version: "1.4.0", DOMAIN_MAP: DOMAIN_MAP,
+    version: "1.6.0", DOMAIN_MAP: DOMAIN_MAP,
     locale: LOCALE, timeZone: TZ,
     modules: MODULES, module: function (k) { for (var i = 0; i < MODULES.length; i++) if (MODULES[i].key === k) return MODULES[i]; return null; },
     icons: ICONS, icon: icon, iconNames: Object.keys(ICONS),
     camelot: camelot, keyName: keyName, compat: compat, KEY_NAMES: KEY_NAMES,
     tier: tier, TIER_LABEL: TIER_LABEL, energyStep: energyStep, bpmStep: bpmStep,
+    edgeBand: edgeBand, EDGE_BAND_LABEL: EDGE_BAND_LABEL, EDGE_CUTS_DEFAULT: EDGE_CUTS_DEFAULT, fitEdgeCuts: fitEdgeCuts, edgeVisibility: edgeVisibility, seatBox: seatBox, ringLayout: ringLayout,
     format: format, calendar: calendar, dateRange: dateRange, csv: csv, status: status, GLYPH: GLYPH,
-    html: html, prefs: prefs, esc: esc
+    html: html, prefs: prefs, esc: esc,
+    goIcon: goIcon, sourceLink: sourceLink, infoTip: infoTip, infoTips: infoTips, dismissal: dismissal
   };
 })();
