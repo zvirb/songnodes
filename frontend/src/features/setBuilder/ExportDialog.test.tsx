@@ -13,7 +13,6 @@ describe('ExportDialog', () => {
     minutes: 60,
     mix: {},
     pool: 'active',
-    tidal: false,
     seed: 1,
     updated: '2026-10-26T12:00:00Z',
     created: '2026-10-26T12:00:00Z',

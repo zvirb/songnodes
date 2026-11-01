@@ -20,7 +20,7 @@ const HomePage: React.FC = () => {
   const tracks = lib ? SN.format.count(lib.tracks.length) : none;
   const review = lib ? SN.format.count(lib.tracks.filter((t) => t.rev).length) : none;
   const lastRun = lib?.runs?.[lib.runs.length - 1];
-  const tidalSets = sets.filter((s) => s.tidal).length;
+  const latest = sets.reduce<(typeof sets)[number] | null>((n, s) => (!n || s.updated > n.updated ? s : n), null);
 
   return (
     <main className="sn-page__main sn-page-home" id="main" tabIndex={-1}>
@@ -34,7 +34,7 @@ const HomePage: React.FC = () => {
       <section className="sn-page__section" aria-labelledby="mod-t">
         <SectionHeading id="mod-t" title="Modules" count="8" />
         <div className="sn-launcher-card__grid">
-          <LauncherCard mod="sets" title={`${SN.format.count(sets.length)} saved sets`} summary="Shape a set from the crate, check every transition and save it." figures={[['send to TIDAL', SN.format.count(tidalSets)]]} />
+          <LauncherCard mod="sets" title={`${SN.format.count(sets.length)} saved sets`} summary="Shape a set from the crate, check every transition and save it." figures={latest ? [['tracks in the latest', SN.format.count(latest.tracks.length)]] : []} />
           <LauncherCard mod="paths" title="Route finder" summary="Routes from one track to another through proven transitions." />
           <LauncherCard mod="graph" title="Adjacency" summary="Explore which tracks DJs play next to each other." />
           <LauncherCard

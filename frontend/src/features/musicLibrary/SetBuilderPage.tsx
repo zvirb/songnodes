@@ -206,7 +206,7 @@ const SetBuilderPage: React.FC = () => {
 
   const duplicate = (s: SavedSet) => {
     const now = new Date();
-    const copy: SavedSet = { ...s, id: newSetId(now.getTime()), name: `${s.name} (copy)`, tidal: false, created: now.toISOString(), updated: now.toISOString(), tracks: s.tracks.map((t) => ({ ...t })) };
+    const copy: SavedSet = { ...s, id: newSetId(now.getTime()), name: `${s.name} (copy)`, created: now.toISOString(), updated: now.toISOString(), tracks: s.tracks.map((t) => ({ ...t })) };
     setSaved([copy, ...saved]);
     toast(<>Duplicated <q>{s.name}</q></>);
   };
