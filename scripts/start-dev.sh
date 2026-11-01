@@ -52,6 +52,9 @@ docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnod
 docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -v ON_ERROR_STOP=1 < sql/migrations/220_graph_consumer_up.sql
 docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -v ON_ERROR_STOP=1 < sql/migrations/240_library_search_indexes_up.sql
 docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -v ON_ERROR_STOP=1 < sql/migrations/260_scrape_window_up.sql
+docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -v ON_ERROR_STOP=1 < sql/migrations/270_transition_scoring_up.sql
+# HS4: one backfill pass per scoring version over existing transitions (the worker runs it; re-runs write nothing new).
+docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -v ON_ERROR_STOP=1 -c "INSERT INTO ingestion_jobs (kind, idempotency_key) VALUES ('transition_scoring', 'backfill:harmonic-1') ON CONFLICT (kind, idempotency_key) DO NOTHING;"
 docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -v ON_ERROR_STOP=1 -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
 if [ -z "$(docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -tAc "SELECT to_regclass('api_keys')" | tr -d '[:space:]')" ]; then
   docker compose -f compose.dev.yaml exec -T postgres psql -U songnodes -d songnodes -v ON_ERROR_STOP=1 < sql/init/07-api-keys.sql
