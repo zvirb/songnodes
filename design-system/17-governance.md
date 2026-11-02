@@ -20,6 +20,11 @@ The design system has one version number, [semver](https://semver.org) `MAJOR.MI
 
 Newest first. Each entry: version, date (Melbourne), one line per change, prefixed Added / Changed / Deprecated / Removed / Fixed, with the decision record if any.
 
+**1.9.0 — 2 Nov 2026: the graph View choice, neighbourhood or whole library (Markus, 2 Nov 2026)**
+- Added a View choice to `GraphControls`: **Neighbourhood** (default) draws the anchor and the tracks reached from it in at most `graph-hood-steps` (3) links, at most `graph-hood-max` (200), strongest link first; **Whole library** draws every track and its Fit may go below 25%, the fitted zoom then being the zoom-out limit. Remembered per device; announced in the live line; the count reads "200 of 1,284 nodes" when the neighbourhood is cut, with an InfoTip saying why. Below 25% a node is drawn at least 1.5px in radius on screen. DR-057.
+- Added tokens `graph-hood-steps`, `graph-hood-max`; helper `SongNodes.neighbourhood(nodes, links, {anchor, steps, max})` (binary heap, n log n); `GraphControlsProps.view`, `onViewChange`. GraphStyles Layout gains a View row. Added a token, a helper and props, so a minor.
+- Why: the library grows fast. Fitting every track at the 25% floor already missed about 50 of 463 tracks in the Plan canvas, and at 4,000 tracks fitting them all needs about 2%, where nodes are under a pixel. 200 tracks fit at 30% or more in the narrowest graph canvas.
+
 **1.8.0 — 2 Nov 2026: the design system speaks the accepted harmonic scoring (`harmonic-1`, Markus, 2 Nov 2026)**
 - Changed `bpmStep`: gaps round half up on the absolute value, so a gap judges the same in both directions (125.5 → 123 is "−3 BPM" compatible, was "−2 BPM" perfect; Q-B2). A half- or double-time move (the halved or doubled target strictly closer and within 8) is judged on that gap, never better than compatible, worded "half time" / "double time" (87 → 174 was a "+87 BPM" clash; Q-B1). DR-056.
 - Changed `energyStep`: the one-decimal delta is rounded half away from zero before judging (6.4 → 7.9 is +2, was "energy hold"; Q-E3); "trough reset" narrows to drops of 2–4, and a drop of 5 or more is a clash, "jarring"; a rise of 4 or more reads "jarring" (still a clash; Q-E2). Energy outside 1–10 is "energy ?". DR-056.
@@ -233,6 +238,13 @@ Markus's BeanAlliance decisions of 1 Nov 2026, brought into SongNodes at his req
 | # | Decision |
 |---|---|
 | DR-056 | `bpmStep`, `energyStep` and the new `energyMove` agree with `harmonic-1`: BPM gaps round half up on the absolute value (Q-B2); half or double time is judged on the halved or doubled gap, capped at compatible and worded "half time" / "double time" (Q-B1); thresholds stay absolute (Q-B3); the energy delta is rounded half away from zero (Q-E3); a −1 move is `step_down`, "step down" (Q-E1); drops of 2–4 are the "trough reset", drops of 5 or more and rises of 4 or more are "jarring" clashes (Q-E2); the energy move `lift` is shown as "push" (Q-E6); tiers stay as shown until the milestone 3 ratification settles them against the energy contract's bands (Q-E5). A +2 or +3 rise stays a clash ("too steep", wave rule 2), as no answer changed it. |
+
+### DR-057 — graph View: neighbourhood or whole library (Melbourne, 2 Nov 2026), 1.9.0
+2 Nov 2026 · Markus. Context: the library is expected to grow exponentially. Fit could not show every track at the 25% zoom floor (412 of 463 in the Plan canvas, real-data test of 2 Nov 2026), and fitting a few thousand tracks needs 2–4% zoom, where nodes are smaller than a pixel. Options: A, show the anchor's neighbourhood and fit that; B, show the whole library and let Fit go below 25%; C, keep the floor and show the centre only.
+
+| # | Decision |
+|---|---|
+| DR-057 | A and B both, as a **View** choice in GraphControls. **Neighbourhood** is the default: the anchor and the tracks within `graph-hood-steps` (3) links, at most `graph-hood-max` (200), strongest link first (`SongNodes.neighbourhood`). **Whole library** draws every track; its Fit may go below 25% and nodes keep a 1.5px minimum radius on screen. C is not adopted. The step and cap values are the defaults proposed on 2 Nov 2026; Markus picked the two views and did not set other values. |
 
 ## How rules are derived
 
