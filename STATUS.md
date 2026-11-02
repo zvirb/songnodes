@@ -2464,3 +2464,12 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - E2E: not run per PR (Markus, 2 Nov 2026); one combined host run of `scripts/e2e-docker.sh` covers every PR built on 2 Nov 2026 once they merge.
 - Next: load the neighbourhood from the API (GV3) instead of the whole graph; labels for all only above zoom 1.5 (DR-037); Colour by and minimap.
 <!-- SLOT:GV2 END -->
+
+<!-- SLOT:UI9 BEGIN -->
+### UI9: Graph and token-refresh debug logging stays out of production builds
+- Start: 2026-11-02 (branch ui9-debug-log off origin/main 338fa9b0). Source: docs/integration/LOCAL-TEST-2026-11-02.md, section 7 (about 50 `[GraphVisualization]` lines per /graph load).
+- End: 2026-11-02.
+- Changed: new `frontend/src/lib/debugLog.ts` (console.log behind `import.meta.env.DEV`); the 24 live `console.log` calls in `GraphVisualization.tsx` and the 11 in `useTokenRefresh.ts` use it; the token-refresh messages lose their emoji (the design check only exempts emoji on `console.*` lines). Warnings and errors are unchanged.
+- Checks run: tsc, oxlint (exit 0), vitest 65 files / 560 tests, vite build (the built assets no longer contain the debug strings), `check_design_system.py --check`, `sync-design-system.sh --check`.
+- Checks not run: E2E for this change (console output only; no spec reads console.log).
+<!-- SLOT:UI9 END -->
