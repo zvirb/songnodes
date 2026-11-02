@@ -25,3 +25,14 @@
   .sn-page-library__crate .sn-table td.sn-ml-preview { padding-left: 0; padding-right: 0; }
   .sn-page-library__crate .sn-table td.sn-ml-preview .sn-mini-preview__track { display: none; }
 }
+
+/* The MusicBrainz info flag toggles the coverage panel: a button that looks like the TrackCell flag. */
+.sn-ml-flag-toggle {
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.sn-ml-flag-toggle:hover { text-decoration: underline; }
+.sn-ml-flag-toggle:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
