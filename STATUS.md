@@ -2444,3 +2444,9 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks run: build_tokens.py (contrast pass), build_bundle.py, `sync-design-system.sh --check` (1.9.1 in sync), `check_design_system.py --check`, tsc, oxlint, vitest 553 tests, vite build, scope guard.
 - E2E: not run per PR (Markus, 2 Nov 2026); one combined host run of `scripts/e2e-docker.sh` covers every PR built on 2 Nov 2026 once they merge.
 <!-- SLOT:GV4 END -->
+
+<!-- SLOT:TGT2 BEGIN -->
+### TGT2: Target scrape bookkeeping, worker scrape settings and duplicate targets
+- Start: 2026-11-02 (branch tgt2-target-scrape-writeback off origin/main 338fa9b0). Issues from the 2 Nov local test (PR #518): target `last_searched`/`playlists_found` not updated, scrape-target env vars not passed to the worker, duplicate and truncated targets.
+- Next: compose pass-through, then duplicate-safe POST /api/v1/target-tracks and a unique-key migration.
+<!-- SLOT:TGT2 END -->

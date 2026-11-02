@@ -129,6 +129,12 @@ services:
       AUDIO_ANALYSIS_INTERVAL_SECONDS: ${AUDIO_ANALYSIS_INTERVAL_SECONDS:-600}
       AUDIO_ANALYSIS_PER_RUN: ${AUDIO_ANALYSIS_PER_RUN:-10}
       AUDIO_ANALYSIS_URL: http://audio-analysis:8020
+      # Scheduled target scrapes (SC2; services/common/datalayer/target_scrape.py). Defaults match the code.
+      SCRAPE_TARGETS_ENABLED: ${SCRAPE_TARGETS_ENABLED:-true}
+      SCRAPE_TARGETS_INTERVAL_SECONDS: ${SCRAPE_TARGETS_INTERVAL_SECONDS:-3600}
+      SCRAPE_TARGETS_PER_RUN: ${SCRAPE_TARGETS_PER_RUN:-2}
+      SCRAPE_TARGET_SOURCES: ${SCRAPE_TARGET_SOURCES:-mixesdb,1001tracklists}
+      TARGET_RESEARCH_DAYS: ${TARGET_RESEARCH_DAYS:-7}
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
