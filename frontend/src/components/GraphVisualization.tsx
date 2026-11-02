@@ -15,7 +15,8 @@ import { ContextMenu, useContextMenu } from './ContextMenu';
 import { graphColours, onThemeChange, tokenHex } from '../lib/graphColours';
 import { Waypoints } from 'lucide-react';
 import { EmptyPanel } from './ds';
-import { seatTracks, fitTransform, cssEase, pickAnchor, edgeBandOf, edgeBandStyles } from '../lib/graphLayout';
+import { seatTracks, fitTransform, cssEase, pickAnchor, edgeBandOf, edgeBandStyles, ZOOM_LIMITS } from '../lib/graphLayout';
+import { GraphControlsDock, zoomStep, zoomLabel } from './GraphControlsDock';
 import type { GraphSeat } from '../styles/design-system/index';
 // import { GraphMiniMap } from './GraphMiniMap'; // DISABLED: Minimap commented out
 
@@ -553,6 +554,10 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
   // Animation control system with play/pause functionality
   const [isSimulationPaused, setIsSimulationPaused] = useState(false);
   const isSimulationPausedRef = useRef(false); // Add ref to avoid closure issues
+  // GraphControls "Pause layout": holds every seat; new tracks wait (unseated, not drawn) until Resume.
+  const [layoutPaused, setLayoutPaused] = useState(false);
+  const layoutPausedRef = useRef(false);
+  const [announcement, setAnnouncement] = useState('');
   const animationStateRef = useRef<AnimationState>({
     isActive: true, // Start active by default
     startTime: 0,
@@ -1126,7 +1131,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
 
     const zoomHandler = zoom<HTMLDivElement, unknown>()
-      .scaleExtent([DEFAULT_CONFIG.ui.minZoom, DEFAULT_CONFIG.ui.maxZoom])
+      .scaleExtent([ZOOM_LIMITS.min, ZOOM_LIMITS.max]) // GraphControls: 25–400%
       .filter((event: any) => {
         // CRITICAL FIX: Properly separate D3 zoom from PIXI node interactions
 
@@ -2151,7 +2156,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       // This avoids processing thousands of off-screen edges every frame.
       const visibleEdgesArray = Array.from(enhancedEdgesRef.current.values()).filter(edge => {
         const lodLevel = lodSystem.getEdgeLOD(edge);
-        const shouldRender = lodLevel < 3;
+        const shouldRender = lodLevel < 3 && !!edge.sourceNode?.seat && !!edge.targetNode?.seat;
         if (edge.pixiEdge) edge.pixiEdge.visible = shouldRender;
         edge.isVisible = shouldRender;
         return shouldRender;
@@ -2202,7 +2207,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       // This is the most significant performance optimization.
       const visibleNodesArray = Array.from(enhancedNodesRef.current.values()).filter(node => {
         const lodLevel = lodSystem.getNodeLOD(node);
-        const shouldRender = lodLevel < 3;
+        const shouldRender = lodLevel < 3 && !!node.seat; // an unseated track waits for Resume
         if (node.pixiNode) node.pixiNode.visible = shouldRender;
         node.isVisible = shouldRender;
         return shouldRender;
@@ -2285,6 +2290,46 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       .ease(cssEase(root.getPropertyValue('--ease-standard')))
       .call(zoomBehaviorRef.current.transform, zoomIdentity.translate(fit.x, fit.y).scale(fit.k));
   }, []);
+
+  // GraphControls: zoom steps (×1.25, 25–400%) about the canvas centre, reset to 100% on the anchor, fit, pause.
+  // Each change is announced in the dock's live line.
+  const moveCamera = useCallback((to: ZoomTransform) => {
+    if (!zoomBehaviorRef.current || !containerRef.current) return;
+    const root = getComputedStyle(document.documentElement);
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    select(containerRef.current).transition()
+      .duration(reduced ? 0 : parseFloat(root.getPropertyValue('--duration-slow')) || 0)
+      .ease(cssEase(root.getPropertyValue('--ease-standard')))
+      .call(zoomBehaviorRef.current.transform, to);
+  }, []);
+
+  const zoomBy = useCallback((direction: 1 | -1) => {
+    // The stage is already centred, so scaling the offset keeps the canvas centre still.
+    const t = currentTransformRef.current || zoomIdentity;
+    const k = zoomStep(t.k, direction);
+    moveCamera(zoomIdentity.translate(t.x * (k / t.k), t.y * (k / t.k)).scale(k));
+    setAnnouncement(`Zoom ${zoomLabel(k)}`);
+  }, [moveCamera]);
+
+  const resetView = useCallback(() => {
+    moveCamera(zoomIdentity);
+    setAnnouncement('View reset, zoom 100%');
+  }, [moveCamera]);
+
+  const fitView = useCallback(() => {
+    fitToContent();
+    setAnnouncement('Graph fitted to screen');
+  }, [fitToContent]);
+
+  const togglePause = useCallback(() => {
+    const paused = !layoutPausedRef.current;
+    layoutPausedRef.current = paused;
+    setLayoutPaused(paused);
+    // Tracks that arrived while paused take free seats now; an anchor picked while paused re-seats and fits.
+    if (!paused && applySeats(nowPlayingRef.current)) fitToContent();
+    frameRef.current++;
+    setAnnouncement(paused ? 'Layout paused' : 'Layout resumed');
+  }, [applySeats, fitToContent]);
 
   // Helper function to center view on a specific node
   const centerOnNode = useCallback((nodeId: string, zoomLevel: number = 2.0) => {
@@ -2723,7 +2768,8 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
     // Seat the tracks on rings (GraphStyles, DR-034). Seats already taken are kept; new tracks take free seats.
     const nodes = Array.from(nodeMap.values());
-    applySeats(nowPlayingRef.current);
+    // While the layout is paused every seat holds and new tracks wait; a graph with no seats yet is always seated.
+    if (!layoutPausedRef.current || !nodes.some(n => n.seat)) applySeats(nowPlayingRef.current);
     simulation.nodes(nodes);
     // A new graph opens fitted to the canvas so every track can be found (GraphControls, "Fit").
     if (needsFullRebuild) requestAnimationFrame(() => fitToContent());
@@ -2759,7 +2805,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
   // Anything else (a live update, adding to a selection) keeps every seat.
   useEffect(() => {
     nowPlayingRef.current = nowPlayingId;
-    if (!isInitialized || enhancedNodesRef.current.size === 0) return;
+    if (!isInitialized || enhancedNodesRef.current.size === 0 || layoutPausedRef.current) return;
     if (applySeats(nowPlayingId)) fitToContent();
   }, [nowPlayingId, viewState.selectedNodes, isInitialized, applySeats, fitToContent]);
 
@@ -3028,6 +3074,18 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
         return;
       }
 
+      // Canvas shortcuts (GraphControls): + and − zoom, 0 fits, Space pauses. Not while a control or field has focus.
+      const focused = event.target as HTMLElement | null;
+      const inControl = !!focused?.closest?.('input, textarea, select, button, a, [contenteditable="true"], [role="option"], [role="listbox"]');
+      if (!inControl && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        const action = { '+': () => zoomBy(1), '=': () => zoomBy(1), '-': () => zoomBy(-1), '_': () => zoomBy(-1), '0': fitView, ' ': togglePause }[event.key];
+        if (action) {
+          event.preventDefault();
+          action();
+          return;
+        }
+      }
+
       switch (event.key.toLowerCase()) {
         case 'd':
           // Toggle debug mode
@@ -3050,13 +3108,6 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
           // Show keyboard shortcuts help
           console.group('Keyboard Shortcuts');
           console.groupEnd();
-          break;
-
-        case ' ':
-          // Space bar - pause/resume animation
-          event.preventDefault();
-          const wasPaused = isSimulationPausedRef.current;
-          isSimulationPausedRef.current = !wasPaused;
           break;
 
         case 'escape':
@@ -3140,18 +3191,6 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
           }
           break;
 
-        case '+':
-        case '=':
-          // Zoom in
-          event.preventDefault();
-          break;
-
-        case '-':
-        case '_':
-          // Zoom out
-          event.preventDefault();
-          break;
-
         default:
           // Log unhandled keys for debugging
           if (showDebugInfo) {
@@ -3161,7 +3200,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [viewState, showDebugInfo, graph, onTrackSelect, navigateToNode]);
+  }, [viewState, showDebugInfo, graph, onTrackSelect, navigateToNode, zoomBy, fitView, togglePause]);
 
   // Handle view state changes with throttling
   useEffect(() => {
@@ -3260,7 +3299,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       ref={containerRef}
       className="graph-canvas graph-container graph-visualization graph-component"
       style={{ touchAction: 'none', position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: 'var(--sunk)' }}
-      role="img"
+      role="group"
       aria-label={`Track graph, ${graphData.nodes.length} tracks and ${graphData.edges.length} links`}
       onContextMenu={handleContextMenu}
       onClick={handleCanvasClick}
@@ -3280,6 +3319,21 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
             Tracks and the transitions between them appear here once the graph loads.
           </EmptyPanel>
         </div>
+      )}
+
+      {isInitialized && (
+        <GraphControlsDock
+          zoom={viewState.zoom || 1}
+          paused={layoutPaused}
+          nodes={graphData.nodes.length}
+          links={graphData.edges.length}
+          announcement={announcement}
+          onZoomIn={() => zoomBy(1)}
+          onZoomOut={() => zoomBy(-1)}
+          onFit={fitView}
+          onReset={resetView}
+          onTogglePause={togglePause}
+        />
       )}
 
       {/* Debug overlay (press D) */}

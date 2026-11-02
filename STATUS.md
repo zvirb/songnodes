@@ -2396,6 +2396,20 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Next: fix packages for the three top problems (projection gap, bronze identity/raw_json, API escaping), each on its own branch.
 <!-- SLOT:E2E2 END -->
 
+<!-- SLOT:GR2 BEGIN -->
+### GR2: Graph controls dock with zoom, fit, reset and pause
+- Start: 2026-11-01 (branch gr2-graph-controls-dock off origin/main 33dcc5a). Brief: plan/agents/GR2_graph_controls_dock.md. Source: docs/integration/REAL-DATA-TEST-2026-11-02.md section 2, problem 2.
+- End: 2026-11-01.
+- Changed: new `components/GraphControlsDock.tsx` (GraphControls dock: zoom ×1.25 in 25–400%, fit, reset, pause/resume, count, paused pill, live line) with 7 tests; `GraphVisualization.tsx` wires it: camera moves on `duration-slow`/`ease-standard`, wheel limited to 25–400%, keys `+` `−` `0` `Space`, pause holds seats and new tracks wait until Resume, canvas container is a named group (it now holds controls).
+- Browser check (vite preview, synthetic 463-track graph, not live data), /graph?mode=plan 1440×900: opens fitted at 25%; Zoom in → 31% "Zoom 31%"; Reset → 100%; `−` → 80%; `0` → fit; Space → "Layout paused", pill shown, button "Resume layout"; count "463 nodes · 454 links".
+- Open: at the 25% floor the fit cannot hold every track in the Plan-mode canvas (412/463 inside 754×761). Letting Fit go below 25%, or changing the spacing, is a design-system decision (GraphControls/GraphStyles), not a local override.
+- Rebased on main after GR1 (#509) merged: kept GR1's anchor imports and `if (applySeats(...)) fitToContent()` with GR2's paused early return; Resume now fits when the anchor changed while paused.
+- Checks run: tsc, oxlint (exit 0), vitest 65 files / 560 tests (after rebase on GR1), vite build, `sync-design-system.sh --check` (1.7.1 in sync), `check_design_system.py --check`, scope guard.
+- Checks not run: E2E (no Docker here; see the E2E line).
+- Next: minimap, link layers, Colour by control, phone bottom bar; rebase on GR1 (#509), which also edits `GraphVisualization.tsx`.
+- E2E: not run per PR (Markus, 2 Nov 2026); one combined host run of `scripts/e2e-docker.sh` covers every PR built on 2 Nov 2026 once they merge.
+<!-- SLOT:GR2 END -->
+  
 <!-- SLOT:GV3 BEGIN -->
 ### GV3: Graph API serves one anchor's neighbourhood
 - Start: 2026-11-02 (branch gv3-graph-neighbourhood-api off origin/main 9d58e6df). Brief: plan/agents/GV3_graph_neighbourhood_api.md. Decision: Markus, 2 Nov 2026 (DR-057, GV1 #531).
