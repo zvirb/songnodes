@@ -155,8 +155,10 @@ const CamelotPage: React.FC = () => {
               : `${SN.format.count(displayedTracks.length)} tracks total`}
           </h2>
 
-          {/* The table can scroll sideways, so its box takes focus and has a name (axe scrollable-region-focusable). */}
-          <section className="sn-tablebox" tabIndex={0} aria-label="Tracks by key">
+          {/* DataTable --stack: rows become cards below 600px (no sideways scroll on a phone).
+              Wider, the box can scroll sideways, so it takes focus and has a name (axe scrollable-region-focusable). */}
+          <div className="sn-data-table sn-data-table--stack">
+          <section className="sn-tablebox sn-data-table__box" tabIndex={0} aria-label="Tracks by key">
             <table className="sn-table">
               <thead>
                 <tr>
@@ -169,7 +171,7 @@ const CamelotPage: React.FC = () => {
               <tbody>
                 {displayedTracks.map(track => (
                   <tr key={track.id}>
-                    <td>
+                    <td className="sn-data-table__track">
                       <div className="sn-track-cell">
                         <div className="sn-track-cell__title">
                           <span className="sn-track-cell__name"><span className="sn-track-cell__artist">{track.artist} –</span> {track.title}</span>
@@ -181,9 +183,9 @@ const CamelotPage: React.FC = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="sn-num"><Bpm value={track.bpm} /></td>
-                    <td><KeyBadge value={track.key} /></td>
-                    <td><EnergyBar value={track.energy} /></td>
+                    <td className="sn-num" data-label="BPM"><Bpm value={track.bpm} /></td>
+                    <td data-label="Key"><KeyBadge value={track.key} /></td>
+                    <td data-label="Energy"><EnergyBar value={track.energy} /></td>
                   </tr>
                 ))}
                 {displayedTracks.length === 0 && (
@@ -198,6 +200,7 @@ const CamelotPage: React.FC = () => {
               </tbody>
             </table>
           </section>
+          </div>
         </section>
       </div>
 
