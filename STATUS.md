@@ -2382,7 +2382,8 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Changed: new `components/GraphControlsDock.tsx` (GraphControls dock: zoom ×1.25 in 25–400%, fit, reset, pause/resume, count, paused pill, live line) with 7 tests; `GraphVisualization.tsx` wires it: camera moves on `duration-slow`/`ease-standard`, wheel limited to 25–400%, keys `+` `−` `0` `Space`, pause holds seats and new tracks wait until Resume, canvas container is a named group (it now holds controls).
 - Browser check (vite preview, synthetic 463-track graph, not live data), /graph?mode=plan 1440×900: opens fitted at 25%; Zoom in → 31% "Zoom 31%"; Reset → 100%; `−` → 80%; `0` → fit; Space → "Layout paused", pill shown, button "Resume layout"; count "463 nodes · 454 links".
 - Open: at the 25% floor the fit cannot hold every track in the Plan-mode canvas (412/463 inside 754×761). Letting Fit go below 25%, or changing the spacing, is a design-system decision (GraphControls/GraphStyles), not a local override.
-- Checks run: tsc, oxlint (exit 0), vitest 62 files / 473 tests (after rebase on ce36349), vite build, `sync-design-system.sh --check` (1.7.1 in sync), `check_design_system.py --check`, scope guard.
+- Rebased on main after GR1 (#509) merged: kept GR1's anchor imports and `if (applySeats(...)) fitToContent()` with GR2's paused early return; Resume now fits when the anchor changed while paused.
+- Checks run: tsc, oxlint (exit 0), vitest 65 files / 560 tests (after rebase on GR1), vite build, `sync-design-system.sh --check` (1.7.1 in sync), `check_design_system.py --check`, scope guard.
 - Checks not run: E2E (no Docker here); needs `scripts/e2e-docker.sh` on the host.
 - Next: minimap, link layers, Colour by control, phone bottom bar; rebase on GR1 (#509), which also edits `GraphVisualization.tsx`.
 <!-- SLOT:GR2 END -->
