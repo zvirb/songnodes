@@ -2384,6 +2384,7 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Open: at the 25% floor the fit cannot hold every track in the Plan-mode canvas (412/463 inside 754×761). Letting Fit go below 25%, or changing the spacing, is a design-system decision (GraphControls/GraphStyles), not a local override.
 - Rebased on main after GR1 (#509) merged: kept GR1's anchor imports and `if (applySeats(...)) fitToContent()` with GR2's paused early return; Resume now fits when the anchor changed while paused.
 - Checks run: tsc, oxlint (exit 0), vitest 65 files / 560 tests (after rebase on GR1), vite build, `sync-design-system.sh --check` (1.7.1 in sync), `check_design_system.py --check`, scope guard.
-- Checks not run: E2E (no Docker here); needs `scripts/e2e-docker.sh` on the host.
+- Checks not run: E2E (no Docker here; see the E2E line).
 - Next: minimap, link layers, Colour by control, phone bottom bar; rebase on GR1 (#509), which also edits `GraphVisualization.tsx`.
+- E2E: not run per PR (Markus, 2 Nov 2026); one combined host run of `scripts/e2e-docker.sh` covers every PR built on 2 Nov 2026 once they merge.
 <!-- SLOT:GR2 END -->
