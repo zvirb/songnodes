@@ -2337,6 +2337,16 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Next: apply the HS4 migration on the local stack (`start-dev.sh`), then re-run `test_dev_datalayer.py`.
 <!-- SLOT:OB1 END -->
 
+<!-- SLOT:HS7 BEGIN -->
+### HS7: Edge details show stored harmonic scoring
+- Start: 2026-11-02 (branch hs7-edge-scoring-details off origin/main a5c338d). Brief: plan/agents/HS7_edge_scoring_details.md (added in this PR). Spec package M6-U1.
+- End: 2026-11-02.
+- Changed: graph API edges (`catalog.edges`, so `/api/graph/edges`, `/api/graph/data`, neighbourhood) add `occurrence_count` and `scoring`: the 20 stored columns of migration 270 plus `scored_at`, passed through unchanged (numerics as floats), all null when unscored or when 270 is not applied. No SQL change (`SELECT e.*` already reads them). "Connection details" reads the edge's stored scoring from `/api/graph/edges?node_ids=<from>,<to>` and shows Key, BPM and Energy as `CompatibilityBadge`s: the level is always the stored one; key and BPM words come from `SN.compat`/`SN.bpmStep` only when the tracks' values give that same stored verdict, otherwise the badge names the level alone; the energy move is worded by `SN.energyMove` ("push" for `lift`). Unscored: en dashes and "Not scored yet."; unknown parts read "key ?", "BPM ?", "energy ?"; a link that is not an observed transition and an API failure each say so.
+- Checks run: `python -m pytest tests/unit` in services/graph-visualization-api (9 passed, 4 new); tsc, oxlint (exit 0, warnings only), vitest run src (62 files, 472 tests), vite build, `sync-design-system.sh --check` (1.8.0), `check_design_system.py --check`, scope guard.
+- Checks not run: E2E and the edges query against a real Postgres (no Docker here).
+- Next: carry `scoring` through the graph loaders (`hooks/useDataLoader.ts`, `services/api.ts`) and `GraphEdge` so the modal need not fetch; a design-system helper that words a stored key relation and BPM gap without the tracks' values.
+<!-- SLOT:HS7 END -->
+
 <!-- SLOT:HS2 BEGIN -->
 ### HS2: Frontend scoring matches the shared fixture
 - Start: 2026-11-02 (branch hs2-frontend-parity off origin/main a5c338d). Brief: plan/agents/HS2_frontend_parity.md (added in this PR). Spec package M6-F2.
