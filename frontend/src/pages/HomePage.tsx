@@ -14,7 +14,7 @@ const HomePage: React.FC = () => {
     loadLibrary().then(setLib).catch(() => setLibError(true));
   }, []);
 
-  usePageHeader({ lead: 'SongNodes', title: 'Home', current: 'home', updatedAt: lib?.generated });
+  usePageHeader({ lead: 'SongNodes', title: 'Home', current: 'home', updatedAt: lib?.generated ?? undefined });
 
   const none = <span className="sn-none">–</span>;
   const tracks = lib ? SN.format.count(lib.tracks.length) : none;
@@ -30,6 +30,7 @@ const HomePage: React.FC = () => {
         desc="Jump into a module. The track graph and the Melbourne club library share one system."
         stampVerb="Library data from"
         stamp={lib?.generated ?? null}
+        stampUnknown={!!lib}
       />
       <section className="sn-page__section" aria-labelledby="mod-t">
         <SectionHeading id="mod-t" title="Modules" count="8" />

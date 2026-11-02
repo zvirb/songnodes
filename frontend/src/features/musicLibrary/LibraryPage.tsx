@@ -15,7 +15,7 @@ import {
   pillarLabel, sanitiseFilters, sortTracks, sourceName, type CrateFilters, type SortDir, type SortKey,
 } from './setBuilder';
 import { FILTERS_KEY, bannerKey, lsGet, lsSet, melbourneStamp, normaliseTracks, readDraft, writeDraft } from './storage';
-import { Banner, TrackCell, useAnnouncer, useToaster } from './components/ui';
+import { Banner, OverflowMenu, TrackCell, useAnnouncer, useToaster } from './components/ui';
 import { CrateFilterRail } from './components/CrateFilterRail';
 import { TargetActionButton } from './targetAction/TargetActionButton';
 import { LibraryImportDialog } from './components/LibraryImportDialog';
@@ -220,7 +220,7 @@ const LibraryPage: React.FC = () => {
   const keyed = tracks.filter((t) => t.k && t.bpm).length;
   const review = tracks.filter((t) => t.rev).length;
   const lastRun = lib?.runs?.[lib.runs.length - 1];
-  const weekAgo = generated ? new Date(generated.getTime() - 7 * 86400000) : null;
+  const weekAgo = lib ? new Date((generated ?? new Date()).getTime() - 7 * 86400000) : null;
   const thisWeek = weekAgo ? tracks.filter((t) => { const d = melbourneStamp(t.last, SN.format.time); return d && d >= weekAgo; }) : [];
   const weekShows = new Set(thisWeek.flatMap((t) => t.src)).size;
   const highRot = tracks.filter((t) => t.rot === 1).length, stdRot = tracks.filter((t) => t.rot === 2).length, vault = tracks.filter((t) => t.rot === 3).length;
@@ -256,11 +256,16 @@ const LibraryPage: React.FC = () => {
         desc={lib ? <>{SN.format.count(tracks.length)} tracks heard on PBS, 3RRR and triple j, plus the ARIA Club Chart, with TIDAL and Beatport links.</> : 'Every track heard on PBS, 3RRR and triple j, plus the ARIA Club Chart.'}
         stampVerb="Built"
         stamp={generated}
+        stampUnknown={!!lib}
         actions={
           <>
-            <button className="sn-btn sn-btn--quiet" type="button" onClick={() => setImportOpen(true)}>
+            <button className="sn-btn sn-btn--quiet sn-page-header__secondary" type="button" onClick={() => setImportOpen(true)}>
               <SnIcon name="upload" />Import library
             </button>
+            {/* PageHeader ≤600px: the secondary button hides and its copy sits in More actions. */}
+            <div className="sn-page-header__narrow-only">
+              <OverflowMenu label="More actions" heading="Library" items={[{ id: 'import', icon: 'upload', label: 'Import library' }]} onSelect={(id) => { if (id === 'import') setImportOpen(true); }} />
+            </div>
             <button className={tracks.length > 0 ? "sn-btn sn-btn--primary" : "sn-btn"} type="button" onClick={buildFromCrate} disabled={!lib || tracks.length === 0}>
               <SnIcon name="list-music" />Build set from crate
             </button>
