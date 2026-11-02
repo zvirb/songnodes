@@ -16,13 +16,15 @@ interface PageHeaderProps {
   desc?: React.ReactNode;
   stampVerb?: string;
   stamp?: Date | string | null;
+  /** Show the stamp verb with an en dash when `stamp` is missing (FreshnessStamp "never loaded"). */
+  stampUnknown?: boolean;
   pill?: React.ReactNode;
   /** Secondary buttons, then the single primary (always last). */
   actions?: React.ReactNode;
   size?: 'title-l' | 'title-m';
 }
 
-export const PageHeader: React.FC<PageHeaderProps> = ({ mod, here, lead, title, desc, stampVerb = 'Updated', stamp, pill, actions, size = 'title-l' }) => {
+export const PageHeader: React.FC<PageHeaderProps> = ({ mod, here, lead, title, desc, stampVerb = 'Updated', stamp, stampUnknown, pill, actions, size = 'title-l' }) => {
   const m = mod ? moduleOf(mod) : null;
   const st = stamp ? new Date(stamp) : null;
   return (
@@ -38,12 +40,17 @@ export const PageHeader: React.FC<PageHeaderProps> = ({ mod, here, lead, title, 
         <div className="sn-page-header__text">
           <h1 className={`sn-title ${size}`}><span className="sn-lead">{lead}:</span> {title}</h1>
           {desc ? <p className="sn-page-header__desc">{desc}</p> : null}
-          {st || pill ? (
+          {st || stampUnknown || pill ? (
             <p className="sn-page-header__meta">
               {st ? (
                 <span className="sn-page-header__stamp">
                   <SnIcon name="clock" size={14} />
                   {stampVerb} <time dateTime={st.toISOString()}>{SN.format.stamp(st)}</time>
+                </span>
+              ) : stampUnknown ? (
+                <span className="sn-page-header__stamp">
+                  <SnIcon name="clock" size={14} />
+                  {stampVerb} <span className="sn-none">–</span>
                 </span>
               ) : null}
               {pill}

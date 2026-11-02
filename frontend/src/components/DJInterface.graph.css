@@ -9,6 +9,11 @@
 .gx-toolbar__meta { display: flex; align-items: center; gap: var(--space-2); min-width: 0; flex: 1 1 auto; overflow: hidden; }
 .gx-toolbar__actions { display: flex; align-items: center; gap: var(--space-2); flex: none; }
 .gx-count { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+/* Phone width: the actions wrap to their own row instead of pushing More actions past the edge. */
+@media (max-width: 760px) {
+  .gx-toolbar { flex-wrap: wrap; row-gap: var(--space-2); }
+  .gx-toolbar__actions { margin-left: auto; }
+}
 
 /* Main area */
 .gx-main { flex: 1 1 auto; min-height: 0; display: grid; gap: var(--space-4); padding: var(--space-4); overflow: hidden; }

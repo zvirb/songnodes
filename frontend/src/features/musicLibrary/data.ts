@@ -59,7 +59,8 @@ export interface LibrarySource { id: string; prior: number; club: boolean; on: b
 export interface LibraryRun { date: string; added: number; rejected: number; promoted: number; demoted: number; archived: number; review_queue: number }
 
 export interface LibraryFile {
-  generated: string;
+  /** When the library data was built; null when the API does not say (shown as an en dash). */
+  generated: string | null;
   ledger_updated: string;
   counts: { tracks: number; pending: number; rejected: number; beatport_check: number };
   sources: LibrarySource[];
@@ -118,7 +119,7 @@ export function loadLibrary(forceRefresh = false): Promise<LibraryFile> {
       const json = await res.json() as any[];
       const tracks = Array.isArray(json) ? json.map(mapApiToLibraryTrack) : [];
       return {
-        generated: new Date().toISOString(),
+        generated: null, // /api/v1/library/search does not report when the library was built
         ledger_updated: new Date().toISOString(),
         counts: { tracks: tracks.length, pending: 0, rejected: 0, beatport_check: 0 },
         sources: [],

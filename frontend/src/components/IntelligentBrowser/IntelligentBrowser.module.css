@@ -12,6 +12,12 @@
   color: var(--fg);
 }
 
+/* Only the list scrolls; the blocks above it keep their height so the
+   now-playing empty state is never clipped by the list (phone width). */
+.container > :not(.list) {
+  flex-shrink: 0;
+}
+
 /* Now playing */
 .current {
   display: flex;
