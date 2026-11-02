@@ -255,8 +255,11 @@ class Test1001TracklistsSpider:
         assert req.callback == spider.parse_search_results
         assert req.meta.get('playwright') is True
         assert req.meta.get('search_query') == 'Deadmau5 Strobe'
-        assert len(req.meta.get('playwright_page_coroutines', [])) == 1
-        assert inspect.iscoroutinefunction(req.meta['playwright_page_coroutines'][0])
+        # scrapy-playwright ignores 'playwright_page_coroutines'; the form is submitted by a callable PageMethod.
+        assert 'playwright_page_coroutines' not in req.meta
+        submit = [m.method for m in req.meta['playwright_page_methods'] if callable(m.method)]
+        assert len(submit) == 1
+        assert inspect.iscoroutinefunction(submit[0])
 
     def test_start_requests_tracklist(self):
         """A tracklist URL generates a Playwright request for the page."""
