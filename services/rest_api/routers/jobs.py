@@ -68,7 +68,7 @@ def job_uuid(value: str) -> UUID:
 async def trigger_scrape(source: str = Query('1001tracklists', min_length=1, max_length=100),
                          search_query: Optional[str] = Query(None, min_length=1, max_length=255),
                          idempotency_key: Optional[str] = Header(None, min_length=1, max_length=200)):
-    """Record a scrape job. It stays queued until a worker claims it; none runs in the minimal stack.
+    """Record a scrape job. It stays queued until the worker claims it (the Compose stack runs one).
 
     Send the same Idempotency-Key to retry safely; without one every call is a new job.
     """
@@ -77,7 +77,7 @@ async def trigger_scrape(source: str = Query('1001tracklists', min_length=1, max
         row, created = await domain.enqueue(conn, 'scrape', idempotency_key or str(uuid4()), payload)
     return {
         'status': row['status'], 'job_id': str(row['id']), 'source': source, 'created': created,
-        'message': ('Job recorded and waiting for a worker; no worker runs in the minimal development stack.'
+        'message': (f'Job queued; the worker starts it when it is free. Follow it at /api/v1/jobs/{row["id"]}/stages.'
                     if created else 'An existing job was returned for this idempotency key.'),
     }
 

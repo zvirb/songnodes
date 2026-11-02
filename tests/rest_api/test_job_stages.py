@@ -244,3 +244,18 @@ async def test_fetch_scrape_progress_reads_the_scraper(monkeypatch):
     answers.update(error=True)
     assert await jobs_router.fetch_scrape_progress(str(SCRAPE_ID), at(5)) == (None, jobs_router.NO_ANSWER)
 
+
+def test_trigger_message_says_the_worker_picks_the_job_up(monkeypatch):
+    """JT1: the Compose stack runs a worker, so the message no longer says none runs."""
+    row = job(job_id=SCRAPE_ID)
+
+    class EnqueueConn:
+        async def fetchrow(self, query, *args):
+            return row
+    monkeypatch.setattr(jobs_router, 'get_pool', lambda: FakePool(EnqueueConn()))
+    app = FastAPI()
+    app.include_router(jobs_router.router)
+    body = TestClient(app).post('/api/v1/scrape/trigger?source=mixesdb&search_query=Deadmau5%20Strobe').json()
+    assert body['created'] is True and body['status'] == 'queued'
+    assert body['message'] == f'Job queued; the worker starts it when it is free. Follow it at /api/v1/jobs/{SCRAPE_ID}/stages.'
+    assert 'no worker' not in body['message']
