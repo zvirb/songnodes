@@ -2496,3 +2496,13 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks run: tsc, oxlint (exit 0), vitest 65 files / 560 tests, vite build (the built assets no longer contain the debug strings), `check_design_system.py --check`, `sync-design-system.sh --check`.
 - Checks not run: E2E for this change (console output only; no spec reads console.log).
 <!-- SLOT:UI9 END -->
+
+<!-- SLOT:UI10 BEGIN -->
+### UI10: Fix the app causes of the axe and text-inset E2E failures on main
+- Start: 2026-11-02 (branch ui10-e2e-axe-inset off origin/main f7417033, rebased on 8b5f72a6).
+- End: 2026-11-02.
+- Confirmed on main 338fa9b0 (frontend image in its own container, live dev DB): accessibility + design-rules, chromium + firefox: 12 failed, 176 passed (library axe target-size; pipeline and sources/targets axe 30 s timeouts; /harmony and /sources/import text inset at 390px).
+- Changed: target tracks page 50 at a time (ShowMore pagination; axe 20-24 s to about 3 s); /harmony tracks table is a DataTable --stack; the AI import prompt wraps with break-spaces and overflow-wrap anywhere; MusicBrainz match is a TrackCell info flag in the meta row (was a 40px button over the service links).
+- Checks run: tsc, oxlint, vitest 67 files / 581 tests, vite build, `sync-design-system.sh --check`, `check_design_system.py --check`; E2E accessibility + design-rules for the five routes, chromium + firefox, on the final code: 88 passed, 0 failed. The broader run (also visual, routes.smoke) is in the PR.
+- Not fixed: library desktop visual baselines (live DiscoveryBanner data) and the shell drawer-row test; both fail on main too.
+<!-- SLOT:UI10 END -->
