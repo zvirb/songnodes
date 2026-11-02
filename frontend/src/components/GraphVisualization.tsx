@@ -20,6 +20,7 @@ import { GraphControlsDock, zoomStep, zoomLabel } from './GraphControlsDock';
 import { SN } from '../lib/songnodes';
 import { readGraphView, storeGraphView, viewTracks, zoomRange, fitFloor, drawnRadius, labelsForAll, type GraphView } from '../lib/graphView';
 import type { GraphSeat } from '../styles/design-system/index';
+import { debugLog } from '../lib/debugLog';
 // import { GraphMiniMap } from './GraphMiniMap'; // DISABLED: Minimap commented out
 
 // Performance constants - updated for 2025 best practices
@@ -518,7 +519,7 @@ interface GraphVisualizationProps {
 }
 
 export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackSelect, onTrackRightClick, nowPlayingId = null }) => {
-  console.log('[GraphVisualization] Component function executing');
+  debugLog('[GraphVisualization] Component function executing');
 
   // Store hooks - use specific selectors for better reactivity
   const graphData = useStore(state => state.graphData);
@@ -532,7 +533,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
   const simulation = useStore(state => state.simulation);
 
   // Debug: Log graphData whenever it changes
-  console.log('[GraphVisualization] Store subscription received graphData:', {
+  debugLog('[GraphVisualization] Store subscription received graphData:', {
     nodes: graphData?.nodes?.length || 0,
     edges: graphData?.edges?.length || 0,
     hasData: !!graphData,
@@ -621,7 +622,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
   // Debug: Monitor rendering triggers
   useEffect(() => {
-    console.log('[GraphVisualization] Rendering status:', {
+    debugLog('[GraphVisualization] Rendering status:', {
       isInitialized,
       hasPixiApp: !!pixiAppRef.current,
       hasContainer: !!containerRef.current,
@@ -953,10 +954,10 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
     // Force an initial render to show test visuals
     app.render();
-    console.log('[GraphVisualization] Forced initial PIXI render');
+    debugLog('[GraphVisualization] Forced initial PIXI render');
 
     setIsInitialized(true);
-    console.log('[GraphVisualization] PIXI initialization complete, isInitialized set to TRUE');
+    debugLog('[GraphVisualization] PIXI initialization complete, isInitialized set to TRUE');
 
     } catch (error) {
       console.error('Failed to initialize PIXI.js application:', error);
@@ -1063,7 +1064,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
   // Handle simulation end
   const handleSimulationEnd = useCallback(() => {
-    console.log('Force simulation settled - layout is now stable');
+    debugLog('Force simulation settled - layout is now stable');
 
     // Mark simulation as paused/settled
     isSimulationPausedRef.current = true;
@@ -1604,7 +1605,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
     // DEBUG: Log node data occasionally to see what's available
     if (Math.random() < 0.01) { // Log 1% of nodes
-      console.log('Node label data:', {
+      debugLog('Node label data:', {
         id: node.id.substring(0, 20),
         artist: artistText,
         title: titleText,
@@ -1615,7 +1616,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       });
 
       // Log full node structure to understand data shape
-      console.log('Full node object:', {
+      debugLog('Full node object:', {
         id: node.id,
         type: node.type,
         label: node.label,
@@ -1872,7 +1873,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
                   }
                 });
 
-                console.log(`Range selected ${useStore.getState().viewState.selectedNodes.size} nodes`);
+                debugLog(`Range selected ${useStore.getState().viewState.selectedNodes.size} nodes`);
               } else {
                 // Fallback: just select both nodes
                 graph.selectNode(nodeId);
@@ -1915,7 +1916,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
           // Add track to setlist when clicking node in setlist mode
           if (node?.track) {
             useStore.getState().setlist.addTrackToSetlist(node.track);
-            console.log('Added to setlist:', node.track.name);
+            debugLog('Added to setlist:', node.track.name);
           }
           break;
 
@@ -2396,7 +2397,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
         zoomIdentity.translate(translateX, translateY).scale(clampedZoom)
       );
 
-    console.log('Centered on node:', {
+    debugLog('Centered on node:', {
       nodeId,
       label: node.label,
       position: { x: node.x, y: node.y },
@@ -2481,7 +2482,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       case 'setlist':
         if (node?.track) {
           useStore.getState().setlist.addTrackToSetlist(node.track);
-          console.log('Added to setlist:', node.track.name);
+          debugLog('Added to setlist:', node.track.name);
         }
         break;
       default:
@@ -2517,7 +2518,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       console.group(`Node Right-Click Detected`);
       const node = enhancedNodesRef.current.get(nodeId);
       if (node) {
-        console.log('Node:', node);
+        debugLog('Node:', node);
       }
       console.groupEnd();
     }
@@ -2570,7 +2571,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
   // Update graph data with intelligent diffing (2025 optimization)
   const updateGraphData = useCallback(() => {
-    console.log('[GraphVisualization] updateGraphData called');
+    debugLog('[GraphVisualization] updateGraphData called');
 
     if (!simulationRef.current || !nodesContainerRef.current || !edgesContainerRef.current) {
       console.warn('[GraphVisualization] updateGraphData aborted - missing refs:', {
@@ -2592,7 +2593,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     // CRITICAL FIX: Use ref to access current graphData without capturing in closure
     const currentGraphData = graphDataRef.current;
 
-    console.log('[GraphVisualization] updateGraphData processing:', {
+    debugLog('[GraphVisualization] updateGraphData processing:', {
       nodeCount: currentGraphData.nodes.length,
       edgeCount: currentGraphData.edges.length,
       existingNodesInMap: enhancedNodesRef.current.size,
@@ -2660,7 +2661,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
       // Create all nodes fresh
       const nodeMap = new Map<string, EnhancedGraphNode>();
-      console.log('[GraphVisualization] Creating', currentGraphData.nodes.length, 'PIXI nodes (full rebuild)');
+      debugLog('[GraphVisualization] Creating', currentGraphData.nodes.length, 'PIXI nodes (full rebuild)');
       currentGraphData.nodes.forEach(nodeData => {
         const node = createEnhancedNode(nodeData);
         const pixiContainer = createPixiNode(node);
@@ -2668,7 +2669,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
         nodeMap.set(node.id, node);
         enhancedNodesRef.current.set(node.id, node);
       });
-      console.log('[GraphVisualization] Created', enhancedNodesRef.current.size, 'nodes, container has', nodesContainerRef.current!.children.length, 'children');
+      debugLog('[GraphVisualization] Created', enhancedNodesRef.current.size, 'nodes, container has', nodesContainerRef.current!.children.length, 'children');
 
       // Continue with edges in the existing code flow below
     } else {
@@ -2755,7 +2756,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
           return response.json(); // Otherwise, parse the JSON body
         })
         .then(data => {
-          console.log('Successfully deleted artist:', data);
+          debugLog('Successfully deleted artist:', data);
         })
         .catch(error => {
           // This will catch network errors and the errors we threw above
@@ -2814,12 +2815,12 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
       simulation.alpha(1.0).restart(); // Start with maximum energy
       animationStateRef.current.isActive = true;
-      console.log('[GraphVisualization] Simulation restarted with alpha=1.0');
+      debugLog('[GraphVisualization] Simulation restarted with alpha=1.0');
     } else {
-      console.log('[GraphVisualization] Simulation paused - not restarting');
+      debugLog('[GraphVisualization] Simulation paused - not restarting');
     }
 
-    console.log('[GraphVisualization] updateGraphData complete:', {
+    debugLog('[GraphVisualization] updateGraphData complete:', {
       finalNodeCount: enhancedNodesRef.current.size,
       finalEdgeCount: enhancedEdgesRef.current.size,
       nodesContainerChildren: nodesContainerRef.current?.children.length || 0,
@@ -3074,7 +3075,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
   // CRITICAL FIX: Trigger on data hash instead of array lengths
   // This ensures updates when content changes, not just when array sizes change
   useEffect(() => {
-    console.log('[GraphVisualization] Data update check:', {
+    debugLog('[GraphVisualization] Data update check:', {
       isInitialized,
       nodeCount: graphData.nodes.length,
       edgeCount: graphData.edges.length,
@@ -3083,12 +3084,12 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     });
 
     if (isInitialized && graphData.nodes.length > 0) {
-      console.log('[GraphVisualization] Calling updateGraphData with', graphData.nodes.length, 'nodes and', graphData.edges.length, 'edges');
+      debugLog('[GraphVisualization] Calling updateGraphData with', graphData.nodes.length, 'nodes and', graphData.edges.length, 'edges');
       updateGraphData();
     } else if (isInitialized && graphData.nodes.length === 0) {
       console.warn('[GraphVisualization] isInitialized=true but graphData.nodes.length=0 - data may not be loaded yet');
     } else if (!isInitialized) {
-      console.log('[GraphVisualization] Waiting for initialization (isInitialized=false)');
+      debugLog('[GraphVisualization] Waiting for initialization (isInitialized=false)');
     }
   }, [isInitialized, currentDataHash, updateGraphData]);
 
