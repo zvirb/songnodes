@@ -12,6 +12,7 @@ import pytest
 from scrapy.http import HtmlResponse
 
 from scrapers.items import EnhancedTrackItem
+from scrapers.pipelines.enrichment_pipeline import EnrichmentPipeline
 from scrapers.pipelines.validation_pipeline import ValidationPipeline
 from scrapers.pydantic_models import DataSource, RemixType, TrackCreate
 from scrapers.spiders.mixesdb_spider import MixesdbSpider
@@ -56,7 +57,7 @@ def test_model_records_unknown_type_instead_of_dropping_a_remix():
         TrackCreate(track_name='Strobe', is_remix=False, remix_type='remix', data_source=DataSource.MIXESDB)
 
 
-def test_real_spider_remixes_pass_validation_pipeline():
+def _scrape_fixture_tracks():
     rows = ''.join(f'<li>{line}</li>' for line, *_ in DROPPED_IN_LOCAL_TEST)
     html = (
         '<html><head><title>Test DJ - Remix Mix | MixesDB</title></head><body>'
@@ -68,6 +69,11 @@ def test_real_spider_remixes_pass_validation_pipeline():
     spider = MixesdbSpider()
     tracks = [i for i in spider.parse_mix_page(response) if isinstance(i, EnhancedTrackItem)]
     assert len(tracks) == len(DROPPED_IN_LOCAL_TEST) + 1
+    return spider, tracks
+
+
+def test_real_spider_remixes_pass_validation_pipeline():
+    spider, tracks = _scrape_fixture_tracks()
 
     pipeline = ValidationPipeline()
     for track in tracks:
@@ -78,3 +84,16 @@ def test_real_spider_remixes_pass_validation_pipeline():
     for _line, name, artist, remix_type in DROPPED_IN_LOCAL_TEST:
         assert by_name[(name, artist)]['remix_type'] == remix_type
     assert tracks[-1]['is_remix'] is False and tracks[-1]['remix_type'] is None
+
+
+@pytest.mark.parametrize('genre', ['Progressive House', 'progressive house', 'Electro House', 'Electronic'])
+def test_validated_tracks_survive_genre_normalisation(genre):
+    """EnrichmentPipeline (200) writes genre_confidence/genre_match_score; the item must accept them.
+
+    In the 2 Nov re-run 168 track items raised "EnhancedTrackItem does not support field: genre_confidence"."""
+    spider, tracks = _scrape_fixture_tracks()
+    pipeline = EnrichmentPipeline()
+    pipeline.enable_nlp_fallback = False
+    for track in tracks:
+        track['genre'] = genre
+        assert pipeline.process_item(track, spider) is not None

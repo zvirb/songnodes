@@ -17,6 +17,7 @@ here only where the fix is small and inside `scrapers/`.
 - scrapers/spiders/utils.py (parse_track_string remix type only)
 - scrapers/spiders/mixesdb_spider.py (remix type only)
 - scrapers/pydantic_models.py (remix consistency validator only)
+- scrapers/items.py (EnhancedTrackItem genre match fields only)
 - scrapers/spiders/1001tracklists_spider.py (search start request only)
 - scrapers/unified_scraper_api.py (1001tracklists parameters only)
 - scrapers/tests/test_remix_type_kept.py (new)
