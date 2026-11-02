@@ -2444,3 +2444,14 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks run: build_tokens.py (contrast pass), build_bundle.py, `sync-design-system.sh --check` (1.9.1 in sync), `check_design_system.py --check`, tsc, oxlint, vitest 553 tests, vite build, scope guard.
 - E2E: not run per PR (Markus, 2 Nov 2026); one combined host run of `scripts/e2e-docker.sh` covers every PR built on 2 Nov 2026 once they merge.
 <!-- SLOT:GV4 END -->
+
+<!-- SLOT:GV2 BEGIN -->
+### GV2: Graph View choice on /graph
+- Start: 2026-11-02 (branch gv2-graph-view-control off origin/main 884a3400). Brief: plan/agents/GV2_graph_view_control.md. Decision: Markus, 2 Nov 2026 (DR-057, GV1 #531).
+- End: 2026-11-02.
+- Changed: new `lib/graphView.ts` (view helpers, tokens, zoom range, minimum drawn radius, label rule, per-device memory) with 10 tests; `GraphControlsDock.tsx` gains the View segmented control, "N of M nodes" with an InfoTip when cut, and a zoom-out limit below 25% (4 new tests); `GraphVisualization.tsx` seats and draws only the view's tracks, fits with the view's floor, keeps unseated tracks out of the hit-test index.
+- Browser check (vite preview, synthetic graphs, not live data), /graph?mode=plan 1440×900: binary tree of 1,000 → Neighbourhood 19 tracks at 140%; Whole library 1,000 at 16%, zoom out disabled at the fit, Zoom in "Zoom 20%", reload keeps Whole library; hub of 1,000 → "200 of 1,000 nodes · 199 links" with the InfoTip, all 200 in view at 60%; no console errors.
+- Checks run: tsc, oxlint (exit 0), vitest 66 files / 573 tests, vite build, `sync-design-system.sh --check` (1.9.0 in sync), `check_design_system.py --check`, scope guard.
+- E2E: not run per PR (Markus, 2 Nov 2026); one combined host run of `scripts/e2e-docker.sh` covers every PR built on 2 Nov 2026 once they merge.
+- Next: load the neighbourhood from the API (GV3) instead of the whole graph; labels for all only above zoom 1.5 (DR-037); Colour by and minimap.
+<!-- SLOT:GV2 END -->
