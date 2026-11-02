@@ -27,6 +27,20 @@ export interface TargetTrack {
 /** How often the list refreshes while a search is queued or running. */
 const SEARCH_POLL_MS = 10_000;
 
+/** Target tracks are a queue worked through by position: numbered pages (ShowMore card, Pagination). */
+const PAGE_SIZE = 50;
+
+/** Page indexes to show: first, last, current ±1, with null for a gap. */
+export function pageItems(current: number, count: number): (number | null)[] {
+  const keep = [...new Set([0, count - 1, current - 1, current, current + 1])].filter((i) => i >= 0 && i < count).sort((a, b) => a - b);
+  const out: (number | null)[] = [];
+  keep.forEach((i, n) => {
+    if (n > 0 && i - keep[n - 1] > 1) out.push(null);
+    out.push(i);
+  });
+  return out;
+}
+
 interface TargetTracksManagerProps {
   embedded?: boolean;
   filterStatus?: 'all' | 'pending' | 'failed' | 'active';
@@ -48,6 +62,7 @@ const TargetTracksManager: React.FC<TargetTracksManagerProps> = ({ embedded = fa
   const [importData, setImportData] = useState('');
   const [activeTab, setActiveTab] = useState<'manage' | 'search'>('manage');
   const [loadFailed, setLoadFailed] = useState(false);
+  const [page, setPage] = useState(0);
 
   // Form state for add/edit
   const [formData, setFormData] = useState<Partial<TargetTrack>>({
@@ -374,6 +389,12 @@ const TargetTracksManager: React.FC<TargetTracksManagerProps> = ({ embedded = fa
     return matchesSearch && matchesPriority;
   }) || [];
 
+  // A new filter starts on page 1; a shorter list keeps the reader on its last page.
+  useEffect(() => { setPage(0); }, [searchQuery, selectedPriority, showArchived, filterStatus]);
+  const pageCount = Math.max(1, Math.ceil(filteredTracks.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount - 1);
+  const pageTracks = filteredTracks.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);
+
   const confirmDelete = async () => {
     if (!pendingDelete) return;
     setDeleting(true);
@@ -553,7 +574,7 @@ const TargetTracksManager: React.FC<TargetTracksManagerProps> = ({ embedded = fa
             )
           ) : (
             <ul className="ttm__list">
-              {filteredTracks.map((track) => {
+              {pageTracks.map((track) => {
                 const id = track.track_id!;
                 const name = `${track.artist} – ${track.title}`;
                 const search = targetSearchStatus(track);
@@ -617,6 +638,30 @@ const TargetTracksManager: React.FC<TargetTracksManagerProps> = ({ embedded = fa
               })}
             </ul>
           )}
+          {pageCount > 1 ? (
+            <div className="sn-show-more">
+              <span className="sn-show-more__count" role="status">
+                Targets <b>{SN.format.count(currentPage * PAGE_SIZE + 1)}–{SN.format.count(currentPage * PAGE_SIZE + pageTracks.length)}</b> of <b>{SN.format.count(filteredTracks.length)}</b>
+              </span>
+              <nav aria-label="Target track pages">
+                <ul className="sn-show-more__pages">
+                  <li>
+                    <button type="button" className="sn-show-more__page" aria-label="Previous page" aria-disabled={currentPage === 0 ? true : undefined} onClick={() => { if (currentPage > 0) setPage(currentPage - 1); }}>‹</button>
+                  </li>
+                  {pageItems(currentPage, pageCount).map((i, n) => (i === null ? (
+                    <li key={`gap-${n}`} className="sn-show-more__gap" aria-hidden="true">…</li>
+                  ) : (
+                    <li key={i}>
+                      <button type="button" className="sn-show-more__page" aria-label={`Page ${i + 1}`} aria-current={i === currentPage ? 'page' : undefined} onClick={() => setPage(i)}>{SN.format.count(i + 1)}</button>
+                    </li>
+                  )))}
+                  <li>
+                    <button type="button" className="sn-show-more__page" aria-label="Next page" aria-disabled={currentPage === pageCount - 1 ? true : undefined} onClick={() => { if (currentPage < pageCount - 1) setPage(currentPage + 1); }}>›</button>
+                  </li>
+                </ul>
+              </nav>
+            </div>
+          ) : null}
         </>
       )}
 
