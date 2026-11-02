@@ -229,6 +229,17 @@ async def fetch_scrape_progress(job_id: str, since: Optional[datetime]) -> Tuple
     return progress, None
 
 
+def final_counts(result: Dict[str, Any], record: Optional[Dict[str, Any]], finished) -> Optional[Dict[str, Any]]:
+    """The counts of a finished scrape: bronze rows from the job result, pages from the scraper's record while it keeps
+    it (in memory, its last 200 runs). Pages is None once that record is gone."""
+    rec = record or {}
+    if not rec and 'bronze_playlists' not in result and 'bronze_tracks' not in result:
+        return None
+    return {'pages': rec.get('pages'), 'playlists': int(result.get('bronze_playlists', rec.get('playlists')) or 0),
+            'tracks': int(result.get('bronze_tracks', rec.get('tracks')) or 0),
+            'updated_at': as_utc(finished) or rec.get('updated_at')}
+
+
 def after_scrape(result, ingest_job, projections, waiting: int, backlog: int) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     """Ingest and projection steps for a succeeded scrape."""
     if ingest_job is not None and ingest_job['status'] != 'succeeded':
@@ -272,7 +283,9 @@ async def job_stages(job_id: str):
             if not projections and not result.get('found_nothing') and (ingest_job is None or ingest_job['status'] == 'succeeded'):
                 waiting = await not_ingested(conn, job)
                 backlog = sum([await outbox.backlog(conn, c) for c in (projection.CONSUMER, graph_projection.CONSUMER)])
-    progress, why = await fetch_scrape_progress(str(uid), job['started_at']) if status == 'running' else (None, None)
+    progress, why = await fetch_scrape_progress(str(uid), job['started_at']) if status in ('running', 'succeeded') else (None, None)
+    if status == 'succeeded':
+        progress, why = final_counts(result, progress, job['finished_at']), None
 
     if status == 'queued':
         queued = step('queued', 'running', job['created_at'], detail=(

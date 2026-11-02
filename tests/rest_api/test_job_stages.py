@@ -153,6 +153,19 @@ def test_succeeded_with_ingest_and_projection(stages):
     assert response.json()['last_progress_at'] == '2026-11-01T10:02:50Z'
 
 
+def test_succeeded_scrape_keeps_its_final_counts_and_real_duration(stages):
+    """JT1: the done scrape step keeps the scraper's counts, not progress null (2 Nov local test)."""
+    record = {'pages': 41, 'playlists': 1, 'tracks': 9, 'updated_at': at(55)}
+    response = stages([scrape(**SUCCEEDED), ingest(started=70, finished=140)], progress=(record, None))
+    step = by_key(response)['scrape']
+    assert step['progress'] == {'pages': 41, 'playlists': 2, 'tracks': 10, 'updated_at': '2026-11-01T10:01:00Z'}
+    assert (step['started_at'], step['finished_at']) == ('2026-11-01T10:00:05Z', '2026-11-01T10:01:00Z')
+    gone = by_key(stages([scrape(**SUCCEEDED), ingest(started=70, finished=140)]))['scrape']
+    assert gone['progress'] == {'pages': None, 'playlists': 2, 'tracks': 10, 'updated_at': '2026-11-01T10:01:00Z'}
+    old = by_key(stages([scrape(**dict(SUCCEEDED, result={}))]))['scrape']
+    assert old['progress'] is None and old['detail'] is None
+
+
 def test_follow_ups_still_in_flight(stages):
     assert states(stages([scrape(**SUCCEEDED), ingest(status='queued')]))[2:] == [('ingest', 'running'), ('projection', 'waiting')]
     response = stages([scrape(**SUCCEEDED), ingest(started=70, finished=140), proj('projection_consume'),
@@ -230,3 +243,4 @@ async def test_fetch_scrape_progress_reads_the_scraper(monkeypatch):
     assert await jobs_router.fetch_scrape_progress(str(SCRAPE_ID), at(5)) == (None, jobs_router.NO_RECORD)
     answers.update(error=True)
     assert await jobs_router.fetch_scrape_progress(str(SCRAPE_ID), at(5)) == (None, jobs_router.NO_ANSWER)
+
