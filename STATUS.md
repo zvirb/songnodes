@@ -2456,3 +2456,34 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Not changed: rows already dead-lettered before this change (the two 29 Oct 1001Tracklists runs) keep their old `finished_at`, so they still show about 87 hours until corrected by hand.
 - E2E: not run per PR (Markus, 2 Nov 2026); one combined host run of `scripts/e2e-docker.sh` covers every PR built on 2 Nov 2026 once they merge.
 <!-- SLOT:JT1 END -->
+  
+<!-- SLOT:TGT2 BEGIN -->
+### TGT2: Target scrape bookkeeping, worker scrape settings and duplicate targets
+- Start: 2026-11-02 (branch tgt2-target-scrape-writeback off origin/main 338fa9b0). Issues from the 2 Nov local test (PR #518): target `last_searched`/`playlists_found` not updated, scrape-target env vars not passed to the worker, duplicate and truncated targets.
+- End: 2026-11-02.
+- Found: the write-back works since SC2B (#482). On the laptop DB the searched Anders Hellberg row (97e6599e) has `last_searched` 1 Nov 23:06 UTC and `playlists_found` 4; the null row in the report is its duplicate (the report's `ORDER BY last_searched DESC` puts nulls first). 75 artist/title pairs are duplicated, all from the frontend: `useUnifiedTracks.setTrackAsTarget` (via `syncTargetTrack`) and `DiscoveryBanner`/`TargetActionButton` each POST the same track. The loader does not duplicate. "atch22, Kobayashi Maru" is already truncated in the library export (`a` field), not in code. 7 targets searched before SC2B still show 0 playlists (manual backfill SQL in the PR).
+- Changed: `compose.dev.yaml` worker passes the five scrape-target settings (code defaults); docs mention them by `.env`. POST /api/v1/target-tracks returns the existing target (200) for the same normalised artist and title, under an advisory lock; PUT gives 409 on a clash. Migration 280: partial unique index for live rows, created only once no live duplicates remain (NOTICE otherwise); applied by `start-dev.sh`.
+- Checks run: `common/tests` 196 passed; new `tests/rest_api/test_target_tracks_create.py` 5 passed with the search-jobs tests; `docker compose config` (and an override renders); migration 280 and the PR's cleanup SQL run on the laptop DB inside a rolled-back transaction (NOTICE with 75 pairs, cleanup archives 75, index created, duplicate insert rejected, archived copy allowed; nothing kept); `bash -n scripts/start-dev.sh`; scope guard.
+- Checks not run: worker not recreated (the shared stack's `.env` is in the main checkout; the running worker already shows the write-back); E2E (no frontend change).
+- Next: owner archives the duplicates (SQL in the PR) and re-applies 280; frontend follow-up to post once per track.
+<!-- SLOT:TGT2 END -->
+  
+<!-- SLOT:ESC1 BEGIN -->
+### ESC1: The API client stops HTML-escaping data
+- Start: 2026-11-02 (branch esc1-api-no-entity-escaping off origin/main 9096637, rebased on 13bc744, then on 338fa9b). Brief: plan/agents/ESC1_api_no_entity_escaping.md (added in this PR).
+- End: 2026-11-02.
+- Changed: `sanitizeInput` (`frontend/src/lib/utils.ts`) no longer turns & < > " ' into entities; it still removes control characters and turns javascript:, vbscript: and non-image data: values into about:blank. `frontend/src/services/api.ts` still runs every response through `sanitizeObject` (so a script URL never reaches an href) but sends GET params and POST/PUT bodies as typed. /pipeline now shows `Itch-E & Scratch-E` and `Lab's Cloud`; a POST of those names sends and stores them unchanged. New `frontend/src/services/api.test.ts` (7 tests).
+- Checks run on 338fa9b: tsc, oxlint (exit 0), vitest run src (66 files, 567 tests), vite build, `sync-design-system.sh --check` (1.9.1), `check_design_system.py --check`, scope guard. E2E `scripts/e2e-docker.sh` ran on the 13bc744 base (not re-run after the second rebase, which brought only graph and design-system 1.9 changes), on a frontend rebuilt from this branch: 413 passed, 20 failed. 16 of the 20 fail the same way on a frontend built from main 13bc744 (axe on /library incl. primary-button contrast, DR-050 text inset at 390px on /harmony and /sources/import, drawer-row teardown timeout, library desktop visual snapshots). The other 4 (firefox axe on /sources/targets and /pipeline, light and dark) were 30 s timeouts in the full run and pass when re-run alone on this branch (33-44 s each).
+- Next: separate packages for the 16 failures that are on main (they are not caused by this change).
+<!-- SLOT:ESC1 END -->
+  
+<!-- SLOT:GV2 BEGIN -->
+### GV2: Graph View choice on /graph
+- Start: 2026-11-02 (branch gv2-graph-view-control off origin/main 884a3400). Brief: plan/agents/GV2_graph_view_control.md. Decision: Markus, 2 Nov 2026 (DR-057, GV1 #531).
+- End: 2026-11-02.
+- Changed: new `lib/graphView.ts` (view helpers, tokens, zoom range, minimum drawn radius, label rule, per-device memory) with 10 tests; `GraphControlsDock.tsx` gains the View segmented control, "N of M nodes" with an InfoTip when cut, and a zoom-out limit below 25% (4 new tests); `GraphVisualization.tsx` seats and draws only the view's tracks, fits with the view's floor, keeps unseated tracks out of the hit-test index.
+- Browser check (vite preview, synthetic graphs, not live data), /graph?mode=plan 1440×900: binary tree of 1,000 → Neighbourhood 19 tracks at 140%; Whole library 1,000 at 16%, zoom out disabled at the fit, Zoom in "Zoom 20%", reload keeps Whole library; hub of 1,000 → "200 of 1,000 nodes · 199 links" with the InfoTip, all 200 in view at 60%; no console errors.
+- Checks run: tsc, oxlint (exit 0), vitest 66 files / 573 tests, vite build, `sync-design-system.sh --check` (1.9.1 in sync after rebasing on GV4), `check_design_system.py --check`, scope guard.
+- E2E: not run per PR (Markus, 2 Nov 2026); one combined host run of `scripts/e2e-docker.sh` covers every PR built on 2 Nov 2026 once they merge.
+- Next: load the neighbourhood from the API (GV3) instead of the whole graph; labels for all only above zoom 1.5 (DR-037); Colour by and minimap.
+<!-- SLOT:GV2 END -->

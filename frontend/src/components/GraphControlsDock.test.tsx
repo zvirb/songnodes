@@ -69,4 +69,32 @@ describe('GraphControlsDock', () => {
     fireEvent.click(button);
     expect(outer).not.toHaveBeenCalled();
   });
+
+  it('switches the view with a named segmented control', () => {
+    const onViewChange = vi.fn<(v: 'neighbourhood' | 'library') => void>();
+    render(<GraphControlsDock {...props({ view: 'neighbourhood', onViewChange })} />);
+    expect(screen.getByRole('group', { name: 'View' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Neighbourhood' }).getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: 'Whole library' }));
+    expect(onViewChange).toHaveBeenCalledWith('library');
+  });
+
+  it('counts a cut neighbourhood against the library, with a note saying why', () => {
+    const { container } = render(<GraphControlsDock {...props({ nodes: 200, links: 312, ofNodes: 1284 })} />);
+    expect(screen.getByText(/200 of 1,284 nodes · 312 links/)).toBeTruthy();
+    expect(container.querySelector('.sn-infotip')).toBeTruthy();
+  });
+
+  it('lets zoom out go down to a fitted limit below 25%', () => {
+    const { rerender } = render(<GraphControlsDock {...props({ zoom: 0.1, minZoom: 0.05 })} />);
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Zoom out' }).disabled).toBe(false);
+    rerender(<GraphControlsDock {...props({ zoom: 0.05, minZoom: 0.05 })} />);
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Zoom out' }).disabled).toBe(true);
+  });
+
+  it('steps zoom against the limits it is given', () => {
+    expect(zoomStep(0.05, -1, { min: 0.04, max: 4 })).toBe(0.04);
+    expect(zoomStep(0.05, 1, { min: 0.04, max: 4 })).toBeCloseTo(0.0625);
+  });
 });
+

@@ -17,6 +17,8 @@ import { Waypoints } from 'lucide-react';
 import { EmptyPanel } from './ds';
 import { seatTracks, fitTransform, cssEase, pickAnchor, edgeBandOf, edgeBandStyles, ZOOM_LIMITS } from '../lib/graphLayout';
 import { GraphControlsDock, zoomStep, zoomLabel } from './GraphControlsDock';
+import { SN } from '../lib/songnodes';
+import { readGraphView, storeGraphView, viewTracks, zoomRange, fitFloor, drawnRadius, labelsForAll, type GraphView } from '../lib/graphView';
 import type { GraphSeat } from '../styles/design-system/index';
 // import { GraphMiniMap } from './GraphMiniMap'; // DISABLED: Minimap commented out
 
@@ -558,6 +560,11 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
   const [layoutPaused, setLayoutPaused] = useState(false);
   const layoutPausedRef = useRef(false);
   const [announcement, setAnnouncement] = useState('');
+  // GraphControls → View (DR-057): the anchor's neighbourhood (default) or the whole library, remembered per device.
+  const [graphView, setGraphView] = useState<GraphView>(readGraphView);
+  const viewRef = useRef<GraphView>(graphView);
+  const [viewCounts, setViewCounts] = useState({ nodes: 0, links: 0, capped: false });
+  const [minZoom, setMinZoom] = useState<number>(ZOOM_LIMITS.min);
   const animationStateRef = useRef<AnimationState>({
     isActive: true, // Start active by default
     startTime: 0,
@@ -1104,21 +1111,27 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     const wanted = pickAnchor(
       new Set(enhancedNodesRef.current.keys()), nowPlaying, useStore.getState().viewState.selectedNodes, anchorRef.current,
     );
+    // Only the tracks the view draws are seated; the rest lose their seat and are not drawn (GraphControls → View).
+    const cut = viewTracks(viewRef.current, nodes.map(n => n.id), links, wanted);
+    const inView = (id: string) => !cut.ids || cut.ids.has(id);
+    const shown = nodes.filter(n => inView(n.id));
+    const shownLinks = links.filter(l => inView(l.source) && inView(l.target));
     const { seats, radius, anchor } = seatTracks(
-      nodes.map(n => ({ id: n.id, labelWidth: n.labelWidth, seat: n.seat })), links, nowPlaying, undefined, wanted,
+      shown.map(n => ({ id: n.id, labelWidth: n.labelWidth, seat: n.seat })), shownLinks, nowPlaying, undefined, cut.anchor ?? wanted,
     );
     const changed = anchor !== anchorRef.current;
     anchorRef.current = anchor;
+    setViewCounts({ nodes: shown.length, links: shownLinks.length, capped: cut.capped });
     nodes.forEach(n => {
       const seat = seats[n.id];
-      if (!seat) return;
+      if (!seat) { n.seat = undefined; return; }
       n.seat = seat;
       n.x = n.fx = seat.x;
       n.y = n.fy = seat.y;
       n.vx = n.vy = 0;
       n.screenRadius = radius[n.id];
     });
-    spatialIndexRef.current.rebuild(nodes);
+    spatialIndexRef.current.rebuild(nodes.filter(n => n.seat));
     frameRef.current++;
     return changed;
   }, []);
@@ -1937,8 +1950,9 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
   const updateNodeVisuals = useCallback((node: EnhancedGraphNode, lodLevel: number) => {
     if (!node.pixiNode || !node.pixiCircle || !node.pixiLabel) return;
 
-    // Use fixed radius - let stage scaling handle zoom
-    const screenRadius = node.screenRadius || DEFAULT_CONFIG.graph.defaultRadius;
+    // Radius in graph units (the stage scales it); below 25% at least 1.5px on screen (GraphControls → View).
+    const zoomK = currentTransformRef.current?.k ?? 1;
+    const screenRadius = drawnRadius(node.screenRadius || DEFAULT_CONFIG.graph.defaultRadius, zoomK);
 
     // NOTE: Hit radius is set ONCE during node creation and NEVER updated here
     // Updating hit radius during rendering causes dynamic hit box growth
@@ -1980,7 +1994,8 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
 
     // Show multi-line labels for better readability
     // FIX: Show labels for LOD 0-2 (only hide when culled at LOD 3)
-    const shouldShowLabel = viewState.showLabels && lodLevel < 3; // LOD 0-2 show labels
+    // Below 25% only hovered, selected and now playing tracks keep their label (GraphControls → View).
+    const shouldShowLabel = viewState.showLabels && lodLevel < 3 && (labelsForAll(zoomK) || !!ring);
 
     // Use the new multi-line label container
     const labelContainer = (node as any).pixiLabelContainer as PIXI.Container | undefined;
@@ -2278,11 +2293,16 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
   const fitToContent = useCallback(() => {
     if (!zoomBehaviorRef.current || !containerRef.current) return;
     const points = Array.from(enhancedNodesRef.current.values())
-      .filter(n => typeof n.x === 'number' && typeof n.y === 'number')
+      .filter(n => n.seat && typeof n.x === 'number' && typeof n.y === 'number')
       .map(n => ({ x: n.x, y: n.y, r: n.screenRadius }));
     const root = getComputedStyle(document.documentElement);
-    const fit = fitTransform(points, viewportRef.current, parseFloat(root.getPropertyValue('--space-8')) || 0);
+    const fit = fitTransform(points, viewportRef.current, parseFloat(root.getPropertyValue('--space-8')) || 0,
+      { min: fitFloor(viewRef.current), max: ZOOM_LIMITS.max });
     if (!fit) return;
+    // Whole library: a fit below 25% becomes the zoom-out limit; Neighbourhood keeps 25–400%.
+    const range = zoomRange(viewRef.current, fit.k);
+    zoomBehaviorRef.current.scaleExtent([range.min, range.max]);
+    setMinZoom(range.min);
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     const duration = reduced ? 0 : parseFloat(root.getPropertyValue('--duration-slow')) || 0;
     select(containerRef.current).transition()
@@ -2306,10 +2326,22 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
   const zoomBy = useCallback((direction: 1 | -1) => {
     // The stage is already centred, so scaling the offset keeps the canvas centre still.
     const t = currentTransformRef.current || zoomIdentity;
-    const k = zoomStep(t.k, direction);
+    const [min, max] = zoomBehaviorRef.current?.scaleExtent() ?? [ZOOM_LIMITS.min, ZOOM_LIMITS.max];
+    const k = zoomStep(t.k, direction, { min, max });
     moveCamera(zoomIdentity.translate(t.x * (k / t.k), t.y * (k / t.k)).scale(k));
     setAnnouncement(`Zoom ${zoomLabel(k)}`);
   }, [moveCamera]);
+
+  const changeView = useCallback((next: GraphView) => {
+    if (next === viewRef.current) return;
+    viewRef.current = next;
+    setGraphView(next);
+    storeGraphView(next);
+    applySeats(nowPlayingRef.current);
+    fitToContent();
+    const shown = Array.from(enhancedNodesRef.current.values()).filter(n => n.seat).length;
+    setAnnouncement(`View: ${next === 'library' ? 'whole library' : 'neighbourhood'}, ${SN.format.count(shown)} nodes`);
+  }, [applySeats, fitToContent]);
 
   const resetView = useCallback(() => {
     moveCamera(zoomIdentity);
@@ -2796,7 +2828,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
     });
 
     // Rebuild spatial index
-    spatialIndexRef.current.rebuild(Array.from(nodeMap.values()));
+    spatialIndexRef.current.rebuild(Array.from(nodeMap.values()).filter(n => n.seat)); // unseated tracks are not drawn
 
     frameRef.current++;
   }, [createEnhancedNode, createPixiNode, createEnhancedEdge, createPixiEdge, generateDataHash, startAnimation, applySeats, fitToContent]);
@@ -3324,9 +3356,13 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ onTrackS
       {isInitialized && (
         <GraphControlsDock
           zoom={viewState.zoom || 1}
+          minZoom={minZoom}
           paused={layoutPaused}
-          nodes={graphData.nodes.length}
-          links={graphData.edges.length}
+          nodes={viewCounts.nodes}
+          links={viewCounts.links}
+          ofNodes={viewCounts.capped ? graphData.nodes.length : undefined}
+          view={graphView}
+          onViewChange={changeView}
           announcement={announcement}
           onZoomIn={() => zoomBy(1)}
           onZoomOut={() => zoomBy(-1)}

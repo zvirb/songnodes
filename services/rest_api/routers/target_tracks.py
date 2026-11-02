@@ -3,7 +3,7 @@ from typing import List, Literal, Optional
 from uuid import UUID
 
 import time
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Response
 from pydantic import BaseModel, Field, field_validator
 
 router = APIRouter(prefix="/api/v1/target-tracks", tags=["target-tracks"])
@@ -93,14 +93,36 @@ async def list_targets():
     return [with_search_jobs(row) for row in rows]
 
 
+# One target per artist and title, case and outer spaces ignored (the key of load-library-targets.sql and of
+# migration 280's unique index). The advisory lock serialises adds of the same pair: the library's target button
+# sends two requests for one track at the same moment, and both used to insert.
+TARGET_KEY_LOCK_SQL = "SELECT pg_advisory_xact_lock(hashtext('target_tracks'), hashtext(lower($1) || chr(31) || lower($2)))"
+EXISTING_TARGET_SQL = """
+    SELECT * FROM target_tracks
+    WHERE lower(btrim(artist)) = lower($1) AND lower(btrim(title)) = lower($2)
+    ORDER BY archived, added_at, track_id LIMIT 1
+"""
+
+
+def is_unique_violation(error: Exception) -> bool:
+    return type(error).__name__ == 'UniqueViolationError'
+
+
 @router.post('', status_code=201)
-async def create_target(payload: TargetTrackCreate):
+async def create_target(payload: TargetTrackCreate, response: Response):
+    """Add a target, or return the existing one for the same artist and title with 200 (nothing changes)."""
     async with get_pool().acquire() as conn:
-        row = await conn.fetchrow("""
-            INSERT INTO target_tracks (title, artist, priority, genres, search_terms, is_active)
-            VALUES ($1, $2, $3, $4, $5, $6) RETURNING *
-        """, payload.title, payload.artist, payload.priority, payload.genres,
-            payload.search_terms, payload.is_active)
+        async with conn.transaction():
+            await conn.execute(TARGET_KEY_LOCK_SQL, payload.artist, payload.title)
+            existing = await conn.fetchrow(EXISTING_TARGET_SQL, payload.artist, payload.title)
+            if existing is not None:
+                response.status_code = 200
+                return dict(existing)
+            row = await conn.fetchrow("""
+                INSERT INTO target_tracks (title, artist, priority, genres, search_terms, is_active)
+                VALUES ($1, $2, $3, $4, $5, $6) RETURNING *
+            """, payload.title, payload.artist, payload.priority, payload.genres,
+                payload.search_terms, payload.is_active)
     return dict(row)
 
 
@@ -114,10 +136,15 @@ async def update_target(track_id: UUID, payload: TargetTrackUpdate):
     # Names come exclusively from the model; values remain bound parameters.
     assignments = ', '.join(f'{name} = ${i}' for i, name in enumerate(updates, start=2))
     async with get_pool().acquire() as conn:
-        row = await conn.fetchrow(f"""
-            UPDATE target_tracks SET {assignments}, updated_at = NOW()
-            WHERE track_id = $1 RETURNING *
-        """, track_id, *updates.values())
+        try:
+            row = await conn.fetchrow(f"""
+                UPDATE target_tracks SET {assignments}, updated_at = NOW()
+                WHERE track_id = $1 RETURNING *
+            """, track_id, *updates.values())
+        except Exception as error:
+            if is_unique_violation(error):  # renamed or unarchived onto another live target (migration 280)
+                raise HTTPException(status_code=409, detail="Another target has this artist and title") from error
+            raise
     if row is None:
         raise HTTPException(status_code=404, detail="Target track not found")
     return dict(row)
