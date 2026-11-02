@@ -172,33 +172,56 @@
     if (!order.length) return { pos: {}, anchor: null, rings: 0 };
     var anchor = opts.anchor != null && byId[opts.anchor] ? opts.anchor : order.slice().sort(function (a, b) { return adj[b].length - adj[a].length || String(a).localeCompare(String(b)); })[0];
     var pos = {}, grid = {}, CELL = 64, best = {}, bestPar = {}, placedN = 0, maxRing = 0, seq = 0;
+    /* 1.9.1: the next track and the next seat come from binary heaps with the same ordering the scan and the sort used,
+     *  so the seats are identical and the layout takes n log n instead of n². */
+    var rank = {}; order.forEach(function (id, i) { rank[id] = i; });
+    function heap(before) {
+      var h = [];
+      return {
+        size: function () { return h.length; },
+        push: function (e) { h.push(e); var i = h.length - 1; while (i > 0) { var p = (i - 1) >> 1; if (!before(h[i], h[p])) break; var t = h[i]; h[i] = h[p]; h[p] = t; i = p; } },
+        pop: function () { var top = h[0], last = h.pop(); if (h.length) { h[0] = last; var i = 0; for (;;) { var l = 2 * i + 1, r = l + 1, m = i; if (l < h.length && before(h[l], h[m])) m = l; if (r < h.length && before(h[r], h[m])) m = r; if (m === i) break; var t = h[i]; h[i] = h[m]; h[m] = t; i = m; } } return top; }
+      };
+    }
+    /* Next track: strongest link to a seated track, then more links, then first in node order (as the scan chose). */
+    var next = heap(function (a, b) { return a[0] !== b[0] ? a[0] > b[0] : a[1] !== b[1] ? a[1] > b[1] : a[2] < b[2]; });
+    /* With no link to anything seated: the most links, then first in node order. */
+    var byLinks = order.slice().sort(function (a, b) { return adj[b].length - adj[a].length || rank[a] - rank[b]; }), lp = 0;
     function boxOf(id, x, y) { var b = byId[id].box || [-12, -12, 12, 12]; return [x + b[0], y + b[1], x + b[2], y + b[3]]; }
     function cells(bx, f) { for (var cx = Math.floor(bx[0] / CELL); cx <= Math.floor(bx[2] / CELL); cx++) for (var cy = Math.floor(bx[1] / CELL); cy <= Math.floor(bx[3] / CELL); cy++) f(cx + "," + cy); }
     function free(bx) { var ok = true; cells(bx, function (k) { if (!ok || !grid[k]) return; for (var i = 0; i < grid[k].length; i++) { var o = grid[k][i]; if (bx[0] < o[2] && o[0] < bx[2] && bx[1] < o[3] && o[1] < bx[3]) { ok = false; return; } } }); return ok; }
     function put(id, x, y, ring) {
       pos[id] = { x: x, y: y, ring: ring }; placedN++; maxRing = Math.max(maxRing, ring);
       var bx = boxOf(id, x, y); cells(bx, function (k) { (grid[k] = grid[k] || []).push(bx); });
-      adj[id].forEach(function (e) { var j = e[0]; if (!pos[j] && (best[j] == null || e[1] > best[j])) { best[j] = e[1]; bestPar[j] = id; } });
+      adj[id].forEach(function (e) { var j = e[0]; if (!pos[j] && (best[j] == null || e[1] > best[j])) { best[j] = e[1]; bestPar[j] = id; next.push([e[1], adj[j].length, rank[j], j]); } });
     }
     function angDiff(a, b) { var d = Math.abs(a - b) % (2 * Math.PI); return d > Math.PI ? 2 * Math.PI - d : d; }
+    /* Seat k of ring rg (count seats): its angle and position, computed when the walk reaches it, never stored. */
+    function seatCount(rg) { return Math.max(8, Math.floor(2 * Math.PI * (FIRST + (rg - 1) * STEP) / GAP)); }
+    function seatAngle(count, k) { return 2 * Math.PI * k / count - Math.PI / 2; }
     put(anchor, 0, 0, 0);
     var prev = opts.prev || {};
     if (prev[anchor] && prev[anchor].ring === 0) order.forEach(function (id) { var p = prev[id]; if (!pos[id] && p && p.ring > 0 && free(boxOf(id, p.x, p.y))) put(id, p.x, p.y, p.ring); });
     while (placedN < order.length) {
-      var id = null, bw = -1;
-      order.forEach(function (j) { if (!pos[j] && best[j] != null && (best[j] > bw || (best[j] === bw && adj[j].length > adj[id].length))) { bw = best[j]; id = j; } });
+      var id = null;
+      while (next.size()) { var e = next.pop(); if (!pos[e[3]] && e[0] === best[e[3]]) { id = e[3]; break; } }
       var par = id == null ? null : bestPar[id];
-      if (id == null) { var dg = -1; order.forEach(function (j) { if (!pos[j] && adj[j].length > dg) { dg = adj[j].length; id = j; } }); }
+      if (id == null) { while (pos[byLinks[lp]]) lp++; id = byLinks[lp]; }
       var minRing = par == null ? maxRing + 1 : par === anchor ? 1 : pos[par].ring;
       var target = (par == null || par === anchor) ? -Math.PI / 2 + (seq++) * GOLD : Math.atan2(pos[par].y, pos[par].x / ASP);
       var done = false;
       for (var rg = Math.max(1, minRing); rg < minRing + 400 && !done; rg++) {
-        var R = FIRST + (rg - 1) * STEP, count = Math.max(8, Math.floor(2 * Math.PI * R / GAP)), seats = [];
-        for (var k = 0; k < count; k++) seats.push([2 * Math.PI * k / count - Math.PI / 2, k]);
-        seats.sort(function (a, b) { return angDiff(a[0], target) - angDiff(b[0], target) || a[1] - b[1]; });
-        for (var s = 0; s < seats.length; s++) {
-          var x = +(R * ASP * Math.cos(seats[s][0])).toFixed(1), y = +(R * Math.sin(seats[s][0])).toFixed(1);
+        /* Seats nearest the target angle first (ties: lower seat number), as the full sort ordered them: two walks out
+         *  from the nearest seat, one each way round, merged; each walk only grows in angle until they meet. */
+        var R = FIRST + (rg - 1) * STEP, count = seatCount(rg), k0 = 0, d0 = Infinity;
+        var guess = Math.round((target + Math.PI / 2) * count / (2 * Math.PI));
+        for (var g = guess - 1; g <= guess + 1; g++) { var gi = ((g % count) + count) % count, gd = angDiff(seatAngle(count, gi), target); if (gd < d0 || (gd === d0 && gi < k0)) { d0 = gd; k0 = gi; } }
+        var lo = k0, hi = (k0 + 1) % count, dl = d0, dh = angDiff(seatAngle(count, hi), target);
+        for (var taken = 0; taken < count && !done; taken++) {
+          var useLo = taken + 1 === count ? true : dl !== dh ? dl < dh : lo < hi, a = seatAngle(count, useLo ? lo : hi);
+          var x = +(R * ASP * Math.cos(a)).toFixed(1), y = +(R * Math.sin(a)).toFixed(1);
           if (free(boxOf(id, x, y))) { put(id, x, y, rg); done = true; break; }
+          if (useLo) { lo = (lo - 1 + count) % count; dl = angDiff(seatAngle(count, lo), target); } else { hi = (hi + 1) % count; dh = angDiff(seatAngle(count, hi), target); }
         }
       }
       if (!done) put(id, 0, FIRST + (maxRing + 1) * STEP, maxRing + 1);
@@ -687,7 +710,7 @@
   };
 
   window.SongNodes = {
-    version: "1.9.0", DOMAIN_MAP: DOMAIN_MAP,
+    version: "1.9.1", DOMAIN_MAP: DOMAIN_MAP,
     locale: LOCALE, timeZone: TZ,
     modules: MODULES, module: function (k) { for (var i = 0; i < MODULES.length; i++) if (MODULES[i].key === k) return MODULES[i]; return null; },
     icons: ICONS, icon: icon, iconNames: Object.keys(ICONS),

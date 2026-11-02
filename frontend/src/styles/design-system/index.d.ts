@@ -2132,7 +2132,7 @@ export interface SongNodesHelpers {
   edgeVisibility<L extends { source: string | number; target: string | number; weight: number }>(links: L[], opts?: { cuts?: [number, number, number]; anchor?: string | number; focus?: Array<string | number> }): Array<{ link: L; band: GraphEdgeBand; show: boolean; focus: boolean }>;
   /** Box a track keeps clear around its seat: node + state ring, its label at zoom 1.5 (at 100% for now playing) and the Now tag. [left, top, right, bottom] from the centre. */
   seatBox(radius: number, labelWidth?: number, nowPlaying?: boolean): [number, number, number, number];
-  /** Ring layout (DR-034). Same input, same output. */
+  /** Ring layout (DR-034). Same input, same output. Heap-based since 1.9.1 (8,000 tracks in about 0.25 s). */
   ringLayout(nodes: Array<{ id: string | number; box?: [number, number, number, number] }>, links: Array<{ source: string | number; target: string | number; weight: number }>, opts?: { anchor?: string | number; first?: number; step?: number; aspect?: number; seatGap?: number; prev?: Record<string, GraphSeat> }): { pos: Record<string, GraphSeat>; anchor: string | number; rings: number };
   /** Neighbourhood view (1.9.0, DR-057): the anchor and the tracks reached in at most `steps` links (default graph-hood-steps, 3), at most `max` (graph-hood-max, 200), strongest link first. n log n. */
   neighbourhood(nodes: Array<{ id: string | number }>, links: Array<{ source: string | number; target: string | number; weight: number }>, opts?: { anchor?: string | number; steps?: number; max?: number }): { ids: Array<string | number>; hops: Record<string, number>; anchor: string | number | null; total: number; capped: boolean };

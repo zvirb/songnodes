@@ -20,6 +20,9 @@ The design system has one version number, [semver](https://semver.org) `MAJOR.MI
 
 Newest first. Each entry: version, date (Melbourne), one line per change, prefixed Added / Changed / Deprecated / Removed / Fixed, with the decision record if any.
 
+**1.9.1 — 2 Nov 2026: the ring layout is fast enough for a growing library**
+- Fixed `SongNodes.ringLayout`: the next track comes from a binary heap instead of a scan of every track, and each ring's seats are walked outward from the one nearest the target angle instead of all being built and sorted. Same seats for the same input (checked against 1.9.0 on 340 random graphs, with kept seats, set anchors, unlinked tracks and repeated links). 4,000 tracks: 1,012 → 86 ms; 8,000: 3,784 → 242 ms; 1,500 unlinked tracks: 1,429 → 28 ms (node 22). No token, class or signature changed, so a patch.
+
 **1.9.0 — 2 Nov 2026: the graph View choice, neighbourhood or whole library (Markus, 2 Nov 2026)**
 - Added a View choice to `GraphControls`: **Neighbourhood** (default) draws the anchor and the tracks reached from it in at most `graph-hood-steps` (3) links, at most `graph-hood-max` (200), strongest link first; **Whole library** draws every track and its Fit may go below 25%, the fitted zoom then being the zoom-out limit. Remembered per device; announced in the live line; the count reads "200 of 1,284 nodes" when the neighbourhood is cut, with an InfoTip saying why. Below 25% a node is drawn at least 1.5px in radius on screen. DR-057.
 - Added tokens `graph-hood-steps`, `graph-hood-max`; helper `SongNodes.neighbourhood(nodes, links, {anchor, steps, max})` (binary heap, n log n); `GraphControlsProps.view`, `onViewChange`. GraphStyles Layout gains a View row. Added a token, a helper and props, so a minor.
