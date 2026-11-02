@@ -1,4 +1,4 @@
-<!-- @dsCard group="Graph" height=498 subtitle="Canvas overlay: zoom, fit, reset, pause layout, link layers, Colour by (Neutral default, Energy, Key, Genre) with a legend per mode, minimap and node count; dock bottom-right, bottom bar on phones" -->
+<!-- @dsCard group="Graph" height=498 subtitle="Canvas overlay: zoom, fit, reset, pause layout, link layers, View (Neighbourhood default, Whole library), Colour by (Neutral default, Energy, Key, Genre) with a legend per mode, minimap and node count; dock bottom-right, bottom bar on phones" -->
 <!doctype html>
 <html>
 <head><meta charset="utf-8"><title>GraphControls — preview</title></head>
@@ -10,6 +10,8 @@
     <div class="sn-graph-controls__count" id="count">1,284 nodes · 5,210 links</div>
     <div class="sn-graph-controls__status" id="status" hidden><span class="sn-pill" data-status="idle">Layout paused</span></div>
     <div class="sn-graph-controls__colour" role="group" aria-labelledby="colourLbl">
+      <span class="sn-graph-controls__colour-label" id="viewLbl">View</span>
+      <div class="sn-seg" role="group" aria-labelledby="viewLbl" id="viewSeg"><button type="button" data-view="neighbourhood" aria-pressed="true">Neighbourhood</button><button type="button" data-view="library" aria-pressed="false">Whole library</button></div>
       <span class="sn-graph-controls__colour-label" id="colourLbl">Colour by</span>
       <div class="sn-seg" role="group" aria-labelledby="colourLbl" id="colourSeg"><button type="button" data-mode="neutral" aria-pressed="true">Neutral</button><button type="button" data-mode="energy" aria-pressed="false">Energy</button><button type="button" data-mode="key" aria-pressed="false">Key</button><button type="button" data-mode="genre" aria-pressed="false">Genre</button></div>
       <ul class="sn-graph-controls__legend" id="legend" aria-label="Legend"></ul>
@@ -203,6 +205,10 @@ var K = (function () {
     $("legend").innerHTML = h;
   }
   drawNodes(); drawLegend();
+  /* View (1.9.0): the anchor's neighbourhood (default) or the whole library; the preview only switches the control. */
+  var vseg = $("viewSeg");
+  vseg.addEventListener("click", function (ev) { var b = ev.target.closest("button"); if (!b) return;
+    vseg.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", x === b); }); $("live").textContent = "View: " + b.textContent.toLowerCase(); });
   var cseg = $("colourSeg");
   cseg.addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; mode = b.dataset.mode;
     cseg.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", x === b); }); drawNodes(); drawLegend(); $("live").textContent = "Colour by " + b.textContent.toLowerCase(); });

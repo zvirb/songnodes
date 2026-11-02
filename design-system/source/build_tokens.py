@@ -274,7 +274,9 @@ GRAPH = [("graph-edge-w-1","1px","Link width, Weak band (below the first fitted 
          ("graph-ring-first","58px","Ring layout: radius of the first ring around the anchor track (vertical radius; the horizontal radius is this × graph-ring-aspect)."),
          ("graph-ring-step","40px","Ring layout: distance between rings."),("graph-ring-aspect","1.7","Ring layout: horizontal stretch of every ring, so rows of left-to-right labels fit."),
          ("graph-seat-gap","30px","Ring layout: arc length between neighbouring seats on a ring (at least 8 seats per ring)."),
-         ("graph-label-zoom","1.5","Zoom at which every label shows; each seat keeps clear the node plus its label as drawn at this zoom.")]
+         ("graph-label-zoom","1.5","Zoom at which every label shows; each seat keeps clear the node plus its label as drawn at this zoom."),
+         ("graph-hood-steps","3","Neighbourhood view: tracks at most this many links from the anchor are shown (GraphControls, View)."),
+         ("graph-hood-max","200","Neighbourhood view: at most this many tracks, strongest links first, so Fit holds them at 25% or more in the narrowest graph canvas.")]
 
 def fam(lst, note=None):
     d = {"tokens": [{"name": n, "value": v, "usage": u} for n, v, u in lst]}
@@ -312,7 +314,7 @@ TYPE = {
     {"name": "data-s", "fontSize": "0.6875rem", "lineHeight": 1.35, "fontWeight": 400, "sample": "trk_01HF9Z", "usage": "External IDs (ISRC, Spotify ID), chart tick labels."}]}]}
 
 tok = {
- "name": "SongNodes", "version": "1.8.0",
+ "name": "SongNodes", "version": "1.9.0",
  "meta": {"source": "Decisions page 24 Oct 2026 + songnodes repo audit + Naarm Set Builder", "generator": "source/build_tokens.py"},
  "color": {"themes": [{"id": t, "name": n} for t, n in THEMES], "tokens": tokens},
  "type": TYPE,
