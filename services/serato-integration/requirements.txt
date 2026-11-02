@@ -3,8 +3,8 @@ mutagen==1.48.1
 asyncpg==0.32.0
 redis==8.1.0
 structlog==26.1.0
-pydantic==2.14.1
-pydantic-settings==2.16.1
+pydantic==2.14.2
+pydantic-settings==2.16.2
 fastapi==0.162.0
 uvicorn==0.54.0
 aiofiles==25.1.0
