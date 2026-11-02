@@ -85,7 +85,10 @@ The dev stack sets `ENRICHMENT_PROVIDERS=none` and `MB_LOCAL_ENABLED=false`, so 
 external provider by default. To try one, export its credentials and the allow-list before
 `start-dev.sh`, for example `TIDAL_CLIENT_ID=… TIDAL_CLIENT_SECRET=… ENRICHMENT_PROVIDERS=tidal,deezer`.
 Credentials are read from the host environment or an untracked `.env`; none are
-committed. Live provider contract checks are separate and opt-in:
+committed. The same `.env` tunes scheduled target scrapes: `SCRAPE_TARGETS_ENABLED` (`true`),
+`SCRAPE_TARGETS_INTERVAL_SECONDS` (`3600`), `SCRAPE_TARGETS_PER_RUN` (`2`), `SCRAPE_TARGET_SOURCES`
+(`mixesdb,1001tracklists`) and `TARGET_RESEARCH_DAYS` (`7`, how long before a target is searched again); the
+`worker` service in `compose.dev.yaml` passes them through. Live provider contract checks are separate and opt-in:
 
 ```bash
 RUN_LIVE_PROVIDER_TESTS=1 python -m unittest discover -s tests/live -v

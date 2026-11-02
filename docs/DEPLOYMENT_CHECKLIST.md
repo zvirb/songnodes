@@ -12,6 +12,9 @@ code-complete and tested with synthetic data; nothing has run against real crede
       `TIDAL_CLIENT_ID`, `TIDAL_CLIENT_SECRET`, `LASTFM_API_KEY`, `DISCOGS_API_TOKEN`
       (`SPOTIFY_*` only if you use them). Values starting `CHANGE_ME` count as "not configured".
 - [ ] Set `ENRICHMENT_PROVIDERS` (comma list, e.g. `tidal,lastfm,discogs`). The default is `none`, so nothing calls out until you opt in.
+- [ ] Optional: tune scheduled target scrapes in the same `.env` (the `worker` service passes them through; defaults
+      shown): `SCRAPE_TARGETS_ENABLED=true`, `SCRAPE_TARGETS_INTERVAL_SECONDS=3600`, `SCRAPE_TARGETS_PER_RUN=2`,
+      `SCRAPE_TARGET_SOURCES=mixesdb,1001tracklists`, `TARGET_RESEARCH_DAYS=7`. Recreate the worker after a change.
 - [ ] Run the **live provider checks** (command in `docs/DATA_LAYER.md`) and paste the `LIVE-REPORT` lines back. Remove any
       provider that does not supply what we need.
 - [ ] Leave `GETSONGBPM_ENABLED=false` unless you have read its terms and accept the backlink.
