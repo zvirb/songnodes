@@ -2335,3 +2335,13 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: the two SELECTs against a real Postgres with migration 270, and the Cypher against a live Memgraph (no Docker here).
 - Next: M6-R1 (pathfinder cost) and M6-U1 (graph API exposes the edge fields).
 <!-- SLOT:HS5 END -->
+
+<!-- SLOT:BRZ3 BEGIN -->
+### BRZ3: A re-scraped MixesDB playlist updates its one bronze row
+- Start: 2026-11-02 (branch brz3-bronze-playlist-identity off origin/main 9096637). Brief: plan/agents/BRZ3_bronze_playlist_identity.md. Job: bronze playlist rows get a non-null upsert key, so re-scrapes stop duplicating playlists (found in the 2 Nov local test, PR #518).
+- End: 2026-11-02.
+- Changed: `persistence_pipeline.py` gains `_bronze_playlist_identity`: the URL comes from `source_url`, else from `external_urls` (the MixesDB EnhancedSetlistItem, which reaches bronze before the PlaylistItem, carries only that), and without a source id the URL is the `source_playlist_id`. Before, MixesDB rows were keyed ('mixesdb', 'unknown', NULL) and Postgres never matched a NULL key. raw_json as a string (fixed by BRZ2) and the `MixesDB:Explorer/Mixes` page (fixed by SC7) needed no code change; the 47 live rows predate both. New `scrapers/tests/test_bronze_playlist_identity.py` runs the real spider on a fixture page twice through the pipeline against a fake connection with Postgres NULL-distinct semantics (one row, URL key, raw_json an object; it fails with 2 rows on the old code), and checks the Explorer page saves nothing.
+- Checks run: see the PR.
+- Checks not run: E2E and a live re-scrape into Postgres (the scraper image was not rebuilt from this branch).
+- Next: owner cleanup of the existing duplicates (old rows keep 'unknown'/NULL; the first re-scrape after this adds one keyed row per playlist). Steps are in the PR description; never reset the volume.
+<!-- SLOT:BRZ3 END -->
