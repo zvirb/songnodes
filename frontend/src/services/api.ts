@@ -1,5 +1,5 @@
 import { graphNodeFromApi } from '../utils/trackMetadata';
-import { sanitizeInput, sanitizeObject } from '../lib/utils';
+import { sanitizeObject } from '../lib/utils';
 import { API_BASE_URL } from '../lib/apiBase';
 import {
   GraphData,
@@ -173,9 +173,8 @@ class ApiClient {
 
     // Handle params manually to avoid URL constructor issues with relative baseUrl
     if (params) {
-      const safeParams = sanitizeObject(params);
       const searchParams = new URLSearchParams();
-      Object.entries(safeParams).forEach(([key, value]) => {
+      Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
           if (Array.isArray(value)) {
             value.forEach(v => searchParams.append(key, String(v)));
@@ -207,19 +206,17 @@ class ApiClient {
 
   // POST request
   async post<T>(endpoint: string, data?: any, timeoutMs?: number): Promise<ApiResponse<T>> {
-    const safeData = data ? sanitizeObject(data) : undefined;
     return this.request<T>(endpoint, {
       method: 'POST',
-      body: safeData ? JSON.stringify(safeData) : undefined,
+      body: data ? JSON.stringify(data) : undefined,
     }, timeoutMs);
   }
 
   // PUT request
   async put<T>(endpoint: string, data?: any, timeoutMs?: number): Promise<ApiResponse<T>> {
-    const safeData = data ? sanitizeObject(data) : undefined;
     return this.request<T>(endpoint, {
       method: 'PUT',
-      body: safeData ? JSON.stringify(safeData) : undefined,
+      body: data ? JSON.stringify(data) : undefined,
     }, timeoutMs);
   }
 
@@ -289,7 +286,7 @@ export const graphApi = {
         metadata: {
           totalNodes: graphData.nodes.length,
           totalEdges: graphData.edges.length,
-          filters: filters ? sanitizeObject(filters) : undefined,
+          filters,
           processingTime: 0,
         },
       };
@@ -304,7 +301,7 @@ export const graphApi = {
         metadata: {
           totalNodes: 0,
           totalEdges: 0,
-          filters: filters ? sanitizeObject(filters) : undefined,
+          filters,
           processingTime: 0,
         },
       };
@@ -370,8 +367,6 @@ export const searchApi = {
   // 2. Backend would search entire DB (~31k tracks) vs loaded nodes (~5k)
   // 3. Camera centering requires the track to exist in the loaded graph data
   async searchTracks(query: string, filters?: SearchFilters): Promise<TrackSearchResponse> {
-    const safeQuery = sanitizeInput(query);
-    const safeFilters = filters ? sanitizeObject(filters) : undefined;
 
     const response = await apiClient.post<Array<{
       track: Track;
@@ -382,8 +377,8 @@ export const searchApi = {
         indices: number[][];
       }>;
     }>>('/v1/search/tracks', {
-      query: safeQuery,
-      filters: safeFilters,
+      query,
+      filters,
     });
 
     return {
@@ -391,10 +386,10 @@ export const searchApi = {
       status: response.status,
       timestamp: Date.now(),
       metadata: {
-        query: safeQuery,
+        query,
         totalResults: response.data?.length || 0,
         searchTime: 0,
-        filters: safeFilters,
+        filters,
       },
     };
   },
@@ -592,7 +587,6 @@ const createTargetTracksClient = () => {
 
   const request = async (method: string, url: string, data?: any) => {
     const targetUrl = `${baseURL}${url}`;
-    const safeData = data ? sanitizeObject(data) : undefined;
     const safeHeaders = stripSensitiveHeaders(targetUrl, {
       'Content-Type': 'application/json',
     });
@@ -601,7 +595,7 @@ const createTargetTracksClient = () => {
       const response = await fetch(targetUrl, {
         method,
         headers: safeHeaders,
-        body: safeData ? JSON.stringify(safeData) : undefined,
+        body: data ? JSON.stringify(data) : undefined,
       });
 
       if (!response.ok) {
@@ -621,9 +615,8 @@ const createTargetTracksClient = () => {
     get: (url: string, params?: Record<string, any>) => {
       let fullUrl = url;
       if (params) {
-        const safeParams = sanitizeObject(params);
         const searchParams = new URLSearchParams();
-        Object.entries(safeParams).forEach(([key, value]) => {
+        Object.entries(params).forEach(([key, value]) => {
           if (value !== undefined && value !== null) {
             searchParams.set(key, String(value));
           }
