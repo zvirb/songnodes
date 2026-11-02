@@ -1359,7 +1359,7 @@ export interface GraphControlsProps {
   /** Node and link counts after filters. */
   nodeCount: number;
   edgeCount: number;
-  /** Zoom factor, 0.25–4. */
+  /** Zoom factor, 0.25–4; in the whole-library view Fit may go below 0.25 (1.9.0). */
   zoom: number;
   onZoomIn: () => void;
   onZoomOut: () => void;
@@ -1378,6 +1378,9 @@ export interface GraphControlsProps {
   onDimensionChange?: (d: "2d" | "3d") => void;
   /** Minimap viewport in graph units; omit to hide the minimap. */
   viewport?: { x: number; y: number; width: number; height: number };
+  /** View (1.9.0, DR-057): the anchor's neighbourhood (default) or the whole library. Remembered per device. */
+  view?: "neighbourhood" | "library";
+  onViewChange?: (view: "neighbourhood" | "library") => void;
 }
 
 export interface SparklineProps {
@@ -2131,6 +2134,8 @@ export interface SongNodesHelpers {
   seatBox(radius: number, labelWidth?: number, nowPlaying?: boolean): [number, number, number, number];
   /** Ring layout (DR-034). Same input, same output. */
   ringLayout(nodes: Array<{ id: string | number; box?: [number, number, number, number] }>, links: Array<{ source: string | number; target: string | number; weight: number }>, opts?: { anchor?: string | number; first?: number; step?: number; aspect?: number; seatGap?: number; prev?: Record<string, GraphSeat> }): { pos: Record<string, GraphSeat>; anchor: string | number; rings: number };
+  /** Neighbourhood view (1.9.0, DR-057): the anchor and the tracks reached in at most `steps` links (default graph-hood-steps, 3), at most `max` (graph-hood-max, 200), strongest link first. n log n. */
+  neighbourhood(nodes: Array<{ id: string | number }>, links: Array<{ source: string | number; target: string | number; weight: number }>, opts?: { anchor?: string | number; steps?: number; max?: number }): { ids: Array<string | number>; hops: Record<string, number>; anchor: string | number | null; total: number; capped: boolean };
   /** Tempo move a → b (harmonic-1): gap rounded half up; half/double time judged on that gap, never better than compatible (1.8.0). */
   bpmStep(a: number, b: number): { level: CompatLevel; label: string; relation: "direct" | "half_time" | "double_time" | null; gap: number | null };
   format: { date(d: Date | string): string; day(d: Date | string): string; month(d: Date | string): string; time(d: Date | string): string; dateTime(d: Date | string): string; zone(d: Date | string): string; stamp(d: Date | string): string; relative(d: Date | string, now?: Date): string; duration(seconds: number): string; span(seconds: number): string; count(n: number): string; bpm(b: number): string; percent(x: number, digits?: number): string; dateOnly(isoDate: string): string; dayLong(d: Date | string): string; range(from: string, to: string): string };

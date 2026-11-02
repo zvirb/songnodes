@@ -5,12 +5,17 @@ transaction (`pg_snapshot_xmin`), so a slow writer that commits late can never b
 Delivery is at-least-once; handlers must be idempotent. A handler and its offset advance share one
 transaction, and an event that keeps failing is dead-lettered after `max_attempts` so it cannot block
 the stream. Replays are safe because projections are keyed upserts/deletes.
+
+Transaction IDs only grow within one cluster. A dump and restore into a new cluster (the Postgres 16 -> 18 move)
+restarts them, so stored txids and consumer offsets can be ahead of every new transaction and new events would sort
+before the offsets forever. `rebase_after_restore` detects that and moves the history onto txid 0.
 """
 import json
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 from uuid import UUID
 
 CUTOFF = "pg_snapshot_xmin(pg_current_snapshot())::text::bigint"
+NEXT_TXID = "pg_snapshot_xmax(pg_current_snapshot())::text::bigint"
 
 
 async def append(conn, aggregate_type: str, aggregate_id: UUID, event_type: str,
@@ -34,11 +39,36 @@ async def pending(conn, consumer: str, limit: int = 100) -> List[Any]:
 
 
 async def advance(conn, consumer: str, event) -> None:
+    """Move the offset to the event's stored txid, which a concurrent rebase may have set to 0 since it was read."""
     await conn.execute("""
-        INSERT INTO outbox_consumers (consumer, last_txid, last_id) VALUES ($1, $2, $3)
+        INSERT INTO outbox_consumers (consumer, last_txid, last_id)
+        SELECT $1, COALESCE((SELECT txid FROM outbox_events WHERE id = $3), $2), $3
         ON CONFLICT (consumer) DO UPDATE SET last_txid = EXCLUDED.last_txid, last_id = EXCLUDED.last_id,
                                              updated_at = NOW()
     """, consumer, event['txid'], event['id'])
+
+
+async def rebase_after_restore(conn) -> int:
+    """Repair offsets after the cluster's txid counter went backwards. Returns the number of consumers rebased.
+
+    A committed offset at or above the next txid to be assigned is impossible in a healthy cluster, so it means the
+    data came from another cluster. Every consumer then moves to (0, L), where L is the highest id below its first
+    unconsumed event (event ids come from a restored sequence and keep growing), and every committed event moves to
+    txid 0, so the history sorts by id ahead of new transactions. Events above L that were already consumed are
+    delivered again, which the idempotent handlers allow.
+    """
+    if not await conn.fetchval(f'SELECT EXISTS (SELECT 1 FROM outbox_consumers WHERE last_txid >= {NEXT_TXID})'):
+        return 0
+    async with conn.transaction():
+        await conn.execute('LOCK TABLE outbox_consumers IN EXCLUSIVE MODE')
+        if not await conn.fetchval(f'SELECT EXISTS (SELECT 1 FROM outbox_consumers WHERE last_txid >= {NEXT_TXID})'):
+            return 0  # another worker rebased first
+        rebased = await conn.execute("""
+            UPDATE outbox_consumers c SET last_txid = 0, updated_at = NOW(), last_id = LEAST(c.last_id, COALESCE(
+                (SELECT min(e.id) - 1 FROM outbox_events e WHERE (e.txid, e.id) > (c.last_txid, c.last_id)), c.last_id))
+        """)
+        await conn.execute(f'UPDATE outbox_events SET txid = 0 WHERE txid > 0 AND (txid < {CUTOFF} OR txid >= {NEXT_TXID})')
+    return int(rebased.split()[-1])
 
 
 def event_dict(event) -> Dict[str, Any]:
@@ -51,6 +81,7 @@ async def consume(conn, consumer: str, handler: Callable[[Any, Any], Awaitable[N
                   max_attempts: int = 3) -> Dict[str, int]:
     """Process one batch. Returns counts: processed, dead_lettered, remaining_visible."""
     stats = {'processed': 0, 'dead_lettered': 0}
+    await rebase_after_restore(conn)
     for event in await pending(conn, consumer, batch):
         for attempt in range(1, max_attempts + 1):
             try:
