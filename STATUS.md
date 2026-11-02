@@ -2518,6 +2518,16 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks run: tsc, oxlint, vitest (581 tests after rebasing on 8b5f72a6), vite build, `sync-design-system.sh --check`, `check_design_system.py --check`; E2E in Docker against a frontend built from this branch (separate container on the dev network): routes.smoke, visual, accessibility and design-rules for /pipeline and /sources/targets, chromium and firefox: 66 passed, 4 pipeline visual diffs (intended), then baselines re-created.
 - Next: review and merge.
 <!-- SLOT:UI7 END -->
+
+<!-- SLOT:UI8 BEGIN -->
+### UI8: Phone-width headers and toolbars fit; the library build time is not the page load time
+- Start: 2026-11-02 (branch ui8-phone-width-stamps off origin/main 338fa9b0, rebased on f7417033). Source: docs/integration/LOCAL-TEST-2026-11-02.md, section 7.
+- Changed: /library header follows the PageHeader narrow rule (Import library is a secondary button, repeated in a narrow-only More actions menu); /graph toolbar wraps its actions at 760px and below; the "Nothing playing yet" empty state keeps its height above the suggestions list; `loadLibrary` no longer invents `generated` (the search API does not say when the library was built), so Home shows "Library data from –" and /library "Built –" (PageHeader `stampUnknown`), and the AppHeader shows no "Updated" age for them.
+- End: 2026-11-02. Library phone visual baselines re-created in Docker (header only).
+- Checks run (on 8b5f72a6): tsc, oxlint, vitest, vite build, `sync-design-system.sh --check`, `check_design_system.py --check`; E2E in Docker against a frontend built from this branch (own container): routes.smoke, visual, accessibility, design-rules, graph, shell, chromium and firefox: 251 passed, 13 failed. 2 were the intended library phone diffs (then re-created). The other 11 also fail on main: library axe target-size, /harmony and /sources/import inset (fixed in UI10), library desktop visual (live DiscoveryBanner data), shell drawer-row test (reported by ESC1 too).
+- Next: review and merge.
+<!-- SLOT:UI8 END -->
+
 <!-- SLOT:UI10 BEGIN -->
 ### UI10: Fix the app causes of the axe and text-inset E2E failures on main
 - Start: 2026-11-02 (branch ui10-e2e-axe-inset off origin/main f7417033, rebased on 8b5f72a6).
