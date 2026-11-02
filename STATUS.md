@@ -2315,3 +2315,10 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: E2E (no Docker daemon); the new SQL against a real Postgres (none running here).
 - Next: a package that drops `completion_percentage` (migration, PUT field, integration test line).
 <!-- SLOT:TT1 END -->
+
+<!-- SLOT:HS7 BEGIN -->
+### HS7: Edge details show stored harmonic scoring
+- Start: 2026-11-02 (branch hs7-edge-scoring-details off origin/main a5c338d). Brief: plan/agents/HS7_edge_scoring_details.md (added in this PR). Spec package M6-U1.
+- Scope: graph API edges carry the stored scoring; the edge details modal shows the stored verdicts and energy move.
+- Next: frontend modal and its test.
+<!-- SLOT:HS7 END -->

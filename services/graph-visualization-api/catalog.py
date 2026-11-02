@@ -4,11 +4,13 @@ This is the PostgreSQL baseline, not the future Memgraph or search implementatio
 All graph routes share identity, visibility, and edge-endpoint rules here.
 """
 from datetime import datetime, timezone
+from decimal import Decimal
 from uuid import UUID
 
 from fastapi import HTTPException
 from sqlalchemy import text
 from common.track_metadata import stored_metadata
+from common.datalayer.transition_scores import NAMES as SCORING_NAMES
 
 
 VISIBLE_TRACK = """trim(t.artist_name) != '' AND lower(trim(t.artist_name)) NOT IN
@@ -42,6 +44,21 @@ def node_from_row(row):
     return {'id': f'song_{row.id}', 'track_id': str(row.id),
             'artist': row.artist_name, 'title': row.track_title,
             'position': {'x': 0.0, 'y': 0.0}, 'metadata': metadata}
+
+
+def edge_scoring(row):
+    """Stored harmonic scoring of an observed edge (spec harmonic-1 section 2.7, migration 270), never recomputed.
+
+    An unscored row (or a database without migration 270) gives every field None; `scored_at` says which.
+    """
+    mapping = row._mapping
+    scoring = {}
+    for name in SCORING_NAMES:
+        value = mapping.get(name)
+        scoring[name] = float(value) if isinstance(value, Decimal) else value
+    scored_at = mapping.get('scored_at')
+    scoring['scored_at'] = scored_at.isoformat() if scored_at is not None else None
+    return scoring
 
 
 async def neighborhood_ids(session, center, depth, max_nodes):
@@ -106,7 +123,8 @@ async def edges(session, node_ids=None, limit=30000, offset=0):
     for row in result:
         source, target = f'song_{row.from_track_id}', f'song_{row.to_track_id}'
         values.append({'id': f'{source}__{target}', 'source': source, 'target': target,
-                       'weight': float(row.occurrence_count), 'type': 'sequential', 'edge_type': 'sequential'})
+                       'weight': float(row.occurrence_count), 'type': 'sequential', 'edge_type': 'sequential',
+                       'occurrence_count': row.occurrence_count, 'scoring': edge_scoring(row)})
     return {'edges': values, 'total': total, 'limit': limit, 'offset': offset}
 
 
