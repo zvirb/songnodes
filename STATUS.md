@@ -2381,7 +2381,7 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - End: 2026-11-02.
 - Changed: `catalog.py` adds `strongest_first` (the SongNodes.neighbourhood rule), `most_linked_track`, `links_within` (one level at a time) and `neighbourhood`; `/api/graph/data` takes `view=neighbourhood`, `center`, `steps` (3), `max` (200); the library view is unchanged. New `tests/unit/test_neighbourhood.py` (7 tests).
 - Real PostgreSQL 16 check (local, synthetic 5,000 tracks in 23 chains, one "Unknown Artist" track; not live data): auto anchor found, 71 ms; centre with an Unknown Artist neighbour excludes it; cap 2 gives `capped: true`; steps 6 follows the chain; an Unknown Artist centre is a 404; library view still returns 4,999 tracks.
-- Checks run: graph API unit tests 12 passed (Python 3.13 locally; CI uses 3.15), scope guard.
+- Checks run: graph API unit tests 16 passed after rebase (Python 3.13 locally; CI uses 3.15), scope guard.
 - Checks not run: E2E (no Docker here); root `pytest --collect-only` (needs the scraper requirements).
 - Next: GV2 frontend View control reads this endpoint (after GR1 #509, GR2 #513, GV1 #531).
 <!-- SLOT:GV3 END -->
