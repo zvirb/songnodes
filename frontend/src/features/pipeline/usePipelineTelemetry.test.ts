@@ -70,6 +70,8 @@ describe('usePipelineTelemetry mappers', () => {
     expect(byId.bronze.state).toBe('warning');
     expect(byId.bronze.detail).toContain('found nothing');
     expect(byId.silver.state).toBe('done');
+    // updated_at is when the consumer last handled an event, not its last 15 s poll.
+    expect(byId.silver.detail).toMatch(/^Up to date, last change handled /);
     expect(byId.gold.state).toBe('failed');
     expect(byId.gold.detail).toContain('Stalled');
     expect(byId.serving.state).toBe('warning');
