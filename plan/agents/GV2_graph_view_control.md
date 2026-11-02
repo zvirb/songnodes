@@ -1,6 +1,6 @@
 GV2: Graph View choice on /graph
 
-Base: main at 884a3400 (GR1 #509, GR2 #513, GV1 #531, GV3 #533 merged). Repo: zvirb/songnodes. Follow "Working rules for agents" in AGENTS.md and CLAUDE.md; the design system (1.9.0, GraphControls → View, DR-057) decides every UI question. Open one PR titled "GV2: Graph View choice on /graph" on a branch starting with "gv2-". Edit only the lines inside your own STATUS.md slot (SLOT:GV2).
+Base: main at 338fa9b0 (GR1 #509, GR2 #513, GV1 #531, GV3 #533, GV4 #538 merged). Repo: zvirb/songnodes. Follow "Working rules for agents" in AGENTS.md and CLAUDE.md; the design system (1.9.0, GraphControls → View, DR-057) decides every UI question. Open one PR titled "GV2: Graph View choice on /graph" on a branch starting with "gv2-". Edit only the lines inside your own STATUS.md slot (SLOT:GV2).
 
 ## Job
 Build the GraphControls View choice on /graph: the anchor's neighbourhood (default) or the whole library.
