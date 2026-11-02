@@ -169,10 +169,12 @@ duration_seconds 214.43`.
   | Blazej Malinowski | Deconstruct | 0 | (null) |
   | Blazej Malinowski | Deconstruct | 0 | (null) |
 
-  Target bookkeeping is not updated: only 15 of 415 targets have `last_searched` set and 1 has
-  `playlists_found > 0`, although "Anders Hellberg New Territory" on MixesDB found 4 playlists and 223 tracks
-  at 10:06 Melbourne today. Also visible: a truncated artist ("atch22", presumably "Catch22") and a duplicated
-  target (Blazej Malinowski, Deconstruct).
+  Correction (later on 2 Nov): this query misleads, and target bookkeeping does work. `ORDER BY last_searched
+  DESC` puts NULLs first, and every row above is the never-searched copy of a duplicated target. The searched
+  copy of Anders Hellberg (`97e6599e`) has `last_searched` 1 Nov 23:06 UTC and `playlists_found` 4. The real
+  problem is duplicates: 415 unarchived targets but only 340 distinct artist/title pairs (75 pairs), created by
+  the frontend posting the same track twice; see TGT2 (#541). The truncated artist "atch22" is in the library
+  source data, not introduced by the code.
 
 **Scraper log** (`logs --tail=200 unified-scraper | grep -iE "missing bronze_id|not saved|incomplete in bronze|error"`):
 34 matching lines, none for "missing bronze_id", "not saved" or "incomplete in bronze". All are validation
