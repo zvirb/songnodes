@@ -2496,3 +2496,9 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks run: tsc, oxlint (exit 0), vitest 65 files / 560 tests, vite build (the built assets no longer contain the debug strings), `check_design_system.py --check`, `sync-design-system.sh --check`.
 - Checks not run: E2E for this change (console output only; no spec reads console.log).
 <!-- SLOT:UI9 END -->
+
+<!-- SLOT:VAL1 BEGIN -->
+### VAL1: MixesDB remixes keep a remix type and pass validation
+- Start: 2026-11-02 (branch val1-mixesdb-remix-type off origin/main 338fa9b0). Brief: plan/agents/VAL1_mixesdb_remix_type.md. From the 2 Nov local test (PR #518).
+- In progress.
+<!-- SLOT:VAL1 END -->
