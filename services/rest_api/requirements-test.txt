@@ -1,7 +1,7 @@
-pytest==9.1.1
+pytest==9.2.0
 pytest-asyncio==1.4.1
 pytest-cov==7.1.0
 pytest-mock==3.17.0
 httpx==0.28.1
-faker==40.43.0
+faker==40.44.0
 freezegun==1.5.5
