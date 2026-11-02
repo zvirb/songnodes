@@ -8,7 +8,8 @@ import { SN } from '../../lib/songnodes';
 import { API_BASE_URL } from '../../lib/apiBase';
 
 export interface JobStageProgress {
-  pages: number;
+  /** Null on a finished scrape once the scraper no longer keeps its record. */
+  pages: number | null;
   playlists: number;
   tracks: number;
   updated_at: string;
@@ -49,14 +50,20 @@ const ms = (iso: string | null | undefined): number | null => {
 
 const plural = (n: number, one: string, many: string) => `${SN.format.count(n)} ${n === 1 ? one : many}`;
 
-/** "12 pages, 3 playlists and 140 tracks read so far", from the scraper's live record. */
-export const progressText = (p: JobStageProgress): string =>
-  `${plural(p.pages, 'page', 'pages')}, ${plural(p.playlists, 'playlist', 'playlists')} and ${plural(p.tracks, 'track', 'tracks')} read so far`;
+/**
+ * "12 pages, 3 playlists and 140 tracks read so far" from the scraper's live record; a finished scrape drops
+ * "so far", and drops the pages once the scraper no longer keeps them.
+ */
+export const progressText = (p: JobStageProgress, finished = false): string => {
+  const counts = [p.pages != null ? plural(p.pages, 'page', 'pages') : '', plural(p.playlists, 'playlist', 'playlists')]
+    .filter((t) => t !== '').join(', ');
+  return `${counts} and ${plural(p.tracks, 'track', 'tracks')} read${finished ? '' : ' so far'}`;
+};
 
 export const mapJobStages = (res: JobStagesResponse, now: number = Date.now()): MappedJobStages => {
   const lastProgress = ms(res.last_progress_at);
   const steps = res.stages.map((s): StagedProgressStep => {
-    const parts = [s.progress ? progressText(s.progress) : '', s.detail ?? ''].filter((t) => t !== '');
+    const parts = [s.progress ? progressText(s.progress, s.state === 'done') : '', s.detail ?? ''].filter((t) => t !== '');
     if (!isKnown(s.state)) {
       // StagedProgress has no "unknown" state: the waiting glyph is the en dash, and the words say it is not known.
       return { name: s.label || '–', state: 'waiting', detail: `State not known: the stages API sent "${s.state || '–'}"` };

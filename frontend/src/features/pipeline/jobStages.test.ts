@@ -45,6 +45,21 @@ describe('mapJobStages', () => {
     expect(none.steps[0].detail).toBe('Live progress is unavailable: the scraper did not answer');
   });
 
+  it('keeps the final counts and the real duration on a finished scrape', () => {
+    const done = mapJobStages(response([stage({
+      state: 'done', started_at: at(0), finished_at: at(212),
+      progress: { pages: 41, playlists: 2, tracks: 10, updated_at: at(212) },
+    })], at(212)), T0 + 300_000);
+    expect(done.steps[0].detail).toBe('41 pages, 2 playlists and 10 tracks read');
+    expect(done.steps[0].seconds).toBe(212);
+
+    const noPages = mapJobStages(response([stage({
+      state: 'done', started_at: at(0), finished_at: at(212),
+      progress: { pages: null, playlists: 1, tracks: 1, updated_at: at(212) },
+    })], at(212)), T0 + 300_000);
+    expect(noPages.steps[0].detail).toBe('1 playlist and 1 track read');
+  });
+
   it('shows an unknown state as not known, never as a guessed state', () => {
     const { steps } = mapJobStages(response([stage({ state: 'paused' })], null), T0);
     expect(steps[0].state).toBe('waiting');
