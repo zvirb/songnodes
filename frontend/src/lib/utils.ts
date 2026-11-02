@@ -300,8 +300,11 @@ export function calculateContrastRatio(color1: string, color2: string): number {
 }
 
 /**
- * Sanitize string input to neutralize DOM-based XSS vectors.
- * Strips dangerous URI schemes (e.g., javascript:, data:) and escapes HTML entity characters.
+ * Neutralize a string that a browser would run as script if it were used as a link.
+ * Control characters are removed and a javascript:, vbscript: or non-image data: value
+ * becomes about:blank. Every other string is returned unchanged: React escapes text
+ * when it renders, so HTML entity encoding here would show `&amp;` to users and store
+ * it in the database.
  *
  * @param input - String input to sanitize
  * @returns Sanitized string
@@ -324,17 +327,12 @@ export function sanitizeInput(input: string): string {
     return 'about:blank';
   }
 
-  // Escape HTML entity characters to prevent DOM-based XSS
-  return sanitized
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;');
+  return sanitized;
 }
 
 /**
- * Recursively sanitize string fields in an object, array, or primitive to prevent DOM-based XSS.
+ * Recursively apply sanitizeInput to string fields of API response data, so a dangerous
+ * URL never reaches an href. Request data is sent as typed and is not passed through this.
  *
  * @param data - Data structure or value to sanitize
  * @param visited - Set tracking visited objects to prevent circular reference loops
