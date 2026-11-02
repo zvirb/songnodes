@@ -18,12 +18,19 @@ updates:
         patterns:
           - "*"
 
+  # These four are installed into one environment by the python-tests workflow
+  # (unit and common jobs), so a shared pin (pytest, pydantic) must move in all
+  # of them at once. One entry with one group gives one PR across all four.
   - package-ecosystem: "pip"
-    directory: "/services/rest_api"
+    directories:
+      - "/services/rest_api"
+      - "/services/graph-visualization-api"
+      - "/scrapers"
+      - "/tests"
     schedule:
       interval: "weekly"
     groups:
-      pip-rest-api:
+      pip-ci-shared:
         patterns:
           - "*"
 
@@ -60,15 +67,6 @@ updates:
       interval: "weekly"
     groups:
       pip-metadata-enrichment:
-        patterns:
-          - "*"
-
-  - package-ecosystem: "pip"
-    directory: "/services/graph-visualization-api"
-    schedule:
-      interval: "weekly"
-    groups:
-      pip-graph-visualization-api:
         patterns:
           - "*"
 
@@ -150,23 +148,5 @@ updates:
       interval: "weekly"
     groups:
       pip-worker:
-        patterns:
-          - "*"
-
-  - package-ecosystem: "pip"
-    directory: "/scrapers"
-    schedule:
-      interval: "weekly"
-    groups:
-      pip-scrapers:
-        patterns:
-          - "*"
-
-  - package-ecosystem: "pip"
-    directory: "/tests"
-    schedule:
-      interval: "weekly"
-    groups:
-      pip-tests:
         patterns:
           - "*"
