@@ -9,8 +9,8 @@ httptools==0.9.0
 idna==3.20
 prometheus-client==0.26.0
 psycopg2-binary==2.9.13
-pydantic==2.14.1
-pydantic_core==2.50.1
+pydantic==2.14.2
+pydantic_core==2.50.2
 python-dotenv==1.2.4
 python-multipart==0.0.32
 PyYAML==6.0.3

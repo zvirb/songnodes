@@ -54,10 +54,26 @@ export interface Seating {
 }
 
 /**
- * Seat every track on the rings. The anchor is now playing when there is one; otherwise SN.ringLayout takes the
- * track with the most links (whole-library view). Same input, same seats.
+ * The anchor (GraphStyles, Layout): now playing, else the selected track (the first one picked, so adding to a
+ * selection keeps it), else the whole-library anchor already in use, so a live update re-seats nobody. Null means
+ * none of these is in the graph: SN.ringLayout then takes the track with the most links.
  */
-export function seatTracks(tracks: SeatTrack[], links: SeatLink[], nowPlayingId: string | null = null, spacing = ringSpacing()): Seating {
+export function pickAnchor(
+  ids: Set<string>, nowPlayingId: string | null, selectedIds: Iterable<string>, kept: string | null,
+): string | null {
+  if (nowPlayingId && ids.has(nowPlayingId)) return nowPlayingId;
+  for (const id of selectedIds) if (ids.has(id)) return id;
+  return kept && ids.has(kept) ? kept : null;
+}
+
+/**
+ * Seat every track on the rings around `anchorId` (default: now playing); with no anchor, SN.ringLayout takes the
+ * track with the most links (whole-library view). Every track gets a seat. Same input, same seats.
+ */
+export function seatTracks(
+  tracks: SeatTrack[], links: SeatLink[], nowPlayingId: string | null = null, spacing = ringSpacing(),
+  anchorId: string | null = nowPlayingId,
+): Seating {
   const ids = new Set(tracks.map((t) => t.id));
   const used = links.filter((l) => ids.has(l.source) && ids.has(l.target) && l.source !== l.target);
   const degree: Record<string, number> = {};
@@ -73,9 +89,32 @@ export function seatTracks(tracks: SeatTrack[], links: SeatLink[], nowPlayingId:
     if (t.seat) prev[t.id] = t.seat;
     return { id: t.id, box: SN.seatBox(radius[t.id], t.labelWidth, t.id === nowPlayingId) };
   });
-  const anchor = nowPlayingId && ids.has(nowPlayingId) ? nowPlayingId : undefined;
+  const anchor = anchorId && ids.has(anchorId) ? anchorId : undefined;
   const { pos, anchor: chosen } = SN.ringLayout(nodes, used, { ...spacing, anchor, prev });
   return { seats: pos, radius, anchor: chosen == null ? null : String(chosen) };
+}
+
+/** GraphStyles, Links: the four strength bands, Weak to Very strong (graph-edge-w-1…4, graph-edge-op-1…4). */
+export const EDGE_BANDS = { width: [1, 2, 3.5, 6], alpha: [0.35, 0.55, 0.8, 1] } as const;
+
+export interface EdgeBandStyle { width: number; alpha: number }
+
+/** Width and opacity of each band from the tokens (index 0 = band 1); a token that cannot be read takes the spec value. */
+export function edgeBandStyles(read: (name: string) => number | undefined = tokenNumber): EdgeBandStyle[] {
+  return [1, 2, 3, 4].map((band, i) => ({
+    width: read(`graph-edge-w-${band}`) ?? EDGE_BANDS.width[i],
+    alpha: read(`graph-edge-op-${band}`) ?? EDGE_BANDS.alpha[i],
+  }));
+}
+
+/**
+ * Strength band 1–4 of a link (DR-035, SN.edgeBand). SN.edgeBand takes a 0–1 strength; transition links carry an
+ * occurrence count (1, 2, 3 …), so a library whose weights go above 1 is scaled by its strongest link first.
+ * The band never changes where a track sits.
+ */
+export function edgeBandOf(weight: number, mostWeight: number): 1 | 2 | 3 | 4 {
+  const w = Math.max(0, Number(weight) || 0);
+  return SN.edgeBand(mostWeight > 1 ? w / mostWeight : w);
 }
 
 /** GraphControls, Spec: zoom runs from 25% to 400%. */

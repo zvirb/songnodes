@@ -2262,6 +2262,14 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks run: tsc, oxlint (exit 0), vitest 58 files / 437 tests, vite build, `sync-design-system.sh --check`, `check_design_system.py --check`, scope guard.
 - Checks not run: E2E (no Docker daemon). No visual baseline covers /graph.
 - Next: Pause layout holding seats for new tracks, the 320ms re-seat move, drag to nearest free seat, labels only above zoom 1.5, and removing the unused `hooks/useForceSimulation.ts` / `useGraphLayout.ts`.
+### GR1 follow-up: Graph anchor, link bands and no stored camera
+- Start: 2026-11-01 (branch gr1-anchor-edge-bands off origin/main 33dcc5a). Brief: plan/agents/GR1_anchor_edge_bands.md. Source: docs/integration/REAL-DATA-TEST-2026-11-02.md section 2, problem 1.
+- End: 2026-11-01.
+- Changed: `lib/graphLayout.ts` adds `pickAnchor` (now playing, else first selected, else the anchor in use), an anchor argument to `seatTracks`, `edgeBandStyles` and `edgeBandOf` (DR-035 bands; occurrence counts scaled by the strongest link). `GraphVisualization.tsx` seats around that anchor, re-seats and fits only when the anchor changes, and draws links at band width and opacity. `store/useStore.ts` no longer persists the camera and drops an old one without the "extreme viewport" warning. Tests: 6 new in `graphLayout.test.ts`, new `useStore.persist.test.ts` (2).
+- Browser check (vite preview, synthetic graph shaped like the report: 463 linked tracks, 23 components, weights 1–3, positions 0,0; not live data), /graph?mode=plan at 1440×900, nothing selected: 463/463 seated and drawn, 1 at (0,0) (the anchor), median nearest neighbour 75px world (p90 102px), no viewport warning (main at 33dcc5a: same seats, warning present). Fit stops at the 25% floor, so 412/463 are inside the 754×761 canvas: left for GR2.
+- Checks run: tsc, oxlint (exit 0), vitest 61 files / 463 tests, vite build, `sync-design-system.sh --check` (1.7.1 in sync), `check_design_system.py --check`, scope guard.
+- Checks not run: E2E (no Docker here); needs `scripts/e2e-docker.sh` on the host.
+- Next: GR2 graph controls dock; Weak-link visibility (`SN.edgeVisibility`); the 320ms re-seat move.
 <!-- SLOT:GR1 END -->
 
 <!-- SLOT:IB1 BEGIN -->
@@ -2326,6 +2334,26 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Next: a package that drops `completion_percentage` (migration, PUT field, integration test line).
 <!-- SLOT:TT1 END -->
 
+<!-- SLOT:HS7 BEGIN -->
+### HS7: Edge details show stored harmonic scoring
+- Start: 2026-11-02 (branch hs7-edge-scoring-details off origin/main a5c338d). Brief: plan/agents/HS7_edge_scoring_details.md (added in this PR). Spec package M6-U1.
+- End: 2026-11-02.
+- Changed: graph API edges (`catalog.edges`, so `/api/graph/edges`, `/api/graph/data`, neighbourhood) add `occurrence_count` and `scoring`: the 20 stored columns of migration 270 plus `scored_at`, passed through unchanged (numerics as floats), all null when unscored or when 270 is not applied. No SQL change (`SELECT e.*` already reads them). "Connection details" reads the edge's stored scoring from `/api/graph/edges?node_ids=<from>,<to>` and shows Key, BPM and Energy as `CompatibilityBadge`s: the level is always the stored one; key and BPM words come from `SN.compat`/`SN.bpmStep` only when the tracks' values give that same stored verdict, otherwise the badge names the level alone; the energy move is worded by `SN.energyMove` ("push" for `lift`). Unscored: en dashes and "Not scored yet."; unknown parts read "key ?", "BPM ?", "energy ?"; a link that is not an observed transition and an API failure each say so.
+- Checks run: `python -m pytest tests/unit` in services/graph-visualization-api (9 passed, 4 new); tsc, oxlint (exit 0, warnings only), vitest run src (62 files, 472 tests), vite build, `sync-design-system.sh --check` (1.8.0), `check_design_system.py --check`, scope guard.
+- Checks not run: E2E and the edges query against a real Postgres (no Docker here).
+- Next: carry `scoring` through the graph loaders (`hooks/useDataLoader.ts`, `services/api.ts`) and `GraphEdge` so the modal need not fetch; a design-system helper that words a stored key relation and BPM gap without the tracks' values.
+<!-- SLOT:HS7 END -->
+
+<!-- SLOT:HS2 BEGIN -->
+### HS2: Frontend scoring matches the shared fixture
+- Start: 2026-11-02 (branch hs2-frontend-parity off origin/main a5c338d). Brief: plan/agents/HS2_frontend_parity.md (added in this PR). Spec package M6-F2.
+- End: 2026-11-02.
+- Changed: new `frontend/src/lib/harmonicScoring.parity.test.ts` reads `tests/fixtures/harmonic_scoring/examples.json` and checks, for all 24 rows, `SN.compat` (level, label), `SN.bpmStep` (level, label, relation, gap) and `SN.energyStep(...).move` against the classifier's expected values, plus `SN.energyMove` round-trips each stored move. No expected differences; all 24 rows agree with design system 1.8.0.
+- Checks run: tsc, oxlint (exit 0, no warnings in the new file), vitest run src (62 files, 539 tests), vite build, `sync-design-system.sh --check` (1.8.0), `check_design_system.py --check`, scope guard.
+- Checks not run: E2E (no Docker daemon; no UI change).
+- Next: the fixture's `sn_differs` notes (rows 5, 12, 13, 14, 16, 20, 21, 22) describe the pre-1.8.0 bundle and are now stale (fixture owner, HS1 follow-up); the design-system workflow does not run on fixture-only changes (add `tests/fixtures/harmonic_scoring/**` to its paths).
+<!-- SLOT:HS2 END -->
+
 <!-- SLOT:HS5 BEGIN -->
 ### HS5: Graph edges carry stored harmonic scoring
 - Start: 2026-11-02 (branch hs5-graph-projection-scoring off origin/main 42e4e99, rebased on a5c338d). Brief: plan/agents/HS5_graph_projection_scoring.md (added in this PR). Spec package M6-P2.
@@ -2345,3 +2373,14 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: E2E and a live re-scrape into Postgres (the scraper image was not rebuilt from this branch).
 - Next: owner cleanup of the existing duplicates (old rows keep 'unknown'/NULL; the first re-scrape after this adds one keyed row per playlist). Steps are in the PR description; never reset the volume.
 <!-- SLOT:BRZ3 END -->
+
+<!-- SLOT:E2E2 BEGIN -->
+### E2E2: Local production-like test of main (2 Nov)
+- Start: 2026-11-02 (branch e2e2-local-test-2026-11-02 off origin/main 62795a7d). Job: rebuild the Compose stack from main, run smoke checks, the full E2E suite, the library target load, one real scrape, the scrape-window card and a browser look-over; report only, no fixes.
+- End: 2026-11-02.
+- Changed: new `docs/integration/LOCAL-TEST-2026-11-02.md` and screenshots in `docs/integration/local-test-2026-11-02/`. Real-data side effects on the dev stack: 264 library targets added (415 active), one MixesDB scrape (Deadmau5 Strobe), scrape window set to 1–31 Dec 2026 then cleared.
+- Checks run: start-dev.sh (9/9 healthy), 6 API smoke checks (all as expected), `scripts/e2e-docker.sh` 373/373 (chromium 143, firefox 115, webkit 115), load-library-targets dry run and real run, scrape job succeeded (5 playlists, 213 tracks reported), window tick at 00:00 UTC returned outside_window, page look-over at desktop and 375 px in light and dark.
+- Problems found (details in the report): projection_tracks stuck at 132 so /library is empty; MixesDB bronze rows have source_url 'unknown', a Python-repr raw_json and duplicate on re-scrape; the frontend HTML-escapes every API string both ways; scrape job finished_at equals started_at; target_tracks last_searched/playlists_found not updated; SCRAPE_TARGETS_* not passed to the worker in compose.dev.yaml; phone-width clipping on /library and /graph.
+- Checks not run: graph canvas not confirmed visually (in-app browser read-back inconclusive); 1001Tracklists not tried by hand.
+- Next: fix packages for the three top problems (projection gap, bronze identity/raw_json, API escaping), each on its own branch.
+<!-- SLOT:E2E2 END -->
