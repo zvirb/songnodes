@@ -402,12 +402,6 @@ export const TrackCell: React.FC<{ t: LibraryTrack; extra?: React.ReactNode; lin
     <div className="sn-track-cell">
       <span className="sn-track-cell__title">
         <span className="sn-track-cell__name" title={name}><span className="sn-track-cell__artist">{t.a} –</span> {t.t}</span>
-        {t.mbid && (
-          <button className="sn-btn sn-btn--quiet sn-tag sn-category-tag" style={{ marginLeft: "var(--space-1)" }} title={`MusicBrainz match: ${t.mbid} (confidence: ${t.mbconf || 'high'})
-dump date: ${t.mbdump || '–'}`} onClick={() => setShowCov(s => !s)}>
-            MusicBrainz match
-          </button>
-        )}
       </span>
       {showCov && <CoveragePanel t={t} />}
       <span className="sn-track-cell__meta">
@@ -415,6 +409,19 @@ dump date: ${t.mbdump || '–'}`} onClick={() => setShowCov(s => !s)}>
           <React.Fragment key={i}>{i ? <span className="sn-track-cell__sep" aria-hidden="true">·</span> : null}{m}</React.Fragment>
         ))}
         {flag && t.rev ? <span className="sn-track-cell__flag" title="Energy methods disagree, or only one method was available">Check energy</span> : null}
+        {/* An info flag in the meta row (TrackCell anatomy), not a button in the title line: a 40px
+            button there left the service links under it without 24px of clear space (axe target-size). */}
+        {t.mbid ? (
+          <button
+            type="button"
+            className="sn-track-cell__flag sn-track-cell__flag--info sn-ml-flag-toggle"
+            aria-expanded={showCov}
+            title={`MusicBrainz match: ${t.mbid} (confidence: ${t.mbconf || 'high'}), dump date: ${t.mbdump || '–'}`}
+            onClick={() => setShowCov((s) => !s)}
+          >
+            MusicBrainz match
+          </button>
+        ) : null}
         {ext.length ? (
           <span className="sn-track-cell__links">
             {ext.map(([k, label]) => (

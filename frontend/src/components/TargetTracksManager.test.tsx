@@ -56,6 +56,24 @@ describe('TargetTracksManager', () => {
     expect(api.put).not.toHaveBeenCalled();
   });
 
+  it('pages a long target list 50 at a time', async () => {
+    noSuggestions();
+    vi.mocked(api.get).mockResolvedValue({ data: Array.from({ length: 120 }, (_, i) => row(`t${i}`, `Track ${i + 1}`, {})) } as never);
+
+    const { container } = render(<TargetTracksManager />);
+    await screen.findByText('Track 1');
+    expect(container.querySelectorAll('.ttm__item')).toHaveLength(50);
+    expect(screen.getByRole('status', { name: '' }).textContent).toContain('1–50');
+    expect(screen.getByRole('button', { name: 'Page 1' }).getAttribute('aria-current')).toBe('page');
+    expect(screen.getByRole('button', { name: 'Previous page' }).getAttribute('aria-disabled')).toBe('true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Page 3' }));
+    expect(container.querySelectorAll('.ttm__item')).toHaveLength(20);
+    expect(screen.getByText('Track 101')).toBeDefined();
+    expect(screen.queryByText('Track 1')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Next page' }).getAttribute('aria-disabled')).toBe('true');
+  });
+
   it('the embedded pending queue hides only targets whose last search finished', async () => {
     noSuggestions();
     vi.mocked(api.get).mockResolvedValue({ data: [

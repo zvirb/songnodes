@@ -226,7 +226,7 @@ export default function AISetlistsPage() {
              <div className="sn-card">
                <h2 className="title-s" style={{ marginBottom: 'var(--space-3)' }}>1. Copy Prompt</h2>
                <div className="sn-tablebox" style={{ maxHeight: 200, padding: 'var(--space-3)' }}>
-                 <pre className="data" style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{generatedPrompt}</pre>
+                 <pre className="data" style={{ whiteSpace: 'break-spaces', overflowWrap: 'anywhere', margin: 0 }}>{generatedPrompt}</pre>
                </div>
                <div style={{ marginTop: 'var(--space-3)' }}>
                  <CopyButton value={generatedPrompt} what="Prompt" label="Copy prompt" />
