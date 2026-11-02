@@ -2337,6 +2337,16 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Next: apply the HS4 migration on the local stack (`start-dev.sh`), then re-run `test_dev_datalayer.py`.
 <!-- SLOT:OB1 END -->
 
+<!-- SLOT:HS2 BEGIN -->
+### HS2: Frontend scoring matches the shared fixture
+- Start: 2026-11-02 (branch hs2-frontend-parity off origin/main a5c338d). Brief: plan/agents/HS2_frontend_parity.md (added in this PR). Spec package M6-F2.
+- End: 2026-11-02.
+- Changed: new `frontend/src/lib/harmonicScoring.parity.test.ts` reads `tests/fixtures/harmonic_scoring/examples.json` and checks, for all 24 rows, `SN.compat` (level, label), `SN.bpmStep` (level, label, relation, gap) and `SN.energyStep(...).move` against the classifier's expected values, plus `SN.energyMove` round-trips each stored move. No expected differences; all 24 rows agree with design system 1.8.0.
+- Checks run: tsc, oxlint (exit 0, no warnings in the new file), vitest run src (62 files, 539 tests), vite build, `sync-design-system.sh --check` (1.8.0), `check_design_system.py --check`, scope guard.
+- Checks not run: E2E (no Docker daemon; no UI change).
+- Next: the fixture's `sn_differs` notes (rows 5, 12, 13, 14, 16, 20, 21, 22) describe the pre-1.8.0 bundle and are now stale (fixture owner, HS1 follow-up); the design-system workflow does not run on fixture-only changes (add `tests/fixtures/harmonic_scoring/**` to its paths).
+<!-- SLOT:HS2 END -->
+
 <!-- SLOT:HS5 BEGIN -->
 ### HS5: Graph edges carry stored harmonic scoring
 - Start: 2026-11-02 (branch hs5-graph-projection-scoring off origin/main 42e4e99, rebased on a5c338d). Brief: plan/agents/HS5_graph_projection_scoring.md (added in this PR). Spec package M6-P2.
