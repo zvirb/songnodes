@@ -2325,3 +2325,10 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: E2E (no Docker daemon); the new SQL against a real Postgres (none running here).
 - Next: a package that drops `completion_percentage` (migration, PUT field, integration test line).
 <!-- SLOT:TT1 END -->
+
+<!-- SLOT:OB1 BEGIN -->
+### OB1: Outbox consumers recover after a restore into a new cluster
+- Start: 2026-11-02 (branch ob1-outbox-xid-rebase off origin/main 9096637). Found by the 2 Nov local test (PR #518): `projection_tracks` stuck at 132 rows, `/library` empty.
+- Cause: the Postgres 16 -> 18 move restored the data into a new cluster, which restarted transaction IDs (current xid 35607). Both consumers sat at `last_txid` 71125 from the old cluster, so every event written since 28 Oct sorted below their offset and `projection_consume`/`graph_projection_consume` processed 0.
+- Next: rebuild rest-api and worker from this branch, check the consumers rebase and the library fills, run the new scenario.
+<!-- SLOT:OB1 END -->
