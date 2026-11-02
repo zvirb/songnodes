@@ -22,6 +22,8 @@ except (ImportError, ValueError):
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
     from utils.pathfinder_utils import find_pivots
 
+from common.metadata.transition_scoring import bpm_verdict, compat_score, key_verdict, path_cost
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/pathfinder", tags=["Pathfinder"])
@@ -72,7 +74,11 @@ class GraphEdge(BaseModel):
     """Edge representing connection between tracks"""
     from_id: str
     to_id: str
-    weight: float  # Lower is stronger connection
+    weight: float = Field(
+        ...,
+        description="Occurrence count: how many DJ sets played this transition (higher is stronger). "
+                    "Read as a whole count; values below 1 count as an unobserved edge.",
+    )
     connection_type: Optional[str] = None
 
 class PathfinderRequest(BaseModel):
@@ -118,30 +124,25 @@ def is_key_compatible(from_key: Optional[str], to_key: Optional[str]) -> bool:
 
     return to_key in CAMELOT_WHEEL[from_key]['compatible']
 
-def get_key_compatibility_bonus(from_key: Optional[str], to_key: Optional[str]) -> float:
-    """Get bonus score for key compatibility (0 = no bonus, 1 = perfect match)"""
-    if not from_key or not to_key:
-        return 0.0
+# Waypoint edges cost this fraction of their normal cost: steers the search towards them
+# while every cost stays positive (spec harmonic-1 section 2.6: no negative waypoint rewards).
+WAYPOINT_COST_FACTOR = 0.5
 
-    if from_key == to_key:
-        return 1.0  # Same key = perfect
+def occurrence_count(weight: Optional[float]) -> int:
+    """Read a request edge weight as its occurrence count (whole plays, never negative)."""
+    if weight is None or not math.isfinite(weight) or weight < 1:
+        return 0
+    return int(weight)
 
-    if is_key_compatible(from_key, to_key):
-        return 0.5  # Compatible = good
+def transition_cost(from_track: TrackNode, to_track: TrackNode, count: int) -> float:
+    """Spec harmonic-1 section 2.6 cost of one directed edge: always > 0, lower is better.
 
-    return 0.0  # Not compatible = no bonus
-
-def get_bpm_difference(bpm1: Optional[float], bpm2: Optional[float]) -> float:
-    """Calculate the difference between two BPMs, considering half/double time."""
-    if bpm1 is None or bpm2 is None or bpm1 == 0 or bpm2 == 0:
-        return 1.0  # Max penalty if BPM is missing
-
-    diff = abs(bpm1 - bpm2)
-    diff_half = abs(bpm1 - bpm2 / 2)
-    diff_double = abs(bpm1 - bpm2 * 2)
-
-    # Return the minimum of the differences
-    return min(diff, diff_half, diff_double)
+    It falls as the key/BPM compatibility score rises and as the occurrence count rises;
+    an unknown key or BPM costs the spec's neutral U, never less than a known perfect part.
+    """
+    key = key_verdict(from_track.camelot_key, to_track.camelot_key)
+    bpm = bpm_verdict(from_track.bpm, to_track.bpm)
+    return path_cost(compat_score(key.score, bpm.score), count)
 
 def calculate_heuristic(
     current_duration: int,
@@ -307,11 +308,9 @@ def prepare_adjacency(
 
             key_compatible = is_key_compatible(u_track.camelot_key, v_track.camelot_key) if prefer_key_matching else False
             is_synthetic = (u, v) in synthetic_edges
-            # The key bonus applies whether or not key matching is preferred (same as before pre-computation)
-            key_bonus = get_key_compatibility_bonus(u_track.camelot_key, v_track.camelot_key) * 0.3
-            bpm_diff = get_bpm_difference(u_track.bpm, v_track.bpm)
-            bpm_penalty = (bpm_diff / 100) ** 2
-            base_trans_cost = edge_weight - key_bonus + bpm_penalty
+            # Request edges carry their occurrence count; ANN fallback edges are inferred (n = 0)
+            count = 0 if is_synthetic else occurrence_count(edge_weight)
+            base_trans_cost = transition_cost(u_track, v_track, count)
             v_duration = v_track.duration_ms
 
             u_neighbors.append((v, edge_weight, base_trans_cost, key_compatible, is_synthetic, v_duration))
@@ -443,10 +442,10 @@ def find_path(
             if new_duration > max_allowed_duration:
                 continue
 
-            # Penalty for not visiting waypoints when we should
-            waypoint_penalty = -1.0 if neighbor_id in curr_remaining_wp else 0.0
+            # Reaching a remaining waypoint is discounted, never rewarded with a negative cost
+            step_cost = base_trans_cost * WAYPOINT_COST_FACTOR if neighbor_id in curr_remaining_wp else base_trans_cost
 
-            new_cost = curr_cost + base_trans_cost + waypoint_penalty
+            new_cost = curr_cost + step_cost
 
             # Update remaining waypoints efficiently
             new_remaining_waypoints = curr_remaining_wp - {neighbor_id} if neighbor_id in curr_remaining_wp else curr_remaining_wp
