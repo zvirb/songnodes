@@ -10,6 +10,16 @@ logger = logging.getLogger(__name__)
 # split logic remains robust even when the source HTML changes typography.
 _DASH_NORMALISER = re.compile(r"[\u2010-\u2015\u2212]")
 
+# Remix keyword in "(Name Remix)" \u2192 RemixType value (pydantic_models.RemixType).
+# A track with is_remix=True must carry a remix_type or TrackCreate rejects it.
+REMIX_KIND_TYPES = {
+    "remix": "remix",
+    "edit": "edit",
+    "flip": "rework",
+    "rework": "rework",
+    "bootleg": "bootleg",
+}
+
 
 def _normalise_dashes(value: str) -> str:
     if not value:
@@ -39,6 +49,7 @@ def parse_track_string(track_string):
     notes = []
     is_identified = True
     version_type = None
+    remix_type = None
 
     original_string = track_string.strip()
     normalised_string = _normalise_dashes(original_string)
@@ -55,7 +66,7 @@ def parse_track_string(track_string):
 
     # STEP 2: Extract Remixer Artist (SECOND per Table 1.1)
     # Pattern: \((?P<remixer>[^)]+?)\s+(?:Remix|Edit|Flip|Rework|Bootleg)\)
-    remixer_pattern = r'\((?P<remixer>[^)]+?)\s+(?:Remix|Edit|Flip|Rework|Bootleg)\)'
+    remixer_pattern = r'\((?P<remixer>[^)]+?)\s+(?P<kind>Remix|Edit|Flip|Rework|Bootleg)\)'
     remix_match = re.search(remixer_pattern, temp_string, re.IGNORECASE)
     if remix_match:
         remixer_name = remix_match.group('remixer').strip()
@@ -63,6 +74,7 @@ def parse_track_string(track_string):
         remixer_artists.extend([a.strip() for a in re.split(r'\s*(?:&|vs\.?|,|/)\s*', remixer_name)])
         temp_string = temp_string.replace(remix_match.group(0), "").strip()
         is_remix = True
+        remix_type = REMIX_KIND_TYPES[remix_match.group('kind').lower()]
 
     # Also handle mashup remixers
     mashup_remix_match = re.search(r"\((.*?)\s*Mashup\)", temp_string, re.IGNORECASE)
@@ -71,6 +83,7 @@ def parse_track_string(track_string):
         remixer_artists.extend([a.strip() for a in re.split(r'\s*(?:&|vs\.?|,|/)\s*', remixer_name)])
         temp_string = temp_string.replace(mashup_remix_match.group(0), "").strip()
         is_remix = True
+        remix_type = remix_type or 'mashup'
 
     # Extract remaining parenthetical notes (after version and remix extraction)
     parenthetical_notes_matches = re.findall(r"\((.*?)\)", temp_string)
@@ -171,6 +184,7 @@ def parse_track_string(track_string):
         "featured_artists": featured_artists,
         "remixer_artists": remixer_artists,
         "is_remix": is_remix,
+        "remix_type": remix_type,  # Set whenever is_remix is True (RemixType value)
         "is_mashup": is_mashup,
         "mashup_components": mashup_components,
         "is_identified": is_identified,

@@ -889,9 +889,9 @@ class MixesdbSpider(scrapy.Spider):
 
                 # Build comprehensive track data (with label/catalog for Discogs linking)
                 is_remix = parsed_track.get('is_remix', False)
-                # NOTE: Remix parsing is now handled by enrichment_pipeline._parse_remix_info()
-                # which uses the sophisticated TrackTitleParser (2025 Best Practice)
-                remix_type = None  # Will be populated by enrichment pipeline
+                # ValidationPipeline (100) runs before EnrichmentPipeline (200), so a remix
+                # must already carry its type here; enrichment may refine it later.
+                remix_type = (parsed_track.get('remix_type') or 'unknown') if is_remix else None
 
                 track_item = {
                     'track_id': track_id,  # Deterministic ID for matching across sources

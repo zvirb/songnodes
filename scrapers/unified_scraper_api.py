@@ -442,6 +442,11 @@ async def _scrape_internal(request: ScrapeRequest) -> Dict[str, Any]:
     elif request.source == "1001tracklists":
         if request.url:
             cmd.extend(["-a", f"start_urls={request.url}"])
+        elif request.search_query:
+            # Without it the spider falls back to 'targeted' mode and searches for every target track.
+            cmd.extend(["-a", f"search_query={request.search_query}"])
+        if request.limit:
+            cmd.extend(["-a", f"limit={request.limit}"])
 
     elif request.source in ["setlistfm", "reddit"]:
         if request.artist_name:
