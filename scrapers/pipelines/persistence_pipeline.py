@@ -79,6 +79,31 @@ def _bronze_raw_json(item: Any) -> str:
     return json.dumps(_plain(item), default=str)
 
 
+def _bronze_playlist_identity(item: Any) -> tuple:
+    """BRZ3: (source_url, source_playlist_id) upsert key for a bronze playlist row.
+
+    The MixesDB spider yields its EnhancedSetlistItem (URL only in ``external_urls``)
+    before the PlaylistItem, so the URL defaulted to 'unknown' and the id stayed NULL.
+    Postgres treats NULLs in a UNIQUE key as distinct, so every re-scrape inserted a
+    new row. Without a source id the page URL is the id, which keeps the key non-null.
+    """
+    source_url = item.get('source_url')
+    if not source_url:
+        external = item.get('external_urls')
+        if isinstance(external, str):
+            try:
+                external = json.loads(external)
+            except ValueError:
+                external = None
+        if isinstance(external, Mapping):
+            source_url = next((u for u in external.values() if isinstance(u, str) and u), None)
+    source_url = source_url or 'unknown'
+    source_playlist_id = item.get('source_playlist_id') or item.get('playlist_id') or item.get('setlist_id')
+    if not source_playlist_id and source_url != 'unknown':
+        source_playlist_id = source_url
+    return source_url, source_playlist_id
+
+
 class PersistencePipeline:
     """
     Pipeline that persists validated and enriched items to PostgreSQL (Priority 300).
@@ -1189,8 +1214,7 @@ class PersistencePipeline:
             self.logger.info(f"🔍 Processing bronze playlist #{idx+1}/{len(batch)}: {item.get('name') or item.get('setlist_name')}")
             # Get source metadata
             source = item.get('data_source') or item.get('source') or item.get('platform') or 'unknown'
-            source_url = item.get('source_url', 'unknown')
-            source_playlist_id = item.get('source_playlist_id') or item.get('playlist_id') or item.get('setlist_id')
+            source_url, source_playlist_id = _bronze_playlist_identity(item)
             scraper_version = item.get('scraper_version', 'v1.0.0')
 
             # Serialize complete item as raw_json (a JSON object, BRZ2)

@@ -2334,6 +2334,17 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Next: a package that drops `completion_percentage` (migration, PUT field, integration test line).
 <!-- SLOT:TT1 END -->
 
+<!-- SLOT:OB1 BEGIN -->
+### OB1: Outbox consumers recover after a restore into a new cluster
+- Start: 2026-11-02 (branch ob1-outbox-xid-rebase off origin/main 9096637). Found by the 2 Nov local test (PR #518): `projection_tracks` stuck at 132 rows, `/library` empty.
+- Cause: the Postgres 16 -> 18 move restored the data into a new cluster, which restarted transaction IDs (current xid 35607). Both consumers sat at `last_txid` 71125 from the old cluster, so every event written since 28 Oct sorted below their offset and `projection_consume`/`graph_projection_consume` processed 0.
+- End: 2026-11-02.
+- Changed: `services/common/datalayer/outbox.py` gains `rebase_after_restore`, run at the start of every `consume`: an offset at or above the next txid is impossible in one cluster, so each consumer moves to (0, highest id below its first unconsumed event) and committed events move to txid 0 (history then sorts by id, ahead of new transactions; replays are idempotent). `advance` now stores the event's current txid, so a consumer that read an event before a concurrent rebase cannot jump back to an old txid. New scenario `tests/integration/scenarios/outbox_restore.py` (offset and history from a future txid, then new events) in `test_dev_datalayer.py`.
+- Checks run: on the stack with rest-api and worker rebuilt from this branch, the worker rebased both consumers (71125/5075 -> 0/5075) and drained the backlog with 0 dead letters; `projection_tracks` 132 -> 1789 = silver 1789 (reconcile: missing 0, extra 0, stale 9); all 339 `library.tracks` projected; `/library` shows 339 of 339 tracks. `test_dev_datalayer.py`: outbox, outbox_restore, identity, evidence pass; projection/worker/resolution skip (catalog not empty); `ingest` fails on `silver_track_transitions.key_relation` missing (HS4 migration not applied to this stack, unrelated). `services/common/tests` 189 passed. On the first run, while the worker still held its long drain transaction, the outbox scenario saw no events (the cutoff correctly hides events behind an open transaction); it passed once the backlog finished.
+- Checks not run: E2E (UI unchanged), full `start-dev.sh` rebuild (only rest-api and worker rebuilt, to avoid disturbing other sessions on the shared stack).
+- Next: apply the HS4 migration on the local stack (`start-dev.sh`), then re-run `test_dev_datalayer.py`.
+<!-- SLOT:OB1 END -->
+
 <!-- SLOT:HS7 BEGIN -->
 ### HS7: Edge details show stored harmonic scoring
 - Start: 2026-11-02 (branch hs7-edge-scoring-details off origin/main a5c338d). Brief: plan/agents/HS7_edge_scoring_details.md (added in this PR). Spec package M6-U1.
@@ -2364,6 +2375,16 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Next: M6-R1 (pathfinder cost) and M6-U1 (graph API exposes the edge fields).
 <!-- SLOT:HS5 END -->
 
+<!-- SLOT:BRZ3 BEGIN -->
+### BRZ3: A re-scraped MixesDB playlist updates its one bronze row
+- Start: 2026-11-02 (branch brz3-bronze-playlist-identity off origin/main 9096637). Brief: plan/agents/BRZ3_bronze_playlist_identity.md. Job: bronze playlist rows get a non-null upsert key, so re-scrapes stop duplicating playlists (found in the 2 Nov local test, PR #518).
+- End: 2026-11-02.
+- Changed: `persistence_pipeline.py` gains `_bronze_playlist_identity`: the URL comes from `source_url`, else from `external_urls` (the MixesDB EnhancedSetlistItem, which reaches bronze before the PlaylistItem, carries only that), and without a source id the URL is the `source_playlist_id`. Before, MixesDB rows were keyed ('mixesdb', 'unknown', NULL) and Postgres never matched a NULL key. raw_json as a string (fixed by BRZ2) and the `MixesDB:Explorer/Mixes` page (fixed by SC7) needed no code change; the 47 live rows predate both. New `scrapers/tests/test_bronze_playlist_identity.py` runs the real spider on a fixture page twice through the pipeline against a fake connection with Postgres NULL-distinct semantics (one row, URL key, raw_json an object; it fails with 2 rows on the old code), and checks the Explorer page saves nothing.
+- Checks run: `python -m pytest scrapers/tests` (26 passed, rebased on 5811742), `python -m pytest tests/unit/scrapers` (35 passed; the 2 failures in `test_1001tracklists_spider.py` are `ModuleNotFoundError: scrapy_playwright` in this environment, unrelated), the new identity test fails (2 rows) with the old key code, scope guard (passed).
+- Checks not run: E2E and a live re-scrape into Postgres (the scraper image was not rebuilt from this branch).
+- Next: owner cleanup of the existing duplicates (old rows keep 'unknown'/NULL; the first re-scrape after this adds one keyed row per playlist). Steps are in the PR description; never reset the volume.
+<!-- SLOT:BRZ3 END -->
+
 <!-- SLOT:E2E2 BEGIN -->
 ### E2E2: Local production-like test of main (2 Nov)
 - Start: 2026-11-02 (branch e2e2-local-test-2026-11-02 off origin/main 62795a7d). Job: rebuild the Compose stack from main, run smoke checks, the full E2E suite, the library target load, one real scrape, the scrape-window card and a browser look-over; report only, no fixes.
@@ -2388,3 +2409,14 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Next: minimap, link layers, Colour by control, phone bottom bar; rebase on GR1 (#509), which also edits `GraphVisualization.tsx`.
 - E2E: not run per PR (Markus, 2 Nov 2026); one combined host run of `scripts/e2e-docker.sh` covers every PR built on 2 Nov 2026 once they merge.
 <!-- SLOT:GR2 END -->
+
+<!-- SLOT:GV1 BEGIN -->
+### GV1: Design system 1.9.0 adds the graph View choice
+- Start: 2026-11-02 (branch gv1-graph-view-options off origin/main 5811742d). Brief: plan/agents/GV1_design_system_graph_view.md. Decision: Markus, 2 Nov 2026, "A and B as view options" (neighbourhood and whole library).
+- End: 2026-11-02.
+- Changed: tokens `graph-hood-steps` 3, `graph-hood-max` 200; helper `SongNodes.neighbourhood` (heap, 20,000 tracks in 31 ms); `GraphControlsProps.view`/`onViewChange`; GraphControls README View section and preview control; GraphStyles View row; governance 1.9.0 entry and DR-057. Rebuilt and re-synced.
+- Checks run: build_tokens.py (contrast pass), build_bundle.py, `sync-design-system.sh --check` (1.9.0 in sync), `check_design_system.py --check`, tsc, oxlint, vitest 61 files / 466 tests, vite build, scope guard; helper exercised in node (3 steps of a ternary tree = 40 ids; cap 200 sets `capped`; empty input).
+- Checks not run: E2E (no Docker here; see the E2E line). `api/` cards are generated by the design-system page and were not edited.
+- Next: GV2 frontend View control (after GR1 #509, GR2 #513), GV3 neighbourhood endpoint, GV4 ringLayout heap.
+- E2E: not run per PR (Markus, 2 Nov 2026); one combined host run of `scripts/e2e-docker.sh` covers every PR built on 2 Nov 2026 once they merge.
+<!-- SLOT:GV1 END -->

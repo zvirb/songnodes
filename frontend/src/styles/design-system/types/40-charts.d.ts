@@ -193,7 +193,7 @@ export interface GraphControlsProps {
   /** Node and link counts after filters. */
   nodeCount: number;
   edgeCount: number;
-  /** Zoom factor, 0.25–4. */
+  /** Zoom factor, 0.25–4; in the whole-library view Fit may go below 0.25 (1.9.0). */
   zoom: number;
   onZoomIn: () => void;
   onZoomOut: () => void;
@@ -212,6 +212,9 @@ export interface GraphControlsProps {
   onDimensionChange?: (d: "2d" | "3d") => void;
   /** Minimap viewport in graph units; omit to hide the minimap. */
   viewport?: { x: number; y: number; width: number; height: number };
+  /** View (1.9.0, DR-057): the anchor's neighbourhood (default) or the whole library. Remembered per device. */
+  view?: "neighbourhood" | "library";
+  onViewChange?: (view: "neighbourhood" | "library") => void;
 }
 
 export interface SparklineProps {

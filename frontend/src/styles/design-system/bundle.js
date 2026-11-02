@@ -207,6 +207,35 @@
     return { pos: pos, anchor: anchor, rings: maxRing };
   }
 
+  /** Neighbourhood view (GraphControls → View, DR-057): the anchor and the tracks reached from it in at most `steps` links (along the links they were taken by), at most
+   *  `max` of them, taken strongest link first (the ring layout's own order, so the closest seats are the ones kept).
+   *  nodes: [{id}]; links: [{source, target, weight}]; opts: {anchor, steps: 3, max: 200}. The anchor defaults to the track with
+   *  the most links, as in ringLayout. Returns {ids (in order taken), hops: {id: steps from the anchor}, anchor, total, capped}.
+   *  A binary heap keeps it n log n, so it can run on the whole library. Same input, same output. */
+  function neighbourhood(nodes, links, opts) {
+    opts = opts || {};
+    var STEPS = opts.steps == null ? 3 : opts.steps, MAX = opts.max == null ? 200 : opts.max;
+    var adj = {}, order = [];
+    nodes.forEach(function (n) { adj[n.id] = []; order.push(n.id); });
+    links.forEach(function (l) { if (adj[l.source] && adj[l.target] && l.source !== l.target) { adj[l.source].push([l.target, +l.weight || 0]); adj[l.target].push([l.source, +l.weight || 0]); } });
+    if (!order.length) return { ids: [], hops: {}, anchor: null, total: 0, capped: false };
+    var anchor = opts.anchor != null && adj[opts.anchor] ? opts.anchor : order.reduce(function (a, b) { return adj[b].length > adj[a].length || (adj[b].length === adj[a].length && String(b).localeCompare(String(a)) < 0) ? b : a; });
+    var heap = [], seq = 0;
+    function before(a, b) { return a.w !== b.w ? a.w > b.w : a.deg !== b.deg ? a.deg > b.deg : a.seq < b.seq; }
+    function push(e) { heap.push(e); var i = heap.length - 1; while (i > 0) { var p = (i - 1) >> 1; if (!before(heap[i], heap[p])) break; var t = heap[i]; heap[i] = heap[p]; heap[p] = t; i = p; } }
+    function pop() { var top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; var i = 0; for (;;) { var l = 2 * i + 1, r = l + 1, m = i; if (l < heap.length && before(heap[l], heap[m])) m = l; if (r < heap.length && before(heap[r], heap[m])) m = r; if (m === i) break; var t = heap[i]; heap[i] = heap[m]; heap[m] = t; i = m; } } return top; }
+    var hops = {}, ids = [];
+    function take(id, h) { hops[id] = h; ids.push(id); if (h < STEPS) adj[id].forEach(function (e) { if (hops[e[0]] == null) push({ id: e[0], w: e[1], deg: adj[e[0]].length, h: h + 1, seq: seq++ }); }); }
+    take(anchor, 0);
+    var capped = false;
+    while (heap.length) {
+      var e = pop(); if (hops[e.id] != null) continue;
+      if (ids.length >= MAX) { capped = true; break; }
+      take(e.id, e.h);
+    }
+    return { ids: ids, hops: hops, anchor: anchor, total: order.length, capped: capped };
+  }
+
   /* ---------- formatting (en-AU, Melbourne time, 24-hour) ---------- */
   function toDate(d) { return d instanceof Date ? d : new Date(d); }
   var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -659,13 +688,13 @@
   };
 
   window.SongNodes = {
-    version: "1.8.0", DOMAIN_MAP: DOMAIN_MAP,
+    version: "1.9.0", DOMAIN_MAP: DOMAIN_MAP,
     locale: LOCALE, timeZone: TZ,
     modules: MODULES, module: function (k) { for (var i = 0; i < MODULES.length; i++) if (MODULES[i].key === k) return MODULES[i]; return null; },
     icons: ICONS, icon: icon, iconNames: Object.keys(ICONS),
     camelot: camelot, keyName: keyName, compat: compat, KEY_NAMES: KEY_NAMES,
     tier: tier, TIER_LABEL: TIER_LABEL, energyStep: energyStep, energyMove: energyMove, bpmStep: bpmStep,
-    edgeBand: edgeBand, EDGE_BAND_LABEL: EDGE_BAND_LABEL, EDGE_CUTS_DEFAULT: EDGE_CUTS_DEFAULT, fitEdgeCuts: fitEdgeCuts, edgeVisibility: edgeVisibility, seatBox: seatBox, ringLayout: ringLayout,
+    edgeBand: edgeBand, EDGE_BAND_LABEL: EDGE_BAND_LABEL, EDGE_CUTS_DEFAULT: EDGE_CUTS_DEFAULT, fitEdgeCuts: fitEdgeCuts, edgeVisibility: edgeVisibility, seatBox: seatBox, ringLayout: ringLayout, neighbourhood: neighbourhood,
     format: format, calendar: calendar, dateRange: dateRange, csv: csv, status: status, GLYPH: GLYPH,
     html: html, prefs: prefs, esc: esc,
     goIcon: goIcon, sourceLink: sourceLink, infoTip: infoTip, infoTips: infoTips, dismissal: dismissal

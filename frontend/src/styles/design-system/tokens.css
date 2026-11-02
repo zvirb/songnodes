@@ -482,6 +482,8 @@
   --graph-ring-aspect: 1.7;
   --graph-seat-gap: 30px;
   --graph-label-zoom: 1.5;
+  --graph-hood-steps: 3;
+  --graph-hood-max: 200;
   --font-display: "Sora", "Inter", system-ui, sans-serif;
   --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-data: "JetBrains Mono", ui-monospace, Consolas, monospace;

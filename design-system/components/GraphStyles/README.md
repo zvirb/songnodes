@@ -9,7 +9,8 @@ Link strength is drawn, not measured: line weight carries it (Links, below), and
 
 | Rule | Spec |
 |---|---|
-| Anchor | Now playing. With nothing playing, the selected track; with neither (whole-library view), the track with the most links |
+| Anchor | Now playing. With nothing playing, the selected track; with neither, the track with the most links |
+| View | Neighbourhood (default): only the anchor's neighbourhood is seated and drawn, at most `graph-hood-max` (200) tracks within `graph-hood-steps` (3) links. Whole library: every track. Chosen in GraphControls → View (DR-057) |
 | Rings | Ellipses around the anchor. Ring 1 vertical radius `graph-ring-first` (58px), each next ring `graph-ring-step` (40px) further out; horizontal radius × `graph-ring-aspect` (1.7) so left-to-right labels fit |
 | Seats | Every `graph-seat-gap` (30px) of arc, at least 8 per ring, starting at 12 o'clock |
 | Seat box | Each track keeps clear its node, its state ring (r + 4) and its label as drawn at `graph-label-zoom` (1.5): label width ÷ 1.5. Now playing is always labelled, so it keeps its label clear at 100% and also the "Now" tag above it. A seat is free only if its box overlaps no other box (`SongNodes.seatBox`) |
