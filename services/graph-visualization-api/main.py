@@ -13,7 +13,7 @@ import hashlib
 import traceback
 import re
 import uuid
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Literal, Optional, Any
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 
@@ -572,10 +572,21 @@ async def get_edges(
 
 
 @app.get("/api/graph/data")
-async def get_graph_data(limit: int = Query(5000, ge=1, le=15000)):
+async def get_graph_data(
+    limit: int = Query(5000, ge=1, le=15000),
+    view: Literal['library', 'neighbourhood'] = 'library',
+    center: Optional[str] = None,
+    steps: int = Query(3, ge=1, le=6),
+    max_tracks: int = Query(200, ge=1, le=2000, alias='max'),
+):
+    """view=library (default): the whole graph up to `limit`. view=neighbourhood (design system 1.9.0, DR-057):
+    the anchor (`center`, else the most-linked track) and the tracks within `steps` links, at most `max`,
+    strongest link first, without reading the rest of the library."""
     async with async_session() as session:
         # Counts, selected nodes, and induced edges share one PostgreSQL snapshot.
         await session.connection(execution_options={"isolation_level": "REPEATABLE READ"})
+        if view == 'neighbourhood':
+            return await catalog.neighbourhood(session, center, steps, max_tracks)
         return await catalog.graph(session, limit)
 
 
