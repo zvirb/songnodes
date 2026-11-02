@@ -2396,6 +2396,18 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Next: fix packages for the three top problems (projection gap, bronze identity/raw_json, API escaping), each on its own branch.
 <!-- SLOT:E2E2 END -->
 
+<!-- SLOT:GV3 BEGIN -->
+### GV3: Graph API serves one anchor's neighbourhood
+- Start: 2026-11-02 (branch gv3-graph-neighbourhood-api off origin/main 9d58e6df). Brief: plan/agents/GV3_graph_neighbourhood_api.md. Decision: Markus, 2 Nov 2026 (DR-057, GV1 #531).
+- End: 2026-11-02.
+- Changed: `catalog.py` adds `strongest_first` (the SongNodes.neighbourhood rule), `most_linked_track`, `links_within` (one level at a time) and `neighbourhood`; `/api/graph/data` takes `view=neighbourhood`, `center`, `steps` (3), `max` (200); the library view is unchanged. New `tests/unit/test_neighbourhood.py` (7 tests).
+- Real PostgreSQL 16 check (local, synthetic 5,000 tracks in 23 chains, one "Unknown Artist" track; not live data): auto anchor found, 71 ms; centre with an Unknown Artist neighbour excludes it; cap 2 gives `capped: true`; steps 6 follows the chain; an Unknown Artist centre is a 404; library view still returns 4,999 tracks.
+- Checks run: graph API unit tests 16 passed after rebase (Python 3.13 locally; CI uses 3.15), scope guard.
+- Checks not run: E2E (no Docker here; see the E2E line); root `pytest --collect-only` (needs the scraper requirements).
+- Next: GV2 frontend View control reads this endpoint (after GR1 #509, GR2 #513, GV1 #531).
+- E2E: not run per PR (Markus, 2 Nov 2026); one combined host run of `scripts/e2e-docker.sh` covers every PR built on 2 Nov 2026 once they merge.
+<!-- SLOT:GV3 END -->
+
 <!-- SLOT:GV1 BEGIN -->
 ### GV1: Design system 1.9.0 adds the graph View choice
 - Start: 2026-11-02 (branch gv1-graph-view-options off origin/main 5811742d). Brief: plan/agents/GV1_design_system_graph_view.md. Decision: Markus, 2 Nov 2026, "A and B as view options" (neighbourhood and whole library).

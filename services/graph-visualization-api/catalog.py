@@ -3,6 +3,7 @@
 This is the PostgreSQL baseline, not the future Memgraph or search implementation.
 All graph routes share identity, visibility, and edge-endpoint rules here.
 """
+import heapq
 from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import UUID
@@ -133,6 +134,110 @@ async def graph(session, limit=5000, center=None, depth=1):
     edge_result = await edges(session, [node['id'] for node in node_result['nodes']])
     return {'nodes': node_result['nodes'], 'edges': edge_result['edges'], 'metadata': {
         'total_nodes': len(node_result['nodes']), 'total_edges': len(edge_result['edges']),
+        'generated_at': datetime.now(timezone.utc).isoformat(),
+    }}
+
+
+def strongest_first(adjacency, anchor, steps=3, max_nodes=200):
+    """The neighbourhood view's tracks (design system 1.9.0, DR-057; the same rule as SongNodes.neighbourhood):
+    the anchor, then repeatedly the untaken track with the strongest link to a taken one (ties: more links, then
+    the order it was reached), reached in at most `steps` links along the links it was taken by, at most
+    `max_nodes` tracks. adjacency: {id: [(neighbour, weight), ...]}. Returns (ids in order taken, capped)."""
+    if anchor not in adjacency:
+        return [], False
+    hops, ids, heap, seq = {}, [], [], 0
+
+    def take(track, hop):
+        nonlocal seq
+        hops[track] = hop
+        ids.append(track)
+        if hop < steps:
+            for other, weight in adjacency[track]:
+                if other not in hops:
+                    heapq.heappush(heap, (-weight, -len(adjacency[other]), seq, other, hop + 1))
+                    seq += 1
+
+    take(anchor, 0)
+    while heap:
+        _, _, _, track, hop = heapq.heappop(heap)
+        if track in hops:
+            continue
+        if len(ids) >= max_nodes:
+            return ids, True
+        take(track, hop)
+    return ids, False
+
+
+async def most_linked_track(session):
+    """The anchor with nothing playing or selected: the visible track with the most links (ties: lowest id)."""
+    return await session.scalar(text(f"""
+        WITH ends AS (
+            SELECT from_track_id AS id FROM silver_track_transitions
+            UNION ALL SELECT to_track_id FROM silver_track_transitions
+        )
+        SELECT t.id FROM ends e JOIN silver_enriched_tracks t ON t.id = e.id WHERE {VISIBLE_TRACK}
+        GROUP BY t.id ORDER BY count(*) DESC, t.id LIMIT 1
+    """))
+
+
+async def links_within(session, anchor, steps, ball_limit=50000):
+    """Adjacency of every link reached in at most `steps` links from the anchor, both ends visible. Expands one
+    level at a time, so only that part of the graph is read; stops growing at `ball_limit` tracks."""
+    adjacency = {anchor: []}
+    seen, frontier = {anchor}, [anchor]
+    for _ in range(steps):
+        if not frontier or len(seen) >= ball_limit:
+            break
+        rows = await session.execute(text(f"""
+            SELECT e.from_track_id, e.to_track_id, e.occurrence_count
+            FROM silver_track_transitions e
+            JOIN silver_enriched_tracks a ON a.id = e.from_track_id
+            JOIN silver_enriched_tracks b ON b.id = e.to_track_id
+            WHERE (e.from_track_id = ANY(CAST(:frontier AS uuid[])) OR e.to_track_id = ANY(CAST(:frontier AS uuid[])))
+              AND {VISIBLE_TRACK.replace('t.', 'a.')} AND {VISIBLE_TRACK.replace('t.', 'b.')}
+            ORDER BY e.from_track_id, e.to_track_id
+        """), {'frontier': frontier})
+        reached = []
+        for source, target, weight in rows:
+            if source == target:
+                continue
+            for one, other in ((source, target), (target, source)):
+                pair = (other, float(weight))
+                if pair not in adjacency.setdefault(one, []):
+                    adjacency[one].append(pair)
+            for track in (source, target):
+                if track not in seen:
+                    seen.add(track)
+                    reached.append(track)
+        frontier = reached
+    # Tracks on the edge of the ball keep only the links read so far; that never adds a track beyond `steps`.
+    for track in seen:
+        adjacency.setdefault(track, [])
+    return adjacency
+
+
+async def neighbourhood(session, center=None, steps=3, max_nodes=200):
+    """Graph data for the neighbourhood view: the anchor's strongest-first neighbourhood with its induced links.
+    With no center, the anchor is the most-linked visible track. Same shape as graph(), plus anchor and capped."""
+    if center is not None:
+        anchor = track_uuid(center)
+        found = await session.scalar(text(f'SELECT id FROM silver_enriched_tracks t WHERE id = :id AND {VISIBLE_TRACK}'), {'id': anchor})
+        if found is None:
+            raise HTTPException(status_code=404, detail="Track not found")
+    else:
+        anchor = await most_linked_track(session)
+    ids, capped = ([], False) if anchor is None else strongest_first(await links_within(session, anchor, steps), anchor, steps, max_nodes)
+    rows = await session.execute(text(f"""
+        SELECT t.* FROM silver_enriched_tracks t WHERE {VISIBLE_TRACK} AND t.id = ANY(CAST(:ids AS uuid[]))
+    """), {'ids': ids})
+    by_id = {row.id: node_from_row(row) for row in rows}
+    node_list = [by_id[track] for track in ids if track in by_id]
+    edge_result = await edges(session, [node['id'] for node in node_list])
+    library = await session.scalar(text(f'SELECT count(*) FROM silver_enriched_tracks t WHERE {VISIBLE_TRACK}'))
+    return {'nodes': node_list, 'edges': edge_result['edges'], 'metadata': {
+        'view': 'neighbourhood', 'anchor': f'song_{anchor}' if anchor is not None else None,
+        'steps': steps, 'max_nodes': max_nodes, 'capped': capped, 'library_nodes': library,
+        'total_nodes': len(node_list), 'total_edges': len(edge_result['edges']),
         'generated_at': datetime.now(timezone.utc).isoformat(),
     }}
 
