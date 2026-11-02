@@ -598,8 +598,8 @@ async def spotify_callback(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Spotify OAuth callback failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"OAuth callback failed: {str(e)}")
+        logger.error(f"Spotify OAuth callback failed: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="OAuth callback failed")
 
 class StoreTokenRequest(BaseModel):
     """Request to store OAuth tokens in database"""
@@ -653,10 +653,10 @@ async def store_oauth_token(request: StoreTokenRequest):
         })
 
     except Exception as e:
-        logger.error(f"Failed to store {request.service} tokens: {e}")
+        logger.error(f"Failed to store {request.service} tokens: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to store tokens: {str(e)}"
+            detail="Failed to store tokens"
         )
 
 @router.post("/spotify/token")
@@ -734,16 +734,16 @@ async def spotify_exchange_token(
                     )
 
     except aiohttp.ClientError as e:
-        logger.error(f"Network error during token exchange: {str(e)}")
+        logger.error(f"Network error during token exchange: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Network error: {str(e)}"
+            detail="Network error during token exchange"
         )
     except Exception as e:
-        logger.error(f"Unexpected error during token exchange: {str(e)}")
+        logger.error(f"Unexpected error during token exchange: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Unexpected error: {str(e)}"
+            detail="Unexpected error during token exchange"
         )
 
 @router.post("/spotify/refresh")
@@ -839,10 +839,10 @@ async def spotify_refresh_token(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error refreshing Spotify token: {str(e)}")
+        logger.error(f"Error refreshing Spotify token: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error: {str(e)}"
+            detail="Token refresh failed"
         )
 
 @router.get("/spotify/search")
@@ -902,10 +902,10 @@ async def search_spotify_tracks(
                     )
 
     except Exception as e:
-        logger.error(f"Error searching Spotify: {str(e)}")
+        logger.error(f"Error searching Spotify: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error: {str(e)}"
+            detail="Track search failed"
         )
 
 # ===========================================
@@ -1152,8 +1152,8 @@ async def init_tidal_oauth(request: TidalOAuthInitRequest):
         )
 
     except Exception as e:
-        logger.error(f"Failed to initialize Tidal OAuth: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"OAuth initialization failed: {str(e)}")
+        logger.error(f"Failed to initialize Tidal OAuth: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="OAuth initialization failed")
 
 @router.get("/tidal/oauth/callback")
 async def tidal_oauth_callback(
@@ -1224,8 +1224,8 @@ async def tidal_oauth_callback(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Tidal OAuth callback failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"OAuth callback failed: {str(e)}")
+        logger.error(f"Tidal OAuth callback failed: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="OAuth callback failed")
 
 @router.get("/reddit/callback")
 async def reddit_callback():
@@ -1295,8 +1295,8 @@ async def refresh_tidal_token(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Tidal token refresh failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Token refresh failed: {str(e)}")
+        logger.error(f"Tidal token refresh failed: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Token refresh failed")
 
 # ===========================================
 # HEALTH CHECK
@@ -1352,10 +1352,10 @@ async def get_spotify_token_status():
             }
 
     except Exception as e:
-        logger.error(f"Failed to get Spotify token status: {e}")
+        logger.error(f"Failed to get Spotify token status: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to get token status: {str(e)}"
+            detail="Failed to get token status"
         )
 
 @router.post("/spotify/token/refresh-manual")
@@ -1470,8 +1470,8 @@ async def manual_refresh_spotify_token():
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Manual token refresh failed: {str(e)}")
+        logger.error(f"Manual token refresh failed: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Manual refresh failed: {str(e)}"
+            detail="Manual refresh failed"
         )
