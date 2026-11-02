@@ -5,6 +5,11 @@ States: queued -> running -> succeeded, or back to queued with backoff until
 Workers claim with FOR UPDATE SKIP LOCKED; a running job whose lease expires is reclaimed,
 or marked dead when it has no attempts left. Submissions are deduplicated by
 (kind, idempotency_key), so a retried request returns the original job.
+
+Finish times use clock_timestamp(), not NOW(): the runner completes a job in the transaction that ran its handler, and
+NOW() is that transaction's start, so a 3-minute scrape would otherwise finish milliseconds after it started.
+A job dead-lettered because its lease expired (the worker stopped mid-run) has no known finish time, so finished_at
+stays NULL and the API shows no duration for it.
 """
 import json
 from typing import Any, Dict, List, Optional, Tuple
@@ -37,8 +42,8 @@ async def claim_next(conn, kinds: Optional[List[str]] = None, lease_seconds: int
     """Claim the next runnable job, or return None. Each claim consumes one attempt."""
     async with conn.transaction():
         await conn.execute("""
-            UPDATE ingestion_jobs SET status = 'dead', finished_at = NOW(), updated_at = NOW(),
-                   last_error = COALESCE(last_error, 'lease expired with no attempts left')
+            UPDATE ingestion_jobs SET status = 'dead', finished_at = NULL, updated_at = clock_timestamp(),
+                   last_error = left('lease expired with no attempts left' || COALESCE('; previous error: ' || last_error, ''), 2000)
             WHERE status = 'running' AND attempts >= max_attempts
               AND started_at < NOW() - make_interval(secs => COALESCE((SELECT l.s FROM unnest($2::text[], $3::float8[]) AS l(k, s)
                                                                        WHERE l.k = ingestion_jobs.kind), $1::float8))
@@ -60,8 +65,8 @@ async def claim_next(conn, kinds: Optional[List[str]] = None, lease_seconds: int
 
 async def complete(conn, job_id: UUID, result: Optional[Dict[str, Any]] = None):
     row = await conn.fetchrow("""
-        UPDATE ingestion_jobs SET status = 'succeeded', result = $2::jsonb, finished_at = NOW(),
-               updated_at = NOW(), last_error = NULL
+        UPDATE ingestion_jobs SET status = 'succeeded', result = $2::jsonb, finished_at = clock_timestamp(),
+               updated_at = clock_timestamp(), last_error = NULL
         WHERE id = $1 AND status = 'running' RETURNING *
     """, job_id, json.dumps(result) if result is not None else None)
     if row is None:
@@ -76,8 +81,8 @@ async def fail(conn, job_id: UUID, error: str, backoff_seconds: float = 30, perm
             status = CASE WHEN attempts >= max_attempts OR $5::boolean THEN 'dead' ELSE 'queued' END,
             run_after = CASE WHEN attempts >= max_attempts OR $5::boolean THEN run_after ELSE NOW() +
                 make_interval(secs => LEAST($3::float8 * power(2, attempts - 1), $4::float8)) END,
-            finished_at = CASE WHEN attempts >= max_attempts OR $5::boolean THEN NOW() END,
-            last_error = $2, updated_at = NOW()
+            finished_at = CASE WHEN attempts >= max_attempts OR $5::boolean THEN clock_timestamp() END,
+            last_error = $2, updated_at = clock_timestamp()
         WHERE id = $1 AND status = 'running' RETURNING *
     """, job_id, error[:2000], float(backoff_seconds), float(MAX_BACKOFF_SECONDS), permanent)
     if row is None:

@@ -2444,3 +2444,10 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks run: build_tokens.py (contrast pass), build_bundle.py, `sync-design-system.sh --check` (1.9.1 in sync), `check_design_system.py --check`, tsc, oxlint, vitest 553 tests, vite build, scope guard.
 - E2E: not run per PR (Markus, 2 Nov 2026); one combined host run of `scripts/e2e-docker.sh` covers every PR built on 2 Nov 2026 once they merge.
 <!-- SLOT:GV4 END -->
+
+<!-- SLOT:JT1 BEGIN -->
+### JT1: Job times, scrape stage counts, trigger message and OAuth log redaction
+- Start: 2026-11-02 (branch jt1-job-times-and-messages off origin/main 338fa9b0). Source: `docs/integration/LOCAL-TEST-2026-11-02.md` (PR #518), problems found in the 2 Nov local test.
+- Scope: job finish times (`jobs.py`), finished scrape stage counts (`routers/jobs.py`, `features/pipeline/jobStages.ts`), interrupted jobs without a duration, the trigger message, the rest-api access log.
+- Next: finished scrape stage keeps its counts.
+<!-- SLOT:JT1 END -->
