@@ -2418,3 +2418,15 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Next: GV2 frontend View control (after GR1 #509, GR2 #513), GV3 neighbourhood endpoint, GV4 ringLayout heap.
 - E2E: not run per PR (Markus, 2 Nov 2026); one combined host run of `scripts/e2e-docker.sh` covers every PR built on 2 Nov 2026 once they merge.
 <!-- SLOT:GV1 END -->
+
+<!-- SLOT:GV4 BEGIN -->
+### GV4: Ring layout keeps up with a growing library
+- Start: 2026-11-02 (branch gv4-ring-layout-heap off origin/main 0d50d762, design system 1.9.0). Brief: plan/agents/GV4_ring_layout_heap.md.
+- End: 2026-11-02.
+- Changed: `SongNodes.ringLayout` picks the next track from a binary heap and walks each ring's seats outward from the nearest one (computed on demand); design system 1.9.1 (patch), governance entry, re-synced.
+- Equivalence: identical output to 1.9.0 on 300 random graphs (1–400 tracks) and 40 more (up to 1,500), each also re-run with kept seats and new tracks; ids both strings and numbers, set and default anchors, missing boxes, repeated and self links.
+- Speed (node 22, synthetic chained graphs): 463 tracks 55 → 24 ms; 1,000 102 → 32 ms; 2,000 319 → 45 ms; 4,000 1,012 → 86 ms; 8,000 3,784 → 242 ms; 1,500 unlinked tracks 1,429 → 28 ms.
+- Found, not changed (spec behaviour): every unlinked track takes a ring of its own (1,500 unlinked → 1,499 rings). /graph hides unlinked tracks today; worth a GraphStyles decision before the Whole library view shows them.
+- Checks run: build_tokens.py (contrast pass), build_bundle.py, `sync-design-system.sh --check` (1.9.1 in sync), `check_design_system.py --check`, tsc, oxlint, vitest 553 tests, vite build, scope guard.
+- E2E: not run per PR (Markus, 2 Nov 2026); one combined host run of `scripts/e2e-docker.sh` covers every PR built on 2 Nov 2026 once they merge.
+<!-- SLOT:GV4 END -->
