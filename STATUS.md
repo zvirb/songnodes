@@ -2499,7 +2499,10 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 
 <!-- SLOT:UI7 BEGIN -->
 ### UI7: /pipeline copy, heading and target-card fixes from the 2 Nov local test
-- Start: 2026-11-02 (branch ui7-pipeline-copy off origin/main 338fa9b0). Source: docs/integration/LOCAL-TEST-2026-11-02.md, section 7.
-- Scope: /pipeline missing values as en dash, PageHeader "Pipeline: Telemetry", accurate consumer wording, target-card ID line; scrape-run duplicates investigated.
-- Next: run checks, open the PR.
+- Start: 2026-11-02 (branch ui7-pipeline-copy off origin/main 338fa9b0, rebased on f7417033). Source: docs/integration/LOCAL-TEST-2026-11-02.md, section 7.
+- End: 2026-11-02.
+- Changed: missing stage counts and worker success rates are an en dash (`sn-none`); PageHeader "Pipeline: Telemetry" in both states; idle consumers say "Up to date, last change handled … ago" (`outbox_consumers.updated_at` moves only when an event is handled); target-card ID lines truncate in the card; pipeline visual baselines re-created in Docker.
+- Found, not changed: the duplicate Scrape runs rows are separate jobs for duplicate target rows (75 artist/title pairs, 415 rows); TGT2 (#541) stops new duplicates, existing ones need the owner's cleanup.
+- Checks run: tsc, oxlint, vitest (581 tests after rebasing on 8b5f72a6), vite build, `sync-design-system.sh --check`, `check_design_system.py --check`; E2E in Docker against a frontend built from this branch (separate container on the dev network): routes.smoke, visual, accessibility and design-rules for /pipeline and /sources/targets, chromium and firefox: 66 passed, 4 pipeline visual diffs (intended), then baselines re-created.
+- Next: review and merge.
 <!-- SLOT:UI7 END -->
