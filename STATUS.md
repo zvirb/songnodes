@@ -2191,6 +2191,141 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Next: a package that adds a rendered text-inset check (4–7px fails) to `design-rules.spec.ts`, run on a Docker host, fixing or listing what it finds.
 <!-- SLOT:DSQ1B END -->
 
+<!-- SLOT:U17C BEGIN -->
+### U17C: Remove the unused graphql-api service
+- Start: 2026-11-01 (branch u17c-remove-graphql-api off origin/main 62795a7). Owner decision (Markus, 2 Nov 2026): graphql-api is not in compose.dev.yaml and only returns example rows, so it goes. Supersedes U17B.
+- End: 2026-11-01.
+- Changed: deleted `services/graphql-api/` (10 files). Removed its line or entry from `start-docker.sh`, `deploy/build-and-push-images.sh`, `.github/dependabot.yml`, `services/api-gateway/routes/health.js` and `services/api-gateway/.env.example`. Added brief `plan/agents/U17C_remove_graphql_api.md`. No CI workflow, Helm or k8s file named it.
+- Left as is (not owned, reported): `design-system/16-platform.md` and `02-information-architecture.md` (GraphiQL rows, a design-system source change), `services/metadata-enrichment/INTEGRATION.md` (GraphQL example section), `tests/performance/load_tests.py` (`/graphql` task), `tests/requirements.txt` (graphql-core, hypothesis-graphql), GraphQL Playground flags in the env examples, plan history (U17, U17B, RESTRUCTURE.md, build_upgrade_prompts.py).
+- Checks run: root `pytest --collect-only` (263 collected, no graphql; one older collection error, `tests/security/test_pathfinder_security.py` needs `annoy`, not installed here), YAML parse of dependabot and every workflow, `bash -n` on both scripts, `node --check` on health.js, scope guard.
+- Checks not run: E2E and image builds (no Docker daemon).
+- Next: close U17B; a design-system package drops the GraphiQL rows; a small package removes the stale GraphQL section, load-test task and test deps.
+<!-- SLOT:U17C END -->
+
+<!-- SLOT:BRZ2 BEGIN -->
+### BRZ2: Bronze playlists store raw_json as a JSON object
+- Start: 2026-11-01 (branch brz2-bronze-raw-json off origin/main 62795a7). Job: bronze playlist and track raw_json are JSON objects, so ingest sees fields such as `total_tracks`.
+- End: 2026-11-01.
+- Changed: `persistence_pipeline.py` gains `_bronze_raw_json` (Items, nested Items and tuples become dicts/lists before `json.dumps`), used by the bronze playlist and track inserts. Before, a playlist Item was stored as a JSON string of its repr; track batch items were already dicts in the MixesDB flow but used the same call. `ingest.py` rejects a playlist flagged `bronze_incomplete` (BRZ1) with reason `bronze_incomplete` when no other completeness error applies (a lost last position leaves no gap). Old string rows are not rewritten: ingest reads them as `{}` as before, and still sees the flag when BRZ1 wrapped them under `raw`.
+- Checks run: `python -m pytest scrapers/tests` (21 passed), `cd services && python -m pytest common/tests` (163 passed), root `python -m pytest` (failures are Docker-only integration tests and modules that cannot import `annoy`/`common.*` here; none touch the changed files), scope guard.
+- Checks not run: E2E and a real scrape into Postgres (no Docker daemon).
+- Next: optionally backfill old bronze playlist rows (re-scrape, or parse the stored repr) so ingest sees their declared track counts.
+<!-- SLOT:BRZ2 END -->
+
+<!-- SLOT:DSQ2 BEGIN -->
+### DSQ2: Design system 1.7.1: the owner's answers to Q23–Q27
+- Start: 2026-11-01 (branch dsq2-design-answers off origin/main 62795a7). Job: record Markus's answers of 2 Nov 2026 (Melbourne) to Q23–Q27 (the 1.6.0 fitted choices) at the design-system source, change what differs, bump, rebuild and re-sync.
+- End: 2026-11-01.
+- Changed: `17-governance.md` gains DR-051 to DR-055, the 1.7.1 change log entry, and Q23–Q27 in the closed table (no question is open now). Q23 next Melbourne calendar day (DR-051), Q24 new tab (DR-052), Q25 info/ok go entirely (DR-053), Q26 24px with a 44px touch hit area (DR-054) match the 1.6.0 build. Q27 does not: the InfoTip tooltip form now opens after 500 ms of mouse hover like `Tooltip`, at once on focus and tap (DR-055). Source: `bundle.src.js` (`infoTips` hover delay, version), `types/50-feedback.d.ts`, `components/index.d.ts`, `build_tokens.py` version. Cards and sections: InfoTip, Banner, 06, 08; `docs/sdlc/SDLC.md` open row. Rebuilt with build_tokens.py and build_bundle.py; synced with sync-design-system.sh. No React InfoTip port exists, so no React change.
+- Checks run: build_tokens (contrast: all pairs pass), build_bundle, `sync-design-system.sh --check` (1.7.1 in sync), `check_design_system.py --check`, tsc, oxlint (exit 0), vitest 423/423, vite build, a jsdom run of the synced `SongNodes.infoTips` (closed at 200 ms of hover, open after 500 ms, a brief sweep opens nothing, focus and click open at once), scope guard.
+- Checks not run: E2E and preview screenshots (no Docker or browser here).
+- Next: `frontend/src/features/musicLibrary/storage.ts` keys a banner dismissal on the condition's count only; DR-051 also ends it at the next Melbourne day (`SongNodes.dismissal`). A small follow-up for that feature's owner.
+<!-- SLOT:DSQ2 END -->
+
+<!-- SLOT:HS1 BEGIN -->
+### HS1: One transition scoring classifier with golden tests (spec package M6-F1)
+- Start: 2026-11-01 (branch hs1-transition-scoring off main 62795a7).
+- End: 2026-11-01.
+- Changed: `docs/specs/HARMONIC_SCORING.md` records the owner's answers of 2 Nov 2026 (§5 answer column; Q-E1 `step_down`, Q-E2 drop/rise bounds, Q-B1 octave capped at compatible and worded "half time"/"double time", the rest proposed defaults) and is marked accepted. Six §3 scores were arithmetic slips and are corrected (0.8^0.6 is 87, not 88; 0.8^0.4 is 91, not 92); every cost was already right. New `services/common/metadata/transition_scoring.py` (pure functions: key verdict, BPM verdict with half/double time, energy move, compat score, path cost, all stored edge fields), `services/common/tests/test_transition_scoring.py`, golden `tests/fixtures/harmonic_scoring/examples.json` (all 24 §3 rows) and the brief `plan/agents/HS1_transition_scoring.md`.
+- Checks run: `cd services && python -m pytest common/tests` (pass), scope guard (pass).
+- Checks not run: root `python -m pytest` (not touched by this package), E2E (no Docker daemon; no UI change).
+- Next: M6-F2 parity test (SN.compat/bpmStep/energyStep against `examples.json`, `sn_differs` rows as expected differences), then M6-DS for the octave words, rounding, fractional energy, drop bound and `step_down` word.
+<!-- SLOT:HS1 END -->
+
+<!-- SLOT:HS8 BEGIN -->
+### HS8: Remove the dead harmonic-matching copies
+- Start: 2026-11-01 (branch hs8-remove-dead-matching off origin/main 62795a7). Brief: plan/agents/HS8_remove_dead_matching.md (spec package M6-F3, docs/specs/HARMONIC_SCORING.md).
+- End: 2026-11-01.
+- Changed: deleted `utils/harmonicMatching.ts`, `utils/harmonicUtils.ts`, `utils/intelligentBrowserUtils.ts` and `components/IntelligentBrowser.legacy.tsx` after a repo-wide search found no importer (static, dynamic, `import.meta.glob`, tests, routes, oxlint and vite config). No test file tested them. `frontend/design-system-pending.txt` already holds commented `# migrated` lines for two of them, kept as its header asks.
+- Checks run: see the PR body.
+- Checks not run: E2E (no Docker daemon).
+- Next: stale mentions in design-system docs and `frontend/LINTING.md` belong to their owners (follow-ups in the PR).
+<!-- SLOT:HS8 END -->
+
+<!-- SLOT:G1B BEGIN -->
+### G1B: Scope guard recognises package codes without digits
+- Start: 2026-11-01 (branch g1b-scope-guard-codes off origin/main 62795a7). Brief: plan/agents/G1B_scope_guard_codes.md (added in this PR).
+- End: 2026-11-01.
+- Changed: `scripts/scope_guard.py` gains `find_brief` and `package_code`. The code is first the title prefix before the first colon (`^([A-Z][A-Z0-9]{1,11}):`) when plan/agents/<CODE>_*.md exists, so JOBDATE and JOBSTG are checked; otherwise the old title pattern and branch fallback, unchanged. Lower-case prefixes (`fix(deps):`) and code-shaped prefixes with no brief (`PLAN2B:`) stay "not a work package".
+- Checks run: `python -m pytest tests/scope_guard` (26 passed; 18 new in `test_package_code.py`, including an end-to-end JOBDATE repo that the old script let through). Guard on real merges: JOBDATE fc0a8e6 passes (was "not a work package"); DS24C 50e59b7, TX1C cdb008c pass; 50e59b7 under a "JOBDATE:" title fails listing the DS24C files; scope guard on this branch.
+- Checks not run: the GitHub workflow itself (runs on the PR).
+- Next: none.
+<!-- SLOT:G1B END -->
+
+<!-- SLOT:GR1 BEGIN -->
+### GR1: Graph nodes sit at the spacing the design system defines
+- Start: 2026-11-01 (branch gr1-graph-node-spacing off origin/main 07567b3). Brief: plan/agents/GR1_graph_node_spacing.md (added in this PR). Owner report 2 Nov 2026: nodes far apart and not findable.
+- End: 2026-11-01.
+- Cause: `GraphVisualization.tsx` still ran the d3 force layout GraphStyles retired (DR-034): link distance 150–900px from weight (real weights are occurrence counts, nearly all 1, so about 900px), charge −2500, collide r + 50; the camera opened at 100% with no fit, and Fit added the canvas centre twice. d738d2d did not change spacing.
+- Changed: new `lib/graphLayout.ts` (ring tokens, GraphStyles node size, `SN.ringLayout` seating anchored on now playing, fit within 25–400%, ease from the `ease-standard` token) with 14 tests; `GraphVisualization.tsx` drops the forces and pre-compute pass, pins nodes to seats, fits on load and on a new now playing, fixes the double centring in Fit and centre-on-node.
+- Fixture reproduction (vite preview, 294 library-fixture tracks, 600 generated transitions; not the owner's data), 1440 wide: nearest-neighbour median 217px → 23px, p90 428px → 30px; layout 8594×7402px → 837×484px; tracks in view 8/250 → 250/250; centre track click selects: no → yes. At 390 wide the route shows the mobile track list, no canvas (unchanged).
+- Checks run: tsc, oxlint (exit 0), vitest 58 files / 437 tests, vite build, `sync-design-system.sh --check`, `check_design_system.py --check`, scope guard.
+- Checks not run: E2E (no Docker daemon). No visual baseline covers /graph.
+- Next: Pause layout holding seats for new tracks, the 320ms re-seat move, drag to nearest free seat, labels only above zoom 1.5, and removing the unused `hooks/useForceSimulation.ts` / `useGraphLayout.ts`.
+<!-- SLOT:GR1 END -->
+
+<!-- SLOT:IB1 BEGIN -->
+### IB1: Recommendation rows no longer overlap the reason text
+- Start: 2026-11-01 (branch ib1-track-row-reason-overlap off origin/main 07567b3). Brief: plan/agents/IB1_track_row_reason_overlap.md (added in this PR).
+- End: 2026-11-01.
+- Root cause: the Up next list is virtualised with absolutely positioned rows of a fixed 64px (`measureElement` is configured but rows never register for measuring), while each row was three lines tall: 32px thumb in the title line, a wrapping meta line, and the reason as `sn-track-cell__mix` outside `sn-track-cell__meta` (no ellipsis rule, so it wrapped). It spilled into the next row, whose thumb hid its first letters.
+- Changed: `TrackItem.tsx` uses the TrackCell card markup (`__title` > `__name`/`__artist`; one-line `__meta` with BPM, key, `__dur`, genre, `__sep`, `__mix` reason with full text in `title`); thumb beside the cell; exports `TRACK_ROW_HEIGHT` = row-two-line + 2 × space-2 = 72, used by `IntelligentBrowser.tsx` for the virtualiser. Module CSS: row clips (`overflow: hidden`), dead title/meta classes removed. New `TrackItem.test.tsx` (4 tests).
+- Checks run: tsc, oxlint (exit 0; warnings are older, none in TrackItem), vitest 427/427, vite build, `sync-design-system.sh --check` (1.7.0 in sync), `check_design_system.py --check`, scope guard.
+- Checks not run: E2E (no Docker). No visual baseline covers this panel (visual.spec.ts covers home, library, nav drawer, not found, pipeline, planned module, sets, settings).
+- Next: follow-up on scoring: without DJ-transition adjacency and with no energy data, the best possible score is 40 (25 key + 15 tempo), so every row bands as "weak" under the 80/60/40 bands.
+<!-- SLOT:IB1 END -->
+
+<!-- SLOT:INS1 BEGIN -->
+### INS1: Design check fails text set 4–7 px from its box edge
+- Start: 2026-11-01 (branch ins1-text-inset-check off origin/main). Brief: plan/agents/INS1_text_inset_check.md. Job: build the rendered text-inset check DR-050 (Q18) asks for.
+- End: 2026-11-01.
+- Changed: `design-rules.spec.ts` gains "keeps text at least 8px inside its box" on every shell route and `/sources/import` at 390 and 1440px. The browser collects text line rects (`Range.getClientRects`, clipped to what shows) and the computed style of every ancestor; new `src/lib/textInset.ts` finds the nearest box inside main that draws a left or right edge (a fill unlike what is behind it, a visible border, a ring or shadow) and fails 4 to under 8px from its padding edge. The message lists every offender: route, width, selector, inset, side, box and a text snippet. Not measured: text outside main, field values, SVG text, hidden text, and `sn-key-picker__key` (KeyPicker card: keys at least 24px wide padded `space-1`). Governance conformance row "Text inset (rendered)" now says built.
+- Checks run: tsc, oxlint (no findings in the new files), vitest run src (58 files, 437 tests; 14 new in textInset.test.ts), vite build, `sync-design-system.sh --check` (1.7.0 in sync), `check_design_system.py --check`, scope guard, a type-check of the spec, and a dry run of the new tests in local Chromium against the static `vite build` with every API answering `{}`: positive controls injected into /library (4px fill, 6px ring) were reported with selector and inset; an 8px `sn-tag`, a KeyPicker key and a bottom-rule-only box were not.
+- Checks not run: the e2e job against the real stack (no Docker here). Its result is unknown until CI runs; the first run is the offender list.
+- Next: read the first CI run's list and open fix packages per component or page (or exclusions with a card citation where the system intends the inset).
+<!-- SLOT:INS1 END -->
+
+<!-- SLOT:HS6 BEGIN -->
+### HS6: Route finder prefers proven transitions
+- Start: 2026-11-02 (branch hs6-pathfinder-cost off origin/main a071a2e). Brief: plan/agents/HS6_pathfinder_cost.md (spec package M6-R1, docs/specs/HARMONIC_SCORING.md §2.6).
+- End: 2026-11-02.
+- Changed: `services/rest_api/routers/pathfinder.py` reads `GraphEdge.weight` as the occurrence count (documented on the field) and costs each edge with the HS1 `path_cost(compat_score(key, BPM), n)`: always > 0, falling as compatibility and plays rise; ANN fallback edges count as inferred (n = 0); unknown key/BPM uses U = 0.5. The −1.0 waypoint reward is now a positive 0.5× cost discount. Removed the unused `get_key_compatibility_bonus`/`get_bpm_difference`. Tests in `tests/rest_api/test_pathfinder_cost.py` (root REST test folder, collected by pytest.ini; the spec's `services/rest_api/tests/` is not).
+- Checks run: new tests plus `tests/security/test_pathfinder_security.py` (annoy built locally), `tests/rest_api` + `tests/security` (431 passed), `services/common/tests` (181 passed), root `pytest` (failures only in live-stack integration, library_importer and enrichment_local tests, none touching the pathfinder), scope guard. On main the same request routes through the once-played edge; here through the 50-play edge.
+- Checks not run: E2E (no Docker daemon).
+- Next: follow-ups in the PR (admissible heuristic, `key_compatible` from `key_verdict`, consistent `connection_strength`).
+<!-- SLOT:HS6 END -->
+
+<!-- SLOT:HS3 BEGIN -->
+### HS3: Design system speaks the accepted harmonic scoring
+- Start: 2026-11-02 (branch hs3-design-system-scoring off origin/main a071a2e). Brief: plan/agents/HS3_design_system_scoring.md (added in this PR). Spec package M6-DS.
+- End: 2026-11-02.
+- Changed: design system 1.8.0 (DR-056). `bpmStep` rounds gaps half up and judges half/double time on the octave gap, capped at compatible ("half time"/"double time"), returning `relation` and `gap`. `energyStep` rounds the delta half away from zero, narrows "trough reset" to drops of 2–4, makes drops of 5+ a "jarring" clash, words rises of 4+ "jarring", and returns `move` (energy-move-1, with the new `step_down`). New `SongNodes.energyMove(move)` gives a stored move's words ("push" for `lift`). 11-data-display gains the −2 key row, BPM rounding and the tiers-vs-bands note; 18-music-domain, CompatibilityBadge, TransitionNote, index.d.ts updated; rebuilt and re-synced.
+- Checks run: an uncommitted node script ran the built bundle on all 24 rows of tests/fixtures/harmonic_scoring/examples.json: key level/label, BPM level/label/relation/gap and energy move all agree. tsc, oxlint, vitest run src (58 files, 437 tests), vite build, `sync-design-system.sh --check` (1.8.0), `check_design_system.py --check`, scope guard.
+- Checks not run: E2E (no Docker daemon).
+- Next: M6-F2 parity test can drop its expected differences; a +2/+3 energy rise is still a clash ("too steep", wave rule 2) since no answer changed it.
+<!-- SLOT:HS3 END -->
+
+<!-- SLOT:HS4 BEGIN -->
+### HS4: Silver transitions store their harmonic scoring
+- Start: 2026-11-01 (branch hs4-silver-transition-scoring off origin/main a071a2e). Brief: plan/agents/HS4_silver_transition_scoring.md (added in this PR). Spec package M6-P1.
+- End: 2026-11-01.
+- Changed: migration 270 adds 21 nullable scoring columns to `silver_track_transitions` (spec 2.7 plus energy provenance and `scored_at`); new `common/datalayer/transition_scores.py` maps `score_transition` onto them; the ingest N -> N+1 upsert writes them; new job kind `transition_scoring` backfills existing rows in chained keyset batches and writes only rows whose scoring changed. `start-dev.sh` applies 270 and queues the backfill once per scoring version (`backfill:harmonic-1`).
+- Checks run: `cd services && python -m pytest common/tests`; scope guard.
+- Checks not run: the migration and job against a real Postgres (no Docker here); integration tests.
+- Next: M6-P2 projects the stored fields; rescoring when track metadata changes after ingest is a follow-up.
+<!-- SLOT:HS4 END -->
+
+<!-- SLOT:TT1 BEGIN -->
+### TT1: Target tracks show real search progress, not a hand-set slider
+- Start: 2026-11-01 (branch tt1-target-real-progress off origin/main ae56475, rebased on 33dcc5a). Brief: plan/agents/TT1_target_real_progress.md (added in this PR).
+- End: 2026-11-01.
+- Changed: `GET /api/v1/target-tracks` adds `search_jobs` per target (counts of the latest search's scrape jobs by status, newest finish time, newest failure; null when never searched). The latest search is every scrape job for the target created at or after `last_searched`, the rule `record_playlists_found` uses. On /sources/targets the "Progress: N%" bar and its range slider (a hand-set `completion_percentage` saved by `handleUpdateCompletion`) are gone; each row shows a StatusPill and one detail line from `targetSearchStatus.ts`: Never searched / Search started (no job on record) / Queued / Searching… (n of m sources done) / Searched (date, time · N playlists found) / Partly done / Search failed (cause). Failed rows offer "Retry search"; Search now is disabled while queued or running; the list refreshes every 10 s while a search is in flight. The embedded pending queue on /pipeline now hides only targets whose last search finished.
+- Left alone: the `completion_percentage` column (sql/migrations/012) and the PUT field (tests/integration/test_dev_workflows.py still sends it). Nothing reads it now.
+- Checks run: tsc, oxlint (exit 0), vitest run src (61 files, 466 tests), vite build, `sync-design-system.sh --check` (1.7.1), `check_design_system.py --check`, `python -m pytest tests/rest_api` (4 new), scope guard.
+- Checks not run: E2E (no Docker daemon); the new SQL against a real Postgres (none running here).
+- Next: a package that drops `completion_percentage` (migration, PUT field, integration test line).
+<!-- SLOT:TT1 END -->
+
 <!-- SLOT:E2E2 BEGIN -->
 ### E2E2: Local production-like test of main (2 Nov)
 - Start: 2026-11-02 (branch e2e2-local-test-2026-11-02 off origin/main 62795a7d). Job: rebuild the Compose stack from main, run smoke checks, the full E2E suite, the library target load, one real scrape, the scrape-window card and a browser look-over; report only, no fixes.

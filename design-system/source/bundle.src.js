@@ -72,21 +72,43 @@
   /* ---------- energy ---------- */
   function tier(e) { e = Number(e); if (!e) return null; return e <= 4 ? "low" : e <= 7 ? "building" : "high"; }
   var TIER_LABEL = { low: "Low 1–4", building: "Building 5–7", high: "High 8–10" };
-  /** Judge an energy step between consecutive set tracks (Naarm rules). */
+  /** Round half away from zero on the absolute value (2.5 → 3, −2.5 → −3), after clearing float noise (harmonic-1, Q-B2, Q-E3). */
+  function roundHalfUp(x) { var a = Math.floor(Math.round(Math.abs(x) * 1e6) / 1e6 + 0.5); return x < 0 && a ? -a : a; }
+  function knownEnergy(e) { e = e == null || e === "" ? NaN : Number(e); return e >= 1 && e <= 10 ? e : null; }
+  function knownBpm(b) { b = b == null || b === "" ? NaN : Number(b); return b > 0 && isFinite(b) ? b : null; }
+  /** Energy move labels (`energy-move-1`, DR-056): the stored identifier, the words shown for it and its verdict without set context. */
+  var ENERGY_MOVES = {
+    hold: { level: "perfect", label: "hold" }, step_up: { level: "perfect", label: "step up" },
+    lift: { level: "clash", label: "push" }, jarring: { level: "clash", label: "jarring" },
+    reset_drop: { level: "perfect", label: "trough reset" }, step_down: { level: "compatible", label: "step down" },
+    unknown: { level: "unknown", label: "energy ?" }
+  };
+  function energyMove(move) { var m = ENERGY_MOVES[move] || ENERGY_MOVES.unknown; return { level: m.level, label: m.label, move: ENERGY_MOVES[move] ? move : "unknown" }; }
+  /** Judge an energy step between consecutive set tracks (Naarm rules, harmonic-1). The one-decimal delta is rounded half away
+   *  from zero first; `move` is the energy-move-1 identifier (hold, step_up, lift, jarring, reset_drop, step_down, unknown). */
   function energyStep(prev, next, before) {
-    if (!prev || !next) return { level: "unknown", label: "energy ?" };
-    var d = next - prev;
-    if (d >= 2) return { level: "clash", label: "energy +" + d + ": too steep, step up one at a time" };
-    if (d === 1) return { level: "perfect", label: "energy +1" };
-    if (d <= -2) return { level: "perfect", label: "drop −" + Math.abs(d) + ": trough reset" };
-    if (d === -1) return before && prev - before === -1 ? { level: "possible", label: "second −1 in a row: drop 2–3 at once instead" } : { level: "compatible", label: "energy −1" };
-    return { level: "perfect", label: "energy hold" };
+    prev = knownEnergy(prev); next = knownEnergy(next);
+    if (prev == null || next == null) return { level: "unknown", label: "energy ?", move: "unknown" };
+    var n = roundHalfUp(next - prev), b = knownEnergy(before);
+    if (n === 0) return { level: "perfect", label: "energy hold", move: "hold" };
+    if (n === 1) return { level: "perfect", label: "energy +1", move: "step_up" };
+    if (n >= 4) return { level: "clash", label: "energy +" + n + ": jarring, step up one at a time", move: "jarring" };
+    if (n >= 2) return { level: "clash", label: "energy +" + n + ": too steep, step up one at a time", move: "lift" };
+    if (n === -1) return b != null && roundHalfUp(prev - b) === -1 ? { level: "possible", label: "second −1 in a row: drop 2–3 at once instead", move: "step_down" } : { level: "compatible", label: "energy −1", move: "step_down" };
+    if (n >= -4) return { level: "perfect", label: "drop −" + -n + ": trough reset", move: "reset_drop" };
+    return { level: "clash", label: "drop −" + -n + ": jarring, drop 2–4 at once", move: "jarring" };
   }
+  function bpmLevel(g) { return g <= 2 ? "perfect" : g <= 4 ? "compatible" : g <= 8 ? "possible" : "clash"; }
+  /** Judge a tempo move a → b (harmonic-1). Gaps round half up on the absolute value. When the halved or doubled target is
+   *  strictly closer and within 8, it is a half- or double-time move, judged on that gap but never better than compatible. */
   function bpmStep(a, b) {
-    if (!a || !b) return { level: "unknown", label: "BPM ?" };
-    var d = Math.round(b - a), ad = Math.abs(d), sign = d >= 0 ? "+" : "−";
-    var lvl = ad <= 2 ? "perfect" : ad <= 4 ? "compatible" : ad <= 8 ? "possible" : "clash";
-    return { level: lvl, label: d === 0 ? "same BPM" : sign + Math.abs(d) + " BPM" };
+    a = knownBpm(a); b = knownBpm(b);
+    if (a == null || b == null) return { level: "unknown", label: "BPM ?", relation: null, gap: null };
+    var d = roundHalfUp(b - a), ad = Math.abs(d);
+    var dbl = Math.abs(roundHalfUp(b / 2 - a)), hlf = Math.abs(roundHalfUp(b * 2 - a));
+    var rel = dbl <= hlf ? "double_time" : "half_time", g = Math.min(dbl, hlf);
+    if (g < ad && g <= 8) { var lv = bpmLevel(g); return { level: lv === "perfect" ? "compatible" : lv, label: rel === "double_time" ? "double time" : "half time", relation: rel, gap: g }; }
+    return { level: bpmLevel(ad), label: d === 0 ? "same BPM" : (d > 0 ? "+" : "−") + ad + " BPM", relation: "direct", gap: ad };
   }
 
   /* ---------- graph (GraphStyles 1.5.0, DR-034 to DR-037): strength bands and the ring layout ---------- */
@@ -573,12 +595,13 @@
     return '<span class="sn-infotip">' + btn + '<span class="sn-tooltip sn-infotip__tip" id="' + id + '" role="tooltip" hidden>' + esc(o.text) + "</span></span>";
   }
   /** InfoTip behaviour, installed once per page (document-level, so tips added later work too):
-      tooltip form opens on hover, keyboard focus and tap (a tap pins it); panel form on click, tap, Enter or Space only.
+      tooltip form opens after 500 ms on hover (as Tooltip, DR-055), at once on keyboard focus and tap (a tap pins it);
+      panel form on click, tap, Enter or Space only.
       One open at a time; Escape closes and returns focus; a click outside closes; it flips up or left near the viewport edge. */
   var infoTipsOn = false;
   function infoTips() {
     if (infoTipsOn || typeof document === "undefined") return; infoTipsOn = true;
-    var open = null, timer = null, touch = false;
+    var open = null, timer = null, pending = null, showTimer = null, touch = false, HOVER_DELAY = 500;
     function parts(w) { return [w.querySelector(":scope > .sn-infotip__btn"), w.querySelector(":scope > .sn-infotip__tip, :scope > .sn-infotip__panel")]; }
     function isPanel(w) { var t = parts(w)[1]; return !!t && t.classList.contains("sn-infotip__panel"); }
     function place(w) {
@@ -590,6 +613,7 @@
       if (r.right > window.innerWidth - 8) t.classList.add(end);
     }
     function show(w, pin) {
+      clearTimeout(showTimer); pending = null;
       if (open && open !== w) hide(open, false);
       var p = parts(w); if (!p[1]) return;
       p[1].hidden = false; p[0].setAttribute("aria-expanded", "true"); w.dataset.pin = pin ? "1" : ""; open = w; place(w);
@@ -607,11 +631,15 @@
     });
     document.addEventListener("mouseover", function (e) {
       if (touch) return; var w = e.target.closest(".sn-infotip");
-      if (w && !isPanel(w)) { clearTimeout(timer); if (open !== w) show(w, false); }
+      if (!w || isPanel(w)) return;
+      if (open === w) { clearTimeout(timer); return; }
+      if (pending !== w) { clearTimeout(showTimer); pending = w; showTimer = setTimeout(function () { show(w, false); }, HOVER_DELAY); }
     });
     document.addEventListener("mouseout", function (e) {
       if (touch) return; var w = e.target.closest(".sn-infotip");
-      if (w && !w.contains(e.relatedTarget) && !w.dataset.pin && !isPanel(w)) timer = setTimeout(function () { hide(w, false); }, 300);
+      if (!w || w.contains(e.relatedTarget) || isPanel(w)) return;
+      if (pending === w) { clearTimeout(showTimer); pending = null; }
+      if (open === w && !w.dataset.pin) timer = setTimeout(function () { hide(w, false); }, 300);
     });
     document.addEventListener("focusin", function (e) {
       var w = e.target.closest(".sn-infotip");
@@ -630,12 +658,12 @@
   };
 
   window.SongNodes = {
-    version: "1.7.0", DOMAIN_MAP: DOMAIN_MAP,
+    version: "1.8.0", DOMAIN_MAP: DOMAIN_MAP,
     locale: LOCALE, timeZone: TZ,
     modules: MODULES, module: function (k) { for (var i = 0; i < MODULES.length; i++) if (MODULES[i].key === k) return MODULES[i]; return null; },
     icons: ICONS, icon: icon, iconNames: Object.keys(ICONS),
     camelot: camelot, keyName: keyName, compat: compat, KEY_NAMES: KEY_NAMES,
-    tier: tier, TIER_LABEL: TIER_LABEL, energyStep: energyStep, bpmStep: bpmStep,
+    tier: tier, TIER_LABEL: TIER_LABEL, energyStep: energyStep, energyMove: energyMove, bpmStep: bpmStep,
     edgeBand: edgeBand, EDGE_BAND_LABEL: EDGE_BAND_LABEL, EDGE_CUTS_DEFAULT: EDGE_CUTS_DEFAULT, fitEdgeCuts: fitEdgeCuts, edgeVisibility: edgeVisibility, seatBox: seatBox, ringLayout: ringLayout,
     format: format, calendar: calendar, dateRange: dateRange, csv: csv, status: status, GLYPH: GLYPH,
     html: html, prefs: prefs, esc: esc,

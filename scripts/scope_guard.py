@@ -68,6 +68,41 @@ def sibling_test_ok(path, status, changed_owned):
     return any(os.path.dirname(p) == folder for p in changed_owned)
 
 
+BRIEFS = 'plan/agents'
+TITLE_PREFIX = re.compile(r'^([A-Z][A-Z0-9]{1,11}):')
+
+
+def find_brief(code, briefs_dir=BRIEFS):
+    """The brief file for a package code (plan/agents/<CODE>_*.md), or None."""
+    if not code or not os.path.isdir(briefs_dir):
+        return None
+    for f in sorted(os.listdir(briefs_dir)):
+        if f.upper().startswith(code + '_') and f.endswith('.md'):
+            return os.path.join(briefs_dir, f)
+    return None
+
+
+def package_code(title, branch, briefs_dir=BRIEFS):
+    """(code, brief path) for a PR, or (code-or-None, None) when it is not a work package.
+    First the title prefix before the first colon (upper case, so codes without digits such as JOBDATE work)
+    when a brief exists for it; otherwise the older pattern: a short code with digits in the title, else the
+    leading code of the branch name."""
+    m = TITLE_PREFIX.match(title)
+    if m:
+        brief = find_brief(m.group(1), briefs_dir)
+        if brief:
+            return m.group(1), brief
+    code = None
+    m = re.search(r'\b([A-Z]{1,4}\d{1,2}[A-Z]?)\b', title)
+    if m:
+        code = m.group(1).upper()
+    else:
+        m = re.match(r'^([A-Za-z]{1,4}\d{1,2}[A-Za-z]?)', branch)
+        if m:
+            code = m.group(1).upper()
+    return code, find_brief(code, briefs_dir)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--base', required=True)
@@ -76,26 +111,7 @@ def main():
     parser.add_argument('--branch', required=True)
     args = parser.parse_args()
 
-    code = None
-    m = re.search(r'\b([A-Z]{1,4}\d{1,2}[A-Z]?)\b', args.title)
-    if m:
-        code = m.group(1).upper()
-    else:
-        m = re.match(r'^([A-Za-z]{1,4}\d{1,2}[A-Za-z]?)', args.branch)
-        if m:
-            code = m.group(1).upper()
-
-    if not code:
-        print("not a work package")
-        sys.exit(0)
-
-    brief_file = None
-    if os.path.exists('plan/agents'):
-        for f in os.listdir('plan/agents'):
-            if f.upper().startswith(code + '_') and f.endswith('.md'):
-                brief_file = os.path.join('plan/agents', f)
-                break
-
+    code, brief_file = package_code(args.title, args.branch)
     if not brief_file:
         print("not a work package")
         sys.exit(0)

@@ -82,15 +82,6 @@ updates:
           - "*"
 
   - package-ecosystem: "pip"
-    directory: "/services/graphql-api"
-    schedule:
-      interval: "weekly"
-    groups:
-      pip-graphql-api:
-        patterns:
-          - "*"
-
-  - package-ecosystem: "pip"
     directory: "/services/nlp-processor"
     schedule:
       interval: "weekly"

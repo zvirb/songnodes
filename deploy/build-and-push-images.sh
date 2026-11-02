@@ -70,7 +70,6 @@ log_info "=== Building Core Services ==="
 
 build_and_push "rest-api" "services/rest_api/Dockerfile" "." || true   # repo root is the build context
 build_and_push "worker" "services/worker/Dockerfile" "." || true
-build_and_push "graphql-api" "services/graphql-api/Dockerfile" "services" || true
 build_and_push "websocket-api" "services/websocket-api/Dockerfile" "services" || true
 build_and_push "graph-visualization-api" "services/graph-visualization-api/Dockerfile" "services/graph-visualization-api" || true
 build_and_push "enhanced-visualization-service" "services/enhanced-visualization-service/Dockerfile" "services/enhanced-visualization-service" || true
