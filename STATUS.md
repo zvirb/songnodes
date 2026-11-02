@@ -2444,3 +2444,12 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks run: build_tokens.py (contrast pass), build_bundle.py, `sync-design-system.sh --check` (1.9.1 in sync), `check_design_system.py --check`, tsc, oxlint, vitest 553 tests, vite build, scope guard.
 - E2E: not run per PR (Markus, 2 Nov 2026); one combined host run of `scripts/e2e-docker.sh` covers every PR built on 2 Nov 2026 once they merge.
 <!-- SLOT:GV4 END -->
+
+<!-- SLOT:ESC1 BEGIN -->
+### ESC1: The API client stops HTML-escaping data
+- Start: 2026-11-02 (branch esc1-api-no-entity-escaping off origin/main 9096637, rebased on 13bc744, then on 338fa9b). Brief: plan/agents/ESC1_api_no_entity_escaping.md (added in this PR).
+- End: 2026-11-02.
+- Changed: `sanitizeInput` (`frontend/src/lib/utils.ts`) no longer turns & < > " ' into entities; it still removes control characters and turns javascript:, vbscript: and non-image data: values into about:blank. `frontend/src/services/api.ts` still runs every response through `sanitizeObject` (so a script URL never reaches an href) but sends GET params and POST/PUT bodies as typed. /pipeline now shows `Itch-E & Scratch-E` and `Lab's Cloud`; a POST of those names sends and stores them unchanged. New `frontend/src/services/api.test.ts` (7 tests).
+- Checks run on 338fa9b: tsc, oxlint (exit 0), vitest run src (66 files, 567 tests), vite build, `sync-design-system.sh --check` (1.9.1), `check_design_system.py --check`, scope guard. E2E `scripts/e2e-docker.sh` ran on the 13bc744 base (not re-run after the second rebase, which brought only graph and design-system 1.9 changes), on a frontend rebuilt from this branch: 413 passed, 20 failed. 16 of the 20 fail the same way on a frontend built from main 13bc744 (axe on /library incl. primary-button contrast, DR-050 text inset at 390px on /harmony and /sources/import, drawer-row teardown timeout, library desktop visual snapshots). The other 4 (firefox axe on /sources/targets and /pipeline, light and dark) were 30 s timeouts in the full run and pass when re-run alone on this branch (33-44 s each).
+- Next: separate packages for the 16 failures that are on main (they are not caused by this change).
+<!-- SLOT:ESC1 END -->
