@@ -16,6 +16,9 @@ class DataLayer(unittest.TestCase):
     def test_outbox_ordering_visibility_retries_and_dead_letters(self):
         self.scenario('outbox')
 
+    def test_outbox_recovers_offsets_after_a_restore_into_a_new_cluster(self):
+        self.scenario('outbox_restore')
+
     def test_projection_events_energy_bands_rebuild_and_reconcile(self):
         self.scenario('projection')
 
