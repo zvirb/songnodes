@@ -4,9 +4,13 @@ It runs as a transactional outbox consumer similar to `projection_tracks`.
 Nodes and edges are updated via keyed upserts based on outbox events.
 """
 import json
+from datetime import date, datetime
+from decimal import Decimal
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 import os
+
+from . import transition_scores
 
 try:
     from neo4j import AsyncGraphDatabase
@@ -191,54 +195,60 @@ async def project_track(conn, track_id: UUID) -> str:
 
 
 
+# Observed transitions only (spec harmonic-1 section 2.7, M6-P2): every TRANSITIONS_TO edge is one row of
+# silver_track_transitions with its occurrence count and the scoring HS4 stored on it. No edge is inferred from BPM
+# or key, and nothing is invented: an unscored row or an unknown input projects as null (the property is absent).
+TRANSITION_COLUMNS = ('occurrence_count', *transition_scores.NAMES, 'scored_at')
+TRANSITIONS_SELECT = (f'SELECT id, from_track_id, to_track_id, {", ".join(TRANSITION_COLUMNS)} '
+                      'FROM silver_track_transitions')
+TRANSITIONS_FOR_TRACK_SQL = f'{TRANSITIONS_SELECT} WHERE from_track_id = $1 OR to_track_id = $1'
+TRANSITIONS_BATCH_SQL = f'{TRANSITIONS_SELECT} WHERE ($2::uuid IS NULL OR id > $2) ORDER BY id LIMIT $1'
+
+WRITE_EDGES = """
+UNWIND $edges AS edge
+MATCH (from:Track {id: edge.from_id}), (to:Track {id: edge.to_id})
+MERGE (from)-[r:TRANSITIONS_TO]->(to)
+SET r = edge.props
+"""
+
+
+def _plain(value: Any) -> Any:
+    """Bolt-safe value: Decimal to float, timestamps to ISO text; None stays None."""
+    if isinstance(value, Decimal):
+        return float(value)
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    return value
+
+
+def edge_params(row: Dict[str, Any]) -> Dict[str, Any]:
+    """One observed Silver transition as a directed TRANSITIONS_TO edge write."""
+    props = {name: _plain(row.get(name)) for name in TRANSITION_COLUMNS}
+    props['transition_id'] = str(row['id'])
+    return {'from_id': str(row['from_track_id']), 'to_id': str(row['to_track_id']), 'props': props}
+
+
 async def project_transitions(conn, track_id: UUID):
-    # Transition logic based directly on Camelot, BPM, Energy
-
-    source = await conn.fetchrow(
-        "SELECT id, bpm, camelot_key, energy_canonical FROM silver_enriched_tracks WHERE id = $1",
-        track_id
+    """Replace this track's TRANSITIONS_TO edges (both directions) with its observed Silver transitions."""
+    rows = await conn.fetch(TRANSITIONS_FOR_TRACK_SQL, track_id)
+    # Drop edges no longer backed by an observed row, including inferred edges left by earlier projections.
+    await client.execute_write(
+        "MATCH (t:Track {id: $id})-[r:TRANSITIONS_TO]-() DELETE r", {"id": str(track_id)}
     )
-    if not source or source['bpm'] is None or source['camelot_key'] is None:
-        return
+    if rows:
+        await client.execute_write(WRITE_EDGES, {"edges": [edge_params(dict(r)) for r in rows]})
 
-    targets = await conn.fetch(
-        "SELECT id, bpm, camelot_key, energy_canonical FROM silver_enriched_tracks "
-        "WHERE id != $1 AND bpm IS NOT NULL AND camelot_key IS NOT NULL",
-        track_id
-    )
 
-    # Calculate transition validities
-    edges_to_create = []
-
-    for t in targets:
-        bpm_gap = abs(float(source['bpm']) - float(t['bpm']))
-        if bpm_gap > 10.0:  # Threshold for DJ transition
-            continue
-
-        energy_step = 0.0
-        if source['energy_canonical'] is not None and t['energy_canonical'] is not None:
-            energy_step = float(t['energy_canonical']) - float(source['energy_canonical'])
-
-        edges_to_create.append({
-            "from_id": str(track_id),
-            "to_id": str(t['id']),
-            "bpm_gap": bpm_gap,
-            "key_compat": 1.0,  # Simplified logic here, could parse Camelot properly
-            "energy_step": energy_step
-        })
-
-    if edges_to_create:
-        await client.execute_write(
-            """
-            UNWIND $edges AS edge
-            MATCH (from:Track {id: edge.from_id}), (to:Track {id: edge.to_id})
-            MERGE (from)-[r:TRANSITIONS_TO]->(to)
-            SET r.bpm_gap = edge.bpm_gap,
-                r.key_compatibility = edge.key_compat,
-                r.energy_step = edge.energy_step
-            """,
-            {"edges": edges_to_create}
-        )
+async def project_all_transitions(conn, chunk_size: int = 10000) -> int:
+    """Write every observed Silver transition as an edge, in keyset batches. Returns the edge count."""
+    after, total = None, 0
+    while True:
+        rows = await conn.fetch(TRANSITIONS_BATCH_SQL, chunk_size, after)
+        if not rows:
+            return total
+        await client.execute_write(WRITE_EDGES, {"edges": [edge_params(dict(r)) for r in rows]})
+        total += len(rows)
+        after = rows[-1]['id']
 
 
 async def project_ref_mb_edges(conn, track_id: UUID):
@@ -367,7 +377,8 @@ async def rebuild(conn) -> Dict[str, Any]:
 
 
 
-    # Project edges (transitions)
+    # Project edges: observed transitions in keyset batches, then reference edges per track
+    await project_all_transitions(conn, CHUNK_SIZE)
     offset = 0
     while True:
         tracks = await conn.fetch(
@@ -378,7 +389,6 @@ async def rebuild(conn) -> Dict[str, Any]:
             break
 
         for row in tracks:
-            await project_transitions(conn, row['id'])
             await project_ref_mb_edges(conn, row['id'])
 
         offset += CHUNK_SIZE
@@ -413,7 +423,7 @@ async def reconcile(conn, repair: bool = False) -> Dict[str, Any]:
 
     diff = pg_count - mg_count
 
-    # We do not count edges directly from PG because they are generated dynamically in this module now.
+    # Edges are not compared yet; TRANSITIONS_TO mirrors silver_track_transitions one to one.
 
     if repair and (diff != 0):
         await rebuild(conn)

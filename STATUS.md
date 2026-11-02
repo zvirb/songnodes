@@ -2335,3 +2335,13 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: E2E and the edges query against a real Postgres (no Docker here).
 - Next: carry `scoring` through the graph loaders (`hooks/useDataLoader.ts`, `services/api.ts`) and `GraphEdge` so the modal need not fetch; a design-system helper that words a stored key relation and BPM gap without the tracks' values.
 <!-- SLOT:HS7 END -->
+
+<!-- SLOT:HS5 BEGIN -->
+### HS5: Graph edges carry stored harmonic scoring
+- Start: 2026-11-02 (branch hs5-graph-projection-scoring off origin/main 42e4e99, rebased on a5c338d). Brief: plan/agents/HS5_graph_projection_scoring.md (added in this PR). Spec package M6-P2.
+- End: 2026-11-02.
+- Changed: `graph_projection.project_transitions` no longer scans every track for partners within 10 BPM; it replaces a track's `TRANSITIONS_TO` edges (both directions) with its rows in `silver_track_transitions`, each carrying `occurrence_count`, `transition_id`, the 20 HS4 scoring columns and `scored_at` (`SET r = props`, so null removes the property). `rebuild` walks all observed transitions in keyset batches. The hard-coded `key_compatibility` 1.0 and the 0.0 `energy_step` default are gone.
+- Checks run: `cd services && python -m pytest common/tests`; `python -m pytest tests/graph_projection`; scope guard.
+- Checks not run: the two SELECTs against a real Postgres with migration 270, and the Cypher against a live Memgraph (no Docker here).
+- Next: M6-R1 (pathfinder cost) and M6-U1 (graph API exposes the edge fields).
+<!-- SLOT:HS5 END -->
