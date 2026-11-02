@@ -86,6 +86,8 @@ class OneThousandOneTracklistsSpider(NLPFallbackSpiderMixin, scrapy.Spider):
         'RANDOMIZE_DOWNLOAD_DELAY': 0.3,  # Range: 63-135 seconds
         'CONCURRENT_REQUESTS': 1,
         'CONCURRENT_REQUESTS_PER_DOMAIN': 1,
+        # unified_scraper_api kills the crawl at 900 s; close first so pipelines flush what was scraped
+        'CLOSESPIDER_TIMEOUT': 840,
         # AutoThrottle for dynamic delay adjustment
         'AUTOTHROTTLE_ENABLED': True,
         'AUTOTHROTTLE_START_DELAY': 90,  # Match DOWNLOAD_DELAY
@@ -121,8 +123,10 @@ class OneThousandOneTracklistsSpider(NLPFallbackSpiderMixin, scrapy.Spider):
         # to ensure headless mode works in Docker containers without X server
     }
 
-    def __init__(self, search_mode='targeted', start_urls=None, search_query=None, *args, **kwargs):
+    def __init__(self, search_mode='targeted', start_urls=None, search_query=None, limit=None, *args, **kwargs):
         force_run_arg = kwargs.pop('force_run', None)
+        # Tracklists followed per search page (each one waits DOWNLOAD_DELAY, about 90 s)
+        self.tracklists_per_search = int(limit) if limit else 20
         super(OneThousandOneTracklistsSpider, self).__init__(*args, **kwargs)
         self.force_run = (
             force_run_arg
@@ -721,11 +725,11 @@ class OneThousandOneTracklistsSpider(NLPFallbackSpiderMixin, scrapy.Spider):
                             'download_timeout': 30,
                             'download_delay': delay,
                             'playwright': True,
+                            # scrapy-playwright 0.0.48 ignores 'playwright_page_coroutines'; a callable
+                            # PageMethod is called with the page, so the search form is really submitted.
                             'playwright_page_methods': [
                                 PageMethod('route', '**/*', self.abort_non_essential_requests),
-                            ],
-                            'playwright_page_coroutines': [
-                                self._submit_search_form(search_query)
+                                PageMethod(self._submit_search_form(search_query)),
                             ],
                             'search_query': search_query,  # Pass search query to callback
                             'original_url': url  # For logging purposes
@@ -856,9 +860,9 @@ class OneThousandOneTracklistsSpider(NLPFallbackSpiderMixin, scrapy.Spider):
                 f.write(response.text[:10000])
             return
 
-        # Process up to 20 tracklists per search to manage load
+        # Process up to `limit` (default 20) tracklists per search to manage load
         seen_links = set()
-        for link in tracklist_links[:20]:
+        for link in tracklist_links[:self.tracklists_per_search]:
             full_url = response.urljoin(link)
             if full_url in seen_links or full_url in self.processed_setlists:
                 continue
