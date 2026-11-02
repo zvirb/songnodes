@@ -112,13 +112,15 @@ const STALL_MS = 10 * 60 * 1000;
  * The four stages from real signals: scrape jobs (bronze), the projection_tracks and
  * graph_projection outbox consumers (silver, gold) and the projection drift report (serving).
  * A consumer with a backlog that has not moved for 10 minutes is shown as failed (stalled).
+ * A consumer's updated_at moves only when it handles an event (outbox.advance), not on every 15 s poll,
+ * so an idle consumer reports when it last handled a change, not when it last ran.
  */
 export const mapPipelineStages = (outbox: OutboxStatusResponse, runs: ScrapeRun[], now = Date.now()): MedallionStageInfo[] => {
   const consumer = (id: string) => outbox.consumers.find((c) => c.consumer === id);
   const consumerStage = (id: string): Pick<MedallionStageInfo, 'state' | 'done' | 'total' | 'detail'> => {
     const c = consumer(id);
     if (!c) return { state: 'waiting', done: 0, total: 0, detail: `No ${id} consumer reported` };
-    if (c.backlog === 0) return { state: 'done', done: 0, total: 0, detail: c.updated_at ? `Up to date, last run ${SN.format.relative(c.updated_at)}` : 'Up to date' };
+    if (c.backlog === 0) return { state: 'done', done: 0, total: 0, detail: c.updated_at ? `Up to date, last change handled ${SN.format.relative(c.updated_at)}` : 'Up to date' };
     const age = c.updated_at ? now - new Date(c.updated_at).getTime() : Infinity;
     if (age > STALL_MS) {
       return { state: 'failed', done: 0, total: c.backlog, detail: `Stalled: ${SN.format.count(c.backlog)} waiting, no progress since ${c.updated_at ? SN.format.dateTime(c.updated_at) : 'it started'}` };
