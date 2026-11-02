@@ -2497,6 +2497,17 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks not run: E2E for this change (console output only; no spec reads console.log).
 <!-- SLOT:UI9 END -->
 
+<!-- SLOT:VAL1 BEGIN -->
+### VAL1: MixesDB remixes keep a remix type and pass validation
+- Start: 2026-11-02 (branch val1-mixesdb-remix-type off origin/main 338fa9b0). Brief: plan/agents/VAL1_mixesdb_remix_type.md. From the 2 Nov local test (PR #518).
+- End: 2026-11-02.
+- Changed: `parse_track_string` returns `remix_type` (Remix, Edit, Flip/Rework, Bootleg, Mashup) and the MixesDB spider sends it; `TrackCreate` records a remix with no type as `unknown` instead of rejecting it; `EnhancedTrackItem` declares `genre_confidence`/`genre_match_score` (EnrichmentPipeline writes them); the unified scraper API passes `search_query` and `limit` to 1001tracklists; the 1001tracklists search form runs as a callable PageMethod (0.0.48 ignores `playwright_page_coroutines`), `limit` caps tracklists per search, `CLOSESPIDER_TIMEOUT` 840.
+- Live check (shared stack, unified-scraper image rebuilt from this branch, 13:26 Melbourne): MixesDB "Deadmau5 Strobe" job add8eefc: 5 playlists, 195 bronze tracks, positions 1..N; validation dropped 2 items (Unknown Artist track_artist), 0 remix_type errors, 0 genre_confidence errors (168 in the run before the items fix).
+- Found, not fixed (not owned): 334 errors in `persistence_pipeline.py` `_flush_batch` (asyncpg "another operation is in progress", "connection was closed", `uq_silver_playlists_bronze` duplicates) on adjacency/playlist items; the 7-transition count is re-scraped duplicate playlists (see PR).
+- Checks run: `pytest scrapers/tests` 45 passed; `pytest tests/unit/scrapers` 37 passed; scope guard.
+- Checks not run: E2E (scraper-only change); a live 1001Tracklists scrape (not run on purpose).
+- Next: decide 1001Tracklists daily quota and 90 s delay versus the 900 s budget (PR follow-ups).
+<!-- SLOT:VAL1 END -->
 <!-- SLOT:UI8 BEGIN -->
 ### UI8: Phone-width headers and toolbars fit; the library build time is not the page load time
 - Start: 2026-11-02 (branch ui8-phone-width-stamps off origin/main 338fa9b0, rebased on f7417033). Source: docs/integration/LOCAL-TEST-2026-11-02.md, section 7.

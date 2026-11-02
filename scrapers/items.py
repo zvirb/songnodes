@@ -83,6 +83,8 @@ class EnhancedTrackItem(scrapy.Item):
     release_date = scrapy.Field()
     genre = scrapy.Field()
     original_genre = scrapy.Field()  # Genre before normalization (optional)
+    genre_confidence = scrapy.Field()  # EnrichmentPipeline: high / medium / low genre match
+    genre_match_score = scrapy.Field()  # EnrichmentPipeline: fuzzy match score 0-100
     subgenre = scrapy.Field()
     record_label = scrapy.Field()
     catalog_number = scrapy.Field()  # Label catalog number (for Discogs linking)
