@@ -289,8 +289,10 @@ class TrackBase(BaseModel):
     @model_validator(mode='after')
     def validate_remix_consistency(self):
         """Ensure remix fields are consistent"""
+        # A remix whose type the spider could not tell is still a real track:
+        # record it as UNKNOWN rather than dropping it (enrichment may refine it).
         if self.is_remix and self.remix_type is None:
-            raise ValueError('remix_type must be specified when is_remix=True')
+            self.remix_type = RemixType.UNKNOWN
 
         if not self.is_remix and self.remix_type is not None:
             raise ValueError('remix_type should not be set when is_remix=False')
