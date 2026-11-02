@@ -2496,3 +2496,10 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks run: tsc, oxlint (exit 0), vitest 65 files / 560 tests, vite build (the built assets no longer contain the debug strings), `check_design_system.py --check`, `sync-design-system.sh --check`.
 - Checks not run: E2E for this change (console output only; no spec reads console.log).
 <!-- SLOT:UI9 END -->
+
+<!-- SLOT:UI8 BEGIN -->
+### UI8: Phone-width headers and toolbars fit; the library build time is not the page load time
+- Start: 2026-11-02 (branch ui8-phone-width-stamps off origin/main 338fa9b0, rebased on f7417033). Source: docs/integration/LOCAL-TEST-2026-11-02.md, section 7.
+- Changed: /library header follows the PageHeader narrow rule (Import library is a secondary button, repeated in a narrow-only More actions menu); /graph toolbar wraps its actions at 760px and below; the "Nothing playing yet" empty state keeps its height above the suggestions list; `loadLibrary` no longer invents `generated` (the search API does not say when the library was built), so Home shows "Library data from –" and /library "Built –" (PageHeader `stampUnknown`), and the AppHeader shows no "Updated" age for them.
+- Next: run the checks and the visual specs, open the PR.
+<!-- SLOT:UI8 END -->
