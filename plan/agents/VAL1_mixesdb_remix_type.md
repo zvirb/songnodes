@@ -19,7 +19,7 @@ here only where the fix is small and inside `scrapers/`.
 - scrapers/pydantic_models.py (remix consistency validator only)
 - scrapers/spiders/1001tracklists_spider.py (search start request only)
 - scrapers/unified_scraper_api.py (1001tracklists parameters only)
-- scrapers/tests/test_remix_type_validation.py (new)
+- scrapers/tests/test_remix_type_kept.py (new)
 - scrapers/tests/test_1001tracklists_search.py (new)
 - tests/unit/scrapers/test_1001tracklists_spider.py (search start request assertion only)
 - plan/agents/VAL1_mixesdb_remix_type.md (this brief)
