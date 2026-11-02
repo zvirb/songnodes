@@ -1489,6 +1489,9 @@ export const useStore = create<StoreState>()(
               selectedNodes: [], // Convert Set to Array for JSON serialization
               hiddenEdgeTypes: Array.from(state.viewState.hiddenEdgeTypes || []), // Convert Set to Array
               hoveredNode: null, // Don't persist hover state
+              // The graph camera is not kept: /graph opens fitted to its tracks (GraphControls, "Fit").
+              zoom: DEFAULT_CONFIG.ui.defaultZoom,
+              pan: { x: 0, y: 0 },
             },
             searchFilters: state.searchFilters,
             savedSetlists: state.savedSetlists,
@@ -1531,48 +1534,10 @@ export const useStore = create<StoreState>()(
                 state.pathfindingState.selectedWaypoints = new Set(state.pathfindingState.selectedWaypoints);
               }
 
-              // ✅ CRITICAL FIX: Validate and reset bad viewport pan AND zoom values
-              // Extreme pan values (> 2000 or < -2000) OR extreme zoom (< 0.5 or > 3) cause LOD culling issues
-              // This happens when users zoom/pan way out and the state is persisted
-              if (state.viewState?.pan || state.viewState?.zoom) {
-                const maxPan = 2000;
-                const minReasonableZoom = 0.5; // Below this, everything gets culled
-                const maxReasonableZoom = 3.0; // Above this is excessive
-
-                const badPan =
-                  Math.abs(state.viewState.pan?.x || 0) > maxPan ||
-                  Math.abs(state.viewState.pan?.y || 0) > maxPan;
-
-                const badZoom =
-                  (state.viewState.zoom || 1) < minReasonableZoom ||
-                  (state.viewState.zoom || 1) > maxReasonableZoom;
-
-                if (badPan || badZoom) {
-                  console.warn('Detected extreme viewport values, resetting to defaults:', {
-                    pan: state.viewState.pan,
-                    zoom: state.viewState.zoom,
-                    reasons: { badPan, badZoom }
-                  });
-                  state.viewState.pan = { x: 0, y: 0 };
-                  state.viewState.zoom = DEFAULT_CONFIG.ui.defaultZoom;
-
-                  // Force save the corrected state back to localStorage
-                  setTimeout(() => {
-                    const storeData = localStorage.getItem('songnodes-store');
-                    if (storeData) {
-                      try {
-                        const parsed = JSON.parse(storeData);
-                        if (parsed.state?.viewState) {
-                          parsed.state.viewState.pan = { x: 0, y: 0 };
-                          parsed.state.viewState.zoom = DEFAULT_CONFIG.ui.defaultZoom;
-                          localStorage.setItem('songnodes-store', JSON.stringify(parsed));
-                        }
-                      } catch (e) {
-                        console.error('Failed to update localStorage:', e);
-                      }
-                    }
-                  }, 100);
-                }
+              // A camera stored by an older version is dropped: the graph opens fitted, so nothing to warn about.
+              if (state.viewState) {
+                state.viewState.pan = { x: 0, y: 0 };
+                state.viewState.zoom = DEFAULT_CONFIG.ui.defaultZoom;
               }
 
               // Credentials restored silently
