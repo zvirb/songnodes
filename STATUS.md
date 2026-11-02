@@ -2496,3 +2496,10 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks run: tsc, oxlint (exit 0), vitest 65 files / 560 tests, vite build (the built assets no longer contain the debug strings), `check_design_system.py --check`, `sync-design-system.sh --check`.
 - Checks not run: E2E for this change (console output only; no spec reads console.log).
 <!-- SLOT:UI9 END -->
+
+<!-- SLOT:UI7 BEGIN -->
+### UI7: /pipeline copy, heading and target-card fixes from the 2 Nov local test
+- Start: 2026-11-02 (branch ui7-pipeline-copy off origin/main 338fa9b0). Source: docs/integration/LOCAL-TEST-2026-11-02.md, section 7.
+- Scope: /pipeline missing values as en dash, PageHeader "Pipeline: Telemetry", accurate consumer wording, target-card ID line; scrape-run duplicates investigated.
+- Next: run checks, open the PR.
+<!-- SLOT:UI7 END -->
