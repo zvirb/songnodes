@@ -136,7 +136,7 @@ export const useTokenRefresh = (): UseTokenRefreshReturn => {
       return;
     }
 
-    debugLog(`[useTokenRefresh] ♻️ Refreshing ${service} access token...`);
+    debugLog(`[useTokenRefresh] Refreshing ${service} access token...`);
     setState(prev => ({ ...prev, isRefreshing: true, error: null }));
 
     // Create and store the refresh promise wrapped in cross-tab mutual exclusion
@@ -158,7 +158,7 @@ export const useTokenRefresh = (): UseTokenRefreshReturn => {
             return;
           }
 
-          debugLog(`[useTokenRefresh] ♻️ Refreshing ${service} access token under lock...`);
+          debugLog(`[useTokenRefresh] Refreshing ${service} access token under lock...`);
           setState(prev => ({ ...prev, isRefreshing: true, error: null }));
 
           const response = await fetch(
@@ -212,7 +212,7 @@ export const useTokenRefresh = (): UseTokenRefreshReturn => {
                 scope: data.scope
               })
             });
-            debugLog(`[useTokenRefresh] ✅ ${service} token refreshed and stored in database`);
+            debugLog(`[useTokenRefresh] ${service} token refreshed and stored in database`);
           } catch (dbError) {
             console.warn(`[useTokenRefresh] Failed to store ${service} token in database:`, dbError);
           }
@@ -224,7 +224,7 @@ export const useTokenRefresh = (): UseTokenRefreshReturn => {
             error: null
           }));
 
-          debugLog(`[useTokenRefresh] ✅ ${service} token refreshed successfully`);
+          debugLog(`[useTokenRefresh] ${service} token refreshed successfully`);
         });
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -271,7 +271,7 @@ export const useTokenRefresh = (): UseTokenRefreshReturn => {
    * Force refresh a token (for manual testing or error recovery)
    */
   const forceRefresh = useCallback(async (service: 'spotify' | 'tidal'): Promise<void> => {
-    debugLog(`[useTokenRefresh] 🔄 Force refresh requested for ${service}`);
+    debugLog(`[useTokenRefresh] Force refresh requested for ${service}`);
     return refreshToken(service);
   }, [refreshToken]);
 
@@ -303,7 +303,7 @@ export const useTokenRefresh = (): UseTokenRefreshReturn => {
    * Set up automatic token refresh interval
    */
   useEffect(() => {
-    debugLog('[useTokenRefresh] 🔄 Automatic token refresh enabled');
+    debugLog('[useTokenRefresh] Automatic token refresh enabled');
 
     // Check immediately on mount
     checkAllTokens();
@@ -314,7 +314,7 @@ export const useTokenRefresh = (): UseTokenRefreshReturn => {
     }, CHECK_INTERVAL_MS);
 
     return () => {
-      debugLog('[useTokenRefresh] 🛑 Automatic token refresh disabled');
+      debugLog('[useTokenRefresh] Automatic token refresh disabled');
       clearInterval(intervalId);
     };
   }, [checkAllTokens]);
@@ -329,7 +329,7 @@ export const useTokenRefresh = (): UseTokenRefreshReturn => {
       const serviceData = musicCredentials[service];
       if (serviceData?.accessToken && serviceData?.isConnected) {
         const expiresIn = serviceData.expiresAt ? Math.floor((serviceData.expiresAt - Date.now()) / 1000) : 'unknown';
-        debugLog(`[useTokenRefresh] 📊 ${service} token status: ${serviceData.isConnected ? 'connected' : 'disconnected'}, expires in: ${expiresIn}s`);
+        debugLog(`[useTokenRefresh] ${service} token status: ${serviceData.isConnected ? 'connected' : 'disconnected'}, expires in: ${expiresIn}s`);
       }
     });
   }, [musicCredentials]);
