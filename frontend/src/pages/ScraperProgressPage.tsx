@@ -9,6 +9,7 @@ import { ScrapeJobStages } from '../features/pipeline/ScrapeJobStages';
 import { ScrapeWindowCard } from '../features/pipeline/ScrapeWindowCard';
 import { api } from '../services/api';
 import { usePageHeader } from '../shell/AppShell';
+import { PageHeader } from '../shell/PageParts';
 
 import { SectionHeading, TextField, SegmentedControl, Button } from '../components/ds';
 import { API_BASE_URL } from '../lib/apiBase';
@@ -160,11 +161,7 @@ const ScraperProgressPage: React.FC = () => {
   if (error && telemetrySource === 'unavailable') {
     return (
       <main className="sn-page__main" id="main" tabIndex={-1}>
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-8)' }}>
-          <div>
-            <h1 className="sn-title title-l" style={{ margin: 0 }}>Pipeline telemetry</h1>
-          </div>
-        </header>
+        <PageHeader mod="pipeline" lead="Pipeline" title="Telemetry" />
         <section className="sn-page__section sn-empty-state" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "300px", backgroundColor: "var(--surface-1)", borderRadius: "var(--radius-card)", border: "1px solid var(--line)" }}>
           <ServerCrash size={48} color="var(--status-bad)" style={{ marginBottom: 'var(--space-4)' }} />
           <h2 className="heading-3" style={{ marginBottom: 'var(--space-2)' }}>Telemetry unavailable</h2>
@@ -193,26 +190,25 @@ const ScraperProgressPage: React.FC = () => {
 
   return (
     <main className="sn-page__main" id="main" tabIndex={-1}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-8)' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-          <h1 className="sn-title title-l" style={{ margin: 0 }}>Pipeline telemetry</h1>
-          <p className="body" style={{ margin: 0 }}>
-            Real-time status of the 4-stage ingestion and graphing pipeline.
-          </p>
-        </div>
-        <div>
+      <PageHeader
+        mod="pipeline"
+        lead="Pipeline"
+        title="Telemetry"
+        desc="Real-time status of the 4-stage ingestion and graphing pipeline."
+        actions={
           <button
             className="sn-btn"
+            type="button"
             onClick={refresh}
             disabled={isLoading}
-            title={`Last synced: ${new Date(lastUpdated).toLocaleTimeString()}`}
+            title={`Last synced ${SN.format.time(new Date(lastUpdated))}`}
             aria-live="polite"
           >
-            <RefreshCw size={16} aria-label="Sync" className={isLoading ? "sn-spinner" : ""} />
+            <RefreshCw size={16} aria-hidden="true" className={isLoading ? "sn-spinner" : ""} />
             {isLoading ? 'Syncing…' : 'Sync now'}
           </button>
-        </div>
-      </header>
+        }
+      />
 
       {telemetrySource !== 'live' && (
         <div className="sn-banner" data-status="info" style={{ marginBottom: 'var(--space-6)' }}>
@@ -431,12 +427,12 @@ const ScraperProgressPage: React.FC = () => {
                   </div>
 
                   <div className="data" >
-                    {stg.done === 0 && stg.total === 0 ? '—' : `${SN.format.count(stg.done)} / ${SN.format.count(stg.total)} (${pct}%)`}
+                    {stg.done === 0 && stg.total === 0 ? <span className="sn-none">–</span> : `${SN.format.count(stg.done)} / ${SN.format.count(stg.total)} (${pct}%)`}
                   </div>
                 </div>
 
                 <div className="caption" >
-                  {stg.description} {stg.detail ? `— ${stg.detail}` : ''}
+                  {stg.description}{stg.detail ? `. ${stg.detail}` : ''}
                 </div>
 
                 {stg.total > 0 && (
@@ -477,7 +473,7 @@ const ScraperProgressPage: React.FC = () => {
                       <StatusPill raw={w.status === "running" ? "ok" : w.status === "error" ? "error" : "idle"} />
                     </td>
                     <td className="num data" >
-                      {w.successRate > 0 ? `${w.successRate.toFixed(1)}%` : '—'}
+                      {w.successRate > 0 ? `${w.successRate.toFixed(1)}%` : <span className="sn-none">–</span>}
                     </td>
                     <td className="num data" >
                       {SN.format.count(w.jobsToday)}

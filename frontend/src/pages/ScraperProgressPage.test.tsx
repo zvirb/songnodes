@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import React from 'react';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { vi, describe, beforeEach, afterEach, it, expect } from 'vitest';
 import ScraperProgressPage from './ScraperProgressPage';
 import { showToast } from '../components/ds';
@@ -88,8 +89,9 @@ describe('ScraperProgressPage', () => {
   });
 
   it('renders the queue a scrape form', () => {
-    render(<ScraperProgressPage />);
+    render(<MemoryRouter><ScraperProgressPage /></MemoryRouter>);
 
+    expect(screen.getByRole('heading', { level: 1, name: 'Pipeline: Telemetry' })).toBeTruthy();
     expect(screen.getAllByRole('heading', { name: 'Queue a scrape' }).length).toBeGreaterThan(0);
     expect(screen.getByTestId('scrape-window-card')).toBeTruthy();
 
@@ -104,7 +106,7 @@ describe('ScraperProgressPage', () => {
   });
 
   it('shows errors and does not submit when form is empty', async () => {
-    render(<ScraperProgressPage />);
+    render(<MemoryRouter><ScraperProgressPage /></MemoryRouter>);
 
     const formQueueBtn = screen.getAllByRole('button', { name: 'Queue scrape' }).find(b => b.getAttribute('type') === 'submit');
     expect(formQueueBtn).toBeTruthy();
@@ -126,7 +128,7 @@ describe('ScraperProgressPage', () => {
       json: async () => ({ created: true }),
     });
 
-    render(<ScraperProgressPage />);
+    render(<MemoryRouter><ScraperProgressPage /></MemoryRouter>);
 
     const artistInput = screen.getAllByLabelText('Artist')[0];
     const titleInput = screen.getAllByLabelText('Title')[0];
@@ -171,7 +173,7 @@ describe('ScraperProgressPage', () => {
       json: async () => { throw new SyntaxError('Unexpected token <'); },
     });
 
-    render(<ScraperProgressPage />);
+    render(<MemoryRouter><ScraperProgressPage /></MemoryRouter>);
     fireEvent.change(screen.getAllByLabelText('Artist')[0], { target: { value: 'Deadmau5' } });
     fireEvent.change(screen.getAllByLabelText('Title')[0], { target: { value: 'Strobe' } });
     const formQueueBtn = screen.getAllByRole('button', { name: 'Queue scrape' }).find(b => b.getAttribute('type') === 'submit');
@@ -183,7 +185,7 @@ describe('ScraperProgressPage', () => {
   });
 
   it('offers only mixesdb and 1001tracklists as sources', () => {
-    render(<ScraperProgressPage />);
+    render(<MemoryRouter><ScraperProgressPage /></MemoryRouter>);
 
     expect(screen.getAllByText('MixesDB').length).toBeGreaterThan(0);
     expect(screen.getAllByText('1001Tracklists').length).toBeGreaterThan(0);
@@ -192,16 +194,16 @@ describe('ScraperProgressPage', () => {
   it('shows a stages card for each queued or running scrape and keeps it after the job finishes', () => {
     const run = (id: string, state: string) => ({ id, source: 'mixesdb', query: `Query ${id}`, state, createdAt: '2026-11-01T10:00:00Z', finishedAt: null, seconds: null, playlists: null, tracks: null, error: null });
     telemetryState.scrapeRuns = [run('r1', 'running'), run('q1', 'queued'), run('d1', 'done'), run('f1', 'failed')];
-    const { rerender } = render(<ScraperProgressPage />);
+    const { rerender } = render(<MemoryRouter><ScraperProgressPage /></MemoryRouter>);
     expect(screen.getAllByTestId('job-stages').map((n) => n.textContent)).toEqual(['r1 Query r1', 'q1 Query q1']);
 
     telemetryState.scrapeRuns = [run('r1', 'done'), run('q1', 'running')];
-    rerender(<ScraperProgressPage />);
+    rerender(<MemoryRouter><ScraperProgressPage /></MemoryRouter>);
     expect(screen.getAllByTestId('job-stages')).toHaveLength(2);
   });
 
   it('shows no stages card when no scrape is unfinished', () => {
-    render(<ScraperProgressPage />);
+    render(<MemoryRouter><ScraperProgressPage /></MemoryRouter>);
     expect(screen.queryByTestId('job-stages')).toBeNull();
   });
 });
