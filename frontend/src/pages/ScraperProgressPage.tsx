@@ -19,6 +19,7 @@ const ScraperProgressPage: React.FC = () => {
   const { telemetry, stages, workers, jobs, scrapeRuns, isLoading, error, lastUpdated, source: telemetrySource, refresh } = usePipelineTelemetry();
   const [retryingJob, setRetryingJob] = useState<string | null>(null);
   const [confirmRetryId, setConfirmRetryId] = useState<string | null>(null);
+  const [retryError, setRetryError] = useState<string | null>(null);
 
   const [artist, setArtist] = useState('');
   const [title, setTitle] = useState('');
@@ -40,12 +41,13 @@ const ScraperProgressPage: React.FC = () => {
     const jobId = confirmRetryId;
     setConfirmRetryId(null);
     setRetryingJob(jobId);
+    setRetryError(null);
     try {
       await api.post(`/jobs/${jobId}/retry`);
       await refresh();
     } catch (e) {
       console.error('Failed to retry job:', e);
-      showToast('Failed to retry job');
+      setRetryError(e instanceof Error ? e.message : 'Failed to retry job');
     } finally {
       setRetryingJob(null);
     }
@@ -501,6 +503,11 @@ const ScraperProgressPage: React.FC = () => {
       {deadJobs.length > 0 && (
         <section className="sn-page__section" style={{ marginBottom: 'var(--space-6)' }}>
           <SectionHeading title="Dead jobs requiring retry" count={`${deadJobs.length} jobs`} />
+          {retryError && (
+            <div className="sn-inline-message" data-status="bad" role="status" style={{ marginBottom: 'var(--space-3)' }}>
+              <span>{retryError}</span>
+            </div>
+          )}
           <div className="sn-tablebox" style={{ overflowX: 'auto' }}>
             <table className="sn-table" aria-label="Dead jobs">
               <thead>

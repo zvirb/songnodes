@@ -2613,3 +2613,23 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
 - Checks run: after merging origin/main 0a159c43 (merge commit dc7e0f19), `PYTHONPATH=services python3 -m pytest services/common/tests/test_ref_mb_resolve.py services/common/tests/test_mb_local_provider.py services/common/tests/test_providers.py services/common/refmb/test_refmb.py --noconftest -q -o addopts=` 64 passed. `PYTHONPATH=. python3 -m pytest tests/resolver/run_eval.py pipeline/test_ref_mb_resolver.py --noconftest -q -o addopts=` 8 passed, 1 skipped (run_eval is one of the eight). GitHub reports PR 567 mergeable MERGEABLE. The `common` job still fails on `test_target_scrape.py` (`Artist A - Title A` vs `Artist A Title A`); that file is unchanged from main and python-tests on main has failed the same way since TGT3. Not fixed here. No live ref_mb, so index names, ISRC timing and the measured precision figures were not re-checked.
 - Next: owner merges PR 567. The remaining `common` failure belongs to a TGT3 follow-up. Enabling the mirror still needs `MB_LOCAL_ENABLED` and a password that is not in git.
 <!-- SLOT:MBLOCAL END -->
+
+
+<!-- SLOT:DS27 BEGIN -->
+### DS27: Fix CSV export guards, toast error misuse, warning source links and AISetlists copy
+- Start: 2026-11-05 (branch ds27-conformance-sprint1 off origin/main 0a159c43).
+- Scope: Fix highest-priority design-system audit findings:
+  1. ExportDialog CSV export formula guards, BOM, and CRLF (DR-033) via SN.csv.file.
+  2. ScraperProgressPage dead jobs retry error toast replaced with in-place InlineMessage (DR-041).
+  3. AISetlistsPage unconfigured providers warning with proper source link to Settings (DR-040, DR-042).
+  4. AISetlistsPage figure tiles: sentence case labels replacing ALL CAPS (01-writing).
+  5. AISetlistsPage copy: typographical ellipsis replacing three periods (01-writing).
+- Checks run:
+  - scripts/check_design_system.py --check (passed)
+  - scripts/sync-design-system.sh --check (passed, in sync)
+  - design-system/source/agentconf/validate.py (passed: 1691 rules, fixture 20/20, INDEX 61 lines)
+  - npm run type-check (passed)
+  - npm run lint (passed)
+  - npm run test:unit (passed, 68 files, 586 tests)
+- Next: merge PR and proceed to Sprint 2.
+<!-- SLOT:DS27 END -->
