@@ -66,7 +66,7 @@ class TestTargetScrape(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(first_call_args[1], 'scrape')
             self.assertEqual(first_call_args[2], f'target:{target_id_1}:mixesdb:{now_date}')
             self.assertEqual(first_call_args[3]['source'], 'mixesdb')
-            self.assertEqual(first_call_args[3]['search_query'], 'Artist A Title A')
+            self.assertEqual(first_call_args[3]['search_query'], 'Artist A - Title A')
             self.assertEqual(first_call_args[3]['target_track_id'], str(target_id_1))
 
     async def test_scrape_targets_disabled(self):
