@@ -113,14 +113,15 @@ async def scrape_targets(conn) -> Dict[str, Any]:
         if not artist or not title:
             continue
 
-        search_query = f"{artist} {title}"
+        search_query = f"{artist} - {title}"
 
         for source in sources:
             key = f"target:{row['track_id']}:{source}:{now_date}"
             payload = {
                 'source': source,
                 'search_query': search_query,
-                'target_track_id': str(row['track_id'])
+                'target_track_id': str(row['track_id']),
+                'artist_name': artist,
             }
             _, created = await jobs.enqueue(conn, 'scrape', key, payload)
             if created:

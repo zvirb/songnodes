@@ -2544,3 +2544,13 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks run: tsc, oxlint, vitest 67 files / 581 tests, vite build, `sync-design-system.sh --check`, `check_design_system.py --check`; E2E accessibility + design-rules for the five routes, chromium + firefox, on the final code: 88 passed, 0 failed. The broader run (also visual, routes.smoke) is in the PR.
 - Not fixed: library desktop visual baselines (live DiscoveryBanner data) and the shell drawer-row test; both fail on main too.
 <!-- SLOT:UI10 END -->
+
+
+<!-- SLOT:TGT3 BEGIN -->
+### TGT3: Target scrape query format, MixesDB API search and Playwright browser installation
+- Start: 2026-11-04 (branch tgt3-target-scrape-mixesdb-api off origin/main 00479c38). Issue: target scrapes failed to locate tracklists on MixesDB and 1001tracklists.
+- Cause: `target_scrape.py` passed `search_query = f"{artist} {title}"` without ` - ` delimiter, causing `parse_track_string` to fail artist/title extraction and fall back to the first word of the artist. MixesDB Special:Search HTML now renders client-side via JavaScript so static requests return 0 results. 1001tracklists headless browser failed because Playwright Chromium was not installed in `scrapers/Dockerfile.unified`.
+- Changed: `target_scrape.py` formats `search_query = f"{artist} - {title}"` and includes `artist_name`. `MixesdbSpider` adds MediaWiki action=query&list=search API search URL first to fetch exact tracklist page hits in JSON format. `scrapers/Dockerfile.unified` installs Playwright Chromium dependencies via `playwright install --with-deps chromium`.
+- Checks run: `scrapers/tests/test_mixesdb_api_search.py` 2 passed; `test_1001tracklists_search.py` and `test_remix_type_kept.py` 19 passed; live MediaWiki API verified on 25 library tracks (12 hits / 74 sets).
+- End: 2026-11-04.
+<!-- SLOT:TGT3 END -->
