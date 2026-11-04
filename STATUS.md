@@ -2581,3 +2581,26 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks run: `services/graph-visualization-api` unit tests 18 passed (2 new in `test_catalog.py`).
 - End: 2026-11-04.
 <!-- SLOT:GV5 END -->
+
+
+<!-- SLOT:DS26 BEGIN -->
+### DS26: Integrate design system rule framework, linters and governance tooling
+- Start: 2026-11-04 (branch design_system_update off origin/main 2fb709c3).
+- Scope: Import normative rule sheets, machine-checkable rules (
+ules/), reference linter (linters/), conformance fixtures (ixtures/), ADR decision records (history/), DTCG tokens and reference catalogs (	okens/, 
+eference/), agent router (INDEX.md), and build/validation scripts (source/agentconf/) from the latest design-system distribution, preserving 1.9.1 tokens, bundle and music domain updates.
+- Changed:
+  - Added design-system/INDEX.md, design-system/rules/ (1,691 rules across 20 topic sheets, 
+ules.yaml, 
+ules.schema.yaml, sources.yaml, TRACEABILITY.md, rag/batch1.yaml, rag/batch1.history.yaml), design-system/linters/ (check.py, eslint.config.json, stylelint.config.json), design-system/fixtures/ (iolations.html, iolations.expected.json), design-system/history/ (CHANGELOG.md, decisions/ADR-001.md..ADR-030.md, lint-baseline.json, 
+ormative-history.yaml, open-questions.md, 
+unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), design-system/tokens/tokens.json (W3C DTCG format compiled from 1.9.1 tokens), and design-system/source/agentconf/ (uild_agentconf.py, alidate.py with UTF-8 file handling and sys.executable).
+  - Preserved all version 1.9.1 tokens, CSS/JS bundles, TypeScript declarations, and 1.7.0–1.9.1 documentation updates.
+- Checks run:
+  - python design-system/source/agentconf/build_agentconf.py: 1691 rules; 0 errors.
+  - python design-system/source/agentconf/validate.py: PASS: 1691 rules, fixture 20/20, INDEX 61 lines.
+  - python scripts/check_design_system.py --check: passed (exit 0).
+  - scripts/sync-design-system.sh --check: design-system 1.9.1: frontend copy in sync (exit 0).
+- End: 2026-11-04.
+- Next: Review and commit/merge DS26 changes; optionally extend rule fragments in design-system/rules/frag/ with new rules covering 1.7.0–1.9.1 additions (DR-043–DR-057).
+<!-- SLOT:DS26 END -->
