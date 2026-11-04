@@ -2564,3 +2564,12 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks run: `services/common/tests/test_ingest_collaborator_variants.py` 4 passed; `test_ingest_bronze_incomplete.py` 3 passed.
 - End: 2026-11-04.
 <!-- SLOT:ING2 END -->
+
+
+<!-- SLOT:LIB2 BEGIN -->
+### LIB2: Auto-chain library ingestion, target track promotion, and weekly sync
+- Start: 2026-11-04 (branch lib2-auto-chain-library-ingestion off origin/main 398167ac). Issue: library ingestion required manual execution of scripts/load-library-targets.sh, lacked follow-up projection enqueues, and was not triggered after weekly pipeline runs in musicLibrary.
+- Changed: import_library.py automatically promotes new library tracks to target_tracks (medium priority, skipping archived/existing). handler.py enqueues projection_consume, graph_projection_consume, and enrichment_backfill follow-ups upon successful library ingest. musicLibrary/pipeline/run_weekly.py gains cmd_sync_songnodes invoked at the end of cmd_db and cmd_weekly to push library.json and setlists to SongNodes REST API.
+- Checks run: tests/library_importer/test_library_ingest_handler.py 1 passed; python pipeline/run_weekly.py sync-songnodes returned HTTP 202.
+- End: 2026-11-04.
+<!-- SLOT:LIB2 END -->
