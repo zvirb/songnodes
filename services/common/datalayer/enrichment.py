@@ -21,6 +21,35 @@ EVIDENCE_FIELDS = ('isrc', 'duration_ms', 'mix_name', 'bpm', 'key', 'genre', 're
 CONFIDENCE = {'isrc_equal': 1.0, 'fuzzy_version_and_duration_agree': 0.8, 'unique_text_match_duration_unknown': 0.6}
 
 
+def local_review(candidates: Sequence[ProviderTrack]) -> bool:
+    """A local-mirror hit marked review must not be auto-accepted by the text matcher.
+
+    Fuzzy precision on the mirror stays below an automatic cutoff, and an ambiguous ISRC
+    is review even when the ISRC itself would otherwise force a match.
+    """
+    for candidate in candidates or []:
+        raw = getattr(candidate, 'raw', None) or {}
+        if isinstance(raw, dict) and raw.get('confidence_bucket') == 'review':
+            return True
+    return False
+
+
+def _review_mbids(candidates: Sequence[ProviderTrack]) -> List[str]:
+    found: List[str] = []
+    for candidate in candidates or []:
+        raw = getattr(candidate, 'raw', None) or {}
+        if not isinstance(raw, dict):
+            continue
+        for item in raw.get('candidates') or []:
+            mbid = item.get('mbid') if isinstance(item, dict) else item
+            if mbid and str(mbid) not in found:
+                found.append(str(mbid))
+        ref = getattr(getattr(candidate, 'track', None), 'ref', None)
+        if ref and str(ref) not in found:
+            found.append(str(ref))
+    return found
+
+
 def confidence_for(decision: matching.Decision, found: ProviderTrack) -> float:
     if found.confidence is not None:
         return found.confidence
@@ -54,6 +83,13 @@ async def enrich_track(conn, track_id: UUID, providers: Sequence[Provider], unkn
             if not candidates:
                 summary['rejected'].append(provider.name)
                 continue
+            if local_review(candidates):
+                summary['review'].append({
+                    'provider': provider.name,
+                    'reasons': ['local_reference_review'],
+                    'candidate_mbids': _review_mbids(candidates),
+                })
+                continue
             decision = matching.best_match(target, [c.track for c in candidates], unknown_duration)
             if decision.outcome == 'review':
                 summary['review'].append({'provider': provider.name, 'reasons': list(decision.reasons)})
@@ -73,9 +109,17 @@ async def enrich_track(conn, track_id: UUID, providers: Sequence[Provider], unkn
             for field in EVIDENCE_FIELDS:
                 if field in found.fields:
                     source = found.field_sources.get(field, provider.name)
+                    raw_payload = {'ref': found.track.ref, 'reasons': list(decision.reasons)}
+                    if isinstance(found.raw, dict):
+                        if found.raw.get('candidates'):
+                            raw_payload['candidates'] = found.raw['candidates']
+                        if field == 'musicbrainz_id':
+                            for key in ('release_date', 'release_year', 'matched_by', 'licence', 'dump_version'):
+                                if found.raw.get(key) is not None:
+                                    raw_payload[key] = found.raw[key]
                     written = await evidence.record(conn, track_id, field, found.fields[field], source, method='provider_match',
                                                     independent_group=provider.independent_group, confidence=confidence,
-                                                    raw={'ref': found.track.ref, 'reasons': list(decision.reasons)})
+                                                    raw=raw_payload)
                     summary['evidence'] += int(written)
             summary['matched'].append({'provider': provider.name, 'ref': found.track.ref, 'reasons': list(decision.reasons)})
             # The first confirmed match pins duration and ISRC for the providers that follow.
@@ -90,8 +134,10 @@ async def enrich_track(conn, track_id: UUID, providers: Sequence[Provider], unkn
         await conn.execute("""
             UPDATE silver_enriched_tracks SET enriched_at = CASE WHEN $3 THEN NOW() ELSE enriched_at END,
                    enrichment_metadata = enrichment_metadata || jsonb_build_object('last_enrichment', $2::jsonb)
-            WHERE id = $1""", track_id, json.dumps({'matched': [m['provider'] for m in summary['matched']],
+            WHERE id = $1""", track_id,             json.dumps({'matched': [m['provider'] for m in summary['matched']],
                                                     'review': [r['provider'] for r in summary['review']],
+                                                    'review_candidates': {r['provider']: r.get('candidate_mbids', [])
+                                                                          for r in summary['review'] if r.get('candidate_mbids')},
                                                     'errors': sorted(summary['errors']), 'attempted': attempted}), attempted)
     summary['applied'] = applied
     return summary

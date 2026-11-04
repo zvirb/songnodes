@@ -1,2 +1,5 @@
 -- Migration 140_mb_indexes_down.sql
-DROP FUNCTION IF EXISTS ref_mb.normalize_lookup(text);
+--
+-- NO-OP. Does not DROP FUNCTION ref_mb.normalize_lookup. If an earlier up script
+-- created that function inside songnodes, dropping it is unnecessary for the app
+-- and fails when the ref_mb schema is absent. See docs/integration/ref_mb/DECISION.md.

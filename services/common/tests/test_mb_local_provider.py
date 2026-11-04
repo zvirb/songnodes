@@ -42,8 +42,9 @@ def mock_pool():
     return pool
 
 
-def test_provider_chain_order():
-    """Verify list_providers registers musicbrainz_local ahead of web musicbrainz."""
+def test_provider_chain_order(monkeypatch):
+    """With the flag on, musicbrainz_local is registered ahead of web musicbrainz."""
+    monkeypatch.setenv("MB_LOCAL_ENABLED", "true")
     chain = list_providers()
     print(f"\nProvider chain: {chain}")
 
@@ -98,6 +99,15 @@ async def test_mb_local_provider_mock_db_match(mock_pool, monkeypatch):
     mock_match.method = "isrc"
     mock_match.confidence_bucket = "auto"
     mock_match.dump_version = "2026-10-26"
+    mock_match.isrc = "USRC00000001"
+    mock_match.duration_ms = 300000
+    mock_match.record_label = None
+    mock_match.genres = ()
+    mock_match.candidates = ()
+    mock_match.release_date = None
+    mock_match.release_year = None
+    mock_match.matched_title = "Strobe"
+    mock_match.matched_artist = "deadmau5"
 
     mock_resolver_cls = MagicMock()
     mock_resolver_instance = AsyncMock()

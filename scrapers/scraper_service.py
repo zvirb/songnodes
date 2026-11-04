@@ -216,47 +216,14 @@ async def execute_spider(spider_name: str, args: Dict, custom_settings: Dict):
 
 @app.post("/migrate")
 async def run_migration():
-    """Run database migration manually"""
-    try:
-        import subprocess
-
-        db_host = os.getenv('DATABASE_HOST', 'postgres')
-        db_port = os.getenv('DATABASE_PORT', '5432')
-        db_name = os.getenv('DATABASE_NAME', 'musicdb')
-        db_user = os.getenv('DATABASE_USER', 'musicdb_user')
-        db_password = (os.getenv('DATABASE_PASSWORD') or os.getenv('POSTGRES_PASSWORD'))
-
-        migration_file = '/app/sql/migrations/001_add_mbid_and_camelot.sql'
-
-        cmd = [
-            'psql',
-            f'-h', db_host,
-            f'-p', db_port,
-            f'-U', db_user,
-            f'-d', db_name,
-            f'-f', migration_file
-        ]
-
-        env = os.environ.copy()
-        env['PGPASSWORD'] = db_password
-
-        result = subprocess.run(cmd, env=env, capture_output=True, text=True)
-
-        if result.returncode == 0:
-            return {
-                "status": "success",
-                "message": "Migration completed successfully",
-                "output": result.stdout
-            }
-        else:
-            return {
-                "status": "error",
-                "message": "Migration failed",
-                "error": result.stderr
-            }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Migration error: {str(e)}")
+    """Refuse the superseded scrapers migration. It is not applied."""
+    return {
+        "status": "superseded",
+        "message": (
+            "scrapers/sql/migrations/001_add_mbid_and_camelot.sql is superseded and was not applied. "
+            "silver_enriched_tracks.musicbrainz_id is not unique (migration 014)."
+        ),
+    }
 
 
 @app.get("/config")

@@ -1,7 +1,7 @@
 """Provider list configuration and ordering for metadata enrichment."""
 import os
 from typing import Dict, List, Optional
-from .registry import build_providers as registry_build_providers, DEFAULT_ORDER
+from .registry import build_providers as registry_build_providers, DEFAULT_ORDER, truthy
 
 DEFAULT_PROVIDER_ORDER: List[str] = [
     'tidal',
@@ -23,12 +23,16 @@ def list_providers(env: Optional[Dict[str, str]] = None) -> List[str]:
     source_env = dict(os.environ if env is None else env)
     listed = {n.strip() for n in (source_env.get('ENRICHMENT_PROVIDERS') or '').lower().split(',') if n.strip()}
 
+    order = list(DEFAULT_PROVIDER_ORDER)
+    if not truthy(source_env.get('MB_LOCAL_ENABLED')):
+        order = [name for name in order if name != 'musicbrainz_local']
+
     if listed and 'none' not in listed:
-        return [p for p in DEFAULT_PROVIDER_ORDER if p in listed]
+        return [name for name in order if name in listed]
     elif listed and 'none' in listed:
         return []
 
-    return list(DEFAULT_PROVIDER_ORDER)
+    return order
 
 
 def get_providers(env: Optional[Dict[str, str]] = None, **kwargs):
