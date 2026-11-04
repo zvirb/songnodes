@@ -1,5 +1,5 @@
 import React, { useId, useState } from 'react';
-import { SnIcon } from '../../lib/songnodes';
+import { SN, SnIcon } from '../../lib/songnodes';
 import type { LibraryTrack, SavedSet } from '../musicLibrary/data';
 import { exportM3U8, exportRekordbox, getMissingFieldsSummary, formatMissingFieldsSummary } from './exporters';
 import { CopyButton } from '../musicLibrary/components/ui';
@@ -14,10 +14,6 @@ interface ExportDialogProps {
 
 type Format = 'm3u8' | 'csv' | 'json' | 'rekordbox';
 
-function escapeCsv(val: string | number): string {
-  return `"${String(val).replace(/"/g, '""')}"`;
-}
-
 function exportCsv(set: SavedSet, byId: Map<string, LibraryTrack>): string {
   const header = ['Position', 'Artist', 'Title', 'BPM', 'Key', 'Duration'];
   const rows = set.tracks.map((track, i) => {
@@ -27,9 +23,16 @@ function exportCsv(set: SavedSet, byId: Map<string, LibraryTrack>): string {
     const bpm = t && t.bpm !== null ? t.bpm : (track.bpm ?? '');
     const key = t && t.k ? t.k : (track.k ?? '');
     const duration = t && t.d !== null ? Math.round(t.d) : '';
-    return [i + 1, artist, title, bpm, key, duration].map(escapeCsv).join(',');
+    return [
+      { value: i + 1, numeric: true },
+      artist,
+      title,
+      { value: bpm, numeric: true },
+      key,
+      { value: duration, numeric: true },
+    ];
   });
-  return [header.join(','), ...rows].join('\n');
+  return SN.csv.file(header, rows);
 }
 
 function exportJson(set: SavedSet, byId: Map<string, LibraryTrack>): string {

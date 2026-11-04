@@ -238,7 +238,7 @@ export default function AISetlistsPage() {
                  rows={8}
                  value={pastedJson}
                  onChange={e => setPastedJson(e.target.value)}
-                 placeholder="Paste the JSON response here..."
+                 placeholder="Paste the JSON response here…"
                />
                <div style={{ marginTop: 'var(--space-3)' }}>
                  <button className="sn-btn sn-btn--primary" onClick={() => handleReview(pastedJson)} disabled={!pastedJson.trim()}>Review Data</button>
@@ -248,7 +248,7 @@ export default function AISetlistsPage() {
              <div className="sn-card">
                 <h2 className="title-s" style={{ marginBottom: 'var(--space-3)' }}>Provider Settings</h2>
                 {providers.length === 0 ? (
-                   <InlineMessage status="warn">No AI providers configured. Add keys in Settings.</InlineMessage>
+                   <InlineMessage status="warn"><span dangerouslySetInnerHTML={{ __html: "No AI providers configured. " + SN.sourceLink({ text: "Add keys in Settings", href: "/settings/api-keys", module: "services" }) }} /></InlineMessage>
                 ) : (
                    <div className="sn-row">
                      <label className="sn-field" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 'var(--space-2)' }}>
@@ -264,7 +264,7 @@ export default function AISetlistsPage() {
                        </label>
                      )}
                      <button className="sn-btn sn-btn--primary" onClick={handleRunAPI} disabled={isCallingAPI}>
-                       {isCallingAPI ? 'Requesting...' : 'Run Search'}
+                       {isCallingAPI ? 'Requesting…' : 'Run Search'}
                      </button>
                    </div>
                 )}
@@ -285,19 +285,19 @@ export default function AISetlistsPage() {
                <h2 className="title-s" style={{ marginBottom: 'var(--space-4)' }}>Review Summary</h2>
                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-4)', marginBottom: 'var(--space-6)'}}>
                   <div className="sn-figure-tile">
-                    <div className="sn-figure-tile__label">NEW SETLISTS</div>
+                    <div className="sn-figure-tile__label">New setlists</div>
                     <div className="sn-figure-tile__figure">{reviewResult.newSetlists.length}</div>
                   </div>
                   <div className="sn-figure-tile">
-                    <div className="sn-figure-tile__label">EXCLUDED</div>
+                    <div className="sn-figure-tile__label">Excluded</div>
                     <div className="sn-figure-tile__figure" style={{ color: 'var(--fg-3)' }}>{reviewResult.existingSetlists.length}</div>
                   </div>
                   <div className="sn-figure-tile">
-                    <div className="sn-figure-tile__label">NEW TRACKS</div>
+                    <div className="sn-figure-tile__label">New tracks</div>
                     <div className="sn-figure-tile__figure">{reviewResult.tracksNew}</div>
                   </div>
                   <div className="sn-figure-tile">
-                    <div className="sn-figure-tile__label">EXISTING TRACKS</div>
+                    <div className="sn-figure-tile__label">Existing tracks</div>
                     <div className="sn-figure-tile__figure" style={{ color: 'var(--fg-3)' }}>{reviewResult.tracksExisting}</div>
                   </div>
                </div>
