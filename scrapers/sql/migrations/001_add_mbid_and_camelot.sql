@@ -1,7 +1,17 @@
 -- SUPERSEDED: Do not apply. The musicbrainz_id column in this legacy script enforces a UNIQUE constraint.
 -- The live `silver_enriched_tracks.musicbrainz_id` column (from migration 014) is non-unique to accommodate
 -- legitimate many-tracks-to-one-recording mappings and MusicBrainz merges.
+--
+-- The historical statements are retained below inside a block comment so neither psql nor another
+-- SQL runner executes them. They add UNIQUE(musicbrainz_id) on artists/songs, rewrite songs, and
+-- replace views. None of that is applied.
 
+DO $$
+BEGIN
+    RAISE NOTICE 'SUPERSEDED: scrapers/sql/migrations/001_add_mbid_and_camelot.sql was not applied. silver_enriched_tracks.musicbrainz_id stays non-unique (migration 014).';
+END $$;
+
+/*
 -- Migration 001: Add MusicBrainz IDs and Camelot Keys (Framework Compliance)
 -- ============================================================================
 --
@@ -319,3 +329,4 @@ COMMENT ON TABLE track_sources IS 'Multi-source tracking for cross-platform dedu
 COMMENT ON COLUMN songs.camelot_key IS 'Camelot Wheel notation for harmonic mixing (Framework Section 1.2)';
 COMMENT ON COLUMN songs.musicbrainz_id IS 'Canonical MusicBrainz recording ID (Framework Section 1.1)';
 COMMENT ON FUNCTION get_compatible_keys IS 'Returns harmonically compatible Camelot keys for DJ mixing (Framework Section 1.2)';
+*/

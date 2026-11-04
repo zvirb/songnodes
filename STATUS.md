@@ -2604,3 +2604,12 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
 - End: 2026-11-04.
 - Next: Review and commit/merge DS26 changes; optionally extend rule fragments in design-system/rules/frag/ with new rules covering 1.7.0–1.9.1 additions (DR-043–DR-057).
 <!-- SLOT:DS26 END -->
+
+<!-- SLOT:MBLOCAL BEGIN -->
+### MBLOCAL: Resolve tracks against a local MusicBrainz mirror before the web API
+- Start: 2026-11-04 (branch cursor/ref-mb-local-mirror-f014 off main).
+- Scope: retire in-database MusicBrainz DDL, mark scrapers migration 001 superseded without destructive DDL, keep ref_mb off unless MB_LOCAL_ENABLED, register a local provider ahead of the web provider (ISRC with ::bpchar, exact, canonical, fuzzy review-only, gid redirect), ISRC ambiguity rule, MIT LICENSE plus MusicBrainz credit, mocked tests, docs for the D2 change.
+- Changed: migration 100 and 140 are no-ops (no DROP); scrapers 001 is superseded and not executed; local provider order ISRC (`::bpchar`) → exact normalised → canonical exact → artist-first fuzzy (review only) → gid redirect; ambiguous ISRC needs ±5 s and artist similarity ≥ 0.85 to accept exactly one; LICENSE and MusicBrainz credit; D2 now records a separate ref_mb database.
+- Checks run: after merging origin/main 0a159c43 (merge commit dc7e0f19), `PYTHONPATH=services python3 -m pytest services/common/tests/test_ref_mb_resolve.py services/common/tests/test_mb_local_provider.py services/common/tests/test_providers.py services/common/refmb/test_refmb.py --noconftest -q -o addopts=` 64 passed. `PYTHONPATH=. python3 -m pytest tests/resolver/run_eval.py pipeline/test_ref_mb_resolver.py --noconftest -q -o addopts=` 8 passed, 1 skipped (run_eval is one of the eight). GitHub reports PR 567 mergeable MERGEABLE. The `common` job still fails on `test_target_scrape.py` (`Artist A - Title A` vs `Artist A Title A`); that file is unchanged from main and python-tests on main has failed the same way since TGT3. Not fixed here. No live ref_mb, so index names, ISRC timing and the measured precision figures were not re-checked.
+- Next: owner merges PR 567. The remaining `common` failure belongs to a TGT3 follow-up. Enabling the mirror still needs `MB_LOCAL_ENABLED` and a password that is not in git.
+<!-- SLOT:MBLOCAL END -->

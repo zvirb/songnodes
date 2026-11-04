@@ -1,7 +1,7 @@
 -- Migration 140_mb_indexes_up.sql
-
-CREATE OR REPLACE FUNCTION ref_mb.normalize_lookup(text) RETURNS text AS $$
-BEGIN
-    RETURN lower(regexp_replace(unaccent($1), '[^\w]+', '', 'g'));
-END;
-$$ LANGUAGE plpgsql IMMUTABLE;
+--
+-- NO-OP. ref_mb.normalize_lookup belongs on the external mirror, not in songnodes.
+-- Creating it here requires a ref_mb schema in the app database, which migration 100
+-- no longer creates. See docs/integration/ref_mb/DECISION.md.
+-- The lookup expression the mirror is assumed to index (sn_cmd_lookup) is documented
+-- in docs/integration/ref_mb/SETTINGS.md.

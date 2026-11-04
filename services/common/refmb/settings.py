@@ -1,7 +1,11 @@
 import os
+import re
 from typing import Optional
 from dataclasses import dataclass
+from urllib.parse import quote_plus
 import asyncpg
+
+_IDENT = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
 
 @dataclass
 class RefMBSettings:
@@ -46,12 +50,18 @@ async def create_pool(settings: RefMBSettings) -> Optional[asyncpg.Pool]:
     if not settings.enabled:
         return None
 
+    if not _IDENT.match(settings.schema):
+        raise ValueError(f'ref_mb schema is not a safe identifier: {settings.schema!r}')
     password = settings.get_password()
-    dsn = f"postgresql://{settings.user}:{password}@{settings.host}:{settings.port}/{settings.database}"
+    dsn = (
+        f"postgresql://{quote_plus(settings.user)}:{quote_plus(password)}"
+        f"@{settings.host}:{int(settings.port)}/{quote_plus(settings.database)}"
+    )
 
     async def init(conn):
-        await conn.execute(f"SET search_path TO {settings.schema}")
-        await conn.execute(f"SET statement_timeout = {settings.statement_timeout_ms}")
+        # public stays on the path so unaccent and pg_trgm, installed outside ref_mb, resolve.
+        await conn.execute(f"SET search_path TO {settings.schema}, public")
+        await conn.execute(f"SET statement_timeout = {int(settings.statement_timeout_ms)}")
         await conn.execute("SET default_transaction_read_only = on")
 
     return await asyncpg.create_pool(

@@ -1,4 +1,7 @@
 -- Migration 100_ref_mb_schema_down.sql
-
--- NO-OP: The ref_mb schema and tables have been moved to a separate database.
--- For details on this decision, please see docs/integration/ref_mb/DECISION.md
+--
+-- NO-OP. ref_mb lives in its own database. See docs/integration/ref_mb/DECISION.md.
+-- This down script does not DROP SCHEMA ref_mb and does not drop any table.
+-- Dropping the schema would delete reference data if an earlier version of the up
+-- script had created it inside songnodes. Leave that data in place; the app no
+-- longer reads MusicBrainz tables from its own database.

@@ -82,7 +82,7 @@ def resolve_isrc_local(isrc: str) -> Optional[Dict[str, Optional[str]]]:
                 SELECT r.gid, r.name, r.length
                 FROM ref_mb.isrc i
                 JOIN ref_mb.recording r ON i.recording = r.id
-                WHERE i.isrc = %s LIMIT 1;
+                WHERE i.isrc = %s::bpchar LIMIT 1;
             """
             cursor.execute(query, (isrc,))
             row = cursor.fetchone()
@@ -133,7 +133,7 @@ def batch_resolve_isrcs(isrc_list: List[str]) -> Dict[str, Dict[str, Optional[st
                 SELECT i.isrc, r.gid, r.name, r.length
                 FROM ref_mb.isrc i
                 JOIN ref_mb.recording r ON i.recording = r.id
-                WHERE i.isrc = ANY(%s);
+                WHERE i.isrc = ANY(%s::bpchar[]);
             """
             cursor.execute(query, (clean_isrcs,))
             rows = cursor.fetchall()

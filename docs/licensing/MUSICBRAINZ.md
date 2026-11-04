@@ -11,6 +11,6 @@ Data such as tag votes, ratings, derived dumps, and cover art are licensed under
 **Rule:** Any non-commercial data must only be loaded into a separate, droppable `ref_mb_nc` schema and must never be written into the `silver` data layer without explicitly recorded license evidence. At present, non-commercial data is not loaded.
 
 ## Credit
-As required by MusicBrainz, we acknowledge their contribution:
+MusicBrainz asks for credit even where the data is CC0. The application credits it in the README (section "Data sources and attribution") and in `LICENSE`:
 
-> This application uses data from MusicBrainz, which is made available under the CC0 1.0 Universal Public Domain Dedication and the Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported license.
+> This application uses data from MusicBrainz (https://musicbrainz.org), made available under the CC0 1.0 Universal Public Domain Dedication. Non-commercial derived data is not loaded.

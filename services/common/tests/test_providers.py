@@ -388,6 +388,16 @@ class Registry(unittest.TestCase):
         configured = self.build({'TIDAL_CLIENT_ID': 'i', 'TIDAL_CLIENT_SECRET': 's', 'TIDAL_COUNTRY_CODE': 'US'})
         self.assertEqual(configured[0].country_code, 'US')
 
+    def test_musicbrainz_local_is_off_by_default_and_precedes_the_web_provider(self):
+        self.assertNotIn('musicbrainz_local', [p.name for p in self.build({})])
+        self.assertIn('musicbrainz', [p.name for p in self.build({})])
+        enabled = [p.name for p in self.build({'MB_LOCAL_ENABLED': 'true'})]
+        self.assertLess(enabled.index('musicbrainz_local'), enabled.index('musicbrainz'))
+        self.assertEqual(
+            [p.name for p in self.build({'MB_LOCAL_ENABLED': 'true', 'ENRICHMENT_PROVIDERS': 'none'})],
+            [],
+        )
+
     def test_helm_placeholder_credentials_do_not_enable_a_provider(self):
         env = {'TIDAL_CLIENT_ID': 'CHANGE_ME', 'TIDAL_CLIENT_SECRET': 'CHANGE_ME', 'LASTFM_API_KEY': 'CHANGE_ME_lastfm',
                'DISCOGS_API_TOKEN': 'change_me', 'GETSONGBPM_API_KEY': 'CHANGE_ME', 'GETSONGBPM_ENABLED': 'true'}

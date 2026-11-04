@@ -1,6 +1,23 @@
 -- Migration 100_ref_mb_schema_up.sql
-
--- NO-OP: The ref_mb schema and tables have been moved to a separate database.
--- The app database must NOT create ref_mb tables.
--- For details on this decision, the fallback database, and the reload procedure,
--- please see docs/integration/ref_mb/DECISION.md
+--
+-- NO-OP. ref_mb is a separate read-only Postgres database, not a schema in songnodes.
+-- See docs/integration/ref_mb/DECISION.md.
+--
+-- Why this is not a corrected CREATE, and why it does not DROP anything:
+-- An earlier draft of this migration described MusicBrainz tables inside the songnodes
+-- database, and those definitions do not match the real dump (SCHEMA_SEQUENCE 31):
+--   * artist_credit was missing edits_pending and gid
+--   * isrc had an extra source column (real columns: id, recording, isrc, edits_pending, created)
+--   * medium was missing gid
+--   * link_type had an extra priority column
+--   * canonical_musicbrainz_data was modelled as uuid plus a year column; the dump is
+--     CSV with a header, an integer id, and no year column
+--   * genre was labelled non-commercial; the genre table ships in CC0 mbdump
+--   * release_country and area were missing
+-- Recreating those tables here would put a 24–30 GB mirror in the app database and
+-- would still not match the loaded mirror. DROP SCHEMA would destroy any rows a
+-- deployment already loaded with that earlier draft. This file therefore creates
+-- nothing and drops nothing. Fresh databases do not gain MusicBrainz tables.
+-- Already-applied databases are left as they are.
+--
+-- The live mirror is reached with MB_LOCAL_* (off unless MB_LOCAL_ENABLED is true).
