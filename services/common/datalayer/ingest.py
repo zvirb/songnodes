@@ -16,7 +16,7 @@ from datetime import date, datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from common.metadata.matching import normalize_isrc
+from common.metadata.matching import artist_key, normalize_isrc, parse_title
 from common.metadata.names import clean_name, is_placeholder_artist, normalize
 from common.metadata.tempo import known_bpm
 
@@ -110,6 +110,33 @@ async def upsert_track(conn, artist: str, title: str, bronze_id: Optional[UUID],
         SELECT id FROM silver_enriched_tracks
         WHERE lower(artist_name) = lower($1) AND lower(track_title) = lower($2) ORDER BY created_at LIMIT 1
     """, canonical, title)
+    if not track:
+        raw_isrc = normalize_isrc((raw or {}).get('isrc'))
+        if raw_isrc:
+            track = await conn.fetchval("""
+                SELECT id FROM silver_enriched_tracks
+                WHERE isrc = $1
+                ORDER BY (EXISTS (SELECT 1 FROM library.tracks lt WHERE lt.id = silver_enriched_tracks.id)) DESC, created_at LIMIT 1
+            """, raw_isrc)
+    if not track:
+        parsed_incoming = parse_title(title)
+        incoming_artist_key = artist_key(canonical)
+        tokens = parsed_incoming.base.split()
+        if tokens and incoming_artist_key:
+            first_token = tokens[0]
+            candidates = await conn.fetch("""
+                SELECT id, artist_name, track_title FROM silver_enriched_tracks
+                WHERE lower(track_title) LIKE lower($1) || '%'
+                ORDER BY (EXISTS (SELECT 1 FROM library.tracks lt WHERE lt.id = silver_enriched_tracks.id)) DESC, created_at
+                LIMIT 30
+            """, first_token)
+            for c in candidates:
+                cand_parsed = parse_title(c['track_title'])
+                if cand_parsed.base.lower() == parsed_incoming.base.lower() and cand_parsed.versions == parsed_incoming.versions:
+                    cand_ak = artist_key(c['artist_name'])
+                    if cand_ak and (incoming_artist_key == cand_ak or incoming_artist_key in cand_ak or cand_ak in incoming_artist_key):
+                        track = c['id']
+                        break
     if track:
         if bronze_id is not None:
             await conn.execute("""

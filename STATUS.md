@@ -2554,3 +2554,13 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks run: `scrapers/tests/test_mixesdb_api_search.py` 2 passed; `test_1001tracklists_search.py` and `test_remix_type_kept.py` 19 passed; live MediaWiki API verified on 25 library tracks (12 hits / 74 sets).
 - End: 2026-11-04.
 <!-- SLOT:TGT3 END -->
+
+
+<!-- SLOT:ING2 BEGIN -->
+### ING2: Link collaborator and base-title variants on track ingestion
+- Start: 2026-11-04 (branch ing2-link-collaborator-variants-on-ingest off origin/main e5682a15). Issue: Scraped tracks with collaborator differences (e.g. "Lifelike" vs "lifelike, Kris Menace") created duplicate orphan tracks instead of linking to existing canonical/library tracks.
+- Cause: `upsert_track` only matched on exact `(lower(artist_name), lower(track_title))`.
+- Changed: In `upsert_track` (`services/common/datalayer/ingest.py`), when exact match fails, check ISRC, and match when base title and versions are identical and artist keys overlap (prioritizing existing library tracks).
+- Checks run: `services/common/tests/test_ingest_collaborator_variants.py` 4 passed; `test_ingest_bronze_incomplete.py` 3 passed.
+- End: 2026-11-04.
+<!-- SLOT:ING2 END -->
