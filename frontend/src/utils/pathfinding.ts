@@ -11,38 +11,55 @@ import { getHarmonicCompatibility, keyToCamelot } from './harmonic';
 import { hasValidArtist } from './dataLoaderUtils';
 
 /**
- * Priority queue implementation for Dijkstra's algorithm
+ * Binary min-heap priority queue implementation for Dijkstra's algorithm.
+ * Replaces O(N) array splice/shift with O(log N) bubble-up and sift-down operations.
  */
-class PriorityQueue<T> {
-  private items: Array<{ item: T; priority: number }> = [];
+export class PriorityQueue<T> {
+  private heap: Array<{ item: T; priority: number }> = [];
 
   enqueue(item: T, priority: number): void {
-    const element = { item, priority };
-    let added = false;
-
-    for (let i = 0; i < this.items.length; i++) {
-      if (element.priority < this.items[i].priority) {
-        this.items.splice(i, 0, element);
-        added = true;
-        break;
-      }
-    }
-
-    if (!added) {
-      this.items.push(element);
+    this.heap.push({ item, priority });
+    let i = this.heap.length - 1;
+    while (i > 0) {
+      const parent = (i - 1) >> 1;
+      if (this.heap[parent].priority <= this.heap[i].priority) break;
+      const tmp = this.heap[parent];
+      this.heap[parent] = this.heap[i];
+      this.heap[i] = tmp;
+      i = parent;
     }
   }
 
   dequeue(): T | null {
-    return this.items.shift()?.item || null;
+    if (this.heap.length === 0) return null;
+    const top = this.heap[0].item;
+    const last = this.heap.pop()!;
+    if (this.heap.length > 0) {
+      this.heap[0] = last;
+      let i = 0;
+      const len = this.heap.length;
+      while (true) {
+        let best = i;
+        const left = (i << 1) + 1;
+        const right = left + 1;
+        if (left < len && this.heap[left].priority < this.heap[best].priority) best = left;
+        if (right < len && this.heap[right].priority < this.heap[best].priority) best = right;
+        if (best === i) break;
+        const tmp = this.heap[i];
+        this.heap[i] = this.heap[best];
+        this.heap[best] = tmp;
+        i = best;
+      }
+    }
+    return top;
   }
 
   isEmpty(): boolean {
-    return this.items.length === 0;
+    return this.heap.length === 0;
   }
 
   size(): number {
-    return this.items.length;
+    return this.heap.length;
   }
 }
 
@@ -217,9 +234,13 @@ export async function findDJPath(
   const startTime = Date.now();
 
   try {
-    // Validate inputs
-    const startNode = graphData.nodes.find(n => n.id === options.startTrackId);
-    const endNode = graphData.nodes.find(n => n.id === options.endTrackId);
+    // Index nodes by ID to eliminate O(|E| * |V|) linear searches during edge building and traversal
+    const nodeMap = new Map<string, GraphNode>();
+    graphData.nodes.forEach(node => nodeMap.set(node.id, node));
+
+    // Validate inputs with O(1) lookups
+    const startNode = nodeMap.get(options.startTrackId);
+    const endNode = nodeMap.get(options.endTrackId);
 
     if (!startNode || !endNode) {
       return {
@@ -270,25 +291,29 @@ export async function findDJPath(
       }
     });
 
-    // Build weighted adjacency list
+    // Build weighted adjacency list with O(1) node lookups
     graphData.edges.forEach(edge => {
       const sourceTrack = trackMap.get(edge.source);
       const targetTrack = trackMap.get(edge.target);
 
       if (sourceTrack && targetTrack) {
-        const weightData = calculateDJEdgeWeight(sourceTrack, targetTrack, edge.weight, constraints);
+        const targetNode = nodeMap.get(edge.target);
+        const sourceNode = nodeMap.get(edge.source);
 
-        adjacencyList.get(edge.source)?.push({
-          node: graphData.nodes.find(n => n.id === edge.target)!,
-          weight: weightData,
-        });
+        if (targetNode && sourceNode) {
+          const weightData = calculateDJEdgeWeight(sourceTrack, targetTrack, edge.weight, constraints);
+          adjacencyList.get(edge.source)?.push({
+            node: targetNode,
+            weight: weightData,
+          });
 
-        // Add reverse edge for undirected graph
-        const reverseWeightData = calculateDJEdgeWeight(targetTrack, sourceTrack, edge.weight, constraints);
-        adjacencyList.get(edge.target)?.push({
-          node: graphData.nodes.find(n => n.id === edge.source)!,
-          weight: reverseWeightData,
-        });
+          // Add reverse edge for undirected graph
+          const reverseWeightData = calculateDJEdgeWeight(targetTrack, sourceTrack, edge.weight, constraints);
+          adjacencyList.get(edge.target)?.push({
+            node: sourceNode,
+            weight: reverseWeightData,
+          });
+        }
       }
     });
 
@@ -342,7 +367,7 @@ export async function findDJPath(
     let position = 0;
 
     while (currentId) {
-      const node = graphData.nodes.find(n => n.id === currentId);
+      const node = nodeMap.get(currentId);
       const track = trackMap.get(currentId);
 
       if (node && track) {

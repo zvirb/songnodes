@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { GraphData, GraphEdge, GraphNode } from '../types';
 import { DEFAULT_CONSTRAINTS } from '../types/pathfinding';
-import { findDJPath } from './pathfinding';
+import { findDJPath, PriorityQueue } from './pathfinding';
 
 const node = (id: string, artist?: string): GraphNode =>
   ({ id, title: `Track ${id}`, label: `Track ${id}`, artist, bpm: 128, x: 0, y: 0 } as unknown as GraphNode);
@@ -88,5 +88,44 @@ describe('findDJPath artist attribution', () => {
     const result = await findDJPath(graph, options('a', 'c'), DEFAULT_CONSTRAINTS.flexible);
     expect(result.success).toBe(true);
     expect(ids(result)).toEqual(['a', 'b', 'c']);
+  });
+});
+
+describe('PriorityQueue min-heap', () => {
+  it('dequeues elements in ascending priority order', () => {
+    const pq = new PriorityQueue<string>();
+    expect(pq.isEmpty()).toBe(true);
+    expect(pq.size()).toBe(0);
+    expect(pq.dequeue()).toBeNull();
+
+    pq.enqueue('c', 30);
+    pq.enqueue('a', 10);
+    pq.enqueue('b', 20);
+    pq.enqueue('z', 5);
+
+    expect(pq.size()).toBe(4);
+    expect(pq.isEmpty()).toBe(false);
+
+    expect(pq.dequeue()).toBe('z');
+    expect(pq.dequeue()).toBe('a');
+    expect(pq.dequeue()).toBe('b');
+    expect(pq.dequeue()).toBe('c');
+    expect(pq.dequeue()).toBeNull();
+    expect(pq.isEmpty()).toBe(true);
+  });
+
+  it('correctly handles duplicate priorities', () => {
+    const pq = new PriorityQueue<string>();
+    pq.enqueue('first_equal', 5);
+    pq.enqueue('second_equal', 5);
+    pq.enqueue('lower', 2);
+    pq.enqueue('higher', 10);
+
+    expect(pq.dequeue()).toBe('lower');
+    const equal1 = pq.dequeue();
+    const equal2 = pq.dequeue();
+    expect([equal1, equal2].sort()).toEqual(['first_equal', 'second_equal']);
+    expect(pq.dequeue()).toBe('higher');
+    expect(pq.dequeue()).toBeNull();
   });
 });
