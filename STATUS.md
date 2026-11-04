@@ -549,6 +549,13 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 - Sanitized raw exception strings (`detail=f"...: {str(e)}"`) across 10 endpoints in `services/rest_api/routers/music_auth.py` (OAuth callbacks, token storage, token refresh, search, token status). Replaced internal error details with sanitized error messages while preserving server-side logging (`logger.error(..., exc_info=True)`).
 - Added security regression unit tests in `tests/security/test_music_auth_security.py`.
 - Checks: `PYTHONPATH=services/rest_api python -m pytest -o addopts="" --noconftest tests/security/ tests/rest_api/` passed (454/454).
+
+### SEC: YouTube API Router Error Sanitization and Key Resolution (2026-11-04)
+- Start: 2026-11-04
+- End: 2026-11-04
+- Sanitized raw upstream error response detail leakage (`detail=f"YouTube API request failed: {error_text}"`) in `services/rest_api/routers/youtube_api.py`. Replaced internal detail responses with a sanitized error message ("YouTube API request failed") while preserving server-side logging. Configured endpoint to resolve API keys from database/environment fallback rather than requiring `api_key` in client query parameters.
+- Added security regression unit tests in `tests/security/test_youtube_api_security.py`.
+- Checks: `uv run --with-requirements services/rest_api/requirements.txt --with pytest python -m pytest -o addopts="" --noconftest tests/security/` passed (30/30).
 <!-- SLOT:SEC_SENTINEL END -->
 
 <!-- SLOT:QA1 BEGIN -->

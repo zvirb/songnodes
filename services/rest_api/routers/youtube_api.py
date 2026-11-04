@@ -10,6 +10,8 @@ from typing import Optional, List
 import aiohttp
 from datetime import date
 import logging
+import os
+from utils.api_key_helper import get_api_key
 
 router = APIRouter(prefix="/api/v1/youtube", tags=["YouTube API"])
 logger = logging.getLogger(__name__)
@@ -153,7 +155,7 @@ async def get_quota_status(pool = Depends(get_db_pool)):
 @router.get("/search", response_model=List[YouTubeSearchResult])
 async def search_youtube(
     query: str = Query(..., description="Search query (DJ mix, artist name, etc.)"),
-    api_key: str = Query(..., description="YouTube Data API key"),
+    api_key: Optional[str] = Query(None, description="YouTube Data API key"),
     max_results: int = Query(10, ge=1, le=50, description="Max results (1-50)"),
     pool = Depends(get_db_pool)
 ):
@@ -162,6 +164,13 @@ async def search_youtube(
     Cost: 100 units per request
     Max 99 searches per day to stay within free tier
     """
+    # Prefer provided api_key, then fallback to stored database key or env var
+    resolved_api_key = api_key or await get_api_key(pool, 'youtube', 'api_key') or os.getenv('YOUTUBE_API_KEY')
+    if not resolved_api_key:
+        raise HTTPException(
+            status_code=401,
+            detail="YouTube API key not configured"
+        )
 
     # Check and update quota
     quota_info = await check_and_update_quota('youtube', SEARCH_COST, pool)
@@ -175,7 +184,7 @@ async def search_youtube(
                 'q': query,
                 'type': 'video',
                 'maxResults': max_results,
-                'key': api_key
+                'key': resolved_api_key
             }
 
             async with session.get(
@@ -225,7 +234,7 @@ async def search_youtube(
                     logger.error(f"YouTube API error: {response.status} - {error_text}")
                     raise HTTPException(
                         status_code=response.status,
-                        detail=f"YouTube API request failed: {error_text}"
+                        detail="YouTube API request failed"
                     )
 
     except aiohttp.ClientError as e:
