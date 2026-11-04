@@ -119,12 +119,20 @@ class MixesdbSpider(scrapy.Spider):
             from .utils import parse_track_string
             parsed = parse_track_string(search_query)
             artist_candidate = (parsed.get('primary_artists') or [None])[0] if parsed else None
+            track_candidate = (parsed.get('track_name') or '').strip() if parsed else ''
             if not artist_candidate:
                 parts = search_query.split()
                 if parts:
                     artist_candidate = parts[0]
 
             urls = []
+            # MediaWiki search API: direct full-text search against MixesDB search index
+            if artist_candidate and track_candidate:
+                srsearch = f'"{artist_candidate}" "{track_candidate}"'
+                urls.append(f"https://www.mixesdb.com/w/api.php?action=query&list=search&srsearch={quote(srsearch)}&format=json&srlimit=10")
+            elif search_query:
+                urls.append(f"https://www.mixesdb.com/w/api.php?action=query&list=search&srsearch={quote(search_query)}&format=json&srlimit=10")
+
             if artist_candidate:
                 cat_name = quote(artist_candidate.replace(' ', '_'))
                 urls.append(f"https://www.mixesdb.com/w/Category:{cat_name}")
@@ -342,6 +350,11 @@ class MixesdbSpider(scrapy.Spider):
             self.logger.warning(f"Content-Encoding: {response.headers.get('Content-Encoding', b'none').decode()}")
             return
 
+        # Handle MediaWiki API search results
+        if 'api.php' in response.url:
+            yield from self.parse_api_search_results(response)
+            return
+
         # Handle search results
         if 'Special:Search' in response.url or 'search=' in response.url:
             yield from self.parse_search_results(response)
@@ -365,6 +378,38 @@ class MixesdbSpider(scrapy.Spider):
             return
 
         self.logger.warning(f"No parser matched for URL: {response.url}")
+
+    def parse_api_search_results(self, response):
+        """Parse MediaWiki search API JSON results and follow mix links"""
+        try:
+            data = json.loads(response.text)
+            hits = data.get('query', {}).get('search', [])
+            self.logger.info(f"API search found {len(hits)} hits for {response.url}")
+            max_results = int(os.getenv('MIXESDB_MAX_RESULTS_PER_SEARCH', '5'))
+            yielded = 0
+            for hit in hits:
+                title = hit.get('title')
+                if not title:
+                    continue
+                if any(title.startswith(ns + ':') for ns in ['Category', 'Special', 'MixesDB', 'Help', 'File', 'Talk', 'User']):
+                    continue
+                full_url = f"https://www.mixesdb.com/w/{quote(title.replace(' ', '_'))}"
+                if self.is_mix_url(full_url):
+                    if not self.force_run and self.is_source_processed(full_url):
+                        continue
+                    yielded += 1
+                    self.logger.info(f"Yielding Request from API hit: {full_url}")
+                    yield scrapy.Request(
+                        url=full_url,
+                        callback=self.parse_mix_page,
+                        errback=self.handle_error,
+                        dont_filter=True,
+                        meta={'download_timeout': 30}
+                    )
+                    if yielded >= max_results:
+                        break
+        except Exception as e:
+            self.logger.warning(f"Failed to parse MixesDB API search results: {e}")
 
     def parse_search_results(self, response):
         """Parse search results and follow mix links"""
