@@ -542,6 +542,13 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 - Sanitized raw exception string (`detail=f"Pathfinding failed: {str(e)}"`) in `services/rest_api/routers/pathfinder.py`. Replaced internal trace detail response with a generic sanitized error message ("Pathfinding failed") while preserving server-side logging (`logger.error(..., exc_info=True)`).
 - Added security regression unit tests in `tests/security/test_pathfinder_security.py`.
 - Checks: `PYTHONPATH=services/rest_api python3 -m pytest -o addopts="" --noconftest tests/security/ tests/rest_api/` passed (93/93).
+
+### SEC: Music Auth Router Exception Leakage Remediation (2026-11-03)
+- Start: 2026-11-03
+- End: 2026-11-03
+- Sanitized raw exception strings (`detail=f"...: {str(e)}"`) across 10 endpoints in `services/rest_api/routers/music_auth.py` (OAuth callbacks, token storage, token refresh, search, token status). Replaced internal error details with sanitized error messages while preserving server-side logging (`logger.error(..., exc_info=True)`).
+- Added security regression unit tests in `tests/security/test_music_auth_security.py`.
+- Checks: `PYTHONPATH=services/rest_api python -m pytest -o addopts="" --noconftest tests/security/ tests/rest_api/` passed (454/454).
 <!-- SLOT:SEC_SENTINEL END -->
 
 <!-- SLOT:QA1 BEGIN -->
