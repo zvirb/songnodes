@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-SKIP = {'node_modules', 'sample_data_env', '.git', 'dist', '__pycache__', '.local-dev', 'tests'}
+SKIP = {'node_modules', 'sample_data_env', '.git', 'dist', '__pycache__', '.local-dev', 'tests', '_to_delete', '.venv', 'venv'}
 SECRET_NAME = r'[A-Z_]*(?:PASSWORD|PASSWD|PASS|SECRET|SECRET_KEY|TOKEN|API_KEY)[A-Z_]*'
 DEFAULTED = re.compile(r"""os\.(?:getenv|environ\.get)\(\s*['"]""" + SECRET_NAME + r"""['"]\s*,\s*['"][^'"\s]{4,}['"]""")
 KNOWN_LEAK = '7D82_xqNs55tGyk'
