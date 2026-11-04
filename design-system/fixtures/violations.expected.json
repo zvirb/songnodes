@@ -1,0 +1,25 @@
+{
+ "expected_checks": [
+  "A11Y-ICONBTN",
+  "A11Y-IMG",
+  "A11Y-OUTLINE",
+  "COL-FN",
+  "COL-HEX",
+  "DATA-NULL",
+  "FBK-DLG",
+  "INP-PLACEH",
+  "LAY-ID",
+  "LAY-IMP",
+  "LAY-Z",
+  "MOT-AUTOPLAY",
+  "MOT-DUR",
+  "NAV-HASHLINK",
+  "TYP-FAM",
+  "TYP-PX",
+  "WRT-BANG",
+  "WRT-CAPS",
+  "WRT-DATE",
+  "WRT-EMO"
+ ],
+ "expected_findings": 20
+}

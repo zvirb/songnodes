@@ -1,0 +1,593 @@
+- source: 01-writing.md:3
+  kind: decision
+  text_summary: 'Scope statement: the writing rules apply to every label, message,
+    tooltip, export header and page title in both SongNodes and the music library;
+    voice is a knowledgeable booth-mate.'
+- source: 01-writing.md:14-20
+  kind: example
+  text_summary: Write/Not table of five situations (set built, missing data, transition
+    hint, scraper failed, onboarding) contrasting preferred copy with hype or system-ish
+    copy.
+- source: 01-writing.md:28
+  kind: example
+  text_summary: Never type 'PLAY' or 'ENERGY TIER' in caps; illustrative examples
+    of the uppercase rule.
+- source: 01-writing.md:29
+  kind: example
+  text_summary: Title Case offenders in DJInterface.tsx ('Track Analysis', 'Fix Artist
+    Attribution') become sentence case.
+- source: 01-writing.md:56
+  kind: example
+  text_summary: Current EnergyMeter renders missing energy as 5; it must render an
+    en dash.
+- source: 01-writing.md:61
+  kind: example
+  text_summary: 'Current date-formatting offenders: APIKeyManager ''Last tested'',
+    TargetTracksManager ''Last searched'', FilterPanel preset dates, StatsPanel export
+    timestamps.'
+- source: 01-writing.md:76
+  kind: example
+  text_summary: Example file name peak-time-friday_2026-10-24.json.
+- source: 01-writing.md:106
+  kind: example
+  text_summary: 'List of current emoji to replace: music-note wordmark, play/clipboard
+    on Play/Plan, wrench on Filters, gear on Settings, palette on Fix artist attribution,
+    memo on Import tracklist, target on Targets, tick and cross in alerts.'
+- source: 01-writing.md:130
+  kind: example
+  text_summary: DJInterface.tsx clearQueue currently uses alert/confirm/prompt.
+- source: 01-writing.md:139-141
+  kind: example
+  text_summary: Three sample error messages (save failure, TIDAL playlist rejection,
+    Camelot key field error).
+- source: 01-writing.md:148-150
+  kind: example
+  text_summary: Three sample empty-state messages (no saved sets, no tracks match
+    filters, nothing scraped in 24 h).
+- source: 01-writing.md:156-170
+  kind: rationale
+  text_summary: Glossary Meaning and Write columns define each term (Energy, Tier,
+    Pillar, Rotation, Crate, Set, Slot, Spare, Transition, Camelot key, Adjacency,
+    Waypoint, Target track, Source, Run) with usage examples; the terms are enforced
+    by a single glossary rule.
+- source: 01-writing.md:39-51
+  kind: example
+  text_summary: Number-format table Example column (1,284 tracks; 124 BPM; +2 BPM;
+    Energy 7; 8A; 6:12; 1 h 52 min; 86%; 0.82; Medium confidence (0.64)) and Producer
+    column naming format.* helpers.
+- source: 01-writing.md:65-73
+  kind: example
+  text_summary: Date/time format table Example column (24 Oct 2026; Sat 24 Oct; 21:30;
+    stamps with AEDT; 3 h ago; 122–128 BPM).
+- source: 01-writing.md:75
+  kind: rationale
+  text_summary: The zone abbreviation changes on daylight-saving boundaries, hence
+    computed per date.
+- source: 01-writing.md:76
+  kind: rationale
+  text_summary: ISO dates in file names because they sort.
+- source: 02-information-architecture.md:3
+  kind: decision
+  text_summary: 'Intro: how SongNodes and the music library are divided into pages,
+    how pages are reached, and which source wins when sources or designs disagree.'
+- source: 02-information-architecture.md:18
+  kind: decision
+  text_summary: Page inventory owner of every surface is Markus; status vocabulary
+    is live (restyle), planned (no UI yet), retired (remove).
+- source: 02-information-architecture.md:22-23
+  kind: example
+  text_summary: Inventory table column headers; Purpose column describes each page's
+    job and 'replaces' notes list legacy components (GraphFilterPanel, EdgeDetailsModal,
+    StatsPanel, TrackDetailsModal, EditTrackModal, SetlistBuilder, TargetTracksManager,
+    etc.).
+- source: 02-information-architecture.md:61-62
+  kind: example
+  text_summary: Music library inventory table headers.
+- source: 02-information-architecture.md:122-130
+  kind: rationale
+  text_summary: Conflict table 'Found in' column records source files where the conflicting
+    designs appear (tokens.css, DJInterface.tsx, camelotData.ts, CamelotWheel.tsx,
+    harmonic.ts, harmonicUtils.ts, EnergyMeter.tsx, PathBuilder.tsx, 14 modal components).
+- source: 02-information-architecture.md:122
+  kind: decision
+  text_summary: 'Brand colour conflict: Matrix green, blue and iOS colours resolved
+    to lavender brand.'
+- source: 02-information-architecture.md:123
+  kind: decision
+  text_summary: 'Camelot conflict: camelotData.ts had 1A = C major (wrong); standard
+    mapping chosen.'
+- source: 02-information-architecture.md:128
+  kind: decision
+  text_summary: Modal z-indexes previously 1000, 2000, 9999, 10000, 10001 are replaced
+    by the z-scale.
+- source: 03-colour.md:3
+  kind: rationale
+  text_summary: 'Colour has four jobs only: layer surfaces, rank text, say which module,
+    say whether something is OK.'
+- source: 03-colour.md:17
+  kind: rationale
+  text_summary: line-strong holds 3:1 per WCAG 1.4.11.
+- source: 03-colour.md:26
+  kind: rationale
+  text_summary: fg-disabled is exempt from contrast (WCAG 1.4.3 inactive components).
+- source: 03-colour.md:40
+  kind: rationale
+  text_summary: The now marker is not brand; it has its own amber token.
+- source: 03-colour.md:69
+  kind: rationale
+  text_summary: Status colour paired with glyph and word per WCAG 1.4.1.
+- source: 03-colour.md:77
+  kind: rationale
+  text_summary: Info is deliberately not blue because blue is Graph.
+- source: 03-colour.md:81
+  kind: rationale
+  text_summary: No theme is a colour-blind-safe palette, so glyph and word carry the
+    difference.
+- source: 03-colour.md:98
+  kind: example
+  text_summary: 'Example: a job 40% done is not warn; StatusPill example ''↻ Running
+    · 412 of 1,030''.'
+- source: 03-colour.md:123
+  kind: rationale
+  text_summary: Light chart values are darkened Okabe-Ito hues so lines and labels
+    hold 3:1 on white.
+- source: 03-colour.md:131
+  kind: rationale
+  text_summary: Now and selected differ by hue and by the word 'Now', not by ring
+    count.
+- source: 04-typography.md:3
+  kind: decision
+  text_summary: 'Intro: three typefaces each with one job and a fixed set of named
+    text styles.'
+- source: 04-typography.md:13
+  kind: rationale
+  text_summary: cv11/ss01 give single-storey a and open digits that read well at small
+    sizes.
+- source: 04-typography.md:18
+  kind: decision
+  text_summary: Named styles come from tokens.json type; classes share the names.
+- source: 04-typography.md:44-48
+  kind: example
+  text_summary: 'Example thin–bold title ''Set builder: Peak time Friday'' with HTML
+    snippet <h1 class="sn-title title-l"><span class="sn-lead">…</span>…</h1>.'
+- source: 04-typography.md:50-51
+  kind: example
+  text_summary: 'Examples of the bold half: set name, ''Track: Overmono – So U Kno'',
+    ''Weekly run: Sat 31 Oct''.'
+- source: 04-typography.md:57
+  kind: rationale
+  text_summary: Source stays sentence case so screen readers and copy-paste get 'Energy
+    tier' not spelt-out capitals.
+- source: 04-typography.md:66
+  kind: rationale
+  text_summary: Mono keeps 124 and 128 the same width and separates 8A from 8B at
+    a glance.
+- source: 04-typography.md:67
+  kind: rationale
+  text_summary: Tabular nums so counters do not jitter when they update.
+- source: 04-typography.md:73
+  kind: decision
+  text_summary: Font files total about 170 KB.
+- source: 04-typography.md:74
+  kind: rationale
+  text_summary: The booth and the weekly run must work offline or on venue Wi-Fi.
+- source: 04-typography.md:90
+  kind: rationale
+  text_summary: 'Booth use: low light, laptop 60-80 cm away, glances between mixes.'
+- source: 05-layout.md:3
+  kind: rationale
+  text_summary: 'Intro: pages built from small set of regions on a 4px grid; rules
+    decide width, spacing, scrolling, sticking and alignment.'
+- source: 05-layout.md:55
+  kind: changelog
+  text_summary: Current GraphVisualization.tsx captures every wheel event; to be changed
+    to the focus/400 ms behaviour.
+- source: 05-layout.md:119
+  kind: rationale
+  text_summary: 'Principle: the bigger and more object-like an element, the rounder
+    its corners.'
+- source: 05-layout.md:44-49
+  kind: example
+  text_summary: Breakpoint table cell examples such as "124 BPM · 8A · Energy 7" and
+    booth theme at wall width.
+- source: 05-layout.md:73
+  kind: rationale
+  text_summary: Lead-in for the long-table decision list.
+- source: 06-interaction-accessibility.md:43
+  kind: rationale
+  text_summary: 'Lead-in to the live regions table; example announcements (e.g. "Built
+    Peak time Friday: 24 tracks...") are illustrative.'
+- source: 06-interaction-accessibility.md:87
+  kind: changelog
+  text_summary: App.tsx currently overrides Ctrl/Cmd R (reload graph), F (search panel)
+    and P (path panel); remove all three. Search becomes Ctrl/Cmd K or /, path panel
+    G then P.
+- source: 06-interaction-accessibility.md:88
+  kind: changelog
+  text_summary: App.tsx currently checks inputs and textareas only; add select and
+    contenteditable.
+- source: 06-interaction-accessibility.md:98
+  kind: decision
+  text_summary: Booth uses the same traffic-light status hues as dark, so no theme
+    is relied on as colour-blind-safe; glyph and word mandatory everywhere.
+- source: 06-interaction-accessibility.md:26
+  kind: rationale
+  text_summary: Criterion 2.4.13 (AAA) is met by the default ring.
+- source: 07-feedback-status.md:21
+  kind: changelog
+  text_summary: '"Loading DJ Interface..." in App.tsx and "Loading your music library..."
+    in DJInterface.tsx become skeletons.'
+- source: 07-feedback-status.md:24
+  kind: rationale
+  text_summary: Wait-time thresholds derive from NN/g response-time limits.
+- source: 07-feedback-status.md:74
+  kind: changelog
+  text_summary: useToast currently uses 3 s; must become at least 6 s.
+- source: 07-feedback-status.md:77-78
+  kind: changelog
+  text_summary: DJInterface.tsx clearQueue currently uses alert/confirm; becomes one
+    toast "Cleared 37 queued jobs.".
+- source: 07-feedback-status.md:54-65
+  kind: example
+  text_summary: Exact error message wordings are exemplars; retry-helps column summarised
+    in the rules.
+- source: 08-motion.md:3
+  kind: rationale
+  text_summary: A DJ glancing at the screen mid-mix must never wait for an animation
+    or find the row they were about to tap has moved.
+- source: 08-motion.md:30
+  kind: rationale
+  text_summary: Reduced-motion behaviour meets WCAG 2.3.3 (AAA) and 2.2.2.
+- source: 09-cognitive-load.md:3
+  kind: rationale
+  text_summary: 'Two attention modes: planning at a desk and playing in a booth; keep
+    things to read, decide and remember minimal.'
+- source: 09-cognitive-load.md:9
+  kind: changelog
+  text_summary: Current DJ Interface header (track count, connection count, Fix artist
+    attribution, Import tracklist, Filters, Settings, Help, three scraper triggers)
+    moves to NavDrawer, OverflowMenu and Pipeline.
+- source: 09-cognitive-load.md:112-163
+  kind: example
+  text_summary: Pre-release checklist items restate rules already captured (writing,
+    structure, colour, typography, layout, interaction, feedback, motion, cognitive
+    load); merged as duplicates.
+- source: 10-navigation.md:3
+  kind: rationale
+  text_summary: 'Goal statement: two taps to any page and always knowing where you
+    are.'
+- source: 10-navigation.md:23
+  kind: rationale
+  text_summary: Booth screen has no PageHeader scroll, hence page title stays visible.
+- source: 10-navigation.md:73
+  kind: rationale
+  text_summary: A link changes the URL; a button changes state (principle behind the
+    link/button rule).
+- source: 10-navigation.md:101-112
+  kind: example
+  text_summary: Table examples of URL values (/library, ?track=trk_8f2a, ?pillar=house&tier=building&heard=2,
+    ?week=2026-W43, ?tab=pathfinder).
+- source: 10-navigation.md:120-122
+  kind: decision
+  text_summary: Current App.tsx branches on window.location.pathname and djModeEnabled;
+    react-router-dom 7 is a dependency and unused.
+- source: 10-navigation.md:124-143
+  kind: example
+  text_summary: createBrowserRouter route table example for SongNodes.
+- source: 10-navigation.md:9-17
+  kind: example
+  text_summary: AppHeader control table example strings (Data from 24 Oct 2026, 06:00
+    AEDT; Peak time Friday).
+- source: 11-data-display.md:58
+  kind: changelog
+  text_summary: 'Energy rule replaces three prior drawings: percentages, 7/10 text
+    and getEnergyColor meter in SongNodes.'
+- source: 11-data-display.md:79
+  kind: changelog
+  text_summary: Camelot table replaces utils/camelotData.ts, which mislabelled 1A
+    as C major and treated every A code as major.
+- source: 11-data-display.md:141
+  kind: changelog
+  text_summary: 'Score bands replace getScoreColor in IntelligentBrowser/utils.ts
+    (#7ED321 / #F5A623 / #FFA500).'
+- source: 11-data-display.md:99
+  kind: rationale
+  text_summary: Rotation is calculated by the weekly run; see Music domain Rotation
+    for rule and values.
+- source: 11-data-display.md:115
+  kind: rationale
+  text_summary: Node states are specified in Music domain.
+- source: 11-data-display.md:128
+  kind: rationale
+  text_summary: Amber Now label ensures the now ring never reads as a high-energy
+    node.
+- source: 11-data-display.md:178
+  kind: rationale
+  text_summary: A finished step is a verdict, not a fill, hence green Done.
+- source: 11-data-display.md:188
+  kind: example
+  text_summary: Cover shows version/date line 1.0.0 24 Oct 2026.
+- source: 12-inputs.md:7-24
+  kind: decision
+  text_summary: Component index purposes table (Button, CopyButton, SearchField, FilterRail,
+    TextField family, Switch, RangeSlider, ChipInput, KeyPicker, FileDrop, PhotoCapture,
+    TracklistPaste) is descriptive of purpose; normative parts mapped to rules.
+- source: 12-inputs.md:63
+  kind: rationale
+  text_summary: Mini energy bar replaces a single swatch on tier chips.
+- source: 12-inputs.md:115
+  kind: example
+  text_summary: Current magnifier-emoji placeholder in DJInterface.tsx.
+- source: 12-inputs.md:115
+  kind: changelog
+  text_summary: 25 window.alert/confirm calls in SongNodes (DJInterface.tsx, TargetTracksManager.tsx,
+    SettingsPanel.tsx); they also fail inside artifacts.
+- source: 13-page-patterns.md:20-27
+  kind: example
+  text_summary: ASCII wireframe of HomePage.
+- source: 13-page-patterns.md:39-46
+  kind: example
+  text_summary: ASCII wireframe of LibraryPage.
+- source: 13-page-patterns.md:71-76
+  kind: example
+  text_summary: ASCII wireframe of GraphExplorerPage.
+- source: 13-page-patterns.md:78
+  kind: changelog
+  text_summary: Phone list view is the MobileTrackExplorer replacement.
+- source: 13-page-patterns.md:132
+  kind: decision
+  text_summary: nginx 404.html and 50x.html do not exist in the repo yet and must
+    be created.
+- source: 13-page-patterns.md:140
+  kind: changelog
+  text_summary: AuthCallbackPage replaces the inline-styled Loading fallback in App.tsx.
+- source: 13-page-patterns.md:3
+  kind: rationale
+  text_summary: Fifteen patterns cover both products.
+- source: 14-identity-icons.md:3
+  kind: rationale
+  text_summary: 'Intro: SongNodes has no logo; identity is wordmark, lavender brand
+    and consistency; icons Lucide, one meaning each.'
+- source: 14-identity-icons.md:17-24
+  kind: example
+  text_summary: Document title table (Home, Set builder, Track detail, Graph, Errors,
+    Music library) with example titles.
+- source: 14-identity-icons.md:30
+  kind: rationale
+  text_summary: Why module-coloured favicons are not used.
+- source: 14-identity-icons.md:38
+  kind: decision
+  text_summary: 'Status: favicon PNGs to be produced from source/ by script; until
+    then link the SVG only.'
+- source: 14-identity-icons.md:43
+  kind: changelog
+  text_summary: Design system ships Lucide v1.53 SVGs, 109 icons, inlined in bundle.js;
+    update both together.
+- source: 14-identity-icons.md:53-163
+  kind: example
+  text_summary: Icon meaning table rows (icon, meaning, where) - reference data referenced
+    by ICO rule on icon meanings.
+- source: 14-identity-icons.md:169-181
+  kind: example
+  text_summary: Banned substitutions table (emoji was/use) with component file examples.
+- source: 14-identity-icons.md:195-208
+  kind: example
+  text_summary: Glyph table rows (meaning, glyph, where).
+- source: 15-print-export.md:3
+  kind: rationale
+  text_summary: Paper and files lose context so must carry it.
+- source: 15-print-export.md:249-252
+  kind: example
+  text_summary: Sample traceability footer text.
+- source: 15-print-export.md:264-272
+  kind: example
+  text_summary: Export file name examples table.
+- source: 15-print-export.md:284-296
+  kind: example
+  text_summary: Sample set JSON export.
+- source: 15-print-export.md:305-309
+  kind: example
+  text_summary: Sample tracklist text.
+- source: 15-print-export.md:225
+  kind: changelog
+  text_summary: tokens.css does not yet emit the print block; PrintSheet sets data-theme=light
+    until build_tokens.py is updated.
+- source: 15-print-export.md:274
+  kind: changelog
+  text_summary: File-name scheme replaces songnodes-stats-${Date.now()}, target_tracks_<ISO
+    date>.json and <name>_setlist.json.
+- source: 16-platform.md:3
+  kind: rationale
+  text_summary: Pages run on desktop, booth laptop, phone and Claude artifacts.
+- source: 16-platform.md:25-37
+  kind: example
+  text_summary: Inline no-flash theme script and meta tag.
+- source: 16-platform.md:39
+  kind: rationale
+  text_summary: Script duplicates prefs.init() because bundle.js loads later.
+- source: 16-platform.md:47
+  kind: rationale
+  text_summary: Booth laptops may be offline; venue wifi blocks CDNs.
+- source: 16-platform.md:49
+  kind: changelog
+  text_summary: SongNodes currently uses system fonts and no CDN; keep when adding
+    Sora, Inter, JetBrains Mono.
+- source: 16-platform.md:53
+  kind: changelog
+  text_summary: Service worker rule reverses current index.html script that unregisters
+    workers and deletes caches.
+- source: 16-platform.md:87
+  kind: rationale
+  text_summary: Grafana is proxied but CSP forbids framing.
+- source: 16-platform.md:95-98
+  kind: example
+  text_summary: Device class matrix table summarised in PLT rules.
+- source: 18-music-domain.md:3,163
+  kind: rationale
+  text_summary: Thresholds implemented in source/bundle.src.js; enum source file list.
+- source: 18-music-domain.md:37-41
+  kind: example
+  text_summary: Set shape numeric curve descriptions and typical lengths.
+- source: 18-music-domain.md:75-76
+  kind: decision
+  text_summary: Rotation fitted to 294 tracks of the 24 Oct 2026 run; no track demoted
+    yet with 15 days of history.
+- source: 18-music-domain.md:87-94
+  kind: example
+  text_summary: Sources table with group, sources, display.
+- source: 18-music-domain.md:97
+  kind: example
+  text_summary: Example run-freshness text.
+- source: 18-music-domain.md:133-161
+  kind: example
+  text_summary: STATUS_MAP table rows.
+- source: 19-songnodes-migration.md:5-23
+  kind: changelog
+  text_summary: 'What is there today: problem inventory of legacy frontend (styling
+    systems, palettes, z-index, dialogs, emoji, shortcuts, duplicates, unused code,
+    routing, shell).'
+- source: 19-songnodes-migration.md:32-47
+  kind: example
+  text_summary: graphColours.ts code sample.
+- source: 19-songnodes-migration.md:79-115
+  kind: changelog
+  text_summary: File-by-file change plan (per-file actions and components).
+- source: 19-songnodes-migration.md:119-127
+  kind: changelog
+  text_summary: Phase plan scope column and remaining phase descriptions (acceptance
+    checks extracted as MIG rules).
+- source: 19-songnodes-migration.md:25-26
+  kind: decision
+  text_summary: Decisions heading and rationale for removing Tailwind (not compiled).
+- source: README.md:1-3
+  kind: rationale
+  text_summary: Overview and visual inspirations.
+- source: README.md:23
+  kind: rationale
+  text_summary: Pointer to Writing and content.
+- source: README.md:53-64
+  kind: example
+  text_summary: Map of this system table.
+- source: README.md:66-117
+  kind: changelog
+  text_summary: Generated sections after the separator skipped.
+- id: GOV-001
+  source: 17-governance.md#Versioning
+  history: Governance text notes tokens.json currently holds the integer 1; it is
+    set to "1.0.0" in source/build_tokens.py.
+- id: GOV-002
+  source: 17-governance.md#Conformance checking
+  history: No dated or versioned history in source for this rule.
+- id: GOV-003
+  source: 17-governance.md#Versioning
+  history: 'Examples in source: mod-harmony renamed; .sn-pill[data-status="warn"]
+    removed; pending to warn.'
+- id: GOV-004
+  source: 17-governance.md#Versioning
+  history: 'Examples in source: key-* added; RangeSlider added; shuffle icon added.'
+- id: GOV-005
+  source: 17-governance.md#Versioning
+  history: 'Example in source: fg-3 dark #9a9a9a to #9c9c9c.'
+- id: GOV-006
+  source: 17-governance.md#Versioning
+  history: 'Source example of a deprecation mark: "Deprecated in 1.4.0, removed in
+    2.0.0".'
+- id: GOV-007
+  source: 17-governance.md#Versioning
+  history: 'Source example of a deprecation mark: "Deprecated in 1.4.0, removed in
+    2.0.0".'
+- id: GOV-008
+  source: 17-governance.md#Versioning
+  history: No dated or versioned history in source for this rule.
+- id: GOV-009
+  source: 17-governance.md#Versioning
+  history: No dated or versioned history in source for this rule.
+- id: GOV-010
+  source: 17-governance.md#Versioning
+  history: No dated or versioned history in source for this rule.
+- id: GOV-011
+  source: 17-governance.md#Versioning
+  history: No dated or versioned history in source for this rule.
+- id: GOV-012
+  source: 17-governance.md#Change log
+  history: 'Change log entries: history/CHANGELOG.md.'
+- id: GOV-013
+  source: 17-governance.md#Decision records
+  history: No dated or versioned history in source for this rule.
+- id: GOV-014
+  source: 17-governance.md#Decision records
+  history: DR-001...DR-016 were chosen by Markus on 24 Oct 2026 on the decisions page;
+    DR-017...DR-020 were made while building and are open to him to overturn. See
+    history/decisions/.
+- id: GOV-015
+  source: 17-governance.md#How rules are derived
+  history: 'Step 1 of the source list cites DR-001...DR-016. Examples in source: Naarm
+    Set Builder (tiers, set shapes, transition rules, rotation, weekly run); utils/harmonic.ts
+    Camelot table, backend status enums; WCAG 2.2 AA, WAI-ARIA Authoring Practices,
+    Lucide conventions.'
+- id: GOV-016
+  source: 17-governance.md#How rules are derived
+  history: No dated or versioned history in source for this rule.
+- id: GOV-017
+  source: 17-governance.md#How rules are derived
+  history: Open question Q9 is the current open item; see history/open-questions.md.
+- id: GOV-018
+  source: 17-governance.md#Distribution and staying in sync
+  history: No dated or versioned history in source for this rule.
+- id: GOV-019
+  source: 17-governance.md#Distribution and staying in sync
+  history: No dated or versioned history in source for this rule.
+- id: GOV-020
+  source: 17-governance.md#Distribution and staying in sync
+  history: No dated or versioned history in source for this rule.
+- id: GOV-021
+  source: 17-governance.md#Distribution and staying in sync
+  history: No dated or versioned history in source for this rule.
+- id: GOV-022
+  source: 17-governance.md#Distribution and staying in sync
+  history: No dated or versioned history in source for this rule.
+- id: GOV-023
+  source: 17-governance.md#Distribution and staying in sync
+  history: No dated or versioned history in source for this rule.
+- id: GOV-024
+  source: 17-governance.md#Distribution and staying in sync
+  history: No dated or versioned history in source for this rule.
+- id: GOV-025
+  source: 17-governance.md#Distribution and staying in sync
+  history: No dated or versioned history in source for this rule.
+- id: GOV-026
+  source: 17-governance.md#Conformance checking
+  history: No dated or versioned history in source for this rule.
+- id: GOV-027
+  source: 17-governance.md#Conformance checking
+  history: No dated or versioned history in source for this rule.
+- id: GOV-028
+  source: 17-governance.md#Conformance checking
+  history: No dated or versioned history in source for this rule.
+- id: GOV-029
+  source: 17-governance.md#Conformance checking
+  history: No dated or versioned history in source for this rule.
+- id: GOV-030
+  source: 17-governance.md#Conformance checking
+  history: 'Thresholds as stated in source: 4.5:1, 3:1 for large text and UI edges.'
+- id: GOV-031
+  source: 17-governance.md#Conformance checking
+  history: No dated or versioned history in source for this rule.
+- id: GOV-032
+  source: 17-governance.md#Conformance checking
+  history: Source names the checklist as in Accessibility and quality (section 09).
+- id: GOV-033
+  source: 17-governance.md#Exceptions
+  history: No dated or versioned history in source for this rule.
+- id: GOV-034
+  source: 17-governance.md#Exceptions
+  history: No dated or versioned history in source for this rule.
+- id: GOV-035
+  source: 17-governance.md#Exceptions
+  history: No dated or versioned history in source for this rule.
+- id: GOV-036
+  source: 17-governance.md#Exceptions
+  history: No dated or versioned history in source for this rule.
+- id: GOV-037
+  source: 17-governance.md#Exceptions
+  history: No dated or versioned history in source for this rule.

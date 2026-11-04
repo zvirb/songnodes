@@ -1,0 +1,11 @@
+{
+ "rules": {
+  "no-restricted-globals": ["error", "alert", "confirm", "prompt"],
+  "no-restricted-properties": ["error",
+   {"object": "window", "property": "alert"}, {"object": "window", "property": "confirm"}, {"object": "window", "property": "prompt"},
+   {"object": "Date", "property": "toLocaleDateString"}, {"object": "Date", "property": "toLocaleTimeString"}],
+  "no-restricted-syntax": ["error",
+   {"selector": "Literal[value=/^#[0-9a-fA-F]{3,8}$/]", "message": "Colour literal: use a token (COL-*)"},
+   {"selector": "Property[key.name='zIndex'][value.type='Literal']", "message": "Use a z-index token (LAY-*)"}]
+ }
+}

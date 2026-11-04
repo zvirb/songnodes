@@ -1,0 +1,15 @@
+{
+ "rules": {
+  "color-no-hex": [true, {"message": "Use a colour token: var(--sn-...) (rules COL-*)"}],
+  "function-disallowed-list": ["rgb", "rgba", "hsl", "hsla"],
+  "declaration-property-value-disallowed-list": {
+   "font-size": ["/^\\d+(\\.\\d+)?px$/"],
+   "font-family": ["/^(?!.*var\\().*$/"],
+   "z-index": ["/^\\d+$/"],
+   "transition": ["/\\b\\d+m?s\\b/"],
+   "animation-duration": ["/^\\d+m?s$/"]
+  },
+  "declaration-no-important": true,
+  "selector-max-id": 0
+ }
+}

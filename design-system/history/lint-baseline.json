@@ -1,0 +1,2564 @@
+[
+ {
+  "file": "components/bundle.js",
+  "line": 35,
+  "check": "WRT-EMO",
+  "rule_family": "WRT",
+  "message": "emoji"
+ },
+ {
+  "file": "components/bundle.js",
+  "line": 42,
+  "check": "WRT-EMO",
+  "rule_family": "WRT",
+  "message": "emoji"
+ },
+ {
+  "file": "components/bundle.js",
+  "line": 152,
+  "check": "WRT-EMO",
+  "rule_family": "WRT",
+  "message": "emoji"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 239,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 240,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 241,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 242,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 243,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 244,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 245,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 246,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 247,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 248,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 249,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 251,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 252,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 253,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 254,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 257,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 258,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 259,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 260,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 261,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 262,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 263,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 264,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 265,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 266,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 267,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 268,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 269,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 270,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 271,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 272,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 273,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 274,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 275,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 276,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 277,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 278,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 279,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 280,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 281,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 282,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 283,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 284,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 285,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 286,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 287,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 288,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 289,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 290,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 291,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 292,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 293,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 294,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 295,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 296,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 297,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 298,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 299,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 300,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 301,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 302,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 303,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 304,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 305,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 306,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 307,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 308,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 309,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 310,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 311,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 312,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 313,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 314,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 315,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 316,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 317,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 318,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 319,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 320,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 321,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 322,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 323,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 324,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 325,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 326,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 327,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 328,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 329,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 330,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 331,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 332,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 333,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 334,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 335,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 336,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 337,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 338,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 339,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 340,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 341,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 342,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 343,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 344,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 345,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 346,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 347,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 348,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 349,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 350,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 351,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 352,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 353,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 354,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 355,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 356,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 357,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 358,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 359,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 360,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 361,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 362,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 363,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 364,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 365,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 366,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 367,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 368,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 369,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 370,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 371,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 372,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 381,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 382,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 383,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 384,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 385,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 386,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 387,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 388,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 389,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 390,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 391,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 393,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 394,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 395,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 396,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 399,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 400,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 401,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 402,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 403,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 404,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 405,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 406,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 407,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 408,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 409,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 410,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 411,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 412,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 413,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 414,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 415,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 416,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 417,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 418,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 419,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 420,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 421,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 422,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 423,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 424,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 425,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 426,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 427,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 428,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 429,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 430,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 431,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 432,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 433,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 434,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 435,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 436,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 437,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 438,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 439,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 440,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 441,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 442,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 443,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 444,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 445,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 446,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 447,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 448,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 449,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 450,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 451,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 452,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 453,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 454,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 455,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 456,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 457,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 458,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 459,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 460,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 461,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 462,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 463,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 464,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 465,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 466,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 467,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 468,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 469,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 470,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 471,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 472,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 473,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 474,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 475,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 476,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 477,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 478,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 479,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 480,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 481,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 482,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 483,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 484,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 485,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 486,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 487,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 488,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 489,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 490,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 491,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 492,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 493,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 494,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 495,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 496,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 497,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 498,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 499,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 500,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 501,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 502,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 503,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 504,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 505,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 506,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 507,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 508,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 509,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 510,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 511,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 512,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 513,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 514,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 250,
+  "check": "COL-FN",
+  "rule_family": "COL",
+  "message": "rgb/hsl colour function"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 256,
+  "check": "COL-FN",
+  "rule_family": "COL",
+  "message": "rgb/hsl colour function"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 373,
+  "check": "COL-FN",
+  "rule_family": "COL",
+  "message": "rgb/hsl colour function"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 374,
+  "check": "COL-FN",
+  "rule_family": "COL",
+  "message": "rgb/hsl colour function"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 375,
+  "check": "COL-FN",
+  "rule_family": "COL",
+  "message": "rgb/hsl colour function"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 392,
+  "check": "COL-FN",
+  "rule_family": "COL",
+  "message": "rgb/hsl colour function"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 398,
+  "check": "COL-FN",
+  "rule_family": "COL",
+  "message": "rgb/hsl colour function"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 515,
+  "check": "COL-FN",
+  "rule_family": "COL",
+  "message": "rgb/hsl colour function"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 516,
+  "check": "COL-FN",
+  "rule_family": "COL",
+  "message": "rgb/hsl colour function"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 517,
+  "check": "COL-FN",
+  "rule_family": "COL",
+  "message": "rgb/hsl colour function"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 2413,
+  "check": "TYP-FAM",
+  "rule_family": "TYP",
+  "message": "hard-coded font family"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 1149,
+  "check": "LAY-Z",
+  "rule_family": "LAY",
+  "message": "raw z-index"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 1341,
+  "check": "LAY-Z",
+  "rule_family": "LAY",
+  "message": "raw z-index"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 1535,
+  "check": "LAY-Z",
+  "rule_family": "LAY",
+  "message": "raw z-index"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 2129,
+  "check": "LAY-Z",
+  "rule_family": "LAY",
+  "message": "raw z-index"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 2374,
+  "check": "LAY-Z",
+  "rule_family": "LAY",
+  "message": "raw z-index"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 2375,
+  "check": "LAY-Z",
+  "rule_family": "LAY",
+  "message": "raw z-index"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 23,
+  "check": "MOT-DUR",
+  "rule_family": "MOT",
+  "message": "raw duration"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 25,
+  "check": "MOT-DUR",
+  "rule_family": "MOT",
+  "message": "raw duration"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 177,
+  "check": "MOT-DUR",
+  "rule_family": "MOT",
+  "message": "raw duration"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 184,
+  "check": "MOT-DUR",
+  "rule_family": "MOT",
+  "message": "raw duration"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 575,
+  "check": "MOT-DUR",
+  "rule_family": "MOT",
+  "message": "raw duration"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 577,
+  "check": "MOT-DUR",
+  "rule_family": "MOT",
+  "message": "raw duration"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 907,
+  "check": "MOT-DUR",
+  "rule_family": "MOT",
+  "message": "raw duration"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 908,
+  "check": "MOT-DUR",
+  "rule_family": "MOT",
+  "message": "raw duration"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 916,
+  "check": "MOT-DUR",
+  "rule_family": "MOT",
+  "message": "raw duration"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 917,
+  "check": "MOT-DUR",
+  "rule_family": "MOT",
+  "message": "raw duration"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 1673,
+  "check": "MOT-DUR",
+  "rule_family": "MOT",
+  "message": "raw duration"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 1675,
+  "check": "MOT-DUR",
+  "rule_family": "MOT",
+  "message": "raw duration"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 1770,
+  "check": "MOT-DUR",
+  "rule_family": "MOT",
+  "message": "raw duration"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 1941,
+  "check": "MOT-DUR",
+  "rule_family": "MOT",
+  "message": "raw duration"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 2077,
+  "check": "MOT-DUR",
+  "rule_family": "MOT",
+  "message": "raw duration"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 106,
+  "check": "WRT-EMO",
+  "rule_family": "WRT",
+  "message": "emoji"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 116,
+  "check": "WRT-EMO",
+  "rule_family": "WRT",
+  "message": "emoji"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 123,
+  "check": "WRT-EMO",
+  "rule_family": "WRT",
+  "message": "emoji"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 131,
+  "check": "WRT-EMO",
+  "rule_family": "WRT",
+  "message": "emoji"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 934,
+  "check": "WRT-EMO",
+  "rule_family": "WRT",
+  "message": "emoji"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 1035,
+  "check": "WRT-EMO",
+  "rule_family": "WRT",
+  "message": "emoji"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 1283,
+  "check": "WRT-EMO",
+  "rule_family": "WRT",
+  "message": "emoji"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 1348,
+  "check": "WRT-EMO",
+  "rule_family": "WRT",
+  "message": "emoji"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 1447,
+  "check": "WRT-EMO",
+  "rule_family": "WRT",
+  "message": "emoji"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 1455,
+  "check": "WRT-EMO",
+  "rule_family": "WRT",
+  "message": "emoji"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 1478,
+  "check": "WRT-EMO",
+  "rule_family": "WRT",
+  "message": "emoji"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 1479,
+  "check": "WRT-EMO",
+  "rule_family": "WRT",
+  "message": "emoji"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 1915,
+  "check": "WRT-EMO",
+  "rule_family": "WRT",
+  "message": "emoji"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 1968,
+  "check": "WRT-EMO",
+  "rule_family": "WRT",
+  "message": "emoji"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 580,
+  "check": "A11Y-OUTLINE",
+  "rule_family": "A11Y",
+  "message": "focus outline removed"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 722,
+  "check": "A11Y-OUTLINE",
+  "rule_family": "A11Y",
+  "message": "focus outline removed"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 752,
+  "check": "A11Y-OUTLINE",
+  "rule_family": "A11Y",
+  "message": "focus outline removed"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 947,
+  "check": "A11Y-OUTLINE",
+  "rule_family": "A11Y",
+  "message": "focus outline removed"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 1123,
+  "check": "A11Y-OUTLINE",
+  "rule_family": "A11Y",
+  "message": "focus outline removed"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 1532,
+  "check": "A11Y-OUTLINE",
+  "rule_family": "A11Y",
+  "message": "focus outline removed"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 1598,
+  "check": "A11Y-OUTLINE",
+  "rule_family": "A11Y",
+  "message": "focus outline removed"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 1712,
+  "check": "A11Y-OUTLINE",
+  "rule_family": "A11Y",
+  "message": "focus outline removed"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 1736,
+  "check": "A11Y-OUTLINE",
+  "rule_family": "A11Y",
+  "message": "focus outline removed"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 1877,
+  "check": "A11Y-OUTLINE",
+  "rule_family": "A11Y",
+  "message": "focus outline removed"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 1903,
+  "check": "A11Y-OUTLINE",
+  "rule_family": "A11Y",
+  "message": "focus outline removed"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 2153,
+  "check": "A11Y-OUTLINE",
+  "rule_family": "A11Y",
+  "message": "focus outline removed"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 2170,
+  "check": "A11Y-OUTLINE",
+  "rule_family": "A11Y",
+  "message": "focus outline removed"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 2300,
+  "check": "A11Y-OUTLINE",
+  "rule_family": "A11Y",
+  "message": "focus outline removed"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 14,
+  "check": "LAY-IMP",
+  "rule_family": "LAY",
+  "message": "!important"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 23,
+  "check": "LAY-IMP",
+  "rule_family": "LAY",
+  "message": "!important"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 25,
+  "check": "LAY-IMP",
+  "rule_family": "LAY",
+  "message": "!important"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 29,
+  "check": "LAY-IMP",
+  "rule_family": "LAY",
+  "message": "!important"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 180,
+  "check": "LAY-IMP",
+  "rule_family": "LAY",
+  "message": "!important"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 181,
+  "check": "LAY-IMP",
+  "rule_family": "LAY",
+  "message": "!important"
+ },
+ {
+  "file": "components/bundle.css",
+  "line": 182,
+  "check": "LAY-IMP",
+  "rule_family": "LAY",
+  "message": "!important"
+ },
+ {
+  "file": "components/PrintSheet/preview.html",
+  "line": 51,
+  "check": "WRT-EMO",
+  "rule_family": "WRT",
+  "message": "emoji"
+ },
+ {
+  "file": "components/TrackDetailPage/preview.html",
+  "line": 384,
+  "check": "NAV-HASHLINK",
+  "rule_family": "NAV",
+  "message": "dead link href=\"#\""
+ },
+ {
+  "file": "components/DateField/preview.html",
+  "line": 74,
+  "check": "COL-HEX",
+  "rule_family": "COL",
+  "message": "hex colour literal"
+ },
+ {
+  "file": "components/AppHeader/preview.html",
+  "line": 14,
+  "check": "LAY-Z",
+  "rule_family": "LAY",
+  "message": "raw z-index"
+ },
+ {
+  "file": "components/AppHeader/preview.html",
+  "line": 16,
+  "check": "LAY-Z",
+  "rule_family": "LAY",
+  "message": "raw z-index"
+ },
+ {
+  "file": "components/AppHeader/preview.html",
+  "line": 18,
+  "check": "LAY-Z",
+  "rule_family": "LAY",
+  "message": "raw z-index"
+ },
+ {
+  "file": "components/MonitoringPage/preview.html",
+  "line": 20,
+  "check": "WRT-EMO",
+  "rule_family": "WRT",
+  "message": "emoji"
+ },
+ {
+  "file": "components/DataTable/preview.html",
+  "line": 73,
+  "check": "NAV-HASHLINK",
+  "rule_family": "NAV",
+  "message": "dead link href=\"#\""
+ },
+ {
+  "file": "components/OverflowMenu/preview.html",
+  "line": 15,
+  "check": "LAY-Z",
+  "rule_family": "LAY",
+  "message": "raw z-index"
+ },
+ {
+  "file": "components/OverflowMenu/preview.html",
+  "line": 21,
+  "check": "LAY-Z",
+  "rule_family": "LAY",
+  "message": "raw z-index"
+ },
+ {
+  "file": "components/Dialog/preview.html",
+  "line": 36,
+  "check": "WRT-CAPS",
+  "rule_family": "WRT",
+  "message": "ALL CAPS copy"
+ },
+ {
+  "file": "components/Breadcrumbs/preview.html",
+  "line": 25,
+  "check": "NAV-HASHLINK",
+  "rule_family": "NAV",
+  "message": "dead link href=\"#\""
+ },
+ {
+  "file": "components/Breadcrumbs/preview.html",
+  "line": 26,
+  "check": "NAV-HASHLINK",
+  "rule_family": "NAV",
+  "message": "dead link href=\"#\""
+ },
+ {
+  "file": "components/SettingsPage/preview.html",
+  "line": 336,
+  "check": "WRT-EMO",
+  "rule_family": "WRT",
+  "message": "emoji"
+ },
+ {
+  "file": "components/SettingsPage/preview.html",
+  "line": 352,
+  "check": "NAV-HASHLINK",
+  "rule_family": "NAV",
+  "message": "dead link href=\"#\""
+ },
+ {
+  "file": "components/SetBuilderPage/preview.html",
+  "line": 375,
+  "check": "WRT-EMO",
+  "rule_family": "WRT",
+  "message": "emoji"
+ },
+ {
+  "file": "components/WaveformStrip/preview.html",
+  "line": 12,
+  "check": "WRT-CAPS",
+  "rule_family": "WRT",
+  "message": "ALL CAPS copy"
+ },
+ {
+  "file": "components/Tooltip/preview.html",
+  "line": 28,
+  "check": "WRT-EMO",
+  "rule_family": "WRT",
+  "message": "emoji"
+ },
+ {
+  "file": "components/PageHeader/preview.html",
+  "line": 13,
+  "check": "LAY-Z",
+  "rule_family": "LAY",
+  "message": "raw z-index"
+ },
+ {
+  "file": "components/PageHeader/preview.html",
+  "line": 15,
+  "check": "LAY-Z",
+  "rule_family": "LAY",
+  "message": "raw z-index"
+ },
+ {
+  "file": "components/PageHeader/preview.html",
+  "line": 17,
+  "check": "LAY-Z",
+  "rule_family": "LAY",
+  "message": "raw z-index"
+ },
+ {
+  "file": "components/Cover/preview.html",
+  "line": 12,
+  "check": "TYP-PX",
+  "rule_family": "TYP",
+  "message": "font-size in px"
+ },
+ {
+  "file": "components/Cover/preview.html",
+  "line": 13,
+  "check": "TYP-PX",
+  "rule_family": "TYP",
+  "message": "font-size in px"
+ },
+ {
+  "file": "components/TrackCell/preview.html",
+  "line": 30,
+  "check": "NAV-HASHLINK",
+  "rule_family": "NAV",
+  "message": "dead link href=\"#\""
+ },
+ {
+  "file": "components/ShowMore/preview.html",
+  "line": 65,
+  "check": "WRT-CAPS",
+  "rule_family": "WRT",
+  "message": "ALL CAPS copy"
+ },
+ {
+  "file": "components/GraphExplorerPage/preview.html",
+  "line": 358,
+  "check": "NAV-HASHLINK",
+  "rule_family": "NAV",
+  "message": "dead link href=\"#\""
+ },
+ {
+  "file": "components/GraphExplorerPage/preview.html",
+  "line": 352,
+  "check": "WRT-CAPS",
+  "rule_family": "WRT",
+  "message": "ALL CAPS copy"
+ },
+ {
+  "file": "components/EnergyWave/preview.html",
+  "line": 234,
+  "check": "WRT-EMO",
+  "rule_family": "WRT",
+  "message": "emoji"
+ },
+ {
+  "file": "components/CamelotWheel/preview.html",
+  "line": 151,
+  "check": "COL-FN",
+  "rule_family": "COL",
+  "message": "rgb/hsl colour function"
+ },
+ {
+  "file": "components/CamelotWheel/preview.html",
+  "line": 24,
+  "check": "WRT-EMO",
+  "rule_family": "WRT",
+  "message": "emoji"
+ },
+ {
+  "file": "components/CamelotWheel/preview.html",
+  "line": 186,
+  "check": "WRT-EMO",
+  "rule_family": "WRT",
+  "message": "emoji"
+ },
+ {
+  "file": "components/PreferencesPanel/preview.html",
+  "line": 154,
+  "check": "WRT-EMO",
+  "rule_family": "WRT",
+  "message": "emoji"
+ },
+ {
+  "file": "components/ContextMenu/preview.html",
+  "line": 16,
+  "check": "A11Y-OUTLINE",
+  "rule_family": "A11Y",
+  "message": "focus outline removed"
+ },
+ {
+  "file": "components/LibraryPage/preview.html",
+  "line": 368,
+  "check": "NAV-HASHLINK",
+  "rule_family": "NAV",
+  "message": "dead link href=\"#\""
+ }
+]
