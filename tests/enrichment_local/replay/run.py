@@ -125,7 +125,7 @@ async def replay_enrichment(items_path: Path, live_db: bool, out_path: Path):
     if not items_path.exists():
         if live_db:
             out_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(out_path, "w") as f:
+            with open(out_path, "w", encoding="utf-8") as f:
                 f.write("# Library Replay\n(not run)")
             return
 
@@ -135,7 +135,7 @@ async def replay_enrichment(items_path: Path, live_db: bool, out_path: Path):
             data = json.load(f)
             tracks_json = data if isinstance(data, list) else data.get("tracks", [])
     except FileNotFoundError:
-        with open("tests/enrichment_local/replay/fixture_tracks.json", "r") as f:
+        with open("tests/enrichment_local/replay/fixture_tracks.json", "r", encoding="utf-8") as f:
             tracks_json = json.load(f)
 
     tracks = []
@@ -246,7 +246,7 @@ async def replay_enrichment(items_path: Path, live_db: bool, out_path: Path):
     cov_on = calculate_coverage(inserts_on)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(out_path, "w") as f:
+    with open(out_path, "w", encoding="utf-8") as f:
         f.write("# Library Replay\n\n")
 
         f.write("## Field Coverage\n\n")
