@@ -326,4 +326,32 @@ async def _process_payload(conn, payload: dict[str, Any]) -> dict[str, Any]:
                 ON CONFLICT DO NOTHING
             """, st.get('set_id'), canonical_id, st.get('position'), _ts(st.get('created_at')))
 
+    # Auto-promote new library tracks to target_tracks for ongoing setlist discovery
+    await conn.execute("""
+        WITH library_candidates AS (
+            SELECT DISTINCT ON (lower(btrim(s.artist_name)), lower(btrim(s.track_title)))
+                   btrim(s.artist_name) AS artist,
+                   btrim(s.track_title) AS title,
+                   COALESCE(s.genre, '{}') AS genres
+            FROM library.tracks lt
+            JOIN silver_enriched_tracks s ON s.id = lt.id
+            ORDER BY lower(btrim(s.artist_name)), lower(btrim(s.track_title)), s.id
+        ), valid AS (
+            SELECT * FROM library_candidates
+            WHERE artist <> '' AND title <> ''
+              AND lower(artist) NOT IN ('unknown', 'unknown artist', 'various artists', 'va')
+        ), fresh AS (
+            SELECT v.* FROM valid v
+            WHERE NOT EXISTS (
+                SELECT 1 FROM target_tracks t
+                WHERE lower(btrim(t.artist)) = lower(v.artist)
+                  AND lower(btrim(t.title)) = lower(v.title)
+                  AND NOT t.archived
+            )
+        )
+        INSERT INTO target_tracks (title, artist, priority, genres)
+        SELECT title, artist, 'medium', genres FROM fresh
+        ON CONFLICT DO NOTHING
+    """)
+
     return stats
