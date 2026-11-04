@@ -1,5 +1,5 @@
 # Additional requirements for LLM-powered scraping
-openai==3.41.0
+openai==3.42.0
 anthropic==2.3.0
 beautifulsoup4==4.15.0
 lxml==6.1.3
