@@ -1,0 +1,9 @@
+# Atomic rule schema. One requirement per rule. No dates, versions or DR refs in `statement`.
+id: "^[A-Z][A-Z0-9]{1,7}-[0-9]{3,4}$"
+statement: "RFC 2119 (shall / shall not / should); one sentence"
+scope: [css, html, js, copy, page, component, chart, print]
+check_type: [lint, ast, dom, visual, judgement]
+test: "one line, concrete pass/fail decision"
+status: [active, deprecated, retired]
+replaced_by: "rule id or null (required when status is deprecated)"
+history_ref: "ADR id (history/decisions/ADR-nnn.md) or null"

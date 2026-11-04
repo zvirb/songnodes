@@ -27,6 +27,13 @@ def track_uuid(node_id):
 
 
 def node_from_row(row):
+    mapping = dict(row._mapping)
+    in_library = bool(mapping.get('in_library', False))
+    raw_rot = mapping.get('library_rotation')
+    try:
+        library_rotation = int(raw_rot) if raw_rot is not None and not isinstance(raw_rot, bool) else None
+    except (ValueError, TypeError):
+        library_rotation = None
     metadata = {
         'title': row.track_title, 'artist': row.artist_name,
         'label': f'{row.artist_name} - {row.track_title}', 'node_type': 'song',
@@ -41,9 +48,12 @@ def node_from_row(row):
         'duration_ms': row.duration_ms, 'spotify_id': row.spotify_id, 'isrc': row.isrc,
         'release_date': row.release_date.isoformat() if row.release_date else None,
     }
-    metadata.update(stored_metadata(dict(row._mapping)))
+    metadata.update(stored_metadata(mapping))
+    metadata['in_library'] = in_library
+    metadata['library_rotation'] = library_rotation
     return {'id': f'song_{row.id}', 'track_id': str(row.id),
             'artist': row.artist_name, 'title': row.track_title,
+            'in_library': in_library, 'library_rotation': library_rotation,
             'position': {'x': 0.0, 'y': 0.0}, 'metadata': metadata}
 
 
@@ -98,7 +108,11 @@ async def nodes(session, center=None, depth=1, max_nodes=5000, limit=5000, offse
         condition += ' AND t.id = ANY(CAST(:ids AS uuid[]))'
     total = await session.scalar(text(f'SELECT count(*) FROM silver_enriched_tracks t WHERE {condition}'), params)
     result = await session.execute(text(f"""
-        SELECT t.* FROM silver_enriched_tracks t WHERE {condition}
+        SELECT t.*, (lt.id IS NOT NULL) AS in_library,
+               (SELECT r.rotation FROM library.rotation_history r WHERE r.track_id = t.id ORDER BY r.changed_at DESC LIMIT 1) AS library_rotation
+        FROM silver_enriched_tracks t
+        LEFT JOIN library.tracks lt ON lt.id = t.id
+        WHERE {condition}
         ORDER BY t.created_at DESC, t.id LIMIT :limit OFFSET :offset
     """), params)
     return {'nodes': [node_from_row(row) for row in result],
@@ -228,7 +242,11 @@ async def neighbourhood(session, center=None, steps=3, max_nodes=200):
         anchor = await most_linked_track(session)
     ids, capped = ([], False) if anchor is None else strongest_first(await links_within(session, anchor, steps), anchor, steps, max_nodes)
     rows = await session.execute(text(f"""
-        SELECT t.* FROM silver_enriched_tracks t WHERE {VISIBLE_TRACK} AND t.id = ANY(CAST(:ids AS uuid[]))
+        SELECT t.*, (lt.id IS NOT NULL) AS in_library,
+               (SELECT r.rotation FROM library.rotation_history r WHERE r.track_id = t.id ORDER BY r.changed_at DESC LIMIT 1) AS library_rotation
+        FROM silver_enriched_tracks t
+        LEFT JOIN library.tracks lt ON lt.id = t.id
+        WHERE {VISIBLE_TRACK} AND t.id = ANY(CAST(:ids AS uuid[]))
     """), {'ids': ids})
     by_id = {row.id: node_from_row(row) for row in rows}
     node_list = [by_id[track] for track in ids if track in by_id]
