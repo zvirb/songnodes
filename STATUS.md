@@ -2573,3 +2573,11 @@ Next: wave `up` (U1–U5) is meant to go with wave 1. Send it in the next run, o
 - Checks run: tests/library_importer/test_library_ingest_handler.py 1 passed; python pipeline/run_weekly.py sync-songnodes returned HTTP 202.
 - End: 2026-11-04.
 <!-- SLOT:LIB2 END -->
+
+<!-- SLOT:GV5 BEGIN -->
+### GV5: Graph nodes expose library membership and rotation
+- Start: 2026-11-04 (branch gv5-graph-nodes-library-flag off origin/main 2fb709c3). Issue: Graph API nodes did not indicate whether a track belongs to `library.tracks` or carry its crate rotation tier.
+- Changed: `catalog.py` left-joins `library.tracks` and queries the latest rotation from `library.rotation_history` in `nodes` and `neighbourhood`, exposing `in_library` (bool) and `library_rotation` (int | None) on both the node object and `node.metadata`.
+- Checks run: `services/graph-visualization-api` unit tests 18 passed (2 new in `test_catalog.py`).
+- End: 2026-11-04.
+<!-- SLOT:GV5 END -->
