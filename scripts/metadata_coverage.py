@@ -44,7 +44,7 @@ def read_catalog():
         'docker', 'compose', '-f', 'compose.dev.yaml', 'exec', '-T', 'postgres',
         'psql', '-X', '-qAt', '-U', 'songnodes', '-d', 'songnodes',
         '-v', 'ON_ERROR_STOP=1',
-    ], cwd=ROOT, input=SQL, text=True, capture_output=True, check=True)
+    ], cwd=ROOT, input=SQL, text=True, encoding='utf-8', capture_output=True, check=True)
     return json.loads(result.stdout)
 
 

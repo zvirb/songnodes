@@ -25,7 +25,7 @@ def mock_pool():
     async def mock_fetch(query, *args):
         if "isrc i" in query:
             if args[0] == "USRC00000001":
-                return [{'mbid': uuid.UUID('12345678-1234-5678-1234-567812345678'), 'title': 'Recording 1', 'artist': 'Artist 1', 'duration': 300000}]
+                return [{'mbid': uuid.UUID('12345678-1234-5678-1234-567812345678'), 'title': 'Recording 1', 'artist': 'Artist 1', 'duration_ms': 300000}]
             return []
         if "canonical_musicbrainz_data" in query:
             return []
@@ -76,4 +76,4 @@ async def test_musicbrainz_local_provider_disabled():
     results = await provider.lookup(target)
 
     # Should do nothing when disabled
-    assert len(results) == 0
+    assert results is None
