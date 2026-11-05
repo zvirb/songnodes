@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-unnecessary-type-assertion */
 import React, { useState, useId, useEffect } from 'react';
 import { ServerCrash, X } from 'lucide-react';
-import { Title, Bpm, KeyBadge, EnergyBar, SN } from '../../lib/songnodes';
+import { Title, Bpm, KeyBadge, EnergyBar, SN, SnIcon } from '../../lib/songnodes';
 import { CompatibilityBadge, ErrorPanel, LoadingPanel, AutocompleteSearchField, AutocompleteOption } from '../../components/ds';
 import { EmptyState, PageHeader } from '../../shell/PageParts';
 import { usePageHeader } from '../../shell/AppShell';
@@ -120,8 +120,12 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
         )}
 
         {!error && !isLoading && tracks.length === 0 && (
-          <EmptyState title="No tracks found" icon="route">
-            There are no tracks to build a path from. Try adding tracks to the library.
+          <EmptyState
+            title="No tracks found"
+            icon="route"
+            actions={<Link className="sn-btn sn-btn--primary" to="/library"><SnIcon name="library" />Open library</Link>}
+          >
+            There are no tracks to build a path from. Import or add tracks to the library first.
           </EmptyState>
         )}
 
@@ -212,7 +216,30 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
            {pf.isCalculating && <LoadingPanel message="Finding optimal route…" />}
 
            {!pf.isCalculating && !pf.hasError && !pf.hasResult && (
-             <EmptyState title="Ready to find a path" icon="route">
+             <EmptyState
+               title="Ready to find a path"
+               icon="route"
+               actions={!pf.state.startTrack ? (
+                 <button
+                   className="sn-btn sn-btn--primary"
+                   type="button"
+                   onClick={() => {
+                     const el = document.querySelector<HTMLInputElement>('.pf__facts input[type="search"]');
+                     el?.focus();
+                   }}
+                 >
+                   <SnIcon name="search" />Choose start track
+                 </button>
+               ) : (
+                 <button
+                   className="sn-btn sn-btn--primary"
+                   type="button"
+                   onClick={handleCalculate}
+                 >
+                   <SnIcon name="play" />Find path
+                 </button>
+               )}
+             >
                 Select a start track to begin finding a route.
              </EmptyState>
            )}
