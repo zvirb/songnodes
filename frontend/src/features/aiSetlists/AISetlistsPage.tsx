@@ -12,7 +12,7 @@ import { getPreferredAIProvider } from '../../services/apiKeyService';
 import { runProxyQuery, proxyErrorMessage, PROVIDER_NAMES } from './api/proxyRun';
 import { importSetlists } from './api/importRun';
 import type { AISetlist, AISetlistTrack } from './api/schema';
-import { SN } from '../../lib/songnodes';
+import { SN, Title } from '../../lib/songnodes';
 
 const PAGE_MODULE = 'sources';
 
@@ -201,7 +201,7 @@ export default function AISetlistsPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', marginTop: 'var(--space-4)' }}>
 
            <div className="sn-card">
-             <h2 className="title-s" style={{ marginBottom: 'var(--space-3)' }}>Setlist Parameters</h2>
+             <div style={{ marginBottom: 'var(--space-3)' }}><Title size="title-s" as="h2">Setlist Parameters</Title></div>
              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-4)' }}>
                <label className="sn-field">
                  <span className="label">Genre / Style</span>
@@ -224,7 +224,7 @@ export default function AISetlistsPage() {
 
            {activeTab === 'prompt' ? (
              <div className="sn-card">
-               <h2 className="title-s" style={{ marginBottom: 'var(--space-3)' }}>1. Copy Prompt</h2>
+               <div style={{ marginBottom: 'var(--space-3)' }}><Title size="title-s" as="h2">1. Copy Prompt</Title></div>
                <div className="sn-tablebox" style={{ maxHeight: 200, padding: 'var(--space-3)' }}>
                  <pre className="data" style={{ whiteSpace: 'break-spaces', overflowWrap: 'anywhere', margin: 0 }}>{generatedPrompt}</pre>
                </div>
@@ -232,7 +232,7 @@ export default function AISetlistsPage() {
                  <CopyButton value={generatedPrompt} what="Prompt" label="Copy prompt" />
                </div>
 
-               <h2 className="title-s" style={{ marginTop: 'var(--space-6)', marginBottom: 'var(--space-3)' }}>2. Paste Result</h2>
+               <div style={{ marginTop: 'var(--space-6)', marginBottom: 'var(--space-3)' }}><Title size="title-s" as="h2">2. Paste Result</Title></div>
                <textarea
                  className="sn-input"
                  rows={8}
@@ -246,7 +246,7 @@ export default function AISetlistsPage() {
              </div>
            ) : (
              <div className="sn-card">
-                <h2 className="title-s" style={{ marginBottom: 'var(--space-3)' }}>Provider Settings</h2>
+                <div style={{ marginBottom: 'var(--space-3)' }}><Title size="title-s" as="h2">Provider Settings</Title></div>
                 {providers.length === 0 ? (
                    <InlineMessage status="warn"><span dangerouslySetInnerHTML={{ __html: "No AI providers configured. " + SN.sourceLink({ text: "Add keys in Settings", href: "/settings/api-keys", module: "services" }) }} /></InlineMessage>
                 ) : (
@@ -282,7 +282,7 @@ export default function AISetlistsPage() {
 
            {reviewResult && (
              <div className="sn-card">
-               <h2 className="title-s" style={{ marginBottom: 'var(--space-4)' }}>Review Summary</h2>
+               <div style={{ marginBottom: 'var(--space-4)' }}><Title size="title-s" as="h2">Review Summary</Title></div>
                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-4)', marginBottom: 'var(--space-6)'}}>
                   <div className="sn-figure-tile">
                     <div className="sn-figure-tile__label">New setlists</div>
@@ -304,7 +304,7 @@ export default function AISetlistsPage() {
 
                {reviewResult.existingSetlists.length > 0 && (
                   <div style={{ marginBottom: 'var(--space-6)' }}>
-                    <h3 className="title-lead" style={{ marginBottom: 'var(--space-2)' }}>Excluded Setlists</h3>
+                    <div style={{ marginBottom: 'var(--space-2)' }}><Title size="title-s" as="h3">Excluded Setlists</Title></div>
                     <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                       {reviewResult.existingSetlists.map((ex, i) => (
                          <li key={i} className="body-s">
@@ -317,7 +317,7 @@ export default function AISetlistsPage() {
 
                {reviewResult.newSetlists.length > 0 && (
                  <div style={{ marginBottom: 'var(--space-6)' }}>
-                   <h3 className="title-lead" style={{ marginBottom: 'var(--space-2)' }}>New Setlists to Import</h3>
+                   <div style={{ marginBottom: 'var(--space-2)' }}><Title size="title-s" as="h3">New Setlists to Import</Title></div>
                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
                      {reviewResult.newSetlists.map(sl => {
                         const slKey = `${sl.dj}|${sl.event}|${sl.date}`;

@@ -2651,3 +2651,20 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
   - npm run test:unit (passed, 68 test files, 586 tests)
 - Next: merge PR and proceed to next conformance package.
 <!-- SLOT:DS28 END -->
+
+<!-- SLOT:DS29 BEGIN -->
+### DS29: Headings and Section Titles Design System Conformance (TYP-016, 04-typography)
+- Start: 2026-11-05 (branch ds29-conformance-sprint3 off origin/main 352e5412).
+- Scope: Migrate bare typography classes (title-s, title-m, title-lead) to design-system <Title> components in CamelotPage and AISetlistsPage:
+  1. CamelotPage: Migrated three card section headings from bare title-s/title-m to canonical <Title> components.
+  2. AISetlistsPage: Migrated five section headings from bare title-s to <Title size="title-s" as="h2">.
+  3. AISetlistsPage: Migrated two sub-headings from misuse of title-lead to <Title size="title-s" as="h3">.
+- Checks run:
+  - scripts/check_design_system.py --check (passed)
+  - scripts/sync-design-system.sh --check (passed, in sync)
+  - design-system/source/agentconf/validate.py (passed: 1691 rules, fixture 20/20, INDEX 61 lines)
+  - npm run type-check (passed)
+  - npm run lint (passed)
+  - npm run test:unit (passed, 68 test files, 586 tests)
+- Next: merge PR and proceed to next conformance package.
+<!-- SLOT:DS29 END -->
