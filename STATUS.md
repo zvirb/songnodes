@@ -2633,3 +2633,21 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
   - npm run test:unit (passed, 68 files, 586 tests)
 - Next: merge PR and proceed to Sprint 2.
 <!-- SLOT:DS27 END -->
+
+<!-- SLOT:DS28 BEGIN -->
+### DS28: EmptyState Action and Filter Tag Conformance (FBK-001, FBK-002, WRT-110)
+- Start: 2026-11-05 (branch ds28-conformance-sprint2 off origin/main 62fe0f56).
+- Scope: Bring empty states in SetBuilderPage, LibraryPage, and PathfinderPage into conformance with FBK-001, FBK-002, and WRT-110:
+  1. SetBuilderPage: Running order empty state now includes primary action to Build set (FBK-001, WRT-110).
+  2. SetBuilderPage: Saved sets empty state provides clear explanation sentence and action to save/build (FBK-001).
+  3. LibraryPage: Filtered empty state displays active filter tags in meta alongside Clear filters button (FBK-002).
+  4. PathfinderPage: Empty states now provide clear primary action buttons (focus start track / open library) (FBK-001).
+- Checks run:
+  - scripts/check_design_system.py --check (passed)
+  - scripts/sync-design-system.sh --check (passed, in sync)
+  - design-system/source/agentconf/validate.py (passed: 1691 rules, fixture 20/20, INDEX 61 lines)
+  - npm run type-check (passed)
+  - npm run lint (passed)
+  - npm run test:unit (passed, 68 test files, 586 tests)
+- Next: merge PR and proceed to next conformance package.
+<!-- SLOT:DS28 END -->

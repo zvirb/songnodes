@@ -8,7 +8,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { usePageHeader } from '../../shell/AppShell';
 import { PageHeader, EmptyState } from '../../shell/PageParts';
-import { SN, SnIcon, EnergyBar, KeyBadge, Bpm } from '../../lib/songnodes';
+import { SN, SnIcon, EnergyBar, KeyBadge, Bpm, TIER_LABEL } from '../../lib/songnodes';
 import { loadLibrary, type LibraryFile, type LibraryTrack } from './data';
 import {
   DEFAULT_FILTERS, ROT, activeFilterCount, addTrack, filterTracks, filtersFromParams, filtersToParams, hasFilterParams,
@@ -241,6 +241,17 @@ const LibraryPage: React.FC = () => {
   );
 
   const hidden = tracks.length - rows.length;
+  const activeFilterTags = [
+    ...filters.pillar.map((p) => ({ key: `pillar-${p}`, label: `Pillar: ${pillarLabel(p)}` })),
+    ...filters.tier.map((t) => ({ key: `tier-${t}`, label: `Energy: ${TIER_LABEL[t]}` })),
+    ...(filters.rot.join() !== DEFAULT_FILTERS.rot.join() ? [{ key: 'rot', label: filters.rot.length ? `Rotation: ${filters.rot.map((r) => ROT[r]).join(', ')}` : 'Any rotation' }] : []),
+    ...(filters.src ? [{ key: 'src', label: `Heard on: ${sourceName(filters.src)}` }] : []),
+    ...filters.tags.map((t) => ({ key: `tag-${t}`, label: t })),
+    ...(filters.key ? [{ key: 'key', label: 'Has key and BPM' }] : []),
+    ...(filters.rev ? [{ key: 'rev', label: 'Needs an energy check' }] : []),
+    ...(filters.multi ? [{ key: 'multi', label: 'Played on 2+ shows' }] : []),
+    ...(filters.q ? [{ key: 'q', label: `Search: “${filters.q}”` }] : []),
+  ];
   const hiddenBy = [
     ...filters.pillar.map((p) => `Pillar: ${pillarLabel(p)}`),
     ...filters.tier.map((t) => `Energy ${t === 'low' ? '1–4' : t === 'building' ? '5–7' : '8–10'}`),
@@ -406,6 +417,13 @@ const LibraryPage: React.FC = () => {
                           icon="funnel"
                           title="No tracks match these filters"
                           actions={nActive || filters.q ? <button className="sn-btn" type="button" onClick={() => changeFilters({ ...DEFAULT_FILTERS })}>Clear filters</button> : undefined}
+                          meta={activeFilterTags.length ? (
+                            <div className="sn-row" style={{ justifyContent: 'center', flexWrap: 'wrap', gap: 'var(--space-1)' }}>
+                              {activeFilterTags.map((tag) => (
+                                <span key={tag.key} className="sn-tag sn-category-tag">{tag.label}</span>
+                              ))}
+                            </div>
+                          ) : undefined}
                         >
                           {SN.format.count(hidden)} tracks are hidden{hiddenBy ? ` by ${hiddenBy}` : ' by the current filters'}.
                         </EmptyState>

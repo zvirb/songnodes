@@ -584,7 +584,11 @@ const SetBuilderPage: React.FC = () => {
             {draft.slots.length ? (
               <ol className="sn-set-slot-list" aria-label={`Running order, ${name}`}>{order}</ol>
             ) : (
-              <EmptyState icon="list-music" title="No tracks yet">
+              <EmptyState
+                icon="list-music"
+                title="No tracks yet"
+                actions={<button className="sn-btn sn-btn--primary" type="button" onClick={() => build()} disabled={!lib}><SnIcon name="wand-sparkles" />Build set</button>}
+              >
                 Build set fills the running order from the pool. Tracks you add from the library with + land here too.
               </EmptyState>
             )}
@@ -635,7 +639,13 @@ const SetBuilderPage: React.FC = () => {
               })}
             </div>
           ) : (
-            <EmptyState icon="list-music" title="No saved sets yet">Build a set and save it to see it here.</EmptyState>
+            <EmptyState
+              icon="list-music"
+              title="No saved sets yet"
+              actions={<button className="sn-btn" type="button" onClick={() => { if (!filled.length) { build(); } else { save(); } }} disabled={!lib}><SnIcon name={filled.length ? 'save' : 'wand-sparkles'} />{filled.length ? 'Save set' : 'Build a set'}</button>}
+            >
+              Build a set from the crate and save it here.
+            </EmptyState>
           )}
           <div className="sn-card sn-card--flat sn-ml-export">
             <p className="sn-page-sets__note">Saved sets live on this device. Export them as <span className="sn-mono">artifact_sets.json</span> into <span className="sn-mono">musicLibrary/inbox/</span> and the weekly run adds them to the library database.</p>
