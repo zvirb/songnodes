@@ -4,7 +4,7 @@ import { useUnifiedTracks } from '../../hooks/useUnifiedTracks';
 import { PageHeader } from '../../shell/PageParts';
 import { usePageHeader } from '../../shell/AppShell';
 import { EmptyPanel } from '../../components/ds';
-import { SN, Bpm, KeyBadge, EnergyBar } from '../../lib/songnodes';
+import { SN, Bpm, KeyBadge, EnergyBar, Title } from '../../lib/songnodes';
 import { compatibleKeys } from './camelotLogic';
 import { CamelotWheel } from '../../components/CamelotWheel';
 import { KeyMoodPanel } from '../../components/KeyMoodPanel';
@@ -148,12 +148,14 @@ const CamelotPage: React.FC = () => {
         </section>
 
         <section className="sn-card">
-          <h2 className="title-s" style={{ marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          <div style={{ marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
             <Layers size={18} />
-            {selectedKeys.length > 0
-              ? `${SN.format.count(displayedTracks.length)} tracks compatible with selected keys`
-              : `${SN.format.count(displayedTracks.length)} tracks total`}
-          </h2>
+            <Title size="title-s" as="h2">
+              {selectedKeys.length > 0
+                ? `${SN.format.count(displayedTracks.length)} tracks compatible with selected keys`
+                : `${SN.format.count(displayedTracks.length)} tracks total`}
+            </Title>
+          </div>
 
           {/* DataTable --stack: rows become cards below 600px (no sideways scroll on a phone).
               Wider, the box can scroll sideways, so it takes focus and has a name (axe scrollable-region-focusable). */}
@@ -207,18 +209,22 @@ const CamelotPage: React.FC = () => {
       <MoveNext activeKey={activeKey} counts={counts} onMove={setActiveKey} />
 
       <section className="sn-card" style={{ marginBottom: 'var(--space-6)' }}>
-        <h2 className="title-m" style={{ marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-          Acoustic mood and energy profile
-        </h2>
+        <div style={{ marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          <Title size="title-m" as="h2">
+            Acoustic mood and energy profile
+          </Title>
+        </div>
         <KeyMoodPanel defaultExpanded={true} />
       </section>
 
       {activeKey && activeTracksForSet.length > 0 && (
         <section className="sn-card">
-          <h2 className="title-m" style={{ marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          <div style={{ marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
             <Music size={20} style={{ color: 'var(--brand)' }} />
-            Tracks in <KeyBadge value={activeKey} withName />
-          </h2>
+            <Title size="title-m" as="h2">
+              Tracks in <KeyBadge value={activeKey} withName />
+            </Title>
+          </div>
           <HarmonicSet currentKey={activeKey} tracks={activeTracksForSet} />
         </section>
       )}
