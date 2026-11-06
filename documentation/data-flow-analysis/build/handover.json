@@ -1,10 +1,41 @@
 {
  "items": [
-  ["Pull request (master)", "https://github.com/zvirb/songnodes/pull/581"],
-  ["Branch", "docs/data-flow-investigation (merged with the parallel run's PR #581 branch)"],
-  ["Deliverables", "documentation/data-flow-analysis/: report/index.html, report/print-sheet.html, DATA_FLOW_AND_PAGE_INTERACTION_REPORT.pdf and .md, PAGE_CLASSIFICATION_AUDIT.md, findings.json, figures.json, 51 SVGs, build/"],
-  ["Design system", "1.10.0 (source changes in design-system/, frontend copy re-synced)"],
-  ["Tool gaps", "None blocking. PyMuPDF absent (not needed); musicLibrary has no git, so its files are written to E:\\musicLibrary directly"]
+  [
+   "Pull request (report)",
+   "https://github.com/zvirb/songnodes/pull/581"
+  ],
+  [
+   "Pull request (enhancements and tasks)",
+   "https://github.com/zvirb/songnodes/pull/582"
+  ],
+  [
+   "Web report artifact",
+   "https://claude.ai/artifact/GJHcY2eLqFRjZx6y4FH1Rd (private until shared)"
+  ],
+  [
+   "Branches",
+   "docs/data-flow-investigation (PR #581, merged with the parallel run's commit 1f296c3), feat/architecture-enhancements-and-gaps (PR #582, merged with d32489b); docs/data-flow-investigation-v2 is a backup copy of the first"
+  ],
+  [
+   "Deliverables",
+   "documentation/data-flow-analysis/: report/index.html, report/print-sheet.html, DATA_FLOW_AND_PAGE_INTERACTION_REPORT.pdf and .md, PAGE_CLASSIFICATION_AUDIT.md, ARCHITECTURE_ENHANCEMENTS_AND_GAPS_REPORT.md, findings.json, figures.json, gates.json, 51 SVGs, build/"
+  ],
+  [
+   "Sister task lists",
+   "TODO-ARCHITECTURAL-IMPROVEMENTS.md in songnodes root, frontend/, services/, scrapers/, design-system/ (PR #582) and E:\\musicLibrary (written on tuf-boi, md5 cd0ea9bb, earlier list kept below)"
+  ],
+  [
+   "Design system",
+   "1.10.0 at the source (three design-system commits), frontend copy re-synced; the design-system artifact still holds 1.9.1 (task DS-T01)"
+  ],
+  [
+   "Left on the laptop",
+   "E:\\musicLibrary\\_to_delete\\claude_scan_2026-11-07 (the source snapshot used for the scan; deletes are blocked from here, delete it when convenient)"
+  ],
+  [
+   "Tool gaps",
+   "None blocking. PyMuPDF absent (not needed). musicLibrary has no git, so its file was written directly."
+  ]
  ],
  "gates": [],
  "next": [
