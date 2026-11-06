@@ -22,7 +22,7 @@ ALIASES = {
 }
 EXTERNAL = {
     "ext-pbs-airnet": ("PBS airnet API", "ingest"), "ext-3rrr": ("3RRR episode pages", "ingest"), "ext-abc-plays": ("ABC plays API (triple j, Double J)", "ingest"),
-    "ext-aria": ("ARIA Club Chart", "ingest"), "ext-balance-wp": ("Balance Selections WordPress API", "ingest"), "ext-tidal": ("TIDAL API", "services"),
+    "ext-aria": ("ARIA Club Chart", "ingest"), "ext-balance-wp": ("Balance Selections WordPress API", "ingest"), "ext-tidal": ("TIDAL developer API", "services"),
     "ext-deezer": ("Deezer API", "ingest"), "ext-metabrainz": ("MetaBrainz dumps", "ingest"), "ext-rekordbox": ("Rekordbox / Lexicon (XML)", "sets"),
     "ext-jules": ("Jules sessions (Google)", "ops"),
 }

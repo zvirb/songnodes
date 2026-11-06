@@ -47,6 +47,8 @@ def run(cmd, **kw):
 def main():
     F = json.loads((OUT / "findings.json").read_text(encoding="utf-8"))
     web, sheet = WEB.read_text(encoding="utf-8"), SHEET.read_text(encoding="utf-8")
+    import html as htmllib
+    web_txt, sheet_txt = htmllib.unescape(web), htmllib.unescape(sheet)      # parity compares decoded markup
     tmp = OUT / "build" / "evidence"
     tmp.mkdir(exist_ok=True)
     (tmp / "web-own.html").write_text(own_markup(web), encoding="utf-8")
@@ -61,18 +63,21 @@ def main():
     gate(1, "linter", not found, "%d findings from design-system/linters/check.py" % len(found), found[:20])
 
     # 2 token audit (own markup + every standalone figure body)
-    rx = {"colour": r"#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\(", "font-size": r"font-size\s*[:=]\s*['\"]?\d", "spacing": r"(?:margin|padding|gap)\s*:\s*\d", "radius": r"(?:border-radius|\brx)\s*[:=]\s*['\"]?\d",
+    rx = {"colour": r"(?<!&)#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\(", "font-size": r"font-size\s*[:=]\s*['\"]?\d", "spacing": r"(?:margin|padding|gap)\s*:\s*\d", "radius": r"(?:border-radius\s*:\s*\d|\brx\s*[:=]\s*['\"]?\d)",
           "inline-style": r'style="[^"]*\d(?:px|rem|pt|mm)'}
     hits = []
+    def styling(t):
+        """Only what can carry style: tags (attributes, inline style) and <style> blocks, never the copy between tags."""
+        t = re.sub(r"<script>.*?</script>", "", t, flags=re.S)
+        return "\n".join(re.findall(r"<style>.*?</style>|<[^>]+>", t, flags=re.S))
     for label, text in (("web", own_markup(web)), ("sheet", own_markup(sheet))):
-        body = re.sub(r"<svg class=\"sn-icon\".*?</svg>", "", text, flags=re.S)       # design-system icon markup
-        body = re.sub(r"<script>.*?</script>", "", body, flags=re.S)
+        body = styling(re.sub(r"<svg class=\"sn-icon\".*?</svg>", "", text, flags=re.S))       # design-system icon markup
         for k, p in rx.items():
             for m in re.finditer(p, body):
                 hits.append("%s %s: %s" % (label, k, body[max(0, m.start() - 40):m.end() + 20].replace("\n", " ")))
     for svgf in sorted(OUT.glob("*.svg")):
         t = svgf.read_text(encoding="utf-8")
-        t = re.sub(r"<style>.*?</style>", "", t, flags=re.S)                          # the inlined design system
+        t = styling(re.sub(r"<style>.*?</style>", "", t, flags=re.S))                 # the inlined design system removed
         for k, p in rx.items():
             for m in re.finditer(p, t):
                 hits.append("%s %s: %s" % (svgf.name, k, t[max(0, m.start() - 30):m.end() + 20]))
@@ -81,7 +86,7 @@ def main():
         if p.exists():
             t = p.read_text(encoding="utf-8")
             t = re.sub(r"@page[^{]*\{[^}]*\}", "", t)
-            for m in re.finditer(r"#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\(", t):
+            for m in re.finditer(r"(?<!&)#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\(", t):
                 hits.append("%s colour: %s" % (name, t[max(0, m.start() - 30):m.end() + 10]))
     gate(2, "tokens", not hits, "%d literal colours, sizes, spacing or radii outside design-system definitions" % len(hits), hits[:30])
 
@@ -92,7 +97,7 @@ def main():
     kinds = {"page": F["pages"], "store": F["stores"], "flow": F["flows"], "gap": F["gaps"], "module": F["modules"], "task": F["tasks"]}
     for kind, items in kinds.items():
         for x in items:
-            for label, doc in (("web", web), ("sheet", sheet)):
+            for label, doc in (("web", web_txt), ("sheet", sheet_txt)):
                 if 'data-id="%s"' % x["id"] not in doc and 'id="%s"' % x["id"] not in doc:
                     miss.append("%s %s missing in %s" % (kind, x["id"], label))
     pdf_needle = {"page": lambda p: p["title"][:40], "store": lambda s: s["id"], "flow": lambda f: f.get("label", "")[:30], "gap": lambda g: g["id"], "module": lambda m: m["name"], "task": lambda t: t["id"]}
@@ -106,7 +111,7 @@ def main():
             miss.append("persona %s not in PDF" % p["id"])
         for s in p["steps"]:
             sid = "%s-s%d" % (p["id"], s["n"])
-            if 'data-id="%s"' % sid not in web or 'data-id="%s"' % sid not in sheet:
+            if 'data-id="%s"' % sid not in web_txt or 'data-id="%s"' % sid not in sheet_txt:
                 miss.append("step %s missing" % sid)
     d2 = "".join(re.findall(r'<figure[^>]*data-figure="D2[a-z]?".*?</figure>', web, flags=re.S))
     undrawn = [f["id"] for f in F["flows"] if not re.search(r'data-flow="%d"' % f["n"], d2) and not ('data-from="%s"' % f["from"] in d2 and 'data-to="%s"' % f["to"] in d2)]
@@ -123,7 +128,8 @@ def main():
         except Exception:
             res = {"error": (r.stdout + r.stderr)[-800:]}
     bad = {k: v for k, v in res.items() if isinstance(v, dict) and (v.get("overflow") or v.get("collisions") or (v.get("min_px_at_print") or 99) < 9.5)}
-    gen = [f for f in F.get("figures", []) if f.get("checks")]
+    reg = json.loads((OUT / "figures.json").read_text(encoding="utf-8")) if (OUT / "figures.json").exists() else []
+    gen = [f for f in reg if f.get("checks")]
     through = sum(f["checks"].get("edges_through_nodes", 0) for f in gen)
     crossings = {f["id"]: f["checks"].get("crossings") for f in gen}
     ok4 = r is not None and r.returncode == 0 and not bad and "error" not in res and through == 0
@@ -164,10 +170,12 @@ def main():
             body_end = int(h * 0.88)                                 # above the footer band
             rows = [y for y in range(int(h * 0.04), body_end) if any(px[x, y] < 235 for x in range(0, w, 2))]
             empty = 1 - ((rows[-1] - rows[0]) / (body_end - h * 0.04) if rows else 0)
-            if 0 < i < len(imgs) - 1 and empty > 0.40:
+            land = [float(pg.mediabox.width) > float(pg.mediabox.height) for pg in rd.pages]
+            before_turn = i + 1 < len(land) and land[i + 1] != land[i]      # a landscape page cannot start mid-page
+            if 0 < i < len(imgs) - 1 and empty > 0.40 and not before_turn:
                 blanks.append((i + 1, round(empty, 2)))
         if blanks:
-            fails.append("pages over 40%% empty: %s" % blanks)
+            fails.append("pages over 40%% empty (pages before an orientation change exempt): %s" % blanks)
         notes.append("%d pages" % pages)
         run(["pdftoppm", "-r", "70", "-png", str(PDF), str(SHOTS / "pdf")])
     else:

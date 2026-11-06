@@ -221,7 +221,7 @@ def s_personas(F, FG, C, mode):
         inner = kv([("Objective", E(p.get("objective") or ""), False), ("Device", E(p.get("device") or ""), False), ("Entry point", code(p.get("entry")), False),
                     ("Basis", E(p.get("basis") or "Stated in docs"), False)])
         inner += '<h4 class="sn-title title-s">Routine</h4>' + bullets(p.get("routine") or [])
-        inner += figs(FG, "D5-" + p["id"], mode=mode, defer=False)
+        inner += figs(FG, "D5-" + p["id"], mode=mode)   # print: swimlanes move to the end of the section (landscape pages together)
         inner += table("t-steps-%d" % i, "Steps for " + p["name"], [("n", "Step", True), ("page", "Page", False), ("act", "Action", False), ("w", "Data written", False),
                        ("trig", "Trigger to next", False), ("hand", "Handoff", False), ("fb", "Fallback", False)], srows, sortable=False, kind="step")
         if p.get("failure_modes"):
@@ -320,7 +320,7 @@ def s_verification(F, FG, C, mode):
     filters = [("outcome", "Outcome", [(k, v[1], sum(1 for c in F["claims"] if c.get("outcome") == k)) for k, v in OUTCOME_STATUS.items()])] if mode == "web" else None
     body = figs(FG, "C11", mode=mode)
     body += table("t-claims", "Verification register", [("id", "ID", False), ("claim", "Claim", False), ("src", "Source", False), ("out", "Outcome", False), ("finding", "Finding", False), ("ev", "Evidence", False)], rows, search=(mode == "web"), filters=filters, kind="claim")
-    return sec("verification", body, "%d claims" % C["claims"], "No earlier data-flow report exists for these repos, so the register re-verifies the repos' own documentation.")
+    return sec("verification", body, "%d claims" % C["claims"], "Baseline: PR #581 (area baseline-581), re-verified against this run; the register also re-checks the repos' own documentation.")
 
 
 # ------------------------------------------------------------------ 12

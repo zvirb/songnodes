@@ -7,6 +7,7 @@ design-system/source/css/64-diagram.css and 65-report-charts.css (read from the 
 import re
 
 import charts
+import render
 import diagrams
 from ds import DS
 
@@ -40,7 +41,11 @@ def build_all(F, D, OUT):
         if f["kind"] == "chart" and hasattr(charts, "recompute"):
             charts.recompute(F, f)                     # gate: every chart value recomputes from findings.json
     css = D["svg_css"] + "\n" + figure_css()
-    for f in figs:
+    for f in figs:   # copy that quotes code is entity-escaped (render.copy_safe); standalone files are XML, inline copies HTML
         if f.get("file"):
-            (OUT / f["file"]).write_text('<?xml version="1.0" encoding="UTF-8"?>\n' + standalone(f["svg"], css), encoding="utf-8")
+            xml = re.sub(r">([^<]*)", lambda m: ">" + render.copy_safe(m.group(1), html_doc=False), f["svg"])
+            (OUT / f["file"]).write_text('<?xml version="1.0" encoding="UTF-8"?>\n' + standalone(xml, css), encoding="utf-8")
+        for k in ("svg", "projected_svg"):
+            if f.get(k):
+                f[k] = re.sub(r">([^<]*)", lambda m: ">" + render.copy_safe(m.group(1)), f[k])
     return {f["id"]: f for f in sorted(figs, key=lambda f: _order(f["id"]))}

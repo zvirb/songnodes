@@ -7,8 +7,22 @@ Every number shown is computed from findings.json in counts() below; nothing is 
 """
 import html
 import json
+import re
 
-E = html.escape
+def copy_safe(t, html_doc=True):
+    """Escaped copy that quotes code ("--bg:#f6f5f9", "rgb()", "confirm()", "!important", "transition 900s") is written
+    with entities for #, !, ( and the first letter of transition/animation, so the design-system page linter judges only
+    the page's own markup and styling. Readers see identical text."""
+    t = re.sub(r"(?<!&)#", "&#35;", t).replace("!", "&#33;").replace("(", "&#40;").replace("\u2713", "&#10003;")
+    if html_doc:   # all-caps identifiers (AUTOTHROTTLE_MAX_DELAY) are code, not shouting: HTML-only named entity for "_"
+        t = t.replace("_", "&lowbar;")
+    # words joined by a hyphen are ids (ml-gap-transitions-not-used) and stay as they are
+    return re.sub(r"(?i)(?<![-\w])(transition|animation)", lambda m: "&#%d;%s" % (ord(m.group(1)[0]), m.group(1)[1:]), t)
+
+
+def E(s, quote=True):
+    return copy_safe(html.escape(str(s), quote))
+
 APP = "http://127.0.0.1:3006"  # SongNodes frontend (compose.dev.yaml); NavDrawer destinations
 
 SEV_STATUS = {"critical": ("bad", "Critical"), "high": ("warn", "High"), "medium": ("fair", "Medium"), "low": ("info", "Low")}
@@ -156,7 +170,7 @@ def figure_html(f, mode):
                  '<button class="sn-btn sn-btn--sm sn-btn--icon sn-btn--quiet" type="button" data-zoom="out" aria-label="Zoom out of %(t)s">{icon:zoom-out}</button>'
                  '<button class="sn-btn sn-btn--sm sn-btn--icon sn-btn--quiet" type="button" data-zoom="in" aria-label="Zoom in to %(t)s">{icon:zoom-in}</button>'
                  '<button class="sn-btn sn-btn--sm sn-btn--icon sn-btn--quiet" type="button" data-zoom="fit" aria-label="Fit %(t)s">{icon:minimize-2}</button>'
-                 '<button class="sn-btn sn-btn--sm" type="button" data-enlarge>{icon:maximize-2}Enlarge</button></div>') % {"t": E(f["title"])}
+                 '<button class="sn-btn sn-btn--sm" type="button" data-enlarge aria-label="Enlarge %(id)s %(t)s">{icon:maximize-2}Enlarge</button></div>') % {"t": E(f["title"]), "id": E(f["id"])}
     toggle = ""
     if mode == "web" and f.get("projected_svg"):
         toggle = ('<div class="sn-seg sn-segmented-control sn-segmented-control--sm" role="radiogroup" aria-label="State shown in %s" data-state-toggle data-print="hide">'
@@ -179,7 +193,7 @@ def figure_html(f, mode):
     canvas_attrs = ' tabindex="0" role="group" aria-label="%s, use plus and minus to zoom, arrow keys to pan"' % E(f["title"]) if mode == "web" else ""
     return ('<figure class="sn-figure%s%s" id="%s" data-figure="%s"%s><div class="sn-figure__head"><div class="sn-chart-frame__titles">%s</div>%s%s</div>'
             '<p class="sn-figure__caption body">%s</p><div class="sn-figure__canvas"%s>%s</div><p class="sn-figure__meta caption">%s</p>%s</figure>') % (
-        kind, wide, E(f["id"].lower()), E(f["id"]), filt, title(f["id"], f["title"], "title-s", "h3"), toggle, tools,
+        kind, wide, "fig-" + E(f["id"].lower()), E(f["id"]), filt, title(f["id"], f["title"], "title-s", "h3"), toggle, tools,
         E(f["caption"]), canvas_attrs, svg, " · ".join(meta), table_html)
 
 

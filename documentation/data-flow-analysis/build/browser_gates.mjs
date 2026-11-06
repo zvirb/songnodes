@@ -30,7 +30,7 @@ try {
     const t = document.querySelectorAll('[role="tab"]')[1]; if (t) t.click();
     const z = document.querySelector('[data-zoom="in"]'); if (z) z.click();
     const s = document.querySelector('[data-state-toggle] [data-value="projected"]'); if (s) s.click();
-    const n = document.querySelector(".sn-figure [data-node]"); if (n) { n.dispatchEvent(new Event("pointerenter")); n.click(); n.click(); }
+    const n = document.querySelector(".sn-figure [data-node]"); if (n) { n.dispatchEvent(new Event("pointerenter")); n.dispatchEvent(new MouseEvent("click", { bubbles: true })); n.dispatchEvent(new MouseEvent("click", { bubbles: true })); }
   });
   await page.waitForTimeout(200);
   await ctx.close();

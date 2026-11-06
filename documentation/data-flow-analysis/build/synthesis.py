@@ -45,6 +45,25 @@ for fr in FR.values():
                 sev = d["severity"]
         patch["gaps"][g["id"]] = {"severity": sev, "effort": effort(g)}
 
+
+BASE = "PR #581 (branch docs/data-flow-investigation @1f296c3)"
+baseline_claims = [
+    ("B01", "12 pages", "documentation/data-flow-analysis/findings.json pages[] @1f296c3", "corrected", "12 is the songnodes frontend route count (13 production routes found here, including the shadowed /paths placeholder); the estate holds 115 pages and entry points across both repos."),
+    ("B02", "8 stores", "findings.json stores[] @1f296c3", "corrected", "39 internal stores plus 9 external systems (48) found by three scanners; #581 grouped Postgres by layer and omitted RabbitMQ, the artifact database, ref_mb and external APIs."),
+    ("B03", "26 edges", "findings.json edges[] @1f296c3", "corrected", "87 numbered flows, every one drawn in D2a–D2g."),
+    ("B04", "5 personas", "findings.json personas[] @1f296c3", "corrected", "8 personas (5 human, 2 system actors, 1 assisted); #581's selector, librarian, data engineer, resolution specialist and devops map onto P1/P2, P3, P4/P5, P3/P7 and P4."),
+    ("B05", "5 gaps", "findings.json gaps[] @1f296c3", "corrected", "28 gaps; all five #581 gaps are kept: GAP-01 Rekordbox feedback = ml-gap-rekordbox-feedback; GAP-02 dual storage = ml-gap-saved-set-shape and ml-gap-songnodes-field-loss; GAP-03 audio fingerprint segmenter is not evidenced in either repo (kept as Unverified); GAP-04 unwired target queue feedback = sn-be-gap-target-scrape-quota and sn-fe-gap-target-pending-sync; GAP-05 outbox projection lag = sn-be-gap-library-projection."),
+    ("B06", "Gate 1: 0 hard-coded colours or fonts outside token definitions", "PR #581 description", "refuted", "243 literal hex colours in SVG fill/stroke attributes of report/index.html outside style blocks (this run's gate 2 regex over tags)."),
+    ("B07", "All 14 internal navigation anchors resolve", "PR #581 description", "confirmed", "14 href=#… anchors, all with a matching id."),
+    ("B08", "Standalone SVGs at viewBox 1800x1100", "PR #581 description", "confirmed", "system-architecture-data-flow.svg viewBox 0 0 1800 1100."),
+    ("B09", "enhanced-architecture-connections-and-gaps.svg and ARCHITECTURE_ENHANCEMENTS_AND_GAPS_REPORT.md produced", "STATUS.md SLOT:ARCH1 @1f296c3", "refuted", "Neither file is in the branch (git diff --stat origin/main...1f296c3 lists 17 files without them); both exist in this run."),
+    ("B10", "Sister TODO written to E:\\musicLibrary\\TODO-ARCHITECTURAL-IMPROVEMENTS.md", "STATUS.md SLOT:ARCH1 @1f296c3", "confirmed", "File present on tuf-boi (7,332 bytes, 6 Nov 2026 22:18 UTC); kept and extended, not replaced."),
+    ("B11", "PDF 1,775 KB, vector, searchable", "PR #581 description", "confirmed", "1,817,715 bytes in the branch."),
+    ("B12", "Rebuild pipeline passes in 3.2 s", "STATUS.md SLOT:ARCH1 @1f296c3", "not-reproducible", "Not re-run: its build scripts are kept in the branch but superseded by build.py; timing is the author's figure."),
+]
+APPEND = {"claims": [{"id": "BL-" + c[0], "claim": c[1], "source": c[2], "outcome": c[3], "finding": c[4], "evidence": [BASE, c[2]], "_agent": "baseline-581", "state": "built"} for c in baseline_claims],
+          "unverified": ["#581 GAP-03 (audio fingerprint and AcoustID transition segmenter): no code, schema or doc in either repo supports it; kept as a topic, not as a gap."]}
+
 S = {
     "meta": {
         "title": "Data flow and page interaction",
@@ -60,7 +79,7 @@ S = {
             ["Scope", "songnodes (E:\\songnodes = github zvirb/songnodes main) and musicLibrary (E:\\musicLibrary). Sub-projects scanned: songnodes frontend, services, scrapers, design-system; musicLibrary pipeline, artifact, ref_mb, plan."],
             ["Page source of truth", "songnodes source tree on main @7429821 (no built bundle is kept in the repo); musicLibrary artifact/build/index.html is the live page, artifact/index.html is the legacy page (agent ml, M3 render)."],
             ["Queued work", "Open PRs #576–#580 (Duo 2FA, Cloudflare tunnel, login page, Sentinel sanitisation); musicLibrary plan/jules_payloads (30) and the unmerged WP7 brief."],
-            ["Baseline report", "None found in documentation/, docs/ or project artifacts. The verification register re-checks the repos' own documentation instead."],
+            ["Baseline report", "PR #581 (ARCH1, opened 7 Nov 2026 09:23 by a parallel run on branch docs/data-flow-investigation): its numbers and gate claims are re-verified in the register (area baseline-581) and every topic it covers is kept; this report is merged into that branch. The register also re-checks the repos' own documentation."],
             ["Standing rules", "R1–R8 from songnodes CLAUDE.md §2–§4 and AGENTS.md rule 12 (listed in section 3)."],
             ["Retired or excluded", "deploy/ and k8s/ (kept but unused, CLAUDE.md §1); musicLibrary _to_delete/ and data/ (data/ listed only)."],
             ["Locale", "en-AU, A4, Australia/Melbourne 24-hour time (design system 01-writing)."],
@@ -174,6 +193,7 @@ S = {
         "Open decision: which Set Builder is primary once both read the same saved-set shape."],
     "handover": {"items": [["Branch", "docs/data-flow-investigation"]], "gates": [], "next": []},
     "patch": patch,
+    "append": APPEND,
 }
 out.write_text(json.dumps(S, indent=1, ensure_ascii=False), encoding="utf-8")
 print("synthesis", out, len(patch["debt"]), "debt", len(patch["gaps"]), "gaps")
