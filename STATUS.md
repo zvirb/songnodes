@@ -2732,3 +2732,15 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
   - `npm run test:unit` (passed: 68 test files, 586 tests)
 - Next: merge PR and proceed to UX-T11 (Service rows tell the truth about OAuth).
 <!-- SLOT:UX-T09 END -->
+<!-- SLOT:DUOAUTH BEGIN -->
+### DUOAUTH: Cisco Duo 2FA and Username/Password Auth with Cloudflare Tunnel
+- Start: 2026-11-05 (branch cisco_duo_auth_guide).
+- Scope: Investigate and document Cisco Duo dual authentication along with username/password login to SongNodes frontend exposed via Cloudflare Tunnel (`song.aiwfe.com`). Provide architecture designs, step-by-step guides, online dashboard automation prompts (Computer Use), and autonomous coding agent prompts:
+  1. Investigated edge Zero Trust perimeter (Cloudflare Access + Cisco Duo SSO) vs in-app Duo Universal Prompt (Web SDK v4 OIDC).
+  2. Created comprehensive architecture and implementation documentation in `docs/security/cisco-duo-auth-guide.md`.
+  3. Formulated detailed Computer Use prompts for Cisco Duo Admin and Cloudflare Zero Trust dashboards.
+  4. Formulated autonomous agent prompts for backend, frontend, and devops integration.
+- Checks run:
+  - Document syntax and markdown validation.
+- Next: Finalize artifact report and present complete implementation package to user.
+<!-- SLOT:DUOAUTH END -->
