@@ -1,0 +1,183 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1100" width="100%" height="100%">
+  <title>SongNodes: Architecture Enhancements, Critical Gaps &amp; Proposed Modules</title>
+  <rect width="1800" height="1100" class="bg"/>
+  {SVG_COMMON_DEFS}
+  
+  <!-- Header Banner -->
+  <g transform="translate(48, 48)">
+    <text class="text-title" font-size="28"><tspan class="text-lead">Enhanced Architecture:</tspan> Critical Data Gaps &amp; Proposed Single-Purpose Modules</text>
+    <text class="text-body-muted" y="28">Identification of 5 critical architectural vulnerabilities alongside 4 proposed lightweight modules (&lt;500 LOC) and unified storage backbone</text>
+  </g>
+  
+  <!-- LEFT COLUMN: The 5 Critical Data Gaps (Red Highlights) -->
+  <g transform="translate(48, 110)" filter="url(#shadow-1)">
+    <rect width="820" height="930" class="card-neutral"/>
+    <text class="text-label" x="24" y="32" fill="#ff7469">Identified Architectural Gaps (Missing Feedback Loops &amp; Latencies)</text>
+    
+    <!-- Gap 1 -->
+    <g transform="translate(24, 50)">
+      <rect width="772" height="155" class="card-gap"/>
+      <rect x="0" y="0" width="8" height="155" fill="#ff7469" rx="4"/>
+      <text class="text-body-strong" x="20" y="26" fill="#ff7469">GAP-01 (High): Disconnected Rekordbox Booth Performance Feedback Loop</text>
+      <text class="text-caption" x="20" y="46" fill="#f9f9f9">Sets export to Rekordbox XML, but live CDJ playback logs (HISTORY.m3u8) never feed back into SongNodes.</text>
+      
+      <rect x="20" y="58" width="732" height="82" rx="6" fill="#1b1b1b" stroke="#ff7469"/>
+      <text class="text-data" x="32" y="80">Current: USB performance logs are abandoned on flash drive after gigs.</text>
+      <text class="text-data" x="32" y="98">Impact: Live proven transitions do not increment occurrence_count; rotation decay is uncalibrated.</text>
+      <text class="text-data-strong" x="32" y="122">Fix: Deploy MOD-01 Booth History Ingester (services/library/booth_history.py)</text>
+    </g>
+    
+    <!-- Gap 2 -->
+    <g transform="translate(24, 220)">
+      <rect width="772" height="155" class="card-gap"/>
+      <rect x="0" y="0" width="8" height="155" fill="#ff7469" rx="4"/>
+      <text class="text-body-strong" x="20" y="26" fill="#ff7469">GAP-02 (High): Dual Storage Disconnect (PostgreSQL library.* vs SQLite dj_library.sqlite)</text>
+      <text class="text-caption" x="20" y="46" fill="#f9f9f9">Weekly script writes to SQLite; SongNodes web app writes to PostgreSQL. Only a static JSON is copied.</text>
+      
+      <rect x="20" y="58" width="732" height="82" rx="6" fill="#1b1b1b" stroke="#ff7469"/>
+      <text class="text-data" x="32" y="80">Current: Curator tag edits or crate changes in web UI do not propagate back to weekly SQLite ledger.</text>
+      <text class="text-data" x="32" y="98">Impact: Split-brain library state; risk of overwriting user tags during Sunday weekly pipeline runs.</text>
+      <text class="text-data-strong" x="32" y="122">Fix: Deploy MOD-03 Bi-Directional Library Bridge (services/library/bridge.py)</text>
+    </g>
+    
+    <!-- Gap 3 -->
+    <g transform="translate(24, 390)">
+      <rect width="772" height="155" class="card-gap"/>
+      <rect x="0" y="0" width="8" height="155" fill="#ff7469" rx="4"/>
+      <text class="text-body-strong" x="20" y="26" fill="#ff7469">GAP-03 (Medium): Missing Audio Fingerprint &amp; AcoustID Transition Segmenter</text>
+      <text class="text-caption" x="20" y="46" fill="#f9f9f9">Transitions rely strictly on text tracklists. Recorded live audio mixes cannot be automatically segmented.</text>
+      
+      <rect x="20" y="58" width="732" height="82" rx="6" fill="#1b1b1b" stroke="#ff7469"/>
+      <text class="text-data" x="32" y="80">Current: Un-tracklisted DJ sets and radio broadcasts cannot be mined for transitions.</text>
+      <text class="text-data" x="32" y="98">Impact: Track versions (Dub vs VIP) cannot be validated against audio acoustic waveforms.</text>
+      <text class="text-data-strong" x="32" y="122">Fix: Deploy Essentia / Chromaprint Segmenter worker for automated transition discovery.</text>
+    </g>
+    
+    <!-- Gap 4 -->
+    <g transform="translate(24, 560)">
+      <rect width="772" height="155" class="card-gap"/>
+      <rect x="0" y="0" width="8" height="155" fill="#ff7469" rx="4"/>
+      <text class="text-body-strong" x="20" y="26" fill="#ff7469">GAP-04 (Medium): Unwired Scraper Target Queue Scheduling</text>
+      <text class="text-caption" x="20" y="46" fill="#f9f9f9">Curators add target artists in /library or /sources/targets, but musicLibrary pipeline ignores the queue.</text>
+      
+      <rect x="20" y="58" width="732" height="82" rx="6" fill="#1b1b1b" stroke="#ff7469"/>
+      <text class="text-data" x="32" y="80">Current: musicLibrary pipeline reads static config/sources.json and does not poll target_tracks.</text>
+      <text class="text-data" x="32" y="98">Impact: High-priority targets added by user sit idle until manually dispatched in SongNodes.</text>
+      <text class="text-data-strong" x="32" y="122">Fix: Wire ML-TASK-03 cron script synchronising PostgreSQL target_tracks to weekly runner.</text>
+    </g>
+    
+    <!-- Gap 5 -->
+    <g transform="translate(24, 730)">
+      <rect width="772" height="155" class="card-gap"/>
+      <rect x="0" y="0" width="8" height="155" fill="#ff7469" rx="4"/>
+      <text class="text-body-strong" x="20" y="26" fill="#ff7469">GAP-05 (Low): Outbox Projection Lag Invisibility in Web Client</text>
+      <text class="text-caption" x="20" y="46" fill="#f9f9f9">Graph projection polls every 15 seconds; bulk scraping induces temporary projection lag without UI indicator.</text>
+      
+      <rect x="20" y="58" width="732" height="82" rx="6" fill="#1b1b1b" stroke="#ff7469"/>
+      <text class="text-data" x="32" y="80">Current: /paths and /library show stale data during ingestion bursts with no freshness warning.</text>
+      <text class="text-data" x="32" y="98">Impact: Selectors may query paths that omit transitions currently pending in the projection queue.</text>
+      <text class="text-data-strong" x="32" y="122">Fix: Deploy MOD-02 Realtime Graph Outbox Daemon with SSE lag push to UI.</text>
+    </g>
+  </g>
+  
+  <!-- RIGHT COLUMN: Proposed Single-Purpose Modules (<500 LOC) & Directory Backbone -->
+  <g transform="translate(896, 110)" filter="url(#shadow-2)">
+    <rect width="856" height="930" class="card-neutral"/>
+    <text class="text-label" x="24" y="32" fill="#5fd08f">Proposed Solutions: 4 Single-Purpose Modules (&lt;500 LOC) &amp; Storage Backbone</text>
+    
+    <!-- Module 1 -->
+    <g transform="translate(24, 50)">
+      <rect width="808" height="170" class="card-module"/>
+      <text class="text-body-strong" x="20" y="26" fill="#5fd08f">MOD-01: Booth History Ingester (services/library/booth_history.py)</text>
+      <text class="text-caption" x="20" y="46" fill="#bbbbbb">Target Users: Performing DJ, Music Curator · 1 Verb: Harvest · ~340 LOC · Conforms to Design System</text>
+      
+      <rect x="20" y="58" width="768" height="98" rx="6" fill="#1b1b1b" stroke="#5fd08f"/>
+      <text class="text-data" x="32" y="80">Inputs: Pioneer DJ HISTORY.m3u8, USB play logs, gig venue/date metadata</text>
+      <text class="text-data" x="32" y="98">Core Operation: Parses chronological playback timestamps, matches track IDs against silver tracks,</text>
+      <text class="text-data" x="32" y="116">increments silver_track_transitions occurrence count, and advances rotation decay timers.</text>
+      <text class="text-data-strong" x="32" y="138">Contract: BoothHistoryIngestContract {venue, date, transitions: [{from_id, to_id, played_at}]}</text>
+    </g>
+    
+    <!-- Module 2 -->
+    <g transform="translate(24, 235)">
+      <rect width="808" height="170" class="card-module"/>
+      <text class="text-body-strong" x="20" y="26" fill="#5fd08f">MOD-02: Realtime Graph Outbox Daemon (services/graph-projection/sync_daemon.py)</text>
+      <text class="text-caption" x="20" y="46" fill="#bbbbbb">Target Users: Platform Admin, Graph Specialist · 1 Verb: Stream · ~280 LOC</text>
+      
+      <rect x="20" y="58" width="768" height="98" rx="6" fill="#1b1b1b" stroke="#5fd08f"/>
+      <text class="text-data" x="32" y="80">Inputs: PostgreSQL LISTEN/NOTIFY events on silver_track_transitions outbox</text>
+      <text class="text-data" x="32" y="98">Core Operation: Replaces 15-second polling loop with sub-second reactive Bolt connection,</text>
+      <text class="text-data" x="32" y="116">streaming verified transition pairs directly into Memgraph graph topology.</text>
+      <text class="text-data-strong" x="32" y="138">Contract: OutboxStreamEvent {transition_id, source_id, target_id, occurrences, weight}</text>
+    </g>
+    
+    <!-- Module 3 -->
+    <g transform="translate(24, 420)">
+      <rect width="808" height="170" class="card-module"/>
+      <text class="text-body-strong" x="20" y="26" fill="#5fd08f">MOD-03: Bi-Directional Library Bridge (services/library/bridge.py)</text>
+      <text class="text-caption" x="20" y="46" fill="#bbbbbb">Target Users: Music Curator, Data Engineer · 1 Verb: Reconcile · ~410 LOC</text>
+      
+      <rect x="20" y="58" width="768" height="98" rx="6" fill="#1b1b1b" stroke="#5fd08f"/>
+      <text class="text-data" x="32" y="80">Inputs: PostgreSQL library.* schema, SQLite dj_library.sqlite, music-library.json</text>
+      <text class="text-data" x="32" y="98">Core Operation: Enforces atomic single-writer distributed lease, computes table SHA-256 checksums,</text>
+      <text class="text-data" x="32" y="116">and replicates curator tag adjustments two-way with zero data loss.</text>
+      <text class="text-data-strong" x="32" y="138">Contract: LibrarySyncContract {version, checksum_sha256, reconciled_at, mutations: [...]}</text>
+    </g>
+    
+    <!-- Module 4 & Unified Storage Backbone -->
+    <g transform="translate(24, 605)">
+      <rect width="808" height="150" class="card-module"/>
+      <text class="text-body-strong" x="20" y="26" fill="#5fd08f">MOD-04: Audio Preview Caching Proxy (services/rest_api/routers/audio_cache.py)</text>
+      <text class="text-caption" x="20" y="46" fill="#bbbbbb">Target Users: Performing DJ, Live Selector · 1 Verb: Cache · ~290 LOC</text>
+      
+      <rect x="20" y="58" width="768" height="80" rx="6" fill="#1b1b1b" stroke="#5fd08f"/>
+      <text class="text-data" x="32" y="80">Inputs: Deezer / TIDAL 30s audio preview URLs</text>
+      <text class="text-data" x="32" y="98">Core Operation: Caches audio snippets locally on disk; serves immediate audio streams for offline booth.</text>
+      <text class="text-data-strong" x="32" y="120">Contract: AudioCacheResponse {track_id, cached: bool, stream_url: '/audio/cache/{id}.mp3'}</text>
+    </g>
+    
+    <!-- Unified Storage Directory Backbone -->
+    <g transform="translate(24, 770)">
+      <rect width="808" height="135" class="card-sunk"/>
+      <text class="text-body-strong" x="20" y="26">Proposed Unified Storage Backbone Directory Architecture</text>
+      <text class="text-caption" x="20" y="44">Replaces fragmented directories across E:\musicLibrary and SongNodes with structured volume hierarchy</text>
+      
+      <g transform="translate(20, 56)">
+        <rect width="140" height="64" rx="6" fill="#222222" stroke="#8fbf6b"/>
+        <text class="text-body-strong" x="12" y="24" fill="#8fbf6b">/var/songnodes/</text>
+        <text class="text-data" x="12" y="46">bronze/ (JSONL)</text>
+      </g>
+      <g transform="translate(170, 56)">
+        <rect width="140" height="64" rx="6" fill="#222222" stroke="#9b85cb"/>
+        <text class="text-body-strong" x="12" y="24" fill="#9b85cb">/var/songnodes/</text>
+        <text class="text-data" x="12" y="46">silver/ (Ledger)</text>
+      </g>
+      <g transform="translate(320, 56)">
+        <rect width="140" height="64" rx="6" fill="#222222" stroke="#c9a85c"/>
+        <text class="text-body-strong" x="12" y="24" fill="#c9a85c">/var/songnodes/</text>
+        <text class="text-data" x="12" y="46">library/ (SQLite)</text>
+      </g>
+      <g transform="translate(470, 56)">
+        <rect width="140" height="64" rx="6" fill="#222222" stroke="#5fb8b0"/>
+        <text class="text-body-strong" x="12" y="24" fill="#5fb8b0">/var/songnodes/</text>
+        <text class="text-data" x="12" y="46">audio/ (30s MP3)</text>
+      </g>
+      <g transform="translate(620, 56)">
+        <rect width="168" height="64" rx="6" fill="#222222" stroke="#e08a5f"/>
+        <text class="text-body-strong" x="12" y="24" fill="#feeae0">/var/songnodes/</text>
+        <text class="text-data" x="12" y="46">exports/ (XML/CSV)</text>
+      </g>
+    </g>
+  </g>
+  
+  <!-- Connecting Edges from Gaps to Modules -->
+  <path d="M 820 180 L 896 135" class="edge-gap" stroke-width="2.5" marker-end="url(#arrow-gap)"/>
+  <path d="M 820 350 L 896 505" class="edge-gap" stroke-width="2.5" marker-end="url(#arrow-gap)"/>
+  <path d="M 820 860 L 896 320" class="edge-gap" stroke-width="2.5" marker-end="url(#arrow-gap)"/>
+
+  <!-- Traceability Footer -->
+  <g transform="translate(48, 1045)">
+    <rect width="1704" height="42" class="card-sunk"/>
+    <text class="text-caption" x="20" y="26">SongNodes Enhanced Architecture · 5 Critical Gaps · 4 Targeted Modules (&lt;500 LOC) · Unified Storage Directory Backbone · Melbourne Australia</text>
+  </g>
+</svg>
