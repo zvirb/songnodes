@@ -1,0 +1,179 @@
+#!/usr/bin/env python3
+"""Curated synthesis for findings.json: profile, standing rules, persona merge, closed loop, modules, backbone,
+roadmap, sister tasks, open PRs as queued work, and computed patches (gap severity, debt effort).
+Writes build/synthesis.json. Text here is the investigation's judgement; every number shown in the report is computed
+later from findings.json by the build, never typed here.
+    python3 synthesis.py <fragments dir> <out synthesis.json>
+"""
+import json
+import sys
+from pathlib import Path
+
+frag_dir, out = Path(sys.argv[1]), Path(sys.argv[2])
+FR = {p.stem: json.loads(p.read_text(encoding="utf-8")) for p in frag_dir.glob("*.json")}
+
+
+def files_of(ev):
+    return {str(e).split(":")[0] for e in ev or []}
+
+
+def effort(item):
+    """Estimate (AGENTS.md rule 3: one package is ~400 changed lines and 10 files): S = 1-2 files in one repo,
+    M = 3-5 files or two repos, L = more. Derived from the spread of the item's own evidence."""
+    fs = files_of(item.get("evidence"))
+    repos = {f.split("/")[0] for f in fs}
+    if len(fs) <= 2 and len(repos) <= 1:
+        return "S"
+    if len(fs) <= 5 and len(repos) <= 2:
+        return "M"
+    return "L"
+
+
+patch = {"debt": {}, "gaps": {}}
+for fr in FR.values():
+    for d in fr["debt"]:
+        patch["debt"][d["id"]] = {"effort": effort(d)}
+# gap severity: the highest severity of the debt items that share evidence files with the gap, else medium (Estimate)
+order = ["low", "medium", "high", "critical"]
+all_debt = [d for fr in FR.values() for d in fr["debt"]]
+for fr in FR.values():
+    for g in fr["gaps"]:
+        gf = files_of(g.get("evidence"))
+        sev = "medium"
+        for d in all_debt:
+            if gf & files_of(d.get("evidence")) and order.index(d["severity"]) > order.index(sev):
+                sev = d["severity"]
+        patch["gaps"][g["id"]] = {"severity": sev, "effort": effort(g)}
+
+S = {
+    "meta": {
+        "title": "Data flow and page interaction",
+        "builder": "Claude (Opus 5.5) for Markus, session 01NvWNfTGjhUeGYwDZx2H948",
+        "songnodes_commit": "7429821ca1c0d2e7f81b51c3d6b79b4bcce1e8cb",
+        "branch": "docs/data-flow-investigation",
+        "ml_snapshot": "7 Nov 2026",
+        "reading": "Read as: one estate of two projects. songnodes (git, main @7429821) is the source of truth for SongNodes; E:\\musicLibrary (no git) is read from a snapshot taken 7 Nov 2026 without its 58 GB data folder. Queued = open PRs #576–#580, musicLibrary plan/jules_payloads and unmerged briefs.",
+        "kpi_spec": [["pages", "Pages and entry points", None], ["flows", "Numbered data flows", None], ["gaps", "Critical data gaps", ["warn", "Fix first"]], ["personas", "Personas", None],
+                     ["stores", "Stores and external systems", None], ["signals", "Signals extracted", None], ["violations", "Standing-rule violations", ["bad", "To fix"]],
+                     ["refuted", "Doc claims corrected or refuted", ["warn", "Review"]], ["queued", "Queued items", None], ["tasks", "Sister-project tasks", None]],
+        "profile": [
+            ["Scope", "songnodes (E:\\songnodes = github zvirb/songnodes main) and musicLibrary (E:\\musicLibrary). Sub-projects scanned: songnodes frontend, services, scrapers, design-system; musicLibrary pipeline, artifact, ref_mb, plan."],
+            ["Page source of truth", "songnodes source tree on main @7429821 (no built bundle is kept in the repo); musicLibrary artifact/build/index.html is the live page, artifact/index.html is the legacy page (agent ml, M3 render)."],
+            ["Queued work", "Open PRs #576–#580 (Duo 2FA, Cloudflare tunnel, login page, Sentinel sanitisation); musicLibrary plan/jules_payloads (30) and the unmerged WP7 brief."],
+            ["Baseline report", "None found in documentation/, docs/ or project artifacts. The verification register re-checks the repos' own documentation instead."],
+            ["Standing rules", "R1–R8 from songnodes CLAUDE.md §2–§4 and AGENTS.md rule 12 (listed in section 3)."],
+            ["Retired or excluded", "deploy/ and k8s/ (kept but unused, CLAUDE.md §1); musicLibrary _to_delete/ and data/ (data/ listed only)."],
+            ["Locale", "en-AU, A4, Australia/Melbourne 24-hour time (design system 01-writing)."],
+            ["Personas", "Inferred from pages and docs; merged across the three scans into one set (section 6)."],
+            ["Design system", "SongNodes design system, artifact 7f37707d and repo mirror songnodes/design-system, 1.9.1 raised to 1.10.0 by this investigation."]],
+        "preflight": [
+            ["songnodes git", "main @7429821, clean except untracked docs/DEPLOYMENT_E2E_STATUS_2026_11_06.md on the laptop; push via the session's GitHub app (REST only, GraphQL blocked)"],
+            ["musicLibrary git", "Not a git repository: files only, no commits or PRs possible"],
+            ["Tools", "node 22.23, python 3.13, graphviz dot 2.43, Chromium 153 (Playwright), poppler 24.02 (pdftoppm, pdffonts, pdftotext), pypdf 6.17; missing: PyMuPDF (not needed)"],
+            ["Laptop shell", "tuf-boi Linux VM over the bridge: deletes blocked, no gh; used for the musicLibrary snapshot only"],
+            ["Existing reports", "None of this kind. Related: songnodes docs/DATA_LAYER.md, STATUS.md, plan/RESTRUCTURE.md; musicLibrary README.md, docs/mb/*"]],
+    },
+    "summary": {
+        "holds": [
+            "songnodes is Git-first with one integration branch, a scope guard and design-system CI; the frontend copy of the design system is in sync and its checkers report zero findings.",
+            "The scraping core is one unified-scraper container with complete-playlist rules, idempotency keys on ingest jobs and FOR UPDATE SKIP LOCKED job claiming.",
+            "musicLibrary's weekly run is a clear eight-step file pipeline with an append-only ledger, a resumable resolve step and a full SQLite rebuild every run.",
+            "Both projects already share one design system, one TIDAL developer app and one saved-set idea, so the join points are few and nameable."],
+        "strains": [
+            "Contracts between the two projects have drifted: the documented sync script and file do not exist, and the two Set Builders no longer share a saved-set shape.",
+            "The medallion model in CLAUDE.md is not what runs: the scraper writes silver directly and no gold or operational job runs in compose.",
+            "Feedback loops are missing: play history, overrides and proven transitions never flow back into curation or set building, and no track has a BPM or key yet.",
+            "Security posture is not ready for the queued tunnel: write and admin routes are open and the queued login falls back to a default account."],
+        "loop": "The estate serves one loop: radio plays and DJ tracklists come in, become a curated club library, feed set building and the graph of proven transitions, play out in TIDAL and Rekordbox, and should come back as play history and corrections. Today the loop is open at the last step.",
+    },
+    "domain_order": ["ingest", "library", "graph", "paths", "harmony", "sets", "services", "ops", "design"],
+    "colour_map": {"ingest": "chart-1", "library": "chart-2", "graph": "chart-3", "sets": "chart-4", "paths": "chart-5", "harmony": "chart-6", "services": "chart-7", "ops": "chart-8", "design": "chart-8"},
+    "standing_rules": [
+        {"id": "R1", "text": "The NavDrawer is the only site navigation.", "source": "songnodes/CLAUDE.md §4 Rules: Interaction"},
+        {"id": "R2", "text": "One primary button per view.", "source": "songnodes/CLAUDE.md §4 Rules: Interaction"},
+        {"id": "R3", "text": "Never alert, confirm or prompt; use ConfirmDialog and Toast.", "source": "songnodes/CLAUDE.md §4 Rules: Interaction"},
+        {"id": "R4", "text": "Tokens and sn-* classes only: no hex, rgb, named colours, px font sizes, ad-hoc radii, shadows or z-index numbers.", "source": "songnodes/CLAUDE.md §4 Rules: Colour and values"},
+        {"id": "R5", "text": "No emoji in the interface; en-AU sentence case; missing values are an en dash.", "source": "songnodes/CLAUDE.md §4 Rules: Writing"},
+        {"id": "R6", "text": "Pages register their route (G2) and REST routers register themselves (G3); do not wire App.tsx or main.py.", "source": "songnodes/AGENTS.md rule 12"},
+        {"id": "R7", "text": "unified-scraper is the only scraper container.", "source": "songnodes/CLAUDE.md Critical requirement 3"},
+        {"id": "R8", "text": "Valid artists on both endpoints of every transition; no NULL or Unknown Artist in the graph.", "source": "songnodes/CLAUDE.md Critical requirement 1"}],
+    "persona_merge": [
+        {"id": "P1", "name": "DJ performing", "short": "DJ", "domain": "graph", "from": ["sn-fe-persona-dj"], "objective": "Pick the next track from proven transitions while a set is playing."},
+        {"id": "P2", "name": "Set planner", "short": "Set planner", "domain": "sets", "from": ["ml-persona-set-planner", "sn-fe-persona-planner"], "objective": "Shape a wave-shaped set from the crate, check every transition and send it to TIDAL."},
+        {"id": "P3", "name": "Library curator", "short": "Curator", "domain": "library", "from": ["ml-persona-curator", "sn-fe-persona-curator"], "objective": "Keep the crates right each week: review, buy, override and import."},
+        {"id": "P4", "name": "Pipeline operator", "short": "Operator", "domain": "ops", "from": ["sn-be-persona-operator", "sn-fe-persona-operator"], "objective": "Keep the stack, scrapers and imports healthy."},
+        {"id": "P5", "name": "Developer", "short": "Developer", "domain": "design", "from": ["sn-be-persona-developer", "sn-fe-persona-developer", "ml-persona-developer"], "objective": "Ship one-job packages through PRs without breaking contracts or the design system."},
+        {"id": "P6", "name": "Scraper (system actor)", "short": "Scraper", "domain": "ingest", "from": ["sn-be-persona-scraper"], "objective": "Find complete playlists containing target tracks and persist them to bronze."},
+        {"id": "P7", "name": "Weekly-run agent (system actor)", "short": "Weekly run", "domain": "library", "from": ["ml-persona-weekly-agent"], "objective": "Run scrape to republish every week without a person present."},
+        {"id": "P8", "name": "Beatport sync (assisted)", "short": "Beatport", "domain": "services", "from": ["ml-persona-beatport"], "objective": "Check Beatport for tracks to buy, with Markus at the laptop."}],
+    "loop": [
+        {"name": "Demand ingestion", "mapping": "Radio plays, charts and DJ tracklists come in", "domain": "ingest", "systems": "ml scrape and ingest; songnodes unified-scraper, target tracks"},
+        {"name": "Scheduling", "mapping": "Resolve, score and rotate into crates", "domain": "library", "systems": "ml resolve, process, ledger; songnodes library ingest"},
+        {"name": "Planning", "mapping": "Shape sets and find paths on proven transitions", "domain": "sets", "systems": "Set builder (songnodes /sets and artifact), Pathfinder, Graph"},
+        {"name": "Floor execution", "mapping": "Play out from TIDAL playlists and Rekordbox", "domain": "services", "systems": "sync-tidal, sync-sets, rekordbox XML"},
+        {"name": "Telemetry and audit", "mapping": "Weekly report, run history, pipeline health", "domain": "ops", "systems": "weekly_report.md, runs table, Pipeline page"},
+        {"name": "Reconciliation", "mapping": "Play history and corrections back into the library", "domain": "library", "systems": "overrides CSV, calibrate.py, rekordbox_collection.xml", "gap": True}],
+    "modules": [
+        {"id": "M1", "name": "Set exchange", "users": "Set planner, weekly-run agent", "verb": "Convert", "inputs": "songnodes saved sets (/api/v1/library/sets/export), artifact sets (artifact db `sets`)",
+         "operation": "Reads either saved-set shape and writes one versioned `songnodes.saved-set/2` document (name, shape, minutes, tracks[{isrc, tidal_id, ledger_id, tgt}], tidal) to musicLibrary inbox/artifact_sets.json, rejecting rows it cannot map.",
+         "loc": "about 250 lines (Estimate)", "path": "musicLibrary/pipeline/djlib/set_exchange.py (new)"},
+        {"id": "M2", "name": "Play-history import", "users": "Library curator", "verb": "Import", "inputs": "Rekordbox / Lexicon collection XML, play counts and dates",
+         "operation": "Matches plays to ledger tracks by local_path then ISRC, appends `play` events to the ledger and writes rotation evidence that calibrate.py reads.",
+         "loc": "about 300 lines (Estimate)", "path": "musicLibrary/pipeline/djlib/play_history.py"},
+        {"id": "M3", "name": "Transition feed", "users": "Set planner, DJ", "verb": "Export", "inputs": "songnodes silver_track_transitions (occurrence_count) joined to library tracks",
+         "operation": "Publishes `songnodes.transitions/1` (pairs of ISRCs with counts) beside library.json so both Set Builders can rank spares by proven pairings.",
+         "loc": "about 200 lines (Estimate)", "path": "songnodes/services/rest_api/routers/transitions_export.py"},
+        {"id": "M4", "name": "Contract check", "users": "Developer, pipeline operator", "verb": "Verify", "inputs": "contracts/*.schema.json, the newest musicLibrary outputs, the songnodes ingest fixture",
+         "operation": "Validates every cross-project file and request body against its schema in CI and in the weekly run, and fails with the field that broke.",
+         "loc": "about 180 lines (Estimate)", "path": "songnodes/scripts/check_contracts.py"},
+        {"id": "M5", "name": "Run monitor", "users": "Pipeline operator, library curator", "verb": "Alert", "inputs": "musicLibrary runs table and scrape_log; songnodes ingestion_jobs and web_call_log",
+         "operation": "Compares each run's resolve yield, source counts and job failures with the last four runs and raises one Banner-shaped warning with a source link when a figure drops by half.",
+         "loc": "about 220 lines (Estimate)", "path": "songnodes/frontend/src/features/pipeline/RunMonitor.tsx"}],
+    "backbone": {
+        "summary": "Keep each project's own data folder and owner. Add one shared contracts folder and one exchange folder with versioned, schema-checked files, so every cross-project hop is a named file or endpoint with one writer.",
+        "tree": "songnodes/\n  contracts/                      # single source of every cross-project schema (exists; extend)\n    library.set.saved.v2.json      # new\n    library_ingest.openapi.yaml    # exists\n    transitions.v1.json            # new\n    setlists.v1.json               # new\n  Postgres (compose volume)       # owner: songnodes services only\n    bronze_* -> silver_* -> (gold_* decided in DFA gap) -> projection_*\nmusicLibrary/\n  ledger/                         # owner: process step (append-only)\n  db/dj_library.sqlite            # rebuilt each run from ledger\n  inbox/                          # inputs written by people or other systems\n  outputs/<date>/                 # run outputs, read by people\n  exchange/                       # NEW: the only files the other project reads or writes\n    library.json                  # musicLibrary -> songnodes (also POST /api/v1/library/ingest)\n    saved-sets.json               # both ways, saved-set/2\n    transitions.json              # songnodes -> musicLibrary, transitions/1\n    setlists/*.json               # tracklists for songnodes import (moved from the root)",
+        "risks": [["Readers still point at old paths (README, import script, artifact)", "Keep the old paths as copies for one release and log a warning when they are read."],
+                  ["Saved-set/1 documents in the artifact db", "M1 reads both shapes; write only /2; keep /1 readable until no /1 set has been opened for four weeks."],
+                  ["Weekly run writes a file songnodes is reading", "Write to a temporary name and rename; songnodes reads only complete files."],
+                  ["Postgres schema change for gold", "One migration through the migration ledger gap first; never reset the volume (CLAUDE.md)."]]},
+    "roadmap": [
+        {"id": "W1", "name": "Close the security gate before any tunnel", "tasks": ["SN-T01", "SN-T02"], "gate": "PR #577 not merged until W1 passes", "depends": []},
+        {"id": "W2", "name": "Repair the cross-project contracts", "tasks": ["ML-T01", "ML-T02", "SN-T03", "SN-T04"], "gate": "Contract check (M4) green", "depends": ["W1"]},
+        {"id": "W3", "name": "Make the data layers honest", "tasks": ["SN-T05", "SN-T06", "SN-T07"], "gate": "Layer model decided and documented", "depends": ["W2"]},
+        {"id": "W4", "name": "Close the feedback loop", "tasks": ["ML-T03", "ML-T04", "SN-T08", "ML-T05"], "gate": "Play history visible in calibrate.py output", "depends": ["W2"]},
+        {"id": "W5", "name": "Observability and clean-up", "tasks": ["SN-T09", "ML-T06", "DS-T01"], "gate": "Run monitor raises a test warning", "depends": ["W3", "W4"]}],
+    "queued": [
+        {"id": "PR-576", "title": "DUOAUTH: Cisco Duo 2FA and Cloudflare Tunnel architecture guide", "source": "github zvirb/songnodes#576", "effect": "Docs only", "touches": ["docs"], "state": "queued"},
+        {"id": "PR-577", "title": "DUO3: Cloudflare Tunnel connector integration", "source": "github zvirb/songnodes#577", "effect": "Publishes the stack through a public tunnel", "touches": ["compose.dev.yaml", "sn-be-q-cloudflared"], "state": "queued"},
+        {"id": "PR-578", "title": "DUO1: Cisco Duo Web SDK v4 auth router", "source": "github zvirb/songnodes#578", "effect": "Adds /api/v1/auth routes with a default admin login fallback", "touches": ["sn-be-q-user-auth-router"], "state": "queued"},
+        {"id": "PR-579", "title": "DUO2: Frontend login page and auth context", "source": "github zvirb/songnodes#579", "effect": "Adds /login", "touches": ["sn-fe-login"], "state": "queued"},
+        {"id": "PR-580", "title": "Sentinel: sanitise REST API main exception details", "source": "github zvirb/songnodes#580", "effect": "Sanitises errors, partly on unreachable routes", "touches": ["sn-be-svc-rest-api"], "state": "queued"}],
+    "tasks": [
+        {"id": "SN-T01", "project": "songnodes", "title": "Require the API token on write and admin routes", "type": "security", "owned": ["services/rest_api/security/auth.py", "compose.dev.yaml"], "depends": [], "verify": "curl without token gets 401 on every POST/PUT/DELETE; scripts pass with the token", "gaps": ["sn-be-gap-auth-token-flow"]},
+        {"id": "SN-T02", "project": "songnodes", "title": "Remove the default admin login from the queued auth router", "type": "security", "owned": ["services/rest_api/routers/user_auth.py (in PR #578)"], "depends": ["SN-T01"], "verify": "no login succeeds without a configured user", "gaps": ["sn-be-gap-auth-token-flow"]},
+        {"id": "SN-T03", "project": "songnodes", "title": "Accept and keep musicLibrary pipeline fields on library ingest", "type": "contract", "owned": ["services/rest_api/routers/library_ingest.py", "contracts/library_ingest.openapi.yaml"], "depends": [], "verify": "fixture round-trip keeps energy, rotation, pillar and ISRC", "gaps": ["ml-gap-songnodes-field-loss", "sn-be-gap-library-ingest-409"]},
+        {"id": "SN-T04", "project": "songnodes", "title": "Raise the frontend nginx body limit to the ingest limit", "type": "fix", "owned": ["frontend/Dockerfile"], "depends": [], "verify": "a 5 MB library import returns 202, not 413", "gaps": ["sn-fe-gap-ingest-body-limit"]},
+        {"id": "SN-T05", "project": "songnodes", "title": "Stop the unified scraper at bronze", "type": "data-integrity", "owned": ["scrapers/pipelines/persistence_pipeline.py"], "depends": [], "verify": "a scrape writes bronze rows only; ingest creates silver once", "gaps": ["sn-be-gap-scraper-bronze-only"]},
+        {"id": "SN-T06", "project": "songnodes", "title": "Decide and document the real layer model", "type": "docs", "owned": ["docs/DATA_LAYER.md", "CLAUDE.md"], "depends": ["SN-T05"], "verify": "docs and compose name the same jobs", "gaps": ["sn-be-gap-medallion-doc"]},
+        {"id": "SN-T07", "project": "songnodes", "title": "Let target scrapes bypass the daily discovery quota", "type": "fix", "owned": ["scrapers/spiders/1001tracklists_spider.py"], "depends": [], "verify": "two target scrapes in an hour both run", "gaps": ["sn-be-gap-target-scrape-quota"]},
+        {"id": "SN-T08", "project": "songnodes", "title": "Publish the transition feed (M3)", "type": "module", "owned": ["services/rest_api/routers/transitions_export.py (new)", "contracts/transitions.v1.json (new)"], "depends": ["SN-T03"], "verify": "GET returns transitions/1 for library ISRCs", "gaps": ["ml-gap-transitions-not-used"]},
+        {"id": "SN-T09", "project": "songnodes", "title": "Fix the OAuth token hand-off and remove dead scraper calls", "type": "fix", "owned": ["frontend/src/components/OAuthCallback.tsx", "frontend/src/pages/SettingsPage.tsx", "frontend/src/pages/GraphPage.tsx"], "depends": ["SN-T01"], "verify": "Send to TIDAL finds a token after a fresh login; no 404 in the graph page network log", "gaps": ["sn-fe-gap-oauth-session-tokens", "sn-fe-gap-scrapers-endpoints", "sn-be-gap-frontend-dead-routes"]},
+        {"id": "ML-T01", "project": "musicLibrary", "title": "Correct the README songnodes contract", "type": "docs", "owned": ["README.md"], "depends": [], "verify": "every path in the README exists", "gaps": ["ml-gap-sync-script-missing"]},
+        {"id": "ML-T02", "project": "musicLibrary", "title": "Build the set exchange (M1)", "type": "module", "owned": ["pipeline/djlib/set_exchange.py (new)", "pipeline/run_weekly.py"], "depends": ["SN-T03"], "verify": "a songnodes set reaches TIDAL through sync-sets", "gaps": ["ml-gap-saved-set-shape", "sn-fe-gap-artifact-sets-tidal-flag"]},
+        {"id": "ML-T03", "project": "musicLibrary", "title": "Merge Deezer BPM and key onto the chosen version", "type": "data-integrity", "owned": ["pipeline/run_weekly.py", "pipeline/djlib/deezer.py"], "depends": [], "verify": "more than 0 tracks have BPM and key after one run", "gaps": ["ml-gap-deezer-bpm-not-merged"]},
+        {"id": "ML-T04", "project": "musicLibrary", "title": "Build the play-history import (M2)", "type": "module", "owned": ["pipeline/djlib/play_history.py (new)"], "depends": [], "verify": "calibrate.py reports rotation timings from plays", "gaps": ["ml-gap-rekordbox-feedback"]},
+        {"id": "ML-T05", "project": "musicLibrary", "title": "Move setlist files into exchange/ and import them", "type": "contract", "owned": ["exchange/setlists/ (new)", "pipeline/run_weekly.py"], "depends": ["SN-T03"], "verify": "JohnCourse and kiki appear as songnodes setlists", "gaps": ["ml-gap-setlists-orphan"]},
+        {"id": "ML-T06", "project": "musicLibrary", "title": "Warn on resolve yield drops and retry rejected pending", "type": "observability", "owned": ["pipeline/run_weekly.py", "pipeline/djlib/export.py"], "depends": [], "verify": "a run with half the usual yield writes a warning", "gaps": ["ml-gap-written-never-read"]},
+        {"id": "DS-T01", "project": "design-system", "title": "Publish 1.10.0 to the design-system artifact", "type": "design-system", "owned": ["design-system artifact 7f37707d"], "depends": [], "verify": "artifact tokens.json version is 1.10.0", "gaps": []}],
+    "assumptions": [
+        "The laptop copy of songnodes equals origin/main @7429821 (git status showed only one untracked doc).",
+        "musicLibrary data/ (58 GB) holds raw dumps and caches; it was listed, not read.",
+        "Effort sizes (S, M, L) are Estimates from evidence spread against the AGENTS.md package budget.",
+        "Gap severity is the highest severity of debt sharing evidence with the gap, otherwise medium (Estimate).",
+        "Open decision: keep a gold layer or document silver-plus-projection as the model (SN-T06).",
+        "Open decision: which Set Builder is primary once both read the same saved-set shape."],
+    "handover": {"items": [["Branch", "docs/data-flow-investigation"]], "gates": [], "next": []},
+    "patch": patch,
+}
+out.write_text(json.dumps(S, indent=1, ensure_ascii=False), encoding="utf-8")
+print("synthesis", out, len(patch["debt"]), "debt", len(patch["gaps"]), "gaps")
