@@ -2675,3 +2675,14 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
   - npm run test:unit (passed, 68 test files, 586 tests)
 - Next: merge PR and proceed to next conformance package.
 <!-- SLOT:DS29 END -->
+<!-- SLOT:DUO3 BEGIN -->
+### DUO3: Cloudflare Tunnel Connector Integration
+- Start: 2026-11-06 (branch duo3-cloudflared-tunnel off origin/main).
+- Scope: Configure Cloudflare Tunnel (cloudflared) connector service in local Docker environment for target domain song.aiwfe.com:
+  1. compose.dev.yaml: Added cloudflared service using cloudflare/cloudflared:latest, configured with TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN:-} and dependency on frontend: { condition: service_healthy }.
+  2. docs/security/cloudflared-tunnel.md: Added comprehensive documentation covering setup, environment variables, Docker Compose vs. standalone local usage, and troubleshooting ingress to song.aiwfe.com.
+- Checks run:
+  - docker compose -f compose.dev.yaml config --quiet (passed)
+  - git diff --check (passed)
+- Next: Open and merge PR duo3-cloudflared-tunnel.
+<!-- SLOT:DUO3 END -->
