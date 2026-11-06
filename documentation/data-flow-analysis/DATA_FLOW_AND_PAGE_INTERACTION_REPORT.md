@@ -1,6 +1,6 @@
 # SongNodes · Data flow report · 7 Nov 2026
 
-Built 7 Nov 2026, 10:36 AEDT by Claude (Opus 5.5) for Markus, session 01NvWNfTGjhUeGYwDZx2H948. songnodes `7429821` (docs/data-flow-investigation), musicLibrary snapshot 7 Nov 2026, `findings.json` sha256 `e469b41763f1`. Web report: `report/index.html`; PDF: `DATA_FLOW_AND_PAGE_INTERACTION_REPORT.pdf`. Every number below is computed from `findings.json`.
+Built 7 Nov 2026, 10:40 AEDT by Claude (Opus 5.5) for Markus, session 01NvWNfTGjhUeGYwDZx2H948. songnodes `7429821` (docs/data-flow-investigation), musicLibrary snapshot 7 Nov 2026, `findings.json` sha256 `e469b41763f1`. Web report: `report/index.html`; PDF: `DATA_FLOW_AND_PAGE_INTERACTION_REPORT.pdf`. Every number below is computed from `findings.json`.
 
 > Read as: one estate of two projects. songnodes (git, main @7429821) is the source of truth for SongNodes; E:\musicLibrary (no git) is read from a snapshot taken 7 Nov 2026 without its 58 GB data folder. Queued = open PRs #576–#580, musicLibrary plan/jules_payloads and unmerged briefs.
 
@@ -1453,11 +1453,15 @@ See `ARCHITECTURE_ENHANCEMENTS_AND_GAPS_REPORT.md` for the full gap analysis: 28
 
 | Item | Value |
 |---|---|
-| Pull request (master) | https://github.com/zvirb/songnodes/pull/581 |
-| Branch | docs/data-flow-investigation (merged with the parallel run's PR #581 branch) |
-| Deliverables | documentation/data-flow-analysis/: report/index.html, report/print-sheet.html, DATA_FLOW_AND_PAGE_INTERACTION_REPORT.pdf and .md, PAGE_CLASSIFICATION_AUDIT.md, findings.json, figures.json, 51 SVGs, build/ |
-| Design system | 1.10.0 (source changes in design-system/, frontend copy re-synced) |
-| Tool gaps | None blocking. PyMuPDF absent (not needed); musicLibrary has no git, so its files are written to E:\musicLibrary directly |
+| Pull request (report) | https://github.com/zvirb/songnodes/pull/581 |
+| Pull request (enhancements and tasks) | https://github.com/zvirb/songnodes/pull/582 |
+| Web report artifact | https://claude.ai/artifact/GJHcY2eLqFRjZx6y4FH1Rd (private until shared) |
+| Branches | docs/data-flow-investigation (PR #581, merged with the parallel run's commit 1f296c3), feat/architecture-enhancements-and-gaps (PR #582, merged with d32489b); docs/data-flow-investigation-v2 is a backup copy of the first |
+| Deliverables | documentation/data-flow-analysis/: report/index.html, report/print-sheet.html, DATA_FLOW_AND_PAGE_INTERACTION_REPORT.pdf and .md, PAGE_CLASSIFICATION_AUDIT.md, ARCHITECTURE_ENHANCEMENTS_AND_GAPS_REPORT.md, findings.json, figures.json, gates.json, 51 SVGs, build/ |
+| Sister task lists | TODO-ARCHITECTURAL-IMPROVEMENTS.md in songnodes root, frontend/, services/, scrapers/, design-system/ (PR #582) and E:\musicLibrary (written on tuf-boi, md5 cd0ea9bb, earlier list kept below) |
+| Design system | 1.10.0 at the source (three design-system commits), frontend copy re-synced; the design-system artifact still holds 1.9.1 (task DS-T01) |
+| Left on the laptop | E:\musicLibrary\_to_delete\claude_scan_2026-11-07 (the source snapshot used for the scan; deletes are blocked from here, delete it when convenient) |
+| Tool gaps | None blocking. PyMuPDF absent (not needed). musicLibrary has no git, so its file was written directly. |
 
 | Gate | Result | Note |
 |---|---|---|
@@ -1465,7 +1469,7 @@ See `ARCHITECTURE_ENHANCEMENTS_AND_GAPS_REPORT.md` for the full gap analysis: 28
 | 2 tokens | pass | 0 literal colours, sizes, spacing or radii outside design-system definitions |
 | 3 parity | pass | 0 items missing from a figure or table in web, sheet or PDF; 0 flows undrawn |
 | 4 diagrams | pass | 51 SVGs checked; 0 with overflow, collision or text under 9.5 px; 0 edges through nodes; crossings {'D1': 0, 'D2a': 1, 'D2b': 7, 'D2c': 3, 'D2d': 0, 'D2e': 1, 'D2f': 0, 'D2g': 0, 'D3a': 2, 'D3b': 0, 'D3c': 10, 'D3d': 12, 'D3e': 0, 'D3f': 0, 'D4a': 4, 'D4b': 0, 'D4c': 0, 'D5': 0, 'D5-P1': 0, 'D5-P2': 0, 'D5-P3': 0, 'D5-P4': 0, 'D5-P5': 0, 'D5-P6': 0, 'D5-P7': 0, 'D5-P8': 0, 'D6a': 0, 'D6b': 0, 'D6c': 0, 'D7a': 0, 'D7b': 0, 'D7c': 0, 'D8a': 0, 'D8b': 0, 'D8c': 0, 'D9': 0, 'D10': 0, 'D11': 1, 'D12': 0} |
-| 5 pdf | fail | 196 pages; pages over 40% empty (pages before an orientation change exempt): [(47, 0.43), (145, 0.41), (146, 0.44), (180, 0.44)] |
+| 5 pdf | fail | 196 pages; pages over 40% empty (pages before an orientation change exempt): [(47, 0.41), (145, 0.41), (146, 0.44), (180, 0.5)] |
 | 6 colour | pass | 0 module-colour uses in figures; design-system contrast report passes; greyscale shots for QA in build/evidence |
 | 7 conformance | pass | 18 screenshots (report and reference, 3 widths × themes) for QA |
 | 8 offline | pass | 0 console errors, 0 unresolved anchors, 0 network requests with the network blocked |

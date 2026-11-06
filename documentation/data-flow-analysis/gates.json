@@ -62,7 +62,7 @@
  "10": {
   "name": "claims",
   "state": "pass",
-  "note": "1 PR URLs in the handover, 0 not confirmed by the GitHub API",
+  "note": "2 PR URLs in the handover, 0 not confirmed by the GitHub API",
   "detail": []
  }
 }
