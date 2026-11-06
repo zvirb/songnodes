@@ -1,0 +1,16 @@
+{
+ "items": [
+  ["Pull request (master)", "https://github.com/zvirb/songnodes/pull/581"],
+  ["Branch", "docs/data-flow-investigation (merged with the parallel run's PR #581 branch)"],
+  ["Deliverables", "documentation/data-flow-analysis/: report/index.html, report/print-sheet.html, DATA_FLOW_AND_PAGE_INTERACTION_REPORT.pdf and .md, PAGE_CLASSIFICATION_AUDIT.md, findings.json, figures.json, 51 SVGs, build/"],
+  ["Design system", "1.10.0 (source changes in design-system/, frontend copy re-synced)"],
+  ["Tool gaps", "None blocking. PyMuPDF absent (not needed); musicLibrary has no git, so its files are written to E:\\musicLibrary directly"]
+ ],
+ "gates": [],
+ "next": [
+  "Publish design system 1.10.0 to the design-system artifact so it stays mirrored (task DS-T01).",
+  "Close the security gate before PR #577's tunnel merges (wave W1: SN-T01, SN-T02).",
+  "Repair the cross-project contracts (wave W2), then run build.py again: a refresh is a findings.json swap.",
+  "Decide the two open questions: gold layer or silver plus projection; which Set Builder is primary."
+ ]
+}

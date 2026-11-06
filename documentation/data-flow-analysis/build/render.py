@@ -23,6 +23,7 @@ def copy_safe(t, html_doc=True):
 def E(s, quote=True):
     return copy_safe(html.escape(str(s), quote))
 
+PRINT = False   # set by build.py while the static print sheet is rendered
 APP = "http://127.0.0.1:3006"  # SongNodes frontend (compose.dev.yaml); NavDrawer destinations
 
 SEV_STATUS = {"critical": ("bad", "Critical"), "high": ("warn", "High"), "medium": ("fair", "Medium"), "low": ("info", "Low")}
@@ -90,7 +91,7 @@ def sub_heading(lead, name, id_, count=None):
 
 
 # ---------------------------------------------------------------- tables
-def table(tid, caption, cols, rows, sortable=True, filters=None, search=False, stack=True, kind=None, note=None):
+def table(tid, caption, cols, rows, sortable=True, filters=None, search=False, stack=True, kind=None, note=None, heading=""):
     """cols: [(id, header, numeric)], rows: [{"_id":..., "_kind":..., "_filter": {...}, colid: html}]"""
     head = []
     for cid, hdr, num in cols:
@@ -134,10 +135,19 @@ def table(tid, caption, cols, rows, sortable=True, filters=None, search=False, s
         tools += "</div>"
     keep = " sn-print-keep-12" if len(rows) <= 12 else ""
     nt = '<p class="sn-figure__meta caption">%s</p>' % E(note) if note else ""
-    return ('<div class="sn-data-table%s%s" id="%s">%s<div class="sn-data-table__bar"><span class="sn-data-table__count" aria-live="polite" data-count>%s</span></div>'
-            '<div class="sn-tablebox sn-data-table__box"><table class="sn-table"><caption class="sn-sr">%s. Column headers with buttons are sortable.</caption>'
-            '<thead><tr>%s</tr></thead><tbody>%s</tbody></table></div>%s</div>') % (
-        " sn-data-table--stack" if stack else "", keep, tid, tools, ("1 row" if len(rows) == 1 else "%d rows" % len(rows)), E(caption), "".join(head), "".join(body), nt)
+    count = "1 row" if len(rows) == 1 else "%d rows" % len(rows)
+    thead = "<thead><tr>%s</tr></thead>" % "".join(head)
+    cap = '<caption class="sn-sr">%s. Column headers with buttons are sortable.</caption>' % E(caption)
+    if PRINT and len(rows) > 12:
+        # print: the header and the first three rows travel together (a table's own header cannot be kept with its rows
+        # in Chromium); the rest continues as a second table whose header repeats on every page it reaches
+        bar = '<div class="sn-data-table__bar"><span class="sn-data-table__count" aria-live="polite" data-count>%s</span></div>' % count
+        boxes = ('<div class="sn-print-keep">%s%s<div class="sn-tablebox sn-data-table__box"><table class="sn-table">%s%s<tbody>%s</tbody></table></div></div>'
+                 '<div class="sn-tablebox sn-data-table__box"><table class="sn-table">%s<tbody>%s</tbody></table></div>') % (heading, bar, cap, thead, "".join(body[:3]), thead, "".join(body[3:]))
+        return '<div class="sn-data-table%s%s" id="%s">%s%s%s</div>' % (" sn-data-table--stack" if stack else "", keep, tid, tools, boxes, nt)
+    boxes = '<div class="sn-tablebox sn-data-table__box"><table class="sn-table">%s%s<tbody>%s</tbody></table></div>' % (cap, thead, "".join(body))
+    return ('%s<div class="sn-data-table%s%s" id="%s">%s<div class="sn-data-table__bar"><span class="sn-data-table__count" aria-live="polite" data-count>%s</span></div>%s%s</div>') % (
+        heading, " sn-data-table--stack" if stack else "", keep, tid, tools, count, boxes, nt)
 
 
 def kv(items):

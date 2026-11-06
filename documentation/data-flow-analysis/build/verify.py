@@ -93,6 +93,7 @@ def main():
     # 3 parity
     import pypdf
     pdf_text = re.sub(r"\s+", " ", " ".join((p.extract_text() or "") for p in pypdf.PdfReader(str(PDF)).pages)) if PDF.exists() else ""
+    pdf_flat = re.sub(r"\s+", "", pdf_text)
     miss = []
     kinds = {"page": F["pages"], "store": F["stores"], "flow": F["flows"], "gap": F["gaps"], "module": F["modules"], "task": F["tasks"]}
     for kind, items in kinds.items():
@@ -103,11 +104,11 @@ def main():
     pdf_needle = {"page": lambda p: p["title"][:40], "store": lambda s: s["id"], "flow": lambda f: f.get("label", "")[:30], "gap": lambda g: g["id"], "module": lambda m: m["name"], "task": lambda t: t["id"]}
     for kind, items in kinds.items():
         for x in items:
-            n = re.sub(r"\s+", " ", pdf_needle[kind](x)).strip()
-            if n and n not in pdf_text:
+            n = re.sub(r"\s+", "", pdf_needle[kind](x))       # wrapped cells split words across lines: compare without whitespace
+            if n and n not in pdf_flat:
                 miss.append("%s %s not found in PDF text (%r)" % (kind, x["id"], n))
     for p in F["personas"]:
-        if p["name"] not in pdf_text:
+        if re.sub(r"\s+", "", p["name"]) not in pdf_flat:
             miss.append("persona %s not in PDF" % p["id"])
         for s in p["steps"]:
             sid = "%s-s%d" % (p["id"], s["n"])
@@ -159,6 +160,8 @@ def main():
         links = sum(1 for a in (rd.pages[1].get("/Annots") or []) if a.get_object().get("/Subtype") == "/Link")
         if links < 13:
             fails.append("contents page has %d links (need at least 13)" % links)
+        for old in list(tmp.glob("pg-*.pgm")) + list(SHOTS.glob("pdf-*.png")):
+            old.unlink()                                                   # images from an earlier, longer render
         run(["pdftoppm", "-r", "30", "-gray", str(PDF), str(tmp / "pg")])
         from PIL import Image
         blanks = []
@@ -194,7 +197,13 @@ def main():
     gate(6, "colour", mods == 0 and contrast_ok, "%d module-colour uses in figures; design-system contrast report %s; greyscale shots for QA in build/evidence" % (mods, "passes" if contrast_ok else "FAILS"))
 
     # 7 + 8 browser checks
-    r = run(["node", str(HERE / "browser_gates.mjs"), str(WEB), str(DSDIR / "components" / "HomePage" / "preview.html"), str(SHOTS)], cwd=str(HERE))
+    import ds as dsmod                       # the reference page (HomePage preview) with the design system loaded, as its preview harness does
+    D = dsmod.load()
+    ref = (DSDIR / "components" / "HomePage" / "preview.html").read_text(encoding="utf-8")
+    inject = "<style>%s</style><style>%s</style><script>%s</script><script>SongNodes.prefs.init();</script>" % (D["tokens_css"], D["bundle_css"], D["bundle_js"])
+    ref = ref.replace("<head>", "<head>" + inject, 1)
+    (SHOTS / "reference-home.html").write_text(ref, encoding="utf-8")
+    r = run(["node", str(HERE / "browser_gates.mjs"), str(WEB), str(SHOTS / "reference-home.html"), str(SHOTS)], cwd=str(HERE))
     try:
         b = json.loads(r.stdout)
     except Exception:
@@ -216,7 +225,8 @@ def main():
     gate(9, "secrets", not shits, "%d secret-shaped strings in outputs" % len(shits), shits[:10])
 
     # 10 claims
-    urls = [v for k, v in F["handover"]["items"] if str(v).startswith("https://github.com/")]
+    HO = json.loads((HERE / "handover.json").read_text(encoding="utf-8")) if (HERE / "handover.json").exists() else F["handover"]
+    urls = [v for k, v in HO["items"] if str(v).startswith("https://github.com/")]
     bad10 = []
     for u in urls:
         m = re.search(r"github\.com/([^/]+/[^/]+)/pull/(\d+)", u)

@@ -104,12 +104,11 @@ def web_page(F, FG, D, icons, stamp):
            '<span class="sn-app-header__wordmark">SongNodes</span></div><span class="sn-app-header__divider" aria-hidden="true"></span>'
            '<p class="sn-app-header__title"><span class="sn-lead">Report:</span> Data flow and page interaction</p>'
            '<div class="sn-app-header__end"><span class="sn-app-header__stamp">{icon:clock}<span class="sn-app-header__stamp-text">Built </span><time datetime="%s" title="Built %s">%s</time></span>'
-           '<div class="sn-seg sn-segmented-control sn-segmented-control--sm" role="radiogroup" aria-label="Theme" data-theme-choice>'
-           '<button type="button" role="radio" aria-checked="true" tabindex="0" data-value="system">System</button>'
-           '<button type="button" role="radio" aria-checked="false" tabindex="-1" data-value="dark">Dark</button>'
-           '<button type="button" role="radio" aria-checked="false" tabindex="-1" data-value="light">Light</button>'
-           '<button type="button" role="radio" aria-checked="false" tabindex="-1" data-value="booth">Booth</button></div>'
-           '</div></div></header>') % (stamp["iso"], E(stamp["text"]), E(stamp["text"]))
+           '<div class="sn-overflow-menu"><button class="sn-btn sn-btn--icon sn-btn--quiet" type="button" id="hmore-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="hmore" aria-label="More actions">{icon:ellipsis}</button>'
+           '<div class="sn-overflow-menu__menu" role="menu" id="hmore" aria-labelledby="hmore-btn" hidden><div role="group" aria-labelledby="hmore-h1"><div class="sn-overflow-menu__heading" id="hmore-h1" role="presentation">Theme</div>'
+           + "".join('<button type="button" tabindex="-1" class="sn-overflow-menu__item" role="menuitemradio" aria-checked="false" data-theme="%s" aria-label="%s">{icon:check}<span class="sn-overflow-menu__label"><span class="sn-overflow-menu__text">%s</span></span></button>' % (v, l, l)
+                     for v, l in (("system", "System"), ("dark", "Dark"), ("light", "Light"), ("booth", "Booth")))
+           + '</div></div></div></div></div></header>') % (stamp["iso"], E(stamp["text"]), E(stamp["text"]))
     ph = ('<header class="sn-page-header"><div class="sn-page-header__main"><div class="sn-page-header__text">%s'
           '<p class="sn-page-header__desc">%s pages, %s stores, %s numbered flows and %d personas across %d repos; %d figures, every number computed from <code class="sn-mono">findings.json</code>.</p>'
           '<p class="sn-page-header__meta"><span class="sn-page-header__stamp">{icon:clock}Built <time datetime="%s">%s</time></span>%s'
@@ -147,11 +146,13 @@ def print_page(F, FG, D, icons, stamp, sha):
     tocp = ('<section class="sn-print-toc-page sn-print-only" aria-label="Contents">%s<ol class="sn-print-toc">%s</ol>%s<ol class="sn-print-toc">%s</ol></section>') % (
         render.title("", "Contents", "title-m", "h2"), "".join(toc(F, FG, "print")), render.title("", "Figures", "title-m", "h2"), "".join(list_of_figures(FG, "print")))
     foot = ""   # the traceability footer is the PDF footer template (pdf.py), styled from tokens.json; see trace_footer()
+    render.PRINT = True
     FGp = {k2: dict(v) for k2, v in FG.items()}
     for f in FGp.values():
         f.pop("projected_svg", None)
     body = ('<body class="sn-print-doc"><main class="sn-page__main" id="main">%s%s<div class="sn-page-report"><div class="sn-page-report__body">%s</div></div></main>%s</body></html>') % (
         cover, tocp, sections.all_sections(F, FGp, "print"), foot)
+    render.PRINT = False
     html_text = head(D, "SongNodes · Data flow report · %s" % stamp["date"], False).replace('<html lang="en-AU">', '<html lang="en-AU" data-theme="light" data-density="compact">') + body
     return fill_icons(html_text, icons)
 
@@ -162,7 +163,8 @@ def trace_footer(F, D, stamp, sha):
     "Traceability footer"). Chromium footer templates cannot read the page's CSS variables."""
     t = D["tokens"]
     cap = ds.type_style(t, "caption")
-    style = "font-family:%s;font-size:%s;color:%s;width:100%%;margin:0 12mm;line-height:1.35" % (ds.family(t, "body").replace('"', "'"), cap["fontSize"], ds.token_value(t, "fg-3"))
+    px = float(cap["fontSize"].replace("rem", "")) * 16      # a footer template has no root size: rem converted at 16 px
+    style = "font-family:%s;font-size:%gpx;color:%s;max-width:62%%;margin:0 12mm;line-height:1.35" % (ds.family(t, "body").replace('"', "'"), px, ds.token_value(t, "fg-3"))
     text = "SongNodes · Data flow report · %s · songnodes %s · musicLibrary %s · findings.json %s · built %s by %s" % (
         stamp["date"], F["meta"]["songnodes_commit"][:7], F["meta"]["ml_snapshot"], sha[:12], stamp["text"], F["meta"]["builder"].split(" for ")[0])
     return '<div style="%s">%s</div>' % (style, render.E(text))
@@ -178,6 +180,12 @@ def main():
     F = json.loads(raw)
     now = dt.datetime.now(MEL)
     stamp = {"iso": now.isoformat(timespec="seconds"), "text": now.strftime("%-d %b %Y, %H:%M ") + now.tzname(), "date": now.strftime("%-d %b %Y")}
+    H = HERE / "handover.json"                       # file swap: commits, PR URLs, artifact link (filled from command output)
+    if H.exists():
+        F["handover"] = json.loads(H.read_text(encoding="utf-8"))
+    if (OUT / "gates.json").exists():                # last gate run, shown on the handover card
+        G = json.loads((OUT / "gates.json").read_text(encoding="utf-8"))
+        F["handover"]["gates"] = [{"name": "%s %s" % (k, v["name"]), "state": v["state"], "note": v["note"]} for k, v in sorted(G.items(), key=lambda kv: int(kv[0]))]
     D = ds.load()
     icons = icons_from_bundle(D["bundle_js"])
     FG = figures.build_all(F, D, OUT)            # writes standalone SVGs, returns {id: figure}

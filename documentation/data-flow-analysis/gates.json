@@ -26,9 +26,9 @@
  "5": {
   "name": "pdf",
   "state": "fail",
-  "note": "129 pages; pages over 40% empty (pages before an orientation change exempt): [(84, 0.47), (85, 0.4), (90, 0.5)]",
+  "note": "196 pages; pages over 40% empty (pages before an orientation change exempt): [(47, 0.41), (145, 0.41), (146, 0.44), (180, 0.5)]",
   "detail": [
-   "pages over 40% empty (pages before an orientation change exempt): [(84, 0.47), (85, 0.4), (90, 0.5)]"
+   "pages over 40% empty (pages before an orientation change exempt): [(47, 0.41), (145, 0.41), (146, 0.44), (180, 0.5)]"
   ]
  },
  "6": {
@@ -61,8 +61,8 @@
  },
  "10": {
   "name": "claims",
-  "state": "warn",
-  "note": "0 PR URLs in the handover, 0 not confirmed by the GitHub API",
+  "state": "pass",
+  "note": "1 PR URLs in the handover, 0 not confirmed by the GitHub API",
   "detail": []
  }
 }

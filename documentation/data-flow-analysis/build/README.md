@@ -32,3 +32,7 @@ Python 3.10+ with `playwright` and `pypdf`; Node with `playwright`; graphviz `do
 Everything is styled by the SongNodes design system (`design-system/`, 1.10.0). The report uses its shell (AppHeader, NavDrawer, PageHeader), components and the ReportPage, diagram and print-document patterns added in 1.10.0. Nothing is overridden locally; `verify.py` gate 2 fails on any colour, size, spacing or radius literal in the report's own markup. The page linter is `design-system/linters/check.py` (gate 1).
 
 The same build source is kept in the Claude project folder (`data-flow-analysis/build/`).
+
+## Scripts kept from PR #581
+
+`build_findings.py`, `build_html.py`, `build_reports.py`, `build_svgs.py`, `generate_pdf.py`, `rebuild_all.py` and `verify_gates.py` came from the parallel run in PR #581 and are kept unchanged (nothing is deleted in a merge). They are not used by `build.py`. Running `rebuild_all.py` would overwrite this report's outputs with that run's smaller model (12 pages, 8 stores), so use `build.py`.
