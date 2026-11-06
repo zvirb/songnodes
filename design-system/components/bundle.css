@@ -2804,7 +2804,13 @@ th.sn-page-matrix__rowhead { position: static; text-transform: none; letter-spac
   :is(.sn-app-header, .sn-nav-drawer, .sn-skip, .sn-filter-rail, .sn-toast__region, .sn-tooltip, .sn-command-palette, .sn-overflow-menu, .sn-copy-button, [data-print="hide"]) { display: none; }
   [data-print="show"] { display: revert; }
   .sn-print-doc { page: doc; }
-  .sn-print-wide { page: wide; }   /* the change of named page breaks; consecutive wide blocks share a landscape page */
+  .sn-print-wide { page: wide; width: var(--print-wide-w); max-width: none; }   /* the change of named page breaks; consecutive wide blocks share a landscape page */
+  .sn-print-doc .sn-page__main { padding: 0; max-width: none; }
+  .sn-table { width: 100%; }
+  .sn-table :is(th, td) { overflow-wrap: anywhere; }
+  .sn-table thead th { position: static; }
+  .sn-table tbody tr:nth-child(-n+3) { break-after: avoid; }
+  .sn-table tbody tr:nth-last-child(-n+3) { break-before: avoid; }
   .sn-print-expand[hidden], .sn-tabs__panel[hidden] { display: block; }
   details::details-content { content-visibility: visible; display: block; }
   details > summary .sn-disclosure__chev { display: none; }
@@ -2873,6 +2879,7 @@ th.sn-page-matrix__rowhead { position: static; text-transform: none; letter-spac
   .sn-figure__canvas { overflow: visible; border: 0; background: transparent; }
   .sn-figure__canvas > svg { transform: none; }
   .sn-pill { background: transparent; border: 1px solid currentColor; }
+  .sn-code-block { white-space: pre-wrap; overflow-wrap: anywhere; }
   .sn-print-keep-12 { break-inside: avoid; }
   .sn-page__section > .sn-section-heading + * { break-before: avoid; }
 }
