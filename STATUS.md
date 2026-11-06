@@ -2675,3 +2675,21 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
   - npm run test:unit (passed, 68 test files, 586 tests)
 - Next: merge PR and proceed to next conformance package.
 <!-- SLOT:DS29 END -->
+
+
+<!-- SLOT:ARCH1 BEGIN -->
+### ARCH1: End-to-End Architectural Investigation, Data-Flow Mapping & System Topology
+- Start: 2026-11-07 (branch docs/data-flow-investigation off origin/main 7429821c).
+- Scope: Deterministic architectural investigation of SongNodes & musicLibrary:
+  1. Phase 0: Design System Inventory in documentation/data-flow-analysis/design-system-inventory.md.
+  2. Phase 1-3: Static codebase scan, data flow extraction, production audit, and 5 operational user journeys in findings.json.
+  3. Phase 4: Standalone SVG diagrams (viewBox 1800x1100): system-architecture-data-flow.svg, user-journey-operational-flow.svg, production-execution-closed-loop.svg, enhanced-architecture-connections-and-gaps.svg.
+  4. Phase 5: Canonical Markdown reports: DATA_FLOW_AND_PAGE_INTERACTION_REPORT.md and ARCHITECTURE_ENHANCEMENTS_AND_GAPS_REPORT.md.
+  5. Phase 6: Self-contained interactive web report (report/index.html) with embedded fonts/tokens and printable A4 PDF (DATA_FLOW_AND_PAGE_INTERACTION_REPORT.pdf). Rebuild pipeline in documentation/data-flow-analysis/build/.
+  6. Phase 7-8: Critical gap analysis (5 gaps, 4 single-purpose modules <500 LOC, unified storage backbone) and sister project task distribution in e:\musicLibrary\TODO-ARCHITECTURAL-IMPROVEMENTS.md.
+- Checks run:
+  - Phase 6d Verification Gates (6/6 passed: Token audit, Visual conformance, Completeness audit, PDF extractability, Offline check, In-page anchor check)
+  - Headless Chrome PDF compilation: 1775 KB vector searchable PDF
+  - Rebuild pipeline test: python documentation/data-flow-analysis/build/rebuild_all.py (passed in 3.2s)
+- Next: Submit PRs for docs/data-flow-investigation and feat/architecture-enhancements-and-gaps.
+<!-- SLOT:ARCH1 END -->
