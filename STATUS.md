@@ -2732,3 +2732,16 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
   - `npm run test:unit` (passed: 68 test files, 586 tests)
 - Next: merge PR and proceed to UX-T11 (Service rows tell the truth about OAuth).
 <!-- SLOT:UX-T09 END -->
+
+<!-- SLOT:DUO1 BEGIN -->
+### DUO1: Cisco Duo Web SDK v4 (OIDC) Universal Prompt and User Auth Router
+- Start: 2026-11-06 (branch duo1-backend-auth off origin/main).
+- Scope: Implement Cisco Duo Web SDK v4 Universal Prompt authentication router (`/api/v1/auth`) with username/password verification, Duo OIDC authorization URL generation, callback handling with token exchange and claim verification, session management via HTTP-only cookie, `/me` endpoint with Cloudflare Access header support, and `/logout`.
+- Changes:
+  1. `services/rest_api/routers/user_auth.py`: Added APIRouter with `/login`, `/duo/callback`, `/me`, and `/logout`, secure credential verification (PBKDF2/Argon2/SHA256/env), state and nonce management with Redis/in-memory fallback, Duo OIDC token exchange via httpx, JWT session cookie `songnodes_session`, and `register(app)` function.
+  2. `tests/rest_api/test_user_auth.py`: Added 20 unit tests covering password hashing, credential verification, login authorization URL generation, Duo callback code exchange and claim verification, redirect support, error handling, session cookies, Cloudflare Access headers, and logout.
+- Checks run:
+  - `python -m pytest tests/rest_api/test_user_auth.py` (passed: 20/20 tests)
+  - `python -m pytest tests/rest_api/test_router_registry.py` (passed: 4/4 tests)
+- Next: merge PR and integrate with frontend login interface.
+<!-- SLOT:DUO1 END -->
