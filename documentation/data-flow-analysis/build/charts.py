@@ -478,20 +478,13 @@ def c5(F):
     x0, x1 = 112, W - 24
     lo, hi = math.log10(60), math.log10(5e10)
     sx = lambda v: x0 + (x1 - x0) * (math.log10(v) - lo) / (hi - lo)
-    # reference labels in lanes
+    # reference labels: one lane per line, in value order, text starting just right of its own line, so no
+    # label sits on its own line and every other line either ends above it or lies to its left.
     lanes, ref_svg_lab = [], []
-    for label, v, rid in D["refs"]:
-        text = "%s %s" % (label, human_ms(v))
+    for lane, (label, v, rid) in enumerate(sorted(D["refs"], key=lambda x: (x[1], x[0]))):
         x = sx(v)
-        wl = len(text) * 6.0 + 8
-        lane = 0
-        while any((l == lane and abs(x - px) < (wl + pw) / 2 + 6)        # labels in one lane overlap
-                  or (l > lane and abs(x - px) < pw / 2 + 4)            # my line would cut a lower label
-                  or (l < lane and abs(px - x) < wl / 2 + 4)            # an earlier line would cut my label
-                  for l, px, pw in lanes):
-            lane += 1
-        lanes.append((lane, x, wl))
-        ref_svg_lab.append((x, lane, text, rid))
+        lanes.append((lane, x, 0))
+        ref_svg_lab.append((x, lane, "%s %s" % (label, human_ms(v)), rid))
     nlanes = 1 + max([l for l, _, _ in lanes] or [0])
     top = 34 + nlanes * 15
     rows, y = [], top
@@ -529,7 +522,7 @@ def c5(F):
     for (x, lane, text, rid) in ref_svg_lab:
         ly = 30 + lane * 15
         b.append('<line x1="%s" y1="%s" x2="%s" y2="%s" class="sn-rchart__ref"><title>%s (%s)</title></line>' % (r(x), ly + 3, r(x), r(y_bot), E(text), E(rid)))
-        b.append(t(x, ly, text, "sn-rchart__ref-label sn-rchart__halo", "middle"))
+        b.append(t(x + 4, ly, text, "sn-rchart__ref-label sn-rchart__halo"))
     H = y_bot + 36
     title = "Timing constants on a log axis"
     span = D["table"]["rows"]
@@ -607,7 +600,7 @@ def c6(F):
     title = "Polling load by target store (Estimate)"
     k0 = D["keys"][0]
     same = all(abs(D["g"][k][0] - D["g"][k][1]) < 1e-9 for k in D["keys"])
-    take = "Estimate: %s takes the most scheduled requests, %s per hour; %s." % (
+    take = "Estimate: the heaviest polling target is %s, %s requests per hour; %s." % (
         k0, fmt(D["g"][k0][1]), "queued work adds no polling" if same else "queued work changes the load")
     svg = svg_wrap(cid, W, H, title, desc(take, D["n"], "poll and schedule timings", D["state"], "timings[] kind poll or schedule"), "".join(b))
     return fig(cid, "polling-load", title, take, "requests per hour (Estimate)", D["n"], D["state"],
@@ -674,7 +667,7 @@ def c7(F):
     b.append(t(x0, 14, "Band: 0–90 % · darker band: 90–100 % · black tick: the limit", "sn-rchart__ref-label"))
     for i, (l, cur, ratio, status, word, how) in enumerate(D["rows"]):
         y = top + i * rh
-        nm = trunc(l["name"], 34) if not is_floor(l) else trunc(l["name"], 26) + " (floor)"
+        nm = trunc(l["name"], 34) if (not is_floor(l) or "floor" in l["name"].lower()) else trunc(l["name"], 26) + " (floor)"
         b.append('<text x="%s" y="%s" class="sn-rchart__label" text-anchor="end">%s<title>%s</title></text>' % (x0 - 8, r(y + 16), E(nm), E(l["name"])))
         b.append(rect(x0, y + 4, sx(0.9) - x0, 16, "sn-rchart__band"))
         b.append(rect(sx(0.9), y + 4, sx(1.0) - sx(0.9), 16, "sn-rchart__band--near"))
@@ -794,7 +787,7 @@ def c9(F):
     P = {p["id"]: p for p in F["pages"]}
     lab, ch = 130, 24
     cw = min(34, (W - lab - 16) / len(D["pages"]))
-    head = 160
+    head = 186
     b = []
     for j, pg in enumerate(D["pages"]):
         cx = lab + j * cw + cw / 2

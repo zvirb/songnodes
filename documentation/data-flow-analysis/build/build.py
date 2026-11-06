@@ -79,9 +79,9 @@ def list_of_figures(FG, mode):
     out = []
     for f in FG.values():
         if mode == "web":
-            out.append('<li><a class="sn-link" href="#%s"><span class="sn-report-toc__num">%s</span> %s</a></li>' % (f["id"].lower(), E(f["id"]), E(f["title"])))
+            out.append('<li><a class="sn-link" href="#fig-%s"><span class="sn-report-toc__num">%s</span> %s</a></li>' % (f["id"].lower(), E(f["id"]), E(f["title"])))
         else:
-            out.append('<li class="sn-print-toc__sub"><a href="#%s">%s · %s</a><span class="sn-print-toc__fill"></span><span class="sn-print-toc__page" data-page-for="%s">0</span></li>' % (f["id"].lower(), E(f["id"]), E(f["title"]), f["id"].lower()))
+            out.append('<li class="sn-print-toc__sub"><a href="#fig-%s">%s · %s</a><span class="sn-print-toc__fill"></span><span class="sn-print-toc__page" data-page-for="fig-%s">0</span></li>' % (f["id"].lower(), E(f["id"]), E(f["title"]), f["id"].lower()))
     return out
 
 
@@ -182,6 +182,7 @@ def main():
     icons = icons_from_bundle(D["bundle_js"])
     FG = figures.build_all(F, D, OUT)            # writes standalone SVGs, returns {id: figure}
     F["figures"] = [{k: v for k, v in f.items() if k not in ("svg", "projected_svg", "table")} for f in FG.values()]
+    (OUT / "figures.json").write_text(json.dumps(F["figures"], indent=1, ensure_ascii=False), encoding="utf-8")   # figure registry
     C = render.counts(F)                         # KPI band: computed, four tiles then "More figures" (11-data-display)
     F["meta"]["kpis"] = [{"figure": render.fmt(C[key]), "label": label, "status": st} for key, label, st in F["meta"]["kpi_spec"]]
     md.write_all(F, FG, OUT, stamp, sha)

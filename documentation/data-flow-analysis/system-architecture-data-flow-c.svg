@@ -1,0 +1,1048 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1448 956" role="img" aria-labelledby="D2c-t D2c-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
+:root, [data-theme="dark"] {
+  --bg: #222222;
+  --surface-1: #2d2d2d;
+  --surface-2: #373737;
+  --surface-3: #414141;
+  --sunk: #1b1b1b;
+  --line: #3c3c3c;
+  --line-strong: #858585;
+  --fg: #f9f9f9;
+  --fg-2: #bbbbbb;
+  --fg-3: #a3a3a3;
+  --fg-disabled: #6a6a6a;
+  --overlay: rgba(0, 0, 0, 0.55);
+  --brand: #9b85cb;
+  --brand-strong: #b4a2dc;
+  --brand-soft: #332b45;
+  --on-brand: #160f26;
+  --link: var(--brand-strong);
+  --focus: var(--brand);
+  --hover-bg: rgba(255, 255, 255, 0.06);
+  --flag-bg: #3a3020;
+  --mod-graph: #6fa8dc;
+  --mod-graph-bg: #22313e;
+  --mod-graph-raised: #2d4256;
+  --mod-graph-line: #3d5872;
+  --mod-graph-ink: #e2f0fe;
+  --mod-graph-muted: #acc8e3;
+  --on-mod-graph: #0a1c2c;
+  --mod-library: #c9a85c;
+  --mod-library-bg: #362e1b;
+  --mod-library-raised: #4a3e22;
+  --mod-library-line: #63532f;
+  --mod-library-ink: #f6eedc;
+  --mod-library-muted: #d3c29f;
+  --on-mod-library: #231902;
+  --mod-sets: #e08a5f;
+  --mod-sets-bg: #3f291e;
+  --mod-sets-raised: #573726;
+  --mod-sets-line: #744935;
+  --mod-sets-ink: #feeae0;
+  --mod-sets-muted: #e6b9a4;
+  --on-mod-sets: #2c1206;
+  --mod-paths: #d27aa8;
+  --mod-paths-bg: #3e2732;
+  --mod-paths-raised: #553345;
+  --mod-paths-line: #71455c;
+  --mod-paths-ink: #fee7f2;
+  --mod-paths-muted: #e3b5cb;
+  --on-mod-paths: #2b101e;
+  --mod-harmony: #5fb8b0;
+  --mod-harmony-bg: #1e3432;
+  --mod-harmony-raised: #264743;
+  --mod-harmony-line: #345e5a;
+  --mod-harmony-ink: #dff4f1;
+  --mod-harmony-muted: #a5cec9;
+  --on-mod-harmony: #03201d;
+  --mod-sources: #8fbf6b;
+  --mod-sources-bg: #27331e;
+  --mod-sources-raised: #344627;
+  --mod-sources-line: #465d35;
+  --mod-sources-ink: #e7f3de;
+  --mod-sources-muted: #b5cda5;
+  --on-mod-sources: #111f06;
+  --mod-pipeline: #7fa1b3;
+  --mod-pipeline-bg: #283135;
+  --mod-pipeline-raised: #354249;
+  --mod-pipeline-line: #475861;
+  --mod-pipeline-ink: #e7f0f5;
+  --mod-pipeline-muted: #b6c7d1;
+  --on-mod-pipeline: #121c22;
+  --mod-services: #a5a07b;
+  --mod-services-bg: #312f26;
+  --mod-services-raised: #424032;
+  --mod-services-line: #585644;
+  --mod-services-ink: #f0efe5;
+  --mod-services-muted: #c7c5b2;
+  --on-mod-services: #1d1b10;
+  --status-ok: #5fd08f;
+  --status-ok-bg: #143321;
+  --status-fair: #b6d35a;
+  --status-fair-bg: #282f11;
+  --status-warn: #efb54a;
+  --status-warn-bg: #38280c;
+  --status-bad: #ff7469;
+  --status-bad-bg: #41211e;
+  --status-info: #bbbbbb;
+  --status-info-bg: #2b2b2b;
+  --on-status-bad: #2a0806;
+  --compat-perfect: var(--status-ok);
+  --compat-compatible: var(--status-fair);
+  --compat-possible: var(--status-warn);
+  --compat-clash: var(--status-bad);
+  --progress-fill: var(--fg-2);
+  --progress-track: var(--surface-3);
+  --energy-1: #3b3a8f;
+  --energy-2: #4c3fa6;
+  --energy-3: #6a43b3;
+  --energy-4: #8a47b5;
+  --energy-5: #a94ba9;
+  --energy-6: #c55394;
+  --energy-7: #db6278;
+  --energy-8: #ea795c;
+  --energy-9: #f39a45;
+  --energy-10: #f7c04a;
+  --key-1a: #17a478;
+  --key-1b: #5ed8a9;
+  --key-2a: #689d48;
+  --key-2b: #99d079;
+  --key-3a: #989016;
+  --key-3b: #cac256;
+  --key-4a: #ba7f14;
+  --key-4b: #eeb154;
+  --key-5a: #cc7044;
+  --key-5b: #ffa47a;
+  --key-6a: #cf6872;
+  --key-6b: #fe9fa6;
+  --key-7a: #c3699e;
+  --key-7b: #f99bd1;
+  --key-8a: #aa72c2;
+  --key-8b: #dda4f7;
+  --key-9a: #857fd7;
+  --key-9b: #b6b4fe;
+  --key-10a: #528ed9;
+  --key-10b: #91c1ff;
+  --key-11a: #089ac3;
+  --key-11b: #49cffc;
+  --key-12a: #09a0a0;
+  --key-12b: #2ad7d7;
+  --chart-1: #56b4e9;
+  --chart-2: #e69f00;
+  --chart-3: #3fc29a;
+  --chart-4: #cc79a7;
+  --chart-5: #e8d95a;
+  --chart-6: #5aa0e0;
+  --chart-7: #f08a4b;
+  --chart-8: #999999;
+  --chart-grid: #353535;
+  --chart-axis: var(--fg-3);
+  --chart-ref: #d9d9d9;
+  --on-now: #1f1600;
+  --now: #f7c04a;
+  --sim: #8f8f8f;
+  --svc-spotify: #1db954;
+  --on-svc-spotify: #000000;
+  --svc-tidal: #000000;
+  --on-svc-tidal: #ffffff;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.30);
+  --shadow-2: 0 6px 20px rgba(0, 0, 0, 0.45);
+  --shadow-3: 0 18px 48px rgba(0, 0, 0, 0.55);
+}
+[data-theme="light"] {
+  --bg: #f4f4f1;
+  --surface-1: #ffffff;
+  --surface-2: #ecece8;
+  --surface-3: #e1e1dc;
+  --sunk: #e9e9e5;
+  --line: #d9d9d4;
+  --line-strong: #86867f;
+  --fg: #1c1c1e;
+  --fg-2: #47474b;
+  --fg-3: #616166;
+  --fg-disabled: #a3a3a0;
+  --overlay: rgba(20, 20, 24, 0.40);
+  --brand: #6a52a6;
+  --brand-strong: #56408f;
+  --brand-soft: #ebe5f7;
+  --on-brand: #ffffff;
+  --link: var(--brand);
+  --focus: var(--brand);
+  --hover-bg: rgba(0, 0, 0, 0.045);
+  --flag-bg: #fbf0d9;
+  --mod-graph: #2b679a;
+  --mod-graph-bg: #e5f2fe;
+  --mod-graph-raised: #cbe5fd;
+  --mod-graph-line: #accbe9;
+  --mod-graph-ink: #14283b;
+  --mod-graph-muted: #2d4a66;
+  --on-mod-graph: #ffffff;
+  --mod-library: #7d5e01;
+  --mod-library-bg: #f9efda;
+  --mod-library-raised: #eee0c0;
+  --mod-library-line: #d8c59e;
+  --mod-library-ink: #302508;
+  --mod-library-muted: #56451d;
+  --on-mod-library: #ffffff;
+  --mod-sets: #9b4816;
+  --mod-sets-bg: #ffece3;
+  --mod-sets-raised: #fcd9c8;
+  --mod-sets-line: #e9bca7;
+  --mod-sets-ink: #3c1d0d;
+  --mod-sets-muted: #673a24;
+  --on-mod-sets: #ffffff;
+  --mod-paths: #964070;
+  --mod-paths-bg: #ffe9f3;
+  --mod-paths-raised: #f9d6e6;
+  --mod-paths-line: #e6b8ce;
+  --mod-paths-ink: #3a1a2b;
+  --mod-paths-muted: #64364e;
+  --on-mod-paths: #ffffff;
+  --mod-harmony: #00736c;
+  --mod-harmony-bg: #def6f3;
+  --mod-harmony-raised: #c5eae6;
+  --mod-harmony-line: #a5d2cd;
+  --mod-harmony-ink: #0a2d2a;
+  --mod-harmony-muted: #21514d;
+  --on-mod-harmony: #ffffff;
+  --mod-sources: #447214;
+  --mod-sources-bg: #e8f5e0;
+  --mod-sources-raised: #d6e8ca;
+  --mod-sources-line: #b8d0a8;
+  --mod-sources-ink: #1b2c0e;
+  --mod-sources-muted: #375024;
+  --on-mod-sources: #ffffff;
+  --mod-pipeline: #46687a;
+  --mod-pipeline-bg: #e7f2f8;
+  --mod-pipeline-raised: #d4e4ed;
+  --mod-pipeline-line: #b8cbd5;
+  --mod-pipeline-ink: #1c282f;
+  --mod-pipeline-muted: #394b54;
+  --on-mod-pipeline: #ffffff;
+  --mod-services: #6a6440;
+  --mod-services-bg: #f2f1e5;
+  --mod-services-raised: #e4e2d1;
+  --mod-services-line: #cbc8b3;
+  --mod-services-ink: #29271a;
+  --mod-services-muted: #4b4835;
+  --on-mod-services: #ffffff;
+  --status-ok: #1d7a45;
+  --status-ok-bg: #daf7e2;
+  --status-fair: #5d7414;
+  --status-fair-bg: #e9f4d5;
+  --status-warn: #8a5a00;
+  --status-warn-bg: #feebd3;
+  --status-bad: #b3261e;
+  --status-bad-bg: #fee9e5;
+  --status-info: #47474b;
+  --status-info-bg: #eeeef0;
+  --on-status-bad: #ffffff;
+  --compat-perfect: var(--status-ok);
+  --compat-compatible: var(--status-fair);
+  --compat-possible: var(--status-warn);
+  --compat-clash: var(--status-bad);
+  --progress-fill: var(--fg-2);
+  --progress-track: var(--surface-3);
+  --key-1a: #057c59;
+  --key-1b: #029e72;
+  --key-2a: #467922;
+  --key-2b: #629742;
+  --key-3a: #736c01;
+  --key-3b: #928a07;
+  --key-4a: #8d5e00;
+  --key-4b: #b37903;
+  --key-5a: #a44c1d;
+  --key-5b: #c56a3e;
+  --key-6a: #a64450;
+  --key-6b: #c8626d;
+  --key-7a: #9b467a;
+  --key-7b: #bc6398;
+  --key-8a: #854f9c;
+  --key-8b: #a36cbc;
+  --key-9a: #635bb0;
+  --key-9b: #7f79d1;
+  --key-10a: #2e69b2;
+  --key-10b: #4c88d3;
+  --key-11a: #027493;
+  --key-11b: #0994ba;
+  --key-12a: #047879;
+  --key-12b: #009a9a;
+  --chart-1: #0072b2;
+  --chart-2: #b36b00;
+  --chart-3: #007a5a;
+  --chart-4: #b0477f;
+  --chart-5: #8a7d00;
+  --chart-6: #005a8c;
+  --chart-7: #b34700;
+  --chart-8: #6b6b6b;
+  --chart-grid: #e4e4df;
+  --chart-axis: var(--fg-3);
+  --chart-ref: #3a3a3d;
+  --on-now: #ffffff;
+  --now: #9a6400;
+  --sim: #76767a;
+  --shadow-1: 0 1px 2px rgba(20, 20, 24, 0.08);
+  --shadow-2: 0 6px 20px rgba(20, 20, 24, 0.14);
+  --shadow-3: 0 18px 48px rgba(20, 20, 24, 0.22);
+}
+[data-theme="booth"] {
+  --bg: #000000;
+  --surface-1: #0f0f0f;
+  --surface-2: #1c1c1c;
+  --surface-3: #2a2a2a;
+  --sunk: #000000;
+  --line: #5e5e5e;
+  --line-strong: #a8a8a8;
+  --fg: #ffffff;
+  --fg-2: #e8e8e8;
+  --fg-3: #cfcfcf;
+  --fg-disabled: #8a8a8a;
+  --overlay: rgba(0, 0, 0, 0.80);
+  --brand: #c9b9f0;
+  --brand-strong: #e0d6fa;
+  --brand-soft: #271e3d;
+  --on-brand: #000000;
+  --link: var(--brand);
+  --focus: var(--brand);
+  --hover-bg: rgba(255, 255, 255, 0.14);
+  --flag-bg: #3a2a00;
+  --mod-graph: #acd6fe;
+  --mod-graph-bg: #081725;
+  --mod-graph-raised: #162d42;
+  --mod-graph-line: #658aad;
+  --mod-graph-ink: #fafcfe;
+  --mod-graph-muted: #d1e8fe;
+  --on-mod-graph: #000000;
+  --mod-library: #e9ce92;
+  --mod-library-bg: #1d1502;
+  --mod-library-raised: #372908;
+  --mod-library-line: #998352;
+  --mod-library-ink: #fffbf4;
+  --mod-library-muted: #f1e3c6;
+  --on-mod-library: #000000;
+  --mod-sets: #fec1a4;
+  --mod-sets-bg: #250f05;
+  --mod-sets-raised: #43210f;
+  --mod-sets-line: #b0765a;
+  --mod-sets-ink: #fefbf9;
+  --mod-sets-muted: #ffdccc;
+  --on-mod-sets: #000000;
+  --mod-paths: #feb9db;
+  --mod-paths-bg: #240d19;
+  --mod-paths-raised: #411d31;
+  --mod-paths-line: #ad718f;
+  --mod-paths-ink: #fefbfc;
+  --mod-paths-muted: #ffd8ea;
+  --on-mod-paths: #000000;
+  --mod-harmony: #9ce0d9;
+  --mod-harmony-bg: #031a18;
+  --mod-harmony-raised: #0b322f;
+  --mod-harmony-line: #59928d;
+  --mod-harmony-ink: #f5fefd;
+  --mod-harmony-muted: #ccede9;
+  --on-mod-harmony: #000000;
+  --mod-sources: #b8df9c;
+  --mod-sources-bg: #0e1a05;
+  --mod-sources-raised: #1f320f;
+  --mod-sources-line: #72925a;
+  --mod-sources-ink: #f9fdf6;
+  --mod-sources-muted: #d8eccb;
+  --on-mod-sources: #000000;
+  --mod-pipeline: #bad6e5;
+  --mod-pipeline-bg: #0f171c;
+  --mod-pipeline-raised: #202e35;
+  --mod-pipeline-line: #738a96;
+  --mod-pipeline-ink: #f9fcfe;
+  --mod-pipeline-muted: #d9e7ef;
+  --on-mod-pipeline: #000000;
+  --mod-services: #d6d2b4;
+  --mod-services-bg: #18160d;
+  --mod-services-raised: #2e2c1d;
+  --mod-services-line: #8a876e;
+  --mod-services-ink: #fdfcf5;
+  --mod-services-muted: #e7e5d6;
+  --on-mod-services: #000000;
+  --status-ok: #6fe0a0;
+  --status-ok-bg: #001709;
+  --status-fair: #c6e36a;
+  --status-fair-bg: #0f1400;
+  --status-warn: #f7c35a;
+  --status-warn-bg: #1a0f00;
+  --status-bad: #ff8a80;
+  --status-bad-bg: #240706;
+  --status-info: #e8e8e8;
+  --status-info-bg: #121212;
+  --on-status-bad: #000000;
+  --compat-perfect: var(--status-ok);
+  --compat-compatible: var(--status-fair);
+  --compat-possible: var(--status-warn);
+  --compat-clash: var(--status-bad);
+  --progress-fill: var(--fg-2);
+  --progress-track: var(--surface-3);
+  --energy-1: #47489f;
+  --energy-2: #4e41a9;
+  --key-1a: #2dc08e;
+  --key-1b: #68eeba;
+  --key-2a: #7db85a;
+  --key-2b: #a9e686;
+  --key-3a: #b2a92a;
+  --key-3b: #dfd65f;
+  --key-4a: #d79628;
+  --key-4b: #fec675;
+  --key-5a: #eb8656;
+  --key-5b: #fec1a6;
+  --key-6a: #ef7d88;
+  --key-6b: #ffbdc1;
+  --key-7a: #e17eb9;
+  --key-7b: #feb8df;
+  --key-8a: #c588e0;
+  --key-8b: #eabdfe;
+  --key-9a: #9c96f8;
+  --key-9b: #cbcbfe;
+  --key-10a: #65a7fa;
+  --key-10b: #b3d4ff;
+  --key-11a: #03b5e4;
+  --key-11b: #8cdeff;
+  --key-12a: #08bcbc;
+  --key-12b: #2eeded;
+  --chart-grid: #3a3a3a;
+  --chart-axis: var(--fg-3);
+  --chart-ref: #ffffff;
+  --on-now: #000000;
+  --now: #ffd166;
+  --sim: #bdbdbd;
+  --shadow-1: none;
+  --shadow-2: 0 0 0 1px #a8a8a8;
+  --shadow-3: 0 0 0 2px #ffffff;
+}
+:root {
+  --space-0: 0px;
+  --space-0\.5: 2px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --radius-chip: 4px;
+  --radius-control: 8px;
+  --radius-card: 14px;
+  --radius-sheet: 18px;
+  --radius-pill: 999px;
+  --control-sm: 32px;
+  --control-md: 40px;
+  --control-lg: 48px;
+  --touch-min: 44px;
+  --row-compact: 32px;
+  --row-comfortable: 40px;
+  --row-two-line: 56px;
+  --header-h: 56px;
+  --drawer-w: 300px;
+  --rail-w: 248px;
+  --content-max: 1400px;
+  --prose-max: 68ch;
+  --z-base: 0;
+  --z-sticky: 10;
+  --z-header: 20;
+  --z-drawer: 40;
+  --z-overlay: 50;
+  --z-dialog: 60;
+  --z-popover: 70;
+  --z-toast: 80;
+  --z-tooltip: 90;
+  --duration-instant: 0ms;
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 1, 1);
+  --bp-phone: 480px;
+  --bp-tablet: 768px;
+  --bp-desktop: 1100px;
+  --bp-wide: 1440px;
+  --bp-wall: 1920px;
+  --opacity-disabled: 0.45;
+  --opacity-faded: 0.15;
+  --opacity-edge: 0.6;
+  --graph-edge-w-1: 1px;
+  --graph-edge-w-2: 2px;
+  --graph-edge-w-3: 3.5px;
+  --graph-edge-w-4: 6px;
+  --graph-edge-op-1: 0.35;
+  --graph-edge-op-2: 0.55;
+  --graph-edge-op-3: 0.8;
+  --graph-edge-op-4: 1;
+  --graph-edge-dim: 0.25;
+  --graph-ring-first: 58px;
+  --graph-ring-step: 40px;
+  --graph-ring-aspect: 1.7;
+  --graph-seat-gap: 30px;
+  --graph-label-zoom: 1.5;
+  --graph-hood-steps: 3;
+  --graph-hood-max: 200;
+  --font-display: "Sora", "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+.display-xl { font-family: var(--font-display); font-size: 2.5rem; line-height: 1.1; font-weight: 700; letter-spacing: -0.01em; }
+.title-l { font-family: var(--font-display); font-size: 1.75rem; line-height: 1.2; font-weight: 700; }
+.title-m { font-family: var(--font-display); font-size: 1.375rem; line-height: 1.25; font-weight: 700; }
+.title-s { font-family: var(--font-display); font-size: 1.125rem; line-height: 1.3; font-weight: 700; }
+.title-lead { font-family: var(--font-display); font-size: 1em; line-height: 1.2; font-weight: 400; }
+.figure { font-family: var(--font-display); font-size: 2rem; line-height: 1.05; font-weight: 700; }
+.body-l { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.55; font-weight: 400; }
+.body { font-family: var(--font-body); font-size: 0.9375rem; line-height: 1.45; font-weight: 400; }
+.body-strong { font-family: var(--font-body); font-size: 0.9375rem; line-height: 1.45; font-weight: 600; }
+.body-s { font-family: var(--font-body); font-size: 0.8125rem; line-height: 1.4; font-weight: 400; }
+.label { font-family: var(--font-body); font-size: 0.75rem; line-height: 1.3; font-weight: 600; letter-spacing: 0.08em; }
+.caption { font-family: var(--font-body); font-size: 0.75rem; line-height: 1.35; font-weight: 400; }
+.data { font-family: var(--font-data); font-size: 0.8125rem; line-height: 1.4; font-weight: 400; }
+.data-strong { font-family: var(--font-data); font-size: 0.8125rem; line-height: 1.4; font-weight: 600; }
+.data-s { font-family: var(--font-data); font-size: 0.6875rem; line-height: 1.35; font-weight: 400; }
+
+
+
+
+
+@media (prefers-color-scheme: light) {
+:root:not([data-theme]) {
+  --bg: #f4f4f1;
+  --surface-1: #ffffff;
+  --surface-2: #ecece8;
+  --surface-3: #e1e1dc;
+  --sunk: #e9e9e5;
+  --line: #d9d9d4;
+  --line-strong: #86867f;
+  --fg: #1c1c1e;
+  --fg-2: #47474b;
+  --fg-3: #616166;
+  --fg-disabled: #a3a3a0;
+  --overlay: rgba(20, 20, 24, 0.40);
+  --brand: #6a52a6;
+  --brand-strong: #56408f;
+  --brand-soft: #ebe5f7;
+  --on-brand: #ffffff;
+  --link: var(--brand);
+  --hover-bg: rgba(0, 0, 0, 0.045);
+  --flag-bg: #fbf0d9;
+  --mod-graph: #2b679a;
+  --mod-graph-bg: #e5f2fe;
+  --mod-graph-raised: #cbe5fd;
+  --mod-graph-line: #accbe9;
+  --mod-graph-ink: #14283b;
+  --mod-graph-muted: #2d4a66;
+  --on-mod-graph: #ffffff;
+  --mod-library: #7d5e01;
+  --mod-library-bg: #f9efda;
+  --mod-library-raised: #eee0c0;
+  --mod-library-line: #d8c59e;
+  --mod-library-ink: #302508;
+  --mod-library-muted: #56451d;
+  --on-mod-library: #ffffff;
+  --mod-sets: #9b4816;
+  --mod-sets-bg: #ffece3;
+  --mod-sets-raised: #fcd9c8;
+  --mod-sets-line: #e9bca7;
+  --mod-sets-ink: #3c1d0d;
+  --mod-sets-muted: #673a24;
+  --on-mod-sets: #ffffff;
+  --mod-paths: #964070;
+  --mod-paths-bg: #ffe9f3;
+  --mod-paths-raised: #f9d6e6;
+  --mod-paths-line: #e6b8ce;
+  --mod-paths-ink: #3a1a2b;
+  --mod-paths-muted: #64364e;
+  --on-mod-paths: #ffffff;
+  --mod-harmony: #00736c;
+  --mod-harmony-bg: #def6f3;
+  --mod-harmony-raised: #c5eae6;
+  --mod-harmony-line: #a5d2cd;
+  --mod-harmony-ink: #0a2d2a;
+  --mod-harmony-muted: #21514d;
+  --on-mod-harmony: #ffffff;
+  --mod-sources: #447214;
+  --mod-sources-bg: #e8f5e0;
+  --mod-sources-raised: #d6e8ca;
+  --mod-sources-line: #b8d0a8;
+  --mod-sources-ink: #1b2c0e;
+  --mod-sources-muted: #375024;
+  --on-mod-sources: #ffffff;
+  --mod-pipeline: #46687a;
+  --mod-pipeline-bg: #e7f2f8;
+  --mod-pipeline-raised: #d4e4ed;
+  --mod-pipeline-line: #b8cbd5;
+  --mod-pipeline-ink: #1c282f;
+  --mod-pipeline-muted: #394b54;
+  --on-mod-pipeline: #ffffff;
+  --mod-services: #6a6440;
+  --mod-services-bg: #f2f1e5;
+  --mod-services-raised: #e4e2d1;
+  --mod-services-line: #cbc8b3;
+  --mod-services-ink: #29271a;
+  --mod-services-muted: #4b4835;
+  --on-mod-services: #ffffff;
+  --status-ok: #1d7a45;
+  --status-ok-bg: #daf7e2;
+  --status-fair: #5d7414;
+  --status-fair-bg: #e9f4d5;
+  --status-warn: #8a5a00;
+  --status-warn-bg: #feebd3;
+  --status-bad: #b3261e;
+  --status-bad-bg: #fee9e5;
+  --status-info: #47474b;
+  --status-info-bg: #eeeef0;
+  --on-status-bad: #ffffff;
+  --energy-1: #3b3a8f;
+  --energy-2: #4c3fa6;
+  --energy-3: #6a43b3;
+  --energy-4: #8a47b5;
+  --energy-5: #a94ba9;
+  --energy-6: #c55394;
+  --energy-7: #db6278;
+  --energy-8: #ea795c;
+  --energy-9: #f39a45;
+  --energy-10: #f7c04a;
+  --key-1a: #057c59;
+  --key-1b: #029e72;
+  --key-2a: #467922;
+  --key-2b: #629742;
+  --key-3a: #736c01;
+  --key-3b: #928a07;
+  --key-4a: #8d5e00;
+  --key-4b: #b37903;
+  --key-5a: #a44c1d;
+  --key-5b: #c56a3e;
+  --key-6a: #a64450;
+  --key-6b: #c8626d;
+  --key-7a: #9b467a;
+  --key-7b: #bc6398;
+  --key-8a: #854f9c;
+  --key-8b: #a36cbc;
+  --key-9a: #635bb0;
+  --key-9b: #7f79d1;
+  --key-10a: #2e69b2;
+  --key-10b: #4c88d3;
+  --key-11a: #027493;
+  --key-11b: #0994ba;
+  --key-12a: #047879;
+  --key-12b: #009a9a;
+  --chart-1: #0072b2;
+  --chart-2: #b36b00;
+  --chart-3: #007a5a;
+  --chart-4: #b0477f;
+  --chart-5: #8a7d00;
+  --chart-6: #005a8c;
+  --chart-7: #b34700;
+  --chart-8: #6b6b6b;
+  --chart-grid: #e4e4df;
+  --chart-ref: #3a3a3d;
+  --on-now: #ffffff;
+  --now: #9a6400;
+  --sim: #76767a;
+  --svc-tidal: #000000;
+  --shadow-1: 0 1px 2px rgba(20, 20, 24, 0.08);
+  --shadow-2: 0 6px 20px rgba(20, 20, 24, 0.14);
+  --shadow-3: 0 18px 48px rgba(20, 20, 24, 0.22);
+  color-scheme: light;
+}
+}
+.sn-m-graph    { --m: var(--mod-graph);    --m-bg: var(--mod-graph-bg);    --m-raised: var(--mod-graph-raised);    --m-line: var(--mod-graph-line);    --m-ink: var(--mod-graph-ink);    --m-muted: var(--mod-graph-muted);    --m-on: var(--on-mod-graph); }
+.sn-m-library  { --m: var(--mod-library);  --m-bg: var(--mod-library-bg);  --m-raised: var(--mod-library-raised);  --m-line: var(--mod-library-line);  --m-ink: var(--mod-library-ink);  --m-muted: var(--mod-library-muted);  --m-on: var(--on-mod-library); }
+.sn-m-sets     { --m: var(--mod-sets);     --m-bg: var(--mod-sets-bg);     --m-raised: var(--mod-sets-raised);     --m-line: var(--mod-sets-line);     --m-ink: var(--mod-sets-ink);     --m-muted: var(--mod-sets-muted);     --m-on: var(--on-mod-sets); }
+.sn-m-paths    { --m: var(--mod-paths);    --m-bg: var(--mod-paths-bg);    --m-raised: var(--mod-paths-raised);    --m-line: var(--mod-paths-line);    --m-ink: var(--mod-paths-ink);    --m-muted: var(--mod-paths-muted);    --m-on: var(--on-mod-paths); }
+.sn-m-harmony  { --m: var(--mod-harmony);  --m-bg: var(--mod-harmony-bg);  --m-raised: var(--mod-harmony-raised);  --m-line: var(--mod-harmony-line);  --m-ink: var(--mod-harmony-ink);  --m-muted: var(--mod-harmony-muted);  --m-on: var(--on-mod-harmony); }
+.sn-m-sources  { --m: var(--mod-sources);  --m-bg: var(--mod-sources-bg);  --m-raised: var(--mod-sources-raised);  --m-line: var(--mod-sources-line);  --m-ink: var(--mod-sources-ink);  --m-muted: var(--mod-sources-muted);  --m-on: var(--on-mod-sources); }
+.sn-m-pipeline { --m: var(--mod-pipeline); --m-bg: var(--mod-pipeline-bg); --m-raised: var(--mod-pipeline-raised); --m-line: var(--mod-pipeline-line); --m-ink: var(--mod-pipeline-ink); --m-muted: var(--mod-pipeline-muted); --m-on: var(--on-mod-pipeline); }
+.sn-m-services { --m: var(--mod-services); --m-bg: var(--mod-services-bg); --m-raised: var(--mod-services-raised); --m-line: var(--mod-services-line); --m-ink: var(--mod-services-ink); --m-muted: var(--mod-services-muted); --m-on: var(--on-mod-services); }
+.sn-m-icon { color: var(--m); }
+/* Diagram (1.10.0): build-time SVG diagrams for investigation reports (D-series figures).
+   Colour: one domain map, .sn-dg-c1 … .sn-dg-c8 set --dg-c to chart-1 … chart-8 (strokes and stripes only).
+   Nodes are neutral cards (surface-1, fg text); state is carried by outline style plus a word:
+   production solid, non-final dotted, queued dashed (sim), proposed dashed (brand). Gaps are status-bad dashed with a cross glyph.
+   Interaction hooks: [data-hl] highlights, [data-dim] fades, :focus-visible shows the focus ring. */
+.sn-diagram { font-family: var(--font-body); color: var(--fg); }
+.sn-diagram__bg { fill: var(--bg); }
+.sn-dg-c1 { --dg-c: var(--chart-1); }
+.sn-dg-c2 { --dg-c: var(--chart-2); }
+.sn-dg-c3 { --dg-c: var(--chart-3); }
+.sn-dg-c4 { --dg-c: var(--chart-4); }
+.sn-dg-c5 { --dg-c: var(--chart-5); }
+.sn-dg-c6 { --dg-c: var(--chart-6); }
+.sn-dg-c7 { --dg-c: var(--chart-7); }
+.sn-dg-c8 { --dg-c: var(--chart-8); }
+
+.sn-diagram__t { fill: var(--fg); }
+.sn-diagram__t--2 { fill: var(--fg-2); }
+.sn-diagram__t--3 { fill: var(--fg-3); }
+
+.sn-diagram__group { fill: none; stroke: var(--line); stroke-width: var(--graph-edge-w-1); }
+.sn-diagram__lane { fill: var(--surface-2); stroke: var(--line); stroke-width: var(--graph-edge-w-1); }
+.sn-diagram__lane--alt { fill: none; }
+.sn-diagram__grid { fill: none; stroke: var(--chart-grid); stroke-width: var(--graph-edge-w-1); }
+
+.sn-diagram__node { cursor: pointer; }
+.sn-diagram__box { fill: var(--surface-1); stroke: var(--line-strong); stroke-width: var(--graph-edge-w-1); filter: drop-shadow(var(--shadow-1)); }
+.sn-diagram__stripe { fill: var(--dg-c, var(--line-strong)); stroke: none; }
+.sn-diagram__node--nonfinal .sn-diagram__box,
+.sn-diagram__legend-box.sn-diagram__node--nonfinal { stroke-dasharray: 1.5 3; stroke-linecap: round; stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__node--queued .sn-diagram__box,
+.sn-diagram__legend-box.sn-diagram__node--queued { stroke: var(--sim); stroke-dasharray: 6 4; stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__node--proposed .sn-diagram__box,
+.sn-diagram__legend-box.sn-diagram__node--proposed { stroke: var(--brand); stroke-dasharray: 6 4; stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__node--gap .sn-diagram__box { stroke: var(--status-bad); stroke-dasharray: 4 3; stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__node--note .sn-diagram__box { fill: var(--surface-2); stroke: var(--line); filter: none; }
+.sn-diagram__node--fallback .sn-diagram__box { fill: var(--surface-2); stroke: var(--line-strong); stroke-dasharray: 4 3; filter: none; }
+.sn-diagram__node--changed .sn-diagram__box { stroke: var(--status-warn); stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__legend-box { fill: var(--surface-1); stroke: var(--line-strong); stroke-width: var(--graph-edge-w-1); }
+.sn-diagram__swatch { fill: var(--dg-c); }
+.sn-diagram__lock { fill: none; stroke: var(--fg-2); stroke-width: var(--graph-edge-w-1); stroke-linejoin: round; }
+
+.sn-diagram__edge { cursor: pointer; }
+.sn-diagram__line { fill: none; stroke: var(--dg-c, var(--line-strong)); stroke-width: var(--graph-edge-w-2); stroke-linejoin: round; opacity: var(--graph-edge-op-4); }
+.sn-diagram__head { fill: var(--dg-c, var(--line-strong)); stroke: none; }
+.sn-diagram__edge--queued .sn-diagram__line { stroke: var(--sim); stroke-dasharray: 6 4; }
+.sn-diagram__edge--queued .sn-diagram__head { fill: var(--sim); }
+.sn-diagram__edge--gap .sn-diagram__line { stroke: var(--status-bad); stroke-dasharray: 5 4; }
+.sn-diagram__edge--gap .sn-diagram__head { fill: var(--status-bad); }
+.sn-diagram__edge--proposed .sn-diagram__line { stroke: var(--brand); stroke-dasharray: 6 4; }
+.sn-diagram__edge--proposed .sn-diagram__head { fill: var(--brand); }
+.sn-diagram__edge--return .sn-diagram__line { stroke-dasharray: 4 3; }
+.sn-diagram__edge--fallback .sn-diagram__line { stroke: var(--line-strong); stroke-dasharray: 4 3; stroke-width: var(--graph-edge-w-1); }
+.sn-diagram__edge--fallback .sn-diagram__head { fill: var(--line-strong); }
+.sn-diagram__edge--neutral .sn-diagram__line { stroke: var(--line-strong); }
+.sn-diagram__edge--neutral .sn-diagram__head { fill: var(--line-strong); }
+.sn-diagram__lifeline { fill: none; stroke: var(--line-strong); stroke-width: var(--graph-edge-w-1); stroke-dasharray: 4 4; }
+
+.sn-diagram__badge-box { fill: var(--surface-1); stroke: var(--dg-c, var(--line-strong)); stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__edge--queued .sn-diagram__badge-box { stroke: var(--sim); stroke-dasharray: 3 2; }
+.sn-diagram__badge--gap .sn-diagram__badge-box,
+.sn-diagram__edge--gap .sn-diagram__badge-box { fill: var(--status-bad-bg); stroke: var(--status-bad); }
+.sn-diagram__badge--proposed .sn-diagram__badge-box,
+.sn-diagram__edge--proposed .sn-diagram__badge-box { fill: var(--brand-soft); stroke: var(--brand); }
+.sn-diagram__badge--neutral .sn-diagram__badge-box { stroke: var(--line-strong); }
+.sn-diagram__mark-box { fill: var(--status-bad-bg); stroke: var(--status-bad); stroke-width: var(--graph-edge-w-1); }
+.sn-diagram__mark--warn .sn-diagram__mark-box { fill: var(--status-warn-bg); stroke: var(--status-warn); }
+.sn-diagram__mark--info .sn-diagram__mark-box { fill: var(--surface-2); stroke: var(--line-strong); }
+.sn-diagram__now { fill: none; stroke: var(--now); stroke-width: var(--graph-edge-w-3); }
+.sn-diagram__gate { fill: var(--surface-1); stroke: var(--fg-2); stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__cell { fill: var(--surface-1); stroke: var(--line); stroke-width: var(--graph-edge-w-1); }
+
+/* interaction */
+.sn-diagram [data-dim] { opacity: var(--opacity-faded); }
+.sn-diagram__node[data-hl] .sn-diagram__box { stroke: var(--fg); stroke-width: var(--graph-edge-w-3); }
+.sn-diagram__edge[data-hl] .sn-diagram__line { stroke-width: var(--graph-edge-w-3); }
+.sn-diagram__node:focus-visible .sn-diagram__box,
+.sn-diagram__edge:focus-visible .sn-diagram__badge-box { stroke: var(--focus); stroke-width: var(--graph-edge-w-3); }
+.sn-diagram__edge:focus-visible .sn-diagram__line { stroke: var(--focus); stroke-width: var(--graph-edge-w-3); }
+
+@media print {
+  .sn-diagram__box { filter: none; }
+  .sn-diagram [data-dim] { opacity: 1; }
+}
+/* corner radii by part (SVG2 rx as a CSS property): tokens only */
+.sn-diagram__box, .sn-diagram__legend-box { rx: var(--radius-control); }
+.sn-diagram__badge-box { rx: var(--radius-pill); }
+.sn-diagram__mark-box, .sn-diagram__cell, .sn-diagram__stripe, .sn-diagram__swatch { rx: var(--radius-chip); }
+.sn-diagram__group, .sn-diagram__lane { rx: var(--radius-card); }
+
+/* ===== Report charts (source/css/65-report-charts.css) =====
+   Static report charts (data-flow report C-series): bars, matrix cells, bullet bands, log-axis dots and
+   pattern lines that ChartFrame does not define. Tokens only. Grid, base, tick and axis-title come from
+   .sn-chart-frame__* in 40-charts.css. Marks take their series colour from style="--c: var(--chart-N)". */
+.sn-chart { overflow: visible; font-family: var(--font-body); }
+.sn-rchart__bar { fill: var(--c, var(--chart-1)); }
+.sn-rchart__bar--proj { fill: none; stroke: var(--line-strong); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.sn-rchart__bar--none { fill: var(--surface-3); stroke: var(--line-strong); stroke-width: 1; }
+.sn-rchart__pat-line { stroke: var(--surface-1); stroke-width: 1.5; }
+.sn-rchart__label { fill: var(--fg-2); font-family: var(--font-body); font-size: 0.75rem; }
+.sn-rchart__label--strong { fill: var(--fg); font-weight: 600; }
+.sn-rchart__value { fill: var(--fg); font-family: var(--font-data); font-size: 0.6875rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.sn-rchart__halo { paint-order: stroke; stroke: var(--surface-1); stroke-width: 3; stroke-linejoin: round; }
+.sn-rchart__ref { stroke: var(--chart-ref); stroke-width: 1.5; stroke-dasharray: 5 4; fill: none; }
+.sn-rchart__ref-label { fill: var(--fg-2); font-family: var(--font-body); font-size: 0.6875rem; }
+.sn-rchart__cell { fill: var(--surface-3); stroke: var(--line-strong); stroke-width: 1; }
+.sn-rchart__cell--empty { fill: none; stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 2; }
+.sn-rchart__cell--queued { stroke-dasharray: 4 3; }
+.sn-rchart__cell--ok { fill: var(--status-ok-bg); }
+.sn-rchart__cell--fair { fill: var(--status-fair-bg); }
+.sn-rchart__cell--warn { fill: var(--status-warn-bg); }
+.sn-rchart__cell--bad { fill: var(--status-bad-bg); }
+.sn-rchart__cell--info { fill: var(--status-info-bg); }
+.sn-rchart__cell-text { fill: var(--fg); font-family: var(--font-data); font-size: 0.6875rem; font-weight: 600; }
+.sn-rchart__cell-id { fill: var(--fg-2); font-family: var(--font-data); font-size: 0.6875rem; }
+.sn-rchart__dot { fill: var(--c, var(--fg-2)); stroke: var(--surface-1); stroke-width: 1.5; }
+.sn-rchart__dot--proj { fill: var(--surface-1); stroke: var(--fg-2); stroke-width: 1.5; stroke-dasharray: 2 2; }
+.sn-rchart__band { fill: var(--surface-2); }
+.sn-rchart__band--near { fill: var(--surface-3); }
+.sn-rchart__mark { stroke: var(--fg); stroke-width: 2; }
+.sn-rchart__lane { stroke: var(--chart-grid); stroke-width: 1; shape-rendering: crispEdges; }
+
+.sn-chart-frame__grid { stroke: var(--chart-grid); stroke-width: 1; shape-rendering: crispEdges; }
+.sn-chart-frame__base { stroke: var(--line-strong); stroke-width: 1; shape-rendering: crispEdges; }
+.sn-chart-frame__tick { fill: var(--chart-axis); font-family: var(--font-data); font-size: 0.6875rem; font-variant-numeric: tabular-nums; }
+.sn-chart-frame__axis-title { fill: var(--chart-axis); font-family: var(--font-body); font-size: 0.6875rem; }</style>
+<title id="D2c-t">System architecture: library, musiclibrary flows &#x28;Built)</title>
+<desc id="D2c-d">Pages, services and stores grouped by domain stage, with every library flow drawn as an arrow carrying its flow number &#x28;F26 to F41 in the flow table). 18 nodes, 16 flows.</desc>
+<rect class="sn-diagram__bg" x="0" y="0" width="1448" height="956"/>
+<rect class="sn-diagram__group" x="175.2" y="48.0" width="198.0" height="109.0"/>
+<rect class="sn-diagram__group" x="190.2" y="157.0" width="629.5" height="109.0"/>
+<rect class="sn-diagram__group" x="647.2" y="312.0" width="168.0" height="109.0"/>
+<rect class="sn-diagram__group" x="848.2" y="235.0" width="447.0" height="109.0"/>
+<rect class="sn-diagram__group" x="169.2" y="421.0" width="1123.5" height="287.0"/>
+<rect class="sn-diagram__group" x="637.2" y="708.0" width="188.0" height="109.0"/>
+<g class="sn-diagram__groups"><text class="sn-diagram__t sn-diagram__t--2 body-strong" x="185.2" y="67.3">ingest stage</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-strong" x="200.2" y="176.3">library stage</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-strong" x="657.2" y="331.3">sets stage</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-strong" x="858.2" y="254.3">services stage</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-strong" x="179.2" y="440.3">ops stage</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-strong" x="647.2" y="727.3">design stage</text></g>
+<g class="sn-diagram__edge sn-dg-c2 sn-diagram__edge--built" data-from="ml-agent-beatport-sync" data-to="ml-cli-confirm" data-edge="F26" tabindex="0" aria-label="Flow 26 &#x28;F26): Beatport sync playbook → run_weekly confirm – Beatport sync result [library, Built]">
+<title>Flow 26 &#x28;F26): Beatport sync playbook → run_weekly confirm – Beatport sync result [library, Built]</title>
+<path class="sn-diagram__line" d="M1027.4 502.3 L1105.3 502.3"/>
+<path class="sn-diagram__head" d="M1105.3 502.3 L1098.3 498.4 L1098.3 506.2 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1050.5" y="489.8" width="31.7" height="25.0"/><text class="sn-diagram__t body-strong" x="1066.4" y="507.1" text-anchor="middle">26</text></g>
+</g>
+<g class="sn-diagram__edge sn-dg-c2 sn-diagram__edge--built" data-from="ml-agent-weekly-run" data-to="ml-store-artifact-files" data-edge="F27" tabindex="0" aria-label="Flow 27 &#x28;F27): Weekly run playbook → Set Builder published files – republish library.json [library, Built]">
+<title>Flow 27 &#x28;F27): Weekly run playbook → Set Builder published files – republish library.json [library, Built]</title>
+<path class="sn-diagram__line" d="M365.3 665.8 L416.1 665.8"/>
+<path class="sn-diagram__head" d="M416.1 665.8 L409.1 661.9 L409.1 669.6 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="375.4" y="653.3" width="30.7" height="25.0"/><text class="sn-diagram__t body-strong" x="390.7" y="670.6" text-anchor="middle">27</text></g>
+</g>
+<g class="sn-diagram__edge sn-dg-c2 sn-diagram__edge--built" data-from="ml-cli-build-db" data-to="ml-store-outputs" data-edge="F28" tabindex="0" aria-label="Flow 28 &#x28;F28): build_db → outputs – library.json [library, Built]">
+<title>Flow 28 &#x28;F28): build_db → outputs – library.json [library, Built]</title>
+<path class="sn-diagram__line" d="M1027.4 611.5 L1193.2 611.5 L1193.2 629.0"/>
+<path class="sn-diagram__head" d="M1193.2 629.0 L1189.4 622.0 L1197.1 622.0 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1069.6" y="599.0" width="31.7" height="25.0"/><text class="sn-diagram__t body-strong" x="1085.5" y="616.3" text-anchor="middle">28</text></g>
+</g>
+<g class="sn-diagram__edge sn-dg-c2 sn-diagram__edge--built" data-from="ml-cli-build-db" data-to="ml-store-sqlite" data-edge="F29" tabindex="0" aria-label="Flow 29 &#x28;F29): build_db → dj_library.sqlite – &#x53;QLite rebuild [library, Built]">
+<title>Flow 29 &#x28;F29): build_db → dj_library.sqlite – &#x53;QLite rebuild [library, Built]</title>
+<path class="sn-diagram__line" d="M1027.4 583.5 L1122.0 583.5"/>
+<path class="sn-diagram__head" d="M1122.0 583.5 L1115.0 579.6 L1115.0 587.4 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1058.9" y="571.0" width="31.7" height="25.0"/><text class="sn-diagram__t body-strong" x="1074.7" y="588.3" text-anchor="middle">29</text></g>
+</g>
+<g class="sn-diagram__edge sn-dg-c2 sn-diagram__edge--built" data-from="ml-cli-db" data-to="sn-be-svc-rest-api" data-edge="F30" tabindex="0" aria-label="Flow 30 &#x28;F30): run_weekly db → &#x52;EST &#x41;PI – library.json ingest [library, Built]">
+<title>Flow 30 &#x28;F30): run_weekly db → &#x52;EST &#x41;PI – library.json ingest [library, Built]</title>
+<path class="sn-diagram__line" d="M344.4 233.3 L353.2 233.3 L353.2 507.5 L438.0 507.5"/>
+<path class="sn-diagram__head" d="M438.0 507.5 L431.0 503.6 L431.0 511.4 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="337.1" y="357.9" width="32.2" height="25.0"/><text class="sn-diagram__t body-strong" x="353.2" y="375.2" text-anchor="middle">30</text></g>
+</g>
+<g class="sn-diagram__edge sn-dg-c2 sn-diagram__edge--built" data-from="ml-cli-process" data-to="ext-rekordbox" data-edge="F31" tabindex="0" aria-label="Flow 31 &#x28;F31): run_weekly process → Rekordbox +1 – Rekordbox &#x58;ML [library, Built]">
+<title>Flow 31 &#x28;F31): run_weekly process → Rekordbox +1 – Rekordbox &#x58;ML [library, Built]</title>
+<path class="sn-diagram__line" d="M590.2 252.1 L590.2 379.0 L661.1 379.0"/>
+<path class="sn-diagram__head" d="M661.1 379.0 L654.1 375.1 L654.1 382.9 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="611.4" y="366.5" width="28.5" height="25.0"/><text class="sn-diagram__t body-strong" x="625.7" y="383.8" text-anchor="middle">31</text></g>
+</g>
+<g class="sn-diagram__edge sn-dg-c2 sn-diagram__edge--built" data-from="ml-cli-process" data-to="ml-agent-beatport-sync" data-edge="F32" tabindex="0" aria-label="Flow 32 &#x28;F32): run_weekly process → Beatport sync playbook – sync plan and buy list [library, Built]">
+<title>Flow 32 &#x28;F32): run_weekly process → Beatport sync playbook – sync plan and buy list [library, Built]</title>
+<path class="sn-diagram__line" d="M584.2 252.1 L584.2 486.2 L887.0 486.2"/>
+<path class="sn-diagram__head" d="M887.0 486.2 L880.0 482.3 L880.0 490.1 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="719.8" y="473.7" width="31.6" height="25.0"/><text class="sn-diagram__t body-strong" x="735.6" y="491.0" text-anchor="middle">32</text></g>
+</g>
+<g class="sn-diagram__edge sn-dg-c2 sn-diagram__edge--built" data-from="ml-cli-process" data-to="ml-store-ledger" data-edge="F33" tabindex="0" aria-label="Flow 33 &#x28;F33): run_weekly process → DJ library ledger – tracks, pending, rejected, rotation [library, Built]">
+<title>Flow 33 &#x28;F33): run_weekly process → DJ library ledger – tracks, pending, rejected, rotation [library, Built]</title>
+<path class="sn-diagram__line" d="M596.0 224.0 L656.4 224.0"/>
+<path class="sn-diagram__head" d="M656.4 224.0 L649.4 220.2 L649.4 227.8 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="610.3" y="211.5" width="31.9" height="25.0"/><text class="sn-diagram__t body-strong" x="626.2" y="228.8" text-anchor="middle">33</text></g>
+</g>
+<g class="sn-diagram__edge sn-dg-c2 sn-diagram__edge--built" data-from="ml-cli-resolve" data-to="ml-cli-process" data-edge="F34" tabindex="0" aria-label="Flow 34 &#x28;F34): run_weekly resolve → run_weekly process – resolved versions [library, Built]">
+<title>Flow 34 &#x28;F34): run_weekly resolve → run_weekly process – resolved versions [library, Built]</title>
+<path class="sn-diagram__line" d="M356.2 143.0 L356.2 214.7 L420.7 214.7"/>
+<path class="sn-diagram__head" d="M420.7 214.7 L413.7 210.8 L413.7 218.5 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="340.1" y="166.3" width="32.3" height="25.0"/><text class="sn-diagram__t body-strong" x="356.2" y="183.7" text-anchor="middle">34</text></g>
+</g>
+<g class="sn-diagram__edge sn-dg-c2 sn-diagram__edge--built" data-from="ml-cli-sync-songnodes" data-to="sn-be-svc-rest-api" data-edge="F35" tabindex="0" aria-label="Flow 35 &#x28;F35): run_weekly sync-songnodes → &#x52;EST &#x41;PI – library.json bulk ingest [library, Built]">
+<title>Flow 35 &#x28;F35): run_weekly sync-songnodes → &#x52;EST &#x41;PI – library.json bulk ingest [library, Built]</title>
+<path class="sn-diagram__line" d="M350.5 546.8 L438.0 546.8"/>
+<path class="sn-diagram__head" d="M438.0 546.8 L431.0 542.9 L431.0 550.6 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="378.4" y="534.3" width="31.7" height="25.0"/><text class="sn-diagram__t body-strong" x="394.3" y="551.6" text-anchor="middle">35</text></g>
+</g>
+<g class="sn-diagram__edge sn-dg-c2 sn-diagram__edge--built" data-from="ml-cli-sync-tidal" data-to="ext-tidal" data-edge="F36" tabindex="0" aria-label="Flow 36 &#x28;F36): run_weekly sync-tidal → &#x54;IDAL developer &#x41;PI – crate playlists [library, Built]">
+<title>Flow 36 &#x28;F36): run_weekly sync-tidal → &#x54;IDAL developer &#x41;PI – crate playlists [library, Built]</title>
+<path class="sn-diagram__line" d="M1052.4 302.0 L1102.9 302.0"/>
+<path class="sn-diagram__head" d="M1102.9 302.0 L1095.9 298.1 L1095.9 305.9 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1061.7" y="289.5" width="31.9" height="25.0"/><text class="sn-diagram__t body-strong" x="1077.7" y="306.8" text-anchor="middle">36</text></g>
+</g>
+<g class="sn-diagram__edge sn-dg-c2 sn-diagram__edge--built" data-from="ml-cli-sync-tidal" data-to="ml-cli-confirm" data-edge="F37" tabindex="0" aria-label="Flow 37 &#x28;F37): run_weekly sync-tidal → run_weekly confirm – sync result [library, Built]">
+<title>Flow 37 &#x28;F37): run_weekly sync-tidal → run_weekly confirm – sync result [library, Built]</title>
+<path class="sn-diagram__line" d="M1040.2 330.4 L1040.2 483.7 L1105.5 483.7"/>
+<path class="sn-diagram__head" d="M1105.5 483.7 L1098.5 479.8 L1098.5 487.6 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1024.8" y="394.5" width="30.9" height="25.0"/><text class="sn-diagram__t body-strong" x="1040.2" y="411.8" text-anchor="middle">37</text></g>
+</g>
+<g class="sn-diagram__edge sn-dg-c2 sn-diagram__edge--built" data-from="ml-store-artifact-files" data-to="ml-page-set-builder" data-edge="F38" tabindex="0" aria-label="Flow 38 &#x28;F38): Set Builder published files → Naarm Set Builder – LibraryFile [library, Built]">
+<title>Flow 38 &#x28;F38): Set Builder published files → Naarm Set Builder – LibraryFile [library, Built]</title>
+<path class="sn-diagram__line" d="M600.5 689.2 L731.2 689.2 L731.2 746.9"/>
+<path class="sn-diagram__head" d="M731.2 746.9 L727.4 739.9 L735.1 739.9 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="649.9" y="676.7" width="31.9" height="25.0"/><text class="sn-diagram__t body-strong" x="665.9" y="694.0" text-anchor="middle">38</text></g>
+</g>
+<g class="sn-diagram__edge sn-dg-c2 sn-diagram__edge--built" data-from="ml-store-ledger" data-to="ml-cli-build-db" data-edge="F39" tabindex="0" aria-label="Flow 39 &#x28;F39): DJ library ledger → build_db – full ledger [library, Built]">
+<title>Flow 39 &#x28;F39): DJ library ledger → build_db – full ledger [library, Built]</title>
+<path class="sn-diagram__line" d="M806.0 224.0 L837.2 224.0 L837.2 587.8 L887.1 587.8"/>
+<path class="sn-diagram__head" d="M887.1 587.8 L880.1 583.9 L880.1 591.6 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="821.3" y="393.4" width="31.9" height="25.0"/><text class="sn-diagram__t body-strong" x="837.2" y="410.7" text-anchor="middle">39</text></g>
+</g>
+<g class="sn-diagram__edge sn-dg-c2 sn-diagram__edge--built" data-from="ml-store-ledger" data-to="ml-cli-sync-tidal" data-edge="F40" tabindex="0" aria-label="Flow 40 &#x28;F40): DJ library ledger → run_weekly sync-tidal – crates [library, Built]">
+<title>Flow 40 &#x28;F40): DJ library ledger → run_weekly sync-tidal – crates [library, Built]</title>
+<path class="sn-diagram__line" d="M731.2 252.2 L731.2 302.0 L862.0 302.0"/>
+<path class="sn-diagram__head" d="M862.0 302.0 L855.0 298.1 L855.0 305.9 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="780.3" y="289.5" width="32.7" height="25.0"/><text class="sn-diagram__t body-strong" x="796.6" y="306.8" text-anchor="middle">40</text></g>
+</g>
+<g class="sn-diagram__edge sn-dg-c2 sn-diagram__edge--built" data-from="ml-store-overrides" data-to="ml-cli-process" data-edge="F41" tabindex="0" aria-label="Flow 41 &#x28;F41): overrides → run_weekly process – hand corrections [library, Built]">
+<title>Flow 41 &#x28;F41): overrides → run_weekly process – hand corrections [library, Built]</title>
+<path class="sn-diagram__line" d="M344.4 473.3 L430.2 473.3 L430.2 252.1"/>
+<path class="sn-diagram__head" d="M430.2 252.1 L426.4 259.1 L434.1 259.1 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="416.0" y="350.2" width="28.5" height="25.0"/><text class="sn-diagram__t body-strong" x="430.2" y="367.5" text-anchor="middle">41</text></g>
+</g>
+<g class="sn-diagram__node sn-dg-c4 sn-diagram__node--production" data-node="ext-rekordbox" tabindex="0" aria-label="Rekordbox +1 &#x28;ext-rekordbox) – sets, external-api, Production">
+<title>Rekordbox +1 &#x28;ext-rekordbox) – sets, external-api, Production</title>
+<rect class="sn-diagram__box" x="661.2" y="351.0" width="140.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="662.7" y="352.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="675.2" y="373.3">Rekordbox +1</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="675.2" y="394.3">sets · api</text>
+</g>
+<g class="sn-diagram__node sn-dg-c7 sn-diagram__node--production" data-node="ext-tidal" tabindex="0" aria-label="&#x54;IDAL developer &#x41;PI &#x28;ext-tidal) – services, external-api, Production">
+<title>&#x54;IDAL developer &#x41;PI &#x28;ext-tidal) – services, external-api, Production</title>
+<rect class="sn-diagram__box" x="1103.2" y="274.0" width="178.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="1104.7" y="275.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="1117.2" y="296.3">&#x54;IDAL developer &#x41;PI</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1117.2" y="317.3">services · api</text>
+</g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-agent-beatport-sync" tabindex="0" aria-label="Beatport sync playbook &#x28;ml-agent-beatport-sync) – ops, cli, Production">
+<title>Beatport sync playbook &#x28;ml-agent-beatport-sync) – ops, cli, Production</title>
+<rect class="sn-diagram__box" x="887.2" y="460.5" width="140.0" height="77.0"/>
+<rect class="sn-diagram__stripe" x="888.7" y="462.0" width="5" height="74.0"/>
+<text class="sn-diagram__t body-strong" x="901.2" y="482.8">Beatport sync</text>
+<text class="sn-diagram__t body-strong" x="901.2" y="503.8">playbook</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="901.2" y="524.8">ops · cli</text>
+</g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-agent-weekly-run" tabindex="0" aria-label="Weekly run playbook &#x28;ml-agent-weekly-run) – ops, cli, Production">
+<title>Weekly run playbook &#x28;ml-agent-weekly-run) – ops, cli, Production</title>
+<rect class="sn-diagram__box" x="183.2" y="638.0" width="182.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="184.7" y="639.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="197.2" y="660.3">Weekly run playbook</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="197.2" y="681.3">ops · cli</text>
+</g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-cli-build-db" tabindex="0" aria-label="build_db &#x28;ml-cli-build-db) – ops, cli, Production">
+<title>build_db &#x28;ml-cli-build-db) – ops, cli, Production</title>
+<rect class="sn-diagram__box" x="887.2" y="560.0" width="140.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="888.7" y="561.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="901.2" y="582.3">build_db</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="901.2" y="603.3">ops · cli</text>
+</g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-cli-confirm" tabindex="0" aria-label="run_weekly confirm &#x28;ml-cli-confirm) – ops, cli, Production">
+<title>run_weekly confirm &#x28;ml-cli-confirm) – ops, cli, Production</title>
+<rect class="sn-diagram__box" x="1105.7" y="465.0" width="173.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="1107.2" y="466.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="1119.7" y="487.3">run_weekly confirm</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1119.7" y="508.3">ops · cli</text>
+</g>
+<g class="sn-diagram__node sn-dg-c2 sn-diagram__node--production" data-node="ml-cli-db" tabindex="0" aria-label="run_weekly db &#x28;ml-cli-db) – library, cli, Production">
+<title>run_weekly db &#x28;ml-cli-db) – library, cli, Production</title>
+<rect class="sn-diagram__box" x="204.2" y="196.0" width="140.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="205.7" y="197.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="218.2" y="218.3">run_weekly db</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="218.2" y="239.3">library · cli</text>
+</g>
+<g class="sn-diagram__node sn-dg-c2 sn-diagram__node--production" data-node="ml-cli-process" tabindex="0" aria-label="run_weekly process &#x28;ml-cli-process) – library, cli, Production">
+<title>run_weekly process &#x28;ml-cli-process) – library, cli, Production</title>
+<rect class="sn-diagram__box" x="420.7" y="196.0" width="175.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="422.2" y="197.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="434.7" y="218.3">run_weekly process</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="434.7" y="239.3">library · cli</text>
+</g>
+<g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="ml-cli-resolve" tabindex="0" aria-label="run_weekly resolve &#x28;ml-cli-resolve) – ingest, cli, Production">
+<title>run_weekly resolve &#x28;ml-cli-resolve) – ingest, cli, Production</title>
+<rect class="sn-diagram__box" x="189.2" y="87.0" width="170.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="190.7" y="88.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="203.2" y="109.3">run_weekly resolve</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="203.2" y="130.3">ingest · cli</text>
+</g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-cli-sync-songnodes" tabindex="0" aria-label="run_weekly sync-songnodes &#x28;ml-cli-sync-songnodes) – ops, cli, Production">
+<title>run_weekly sync-songnodes &#x28;ml-cli-sync-songnodes) – ops, cli, Production</title>
+<rect class="sn-diagram__box" x="198.2" y="538.5" width="152.0" height="77.0"/>
+<rect class="sn-diagram__stripe" x="199.7" y="540.0" width="5" height="74.0"/>
+<text class="sn-diagram__t body-strong" x="212.2" y="560.8">run_weekly</text>
+<text class="sn-diagram__t body-strong" x="212.2" y="581.8">sync-songnodes</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="212.2" y="602.8">ops · cli</text>
+</g>
+<g class="sn-diagram__node sn-dg-c7 sn-diagram__node--production" data-node="ml-cli-sync-tidal" tabindex="0" aria-label="run_weekly sync-tidal &#x28;ml-cli-sync-tidal) – services, cli, Production">
+<title>run_weekly sync-tidal &#x28;ml-cli-sync-tidal) – services, cli, Production</title>
+<rect class="sn-diagram__box" x="862.2" y="274.0" width="190.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="863.7" y="275.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="876.2" y="296.3">run_weekly sync-tidal</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="876.2" y="317.3">services · cli</text>
+</g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-page-set-builder" tabindex="0" aria-label="Naarm Set Builder &#x28;ml-page-set-builder) – design, artifact, Production">
+<title>Naarm Set Builder &#x28;ml-page-set-builder) – design, artifact, Production</title>
+<rect class="sn-diagram__box" x="651.2" y="747.0" width="160.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="652.7" y="748.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="665.2" y="769.3">Naarm Set Builder</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="665.2" y="790.3">design · artifact</text>
+</g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-store-artifact-files" tabindex="0" aria-label="Set Builder published files &#x28;ml-store-artifact-files) – ops, artifact-files, Production">
+<title>Set Builder published files &#x28;ml-store-artifact-files) – ops, artifact-files, Production</title>
+<rect class="sn-diagram__box" x="416.2" y="616.5" width="184.0" height="77.0"/>
+<rect class="sn-diagram__stripe" x="417.7" y="618.0" width="5" height="74.0"/>
+<text class="sn-diagram__t body-strong" x="430.2" y="638.8">Set Builder published</text>
+<text class="sn-diagram__t body-strong" x="430.2" y="659.8">files</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="430.2" y="680.8">ops · artifact files</text>
+</g>
+<g class="sn-diagram__node sn-dg-c2 sn-diagram__node--production" data-node="ml-store-ledger" tabindex="0" aria-label="DJ library ledger &#x28;ml-store-ledger) – library, file, Production">
+<title>DJ library ledger &#x28;ml-store-ledger) – library, file, Production</title>
+<rect class="sn-diagram__box" x="656.7" y="196.0" width="149.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="658.2" y="197.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="670.7" y="218.3">DJ library ledger</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="670.7" y="239.3">library · file</text>
+</g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-store-outputs" tabindex="0" aria-label="outputs &#x28;ml-store-outputs) – ops, folder, Production">
+<title>outputs &#x28;ml-store-outputs) – ops, folder, Production</title>
+<rect class="sn-diagram__box" x="1122.2" y="629.0" width="140.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="1123.7" y="630.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="1136.2" y="651.3">outputs</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1136.2" y="672.3">ops · folder</text>
+</g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-store-overrides" tabindex="0" aria-label="overrides &#x28;ml-store-overrides) – ops, folder, Production">
+<title>overrides &#x28;ml-store-overrides) – ops, folder, Production</title>
+<rect class="sn-diagram__box" x="204.2" y="460.0" width="140.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="205.7" y="461.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="218.2" y="482.3">overrides</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="218.2" y="503.3">ops · folder</text>
+</g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-store-sqlite" tabindex="0" aria-label="dj_library.sqlite &#x28;ml-store-sqlite) – ops, sqlite, Production">
+<title>dj_library.sqlite &#x28;ml-store-sqlite) – ops, sqlite, Production</title>
+<rect class="sn-diagram__box" x="1122.2" y="551.0" width="140.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="1123.7" y="552.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="1136.2" y="573.3">dj_library.sqlite</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1136.2" y="594.3">ops · sqlite</text>
+</g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-svc-rest-api" tabindex="0" aria-label="&#x52;EST &#x41;PI &#x28;sn-be-svc-rest-api) – ops, service-ui, Production">
+<title>&#x52;EST &#x41;PI &#x28;sn-be-svc-rest-api) – ops, service-ui, Production</title>
+<rect class="sn-diagram__box" x="438.2" y="499.0" width="140.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="439.7" y="500.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="452.2" y="521.3">&#x52;EST &#x41;PI</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="452.2" y="542.3">ops · service</text>
+</g>
+<g class="sn-diagram__legend" aria-label="Legend">
+<text class="sn-diagram__t body-strong" x="24.0" y="860.3">Key</text>
+<rect class="sn-diagram__swatch sn-dg-c1" x="24.0" y="880.5" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="54.0" y="890.3">ingest</text>
+<rect class="sn-diagram__swatch sn-dg-c2" x="117.0" y="880.5" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="147.0" y="890.3">library</text>
+<rect class="sn-diagram__swatch sn-dg-c4" x="211.6" y="880.5" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="241.6" y="890.3">sets</text>
+<rect class="sn-diagram__swatch sn-dg-c7" x="290.1" y="880.5" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="320.1" y="890.3">services</text>
+<rect class="sn-diagram__swatch sn-dg-c8" x="400.4" y="880.5" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="430.4" y="890.3">ops and design</text>
+<rect class="sn-diagram__legend-box sn-diagram__node--production" x="561.3" y="877.5" width="22" height="16"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="591.3" y="890.3">Production &#x28;solid outline)</text>
+<g class="sn-diagram__edge--built"><path class="sn-diagram__line" d="M793.6 885.5 L815.6 885.5"/></g>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="823.6" y="890.3">Built flow &#x28;solid, domain colour)</text>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1074.2" y="877.5" width="22" height="16"/></g>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1104.2" y="890.3">Flow number = row in the flow table</text>
+</g>
+</svg>

@@ -13000,7 +13000,7 @@
   {
    "id": "ext-tidal",
    "repo": "external",
-   "name": "TIDAL API",
+   "name": "TIDAL developer API",
    "kind": "external-api",
    "location": "internet",
    "owner": "third party",
@@ -15799,6 +15799,42 @@
    "agreement": "agree",
    "note": "linter flags tracker.html hex (12) and reference.html emoji/caps; Playwright shows tracker loads only Google Fonts and needs the artifact runtime.",
    "_agent": "sn-frontend"
+  },
+  {
+   "item": "claim ml-claim-ds-version",
+   "methods_used": [
+    "scanner: ml",
+    "verifier: GitHub REST history of design-system/tokens.json vs build file mtimes; token-name set diff of build style.css against tokens.css at 29619fe5b"
+   ],
+   "agreement": "disagree",
+   "note": "Disagree with open: the build was made 11 minutes after 1.1.0 landed and before 1.1.1, and its token set matches 1.1.x (1.1.0-1.2.0 tokens.css are identical, so tokens alone cannot pin the patch). Also: main @7429821 is 1.9.1, not 1.10.0; 1.10.0 is the unpushed local commit 78d1d4f."
+  },
+  {
+   "item": "claim sn-be-c-enrich-8020",
+   "methods_used": [
+    "scanner: sn-backend",
+    "verifier: Followed the registered scraper pipeline to its default URL"
+   ],
+   "agreement": "disagree",
+   "note": "Disagree with refuted: the scraper does still delegate to metadata-enrichment:8020 as documented; the host just does not exist in compose, so every call lands in service_unavailable and real enrichment happens in the worker."
+  },
+  {
+   "item": "claim sn-be-c-ollama",
+   "methods_used": [
+    "scanner: sn-backend",
+    "verifier: Checked the downloader-middleware layer (where CAPTCHA solving lives), spider custom_settings and compose"
+   ],
+   "agreement": "disagree",
+   "note": "Disagree with not-reproducible: it is checkable and false. Code exists (middlewares/captcha_middleware.py, ollama_captcha_solver.py) but is never registered. The scanner looked at ITEM_PIPELINES, the wrong layer."
+  },
+  {
+   "item": "claim sn-fe-c-shortcuts",
+   "methods_used": [
+    "scanner: sn-frontend",
+    "verifier: Read the window keydown handler in full"
+   ],
+   "agreement": "disagree",
+   "note": "Disagree with open: all four handlers exist in the same switch the scanner cited. Caveat: Ctrl+A calls toggleNodeSelection, so already-selected nodes get deselected."
   }
  ],
  "unverified": [
@@ -15820,7 +15856,8 @@
   "design-system/source/previews files were grouped by folder count; individual titles not extracted.",
   "Pathfinder export JSON branch content (pathfinder.machine.ts:80-90) not read in full.",
   "PR #579 login page reviewed by grep of its files at the PR head only; not rendered.",
-  "sn-fe-sources-import R2 third-primary visibility inferred from markup, not rendered."
+  "sn-fe-sources-import R2 third-primary visibility inferred from markup, not rendered.",
+  "#581 GAP-03 (audio fingerprint and AcoustID transition segmenter): no code, schema or doc in either repo supports it; kept as a topic, not as a gap."
  ],
  "timings": [
   {
@@ -19903,10 +19940,13 @@
    "outcome": "confirmed",
    "finding": "pipeline imports only stdlib modules; djlib has no third-party imports",
    "evidence": [
-    "musicLibrary/pipeline/run_weekly.py:11-27"
+    "musicLibrary/pipeline/run_weekly.py:11-27",
+    "python3 -I ast scan of musicLibrary/pipeline/**/*.py: only non-stdlib top-level import is local build_db (pipeline/build_db.py)"
    ],
    "_agent": "ml",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "AST import graph of every pipeline/**/*.py checked against sys.stdlib_module_names"
   },
   {
    "id": "ml-claim-schedule",
@@ -19915,10 +19955,14 @@
    "outcome": "refuted",
    "finding": "runs dated 24 Oct (Sat), 27 Oct (Tue), 31 Oct (Fri), 3 Nov (Tue); none on a Sunday",
    "evidence": [
-    "musicLibrary/outputs/"
+    "musicLibrary/outputs/",
+    "sqlite3 db/dj_library.sqlite: SELECT * FROM runs -> 2026-10-24, 10-27, 10-31, 11-03",
+    "python date.strftime('%a') -> Sat, Tue, Sat, Tue"
    ],
    "_agent": "ml",
-   "state": "built"
+   "state": "built",
+   "verifier": "refuted",
+   "verifier_method": "Weekday of each run from the DB runs table (not folder names)"
   },
   {
    "id": "ml-claim-resolve-fields",
@@ -19928,10 +19972,16 @@
    "finding": "0 of 1007 TIDAL versions carry BPM or key; Deezer BPM on 38 of 732 and never copied to the chosen version; ledger BPM 0/413, key 0/413",
    "evidence": [
     "musicLibrary/inbox/resolved_2026-10-24.json",
-    "musicLibrary/ledger/dj_library_ledger.json"
+    "musicLibrary/ledger/dj_library_ledger.json",
+    "resolved_2026-10-24.json: 1007 TIDAL versions bpm 0 key 0; 732 Deezer bpm 38 key 0",
+    "resolved_2026-10-31.json: 449 TIDAL bpm 0; 341 Deezer bpm 27",
+    "sqlite tracks: count(bpm)=0, count(camelot_key)=0 of 413",
+    "musicLibrary/pipeline/run_weekly.py:71-83,108-112 (bpm taken from the chosen longest version only)"
    ],
    "_agent": "ml",
-   "state": "built"
+   "state": "built",
+   "verifier": "corrected",
+   "verifier_method": "Script counted non-null bpm/key across all four resolved_*.json plus ledger and DB columns; read build_record to see which version supplies bpm"
   },
   {
    "id": "ml-claim-resumable",
@@ -19940,10 +19990,15 @@
    "outcome": "confirmed",
    "finding": "skips keys already in resolved_<date>.json, flushes every 20",
    "evidence": [
-    "musicLibrary/pipeline/run_weekly.py:418-461"
+    "musicLibrary/pipeline/run_weekly.py:418-461",
+    "musicLibrary/pipeline/run_weekly.py:418-419 (load existing out, todo excludes keys already in it)",
+    "musicLibrary/pipeline/run_weekly.py:456-461 (dump every 20)",
+    "musicLibrary/agent/weekly_run.md step 3"
    ],
    "_agent": "ml",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "Read cmd_resolve control flow and confirmed against chunked-run instructions"
   },
   {
    "id": "ml-claim-db-tables",
@@ -19952,10 +20007,13 @@
    "outcome": "confirmed",
    "finding": "sqlite_master matches (plus a meta table not listed)",
    "evidence": [
-    "musicLibrary/db/dj_library.sqlite"
+    "musicLibrary/db/dj_library.sqlite",
+    "sqlite3 file:db/dj_library.sqlite?mode=ro: 13 tables incl. meta, 4 views v_buy_list, v_crates, v_review_queue, v_source_yield"
    ],
    "_agent": "ml",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "Read-only sqlite_master query (mode=ro URI)"
   },
   {
    "id": "ml-claim-page-source",
@@ -19965,10 +20023,14 @@
    "finding": "the published page is artifact/build/index.html with app.js; artifact/index.html has no library.json beside it",
    "evidence": [
     "musicLibrary/agent/weekly_run.md:8",
-    "musicLibrary/artifact/app/README.md"
+    "musicLibrary/artifact/app/README.md",
+    "ls musicLibrary/artifact: index.html (legacy, fetches library.json), app/, build/{index.html,app.js,library.json,assets/}",
+    "musicLibrary/agent/weekly_run.md:8 and step 8.4 (publishes weekly_publish/index.html copied from artifact/build/)"
    ],
    "_agent": "ml",
-   "state": "built"
+   "state": "built",
+   "verifier": "refuted",
+   "verifier_method": "Directory listing plus weekly playbook publish step"
   },
   {
    "id": "ml-claim-sync-script",
@@ -19978,10 +20040,15 @@
    "finding": "neither exists in songnodes 7429821; contract is POST /api/v1/library/ingest (import-music-library.sh, cmd_sync_songnodes)",
    "evidence": [
     "songnodes/scripts/import-music-library.sh",
-    "songnodes/.gitignore:251-253"
+    "songnodes/.gitignore:251-253",
+    "git ls-tree -r 7429821 | grep sync-music-library -> none; only scripts/import-music-library.sh",
+    "gh api commits?path=scripts/sync-music-library.sh -> f85c69aa1 'retire static music-library.json fallback and sync script (#421)'",
+    "musicLibrary/pipeline/run_weekly.py:567-588 (POST /api/v1/library/ingest)"
    ],
    "_agent": "ml",
-   "state": "built"
+   "state": "built",
+   "verifier": "refuted",
+   "verifier_method": "git tree listing at 7429821 plus GitHub REST commit history for the path"
   },
   {
    "id": "ml-claim-same-set-shape",
@@ -19991,10 +20058,15 @@
    "finding": "songnodes server stores name, description and uuid track ids only; no tidal, shape or minutes on the server",
    "evidence": [
     "songnodes/frontend/src/features/musicLibrary/data.ts:271-283",
-    "songnodes/sql/migrations/101_library_schema_up.sql:68-82"
+    "songnodes/sql/migrations/101_library_schema_up.sql:68-82",
+    "songnodes/services/rest_api/routers/library_ingest.py:28-33 (passes only name, description, tracks)",
+    "songnodes/services/library/model/library_db.py:10-22 (stores name, description, track_id uuid, position)",
+    "songnodes/frontend/src/features/musicLibrary/data.ts:149-153 (client SavedSet has shape, minutes)"
    ],
    "_agent": "ml",
-   "state": "built"
+   "state": "built",
+   "verifier": "refuted",
+   "verifier_method": "Followed the server route to the SQL writer instead of the client"
   },
   {
    "id": "ml-claim-review-queue",
@@ -20004,10 +20076,14 @@
    "finding": "needs_review is also set when fewer than two methods exist, so all 413 tracks are in the queue",
    "evidence": [
     "musicLibrary/pipeline/djlib/classify.py:77",
-    "musicLibrary/outputs/2026-11-03/weekly_report.md"
+    "musicLibrary/outputs/2026-11-03/weekly_report.md",
+    "python3 -I: Classifier(rules,sources).energy('House',None,['PBS_Elektrosophy']) -> needs_review True, spread 0",
+    "sqlite: sum(needs_review)=413 of 413; outputs/2026-11-03/review_queue.csv 414 lines incl. header"
    ],
    "_agent": "ml",
-   "state": "built"
+   "state": "built",
+   "verifier": "corrected",
+   "verifier_method": "Executed Classifier.energy with bpm=None in python; counted needs_review in DB"
   },
   {
    "id": "ml-claim-weights",
@@ -20016,10 +20092,14 @@
    "outcome": "confirmed",
    "finding": "rules.energy.weights = 0.45/0.40/0.15; in practice only the source weight applies",
    "evidence": [
-    "musicLibrary/config/rules.json"
+    "musicLibrary/config/rules.json",
+    "python json: rules['energy']['weights'] = {bpm:0.45, source:0.4, cues:0.15}",
+    "sqlite: count(energy_bpm_method)=0, count(energy_source_method)=413"
    ],
    "_agent": "ml",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "Parsed config/rules.json; checked DB which methods are populated"
   },
   {
    "id": "ml-claim-overrides",
@@ -20028,10 +20108,15 @@
    "outcome": "confirmed",
    "finding": "apply_overrides stores energy_auto once; 0 overrides so far",
    "evidence": [
-    "musicLibrary/pipeline/run_weekly.py:152-182"
+    "musicLibrary/pipeline/run_weekly.py:152-182",
+    "scratch run: energy_auto=4 kept, energy_override=9 re-applied on second call",
+    "musicLibrary/pipeline/run_weekly.py:259 (called from cmd_process every run)",
+    "overrides/energy_overrides.csv: header only (0 overrides)"
    ],
    "_agent": "ml",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "Ran apply_overrides twice on a scratch overrides CSV with a fake ledger"
   },
   {
    "id": "ml-claim-manual-stamp",
@@ -20040,10 +20125,13 @@
    "outcome": "confirmed",
    "finding": "stamp written before raw_<date>.json",
    "evidence": [
-    "musicLibrary/pipeline/run_weekly.py:386-395"
+    "musicLibrary/pipeline/run_weekly.py:386-395",
+    "musicLibrary/pipeline/run_weekly.py:386-394 (manual_adds.csv rewritten with processed=date) before :395 dump raw_<date>.json"
    ],
    "_agent": "ml",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "Line-order check of cmd_scrape writes"
   },
   {
    "id": "ml-claim-calibrate",
@@ -20052,10 +20140,14 @@
    "outcome": "confirmed",
    "finding": "writes outputs/calibration_suggestions.json; file absent, never run",
    "evidence": [
-    "musicLibrary/pipeline/calibrate.py:85"
+    "musicLibrary/pipeline/calibrate.py:85",
+    "grep open/dump in pipeline/calibrate.py: only json.dump to outputs/calibration_suggestions.json (:85-86)",
+    "ls outputs/calibration* -> absent"
    ],
    "_agent": "ml",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "Enumerated every write call in calibrate.py; checked outputs"
   },
   {
    "id": "ml-claim-xml-local",
@@ -20064,10 +20156,15 @@
    "outcome": "confirmed",
    "finding": "0 local paths, XML has Entries=0",
    "evidence": [
-    "musicLibrary/outputs/rekordbox_musicLibrary.xml"
+    "musicLibrary/outputs/rekordbox_musicLibrary.xml",
+    "musicLibrary/pipeline/djlib/export.py:108-109 (local_path and ACTIVE rotation only)",
+    "grep -c '<TRACK' outputs/rekordbox_musicLibrary.xml -> 0; Entries=\"0\"",
+    "sqlite count(local_path)=0"
    ],
    "_agent": "ml",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "Read export filter and counted TRACK elements in the XML"
   },
   {
    "id": "ml-claim-tidal-fallback",
@@ -20077,10 +20174,15 @@
    "finding": "guards on secrets/tidal_app.json and tidal_user_token.json; sync_result files show 403 tracks on TIDAL, so setup was done",
    "evidence": [
     "musicLibrary/pipeline/run_weekly.py:420-424",
-    "musicLibrary/pipeline/run_weekly.py:471-473"
+    "musicLibrary/pipeline/run_weekly.py:471-473",
+    "musicLibrary/pipeline/run_weekly.py:420-424 (resolve guard on secrets/tidal_app.json)",
+    "musicLibrary/pipeline/run_weekly.py:471-473 (sync guard on tidal_user_token.json)",
+    "inbox/sync_result_2026-11-03.json: 403 rows with platforms.tidal true"
    ],
    "_agent": "ml",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "Read both guards; counted platforms.tidal in sync_result files"
   },
   {
    "id": "ml-claim-db-loud",
@@ -20089,10 +20191,14 @@
    "outcome": "confirmed",
    "finding": "sys.exit on mismatch",
    "evidence": [
-    "musicLibrary/pipeline/build_db.py:185-186"
+    "musicLibrary/pipeline/build_db.py:185-186",
+    "musicLibrary/pipeline/build_db.py:181-186 sys.exit on row-count or integrity mismatch",
+    "PRAGMA integrity_check on current DB = ok, 413 rows = ledger 413"
    ],
    "_agent": "ml",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "Read build_db tail"
   },
   {
    "id": "ml-claim-atomic",
@@ -20101,10 +20207,14 @@
    "outcome": "corrected",
    "finding": "shutil.copyfile over the target, not an atomic rename",
    "evidence": [
-    "musicLibrary/pipeline/build_db.py:179"
+    "musicLibrary/pipeline/build_db.py:179",
+    "musicLibrary/pipeline/build_db.py:116 temp file in mkdtemp",
+    "musicLibrary/pipeline/build_db.py:179 shutil.copyfile(tmp, db) - not os.replace/rename"
    ],
    "_agent": "ml",
-   "state": "built"
+   "state": "built",
+   "verifier": "corrected",
+   "verifier_method": "Read build_db swap"
   },
   {
    "id": "ml-claim-shared-wins",
@@ -20113,10 +20223,13 @@
    "outcome": "confirmed",
    "finding": "initSavedSets merges remote first then local-only uploads",
    "evidence": [
-    "musicLibrary/artifact/app/artifact-data.ts:55-72"
+    "musicLibrary/artifact/app/artifact-data.ts:55-72",
+    "musicLibrary/artifact/app/artifact-data.ts:55-72 (mem=[...remote, ...localOnly]; localOnly uploaded)"
    ],
    "_agent": "ml",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "Read initSavedSets merge order"
   },
   {
    "id": "ml-claim-ds-version",
@@ -20125,10 +20238,15 @@
    "outcome": "open",
    "finding": "no version string in style.css to confirm; songnodes is now 1.10.0 and the build cannot be redone from main",
    "evidence": [
-    "songnodes/design-system/tokens.json"
+    "songnodes/design-system/tokens.json",
+    "ls -la artifact/build: app.js, style.css mtime 2026-10-24 13:31 AEDT (02:31Z)",
+    "gh api commits?path=design-system/tokens.json: 29619fe5b 2026-10-24T02:20Z adopts 1.1.0; next d0058e54d 22:38Z is 1.1.1",
+    "all 202 custom properties of tokens.css@29619fe5b present in build style.css; 16 tokens of current 1.10.0 absent"
    ],
    "_agent": "ml",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed (disagrees)",
+   "verifier_method": "GitHub REST history of design-system/tokens.json vs build file mtimes; token-name set diff of build style.css against tokens.css at 29619fe5b"
   },
   {
    "id": "ml-claim-isrc-319",
@@ -20137,10 +20255,14 @@
    "outcome": "corrected",
    "finding": "all 413 ledger tracks now carry an ISRC",
    "evidence": [
-    "musicLibrary/ledger/dj_library_ledger.json"
+    "musicLibrary/ledger/dj_library_ledger.json",
+    "ledger/history/ledger_before_2026-10-27.json: 319 tracks, 319 with ISRC",
+    "ledger/dj_library_ledger.json: 413 of 413 with ISRC"
    ],
    "_agent": "ml",
-   "state": "built"
+   "state": "built",
+   "verifier": "corrected",
+   "verifier_method": "Counted ISRC in ledger history snapshots by date"
   },
   {
    "id": "ml-claim-goodstatic",
@@ -20149,10 +20271,15 @@
    "outcome": "confirmed",
    "finding": "0 rows in all four scrape logs; Elektrosophy and Passing Notes also fell to 0 on 3 Nov after identical 46-row counts three runs running",
    "evidence": [
-    "musicLibrary/outputs/2026-11-03/scrape_log.txt"
+    "musicLibrary/outputs/2026-11-03/scrape_log.txt",
+    "inbox/raw_*.json: RRR_GoodStatic 0 in all four",
+    "PBS_Elektrosophy 46/46/46/0; PBS_PassingNotes 25/15/15/0",
+    "config/sources.json:115 (RRR_GoodStatic, kind rrr_html)"
    ],
    "_agent": "ml",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "Counted rows per source_id in raw_*.json (independent of the log text)"
   },
   {
    "id": "ml-claim-only-library-json",
@@ -20161,10 +20288,15 @@
    "outcome": "confirmed",
    "finding": "publish step passes only index.html and library.json; build/library.json equals outputs/artifact/library.json",
    "evidence": [
-    "musicLibrary/agent/weekly_run.md:8"
+    "musicLibrary/agent/weekly_run.md:8",
+    "cmp artifact/build/library.json outputs/artifact/library.json -> identical",
+    "artifact/build/library.json mtime 2026-11-04; every other build file 2026-10-24",
+    "musicLibrary/agent/weekly_run.md step 8.4"
    ],
    "_agent": "ml",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "Byte compare and mtimes of the published build folder"
   },
   {
    "id": "sn-be-c-unified-only",
@@ -20173,10 +20305,13 @@
    "outcome": "confirmed",
    "finding": "Only scraper service in compose.dev.yaml.",
    "evidence": [
-    "songnodes/compose.dev.yaml:145"
+    "songnodes/compose.dev.yaml:145",
+    "python yaml: services = postgres, redis, graph-api, rest-api, rabbitmq, worker, unified-scraper, audio-analysis, frontend"
    ],
    "_agent": "sn-backend",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "Parsed compose.dev.yaml with PyYAML"
   },
   {
    "id": "sn-be-c-medallion",
@@ -20186,10 +20321,15 @@
    "finding": "No gold migration or job runs in compose; graph-api reads silver directly; gold_track_graph has no reader.",
    "evidence": [
     "songnodes/compose.dev.yaml:13",
-    "songnodes/services/graph-visualization-api/catalog.py:131"
+    "songnodes/services/graph-visualization-api/catalog.py:131",
+    "compose.dev.yaml postgres volumes: init 001,002,006,012,013,014 only",
+    "songnodes/services/graph-visualization-api/catalog.py:113,131 read silver_* directly",
+    "grep gold_track_graph in services/scrapers/frontend: comments only (rest_api/target_suggestions.py:24-25)"
    ],
    "_agent": "sn-backend",
-   "state": "built"
+   "state": "built",
+   "verifier": "refuted",
+   "verifier_method": "Listed init mounts in parsed compose and every gold reader in active services"
   },
   {
    "id": "sn-be-c-no-layer-skip",
@@ -20198,10 +20338,14 @@
    "outcome": "refuted",
    "finding": "Scraper persistence pipeline writes silver tables directly.",
    "evidence": [
-    "songnodes/scrapers/pipelines/persistence_pipeline.py:910"
+    "songnodes/scrapers/pipelines/persistence_pipeline.py:910",
+    "songnodes/scrapers/settings.py:94 PersistencePipeline registered at 300",
+    "songnodes/scrapers/pipelines/persistence_pipeline.py:1375,1508,1610,1732 INSERT silver_enriched_tracks, silver_enriched_playlists, silver_playlist_tracks, song_adjacency"
    ],
    "_agent": "sn-backend",
-   "state": "built"
+   "state": "built",
+   "verifier": "refuted",
+   "verifier_method": "Checked ITEM_PIPELINES registration then INSERT targets of the registered pipeline"
   },
   {
    "id": "sn-be-c-etl-sql",
@@ -20210,10 +20354,14 @@
    "outcome": "corrected",
    "finding": "Columns are from_track_id/to_track_id with playlist_occurrences jsonb and occurrence_count upsert, done in Python.",
    "evidence": [
-    "songnodes/services/common/datalayer/ingest.py:28"
+    "songnodes/services/common/datalayer/ingest.py:28",
+    "songnodes/sql/migrations/medallion/006_track_adjacency_edges_up.sql:11-25 (from_track_id, to_track_id, occurrence_count, playlist_occurrences jsonb)",
+    "songnodes/services/common/datalayer/ingest.py:28-36 upsert"
    ],
    "_agent": "sn-backend",
-   "state": "built"
+   "state": "built",
+   "verifier": "corrected",
+   "verifier_method": "Compared against DDL of the applied migration"
   },
   {
    "id": "sn-be-c-target-searches",
@@ -20223,10 +20371,14 @@
    "finding": "Scheduler reads target_tracks (migration 012); target_track_searches is only in legacy SQL.",
    "evidence": [
     "songnodes/services/common/datalayer/target_scrape.py:72",
-    "songnodes/scrapers/migrations/004_create_target_track_searches.sql:23"
+    "songnodes/scrapers/migrations/004_create_target_track_searches.sql:23",
+    "grep target_track_searches services scrapers *.py (non-test) -> none",
+    "songnodes/services/common/datalayer/target_scrape.py:76-80 FROM target_tracks"
    ],
    "_agent": "sn-backend",
-   "state": "built"
+   "state": "built",
+   "verifier": "corrected",
+   "verifier_method": "Searched all Python for the table name; read scheduler query"
   },
   {
    "id": "sn-be-c-bronze-schema",
@@ -20235,10 +20387,13 @@
    "outcome": "corrected",
    "finding": "Code writes raw_json (and scraped_at, scraper_version).",
    "evidence": [
-    "songnodes/scrapers/pipelines/persistence_pipeline.py:1117"
+    "songnodes/scrapers/pipelines/persistence_pipeline.py:1117",
+    "songnodes/sql/migrations/medallion/001_bronze_layer_up.sql:22,25,32,63,66,75 (scraper_version, raw_json, scraped_at; no raw_metadata)"
    ],
    "_agent": "sn-backend",
-   "state": "built"
+   "state": "built",
+   "verifier": "corrected",
+   "verifier_method": "Read the applied bronze DDL"
   },
   {
    "id": "sn-be-c-scraper-api",
@@ -20247,10 +20402,14 @@
    "outcome": "corrected",
    "finding": "ScrapeRequest is {source, url, search_query, artist_name, limit, max_pages, job_id, params}.",
    "evidence": [
-    "songnodes/scrapers/unified_scraper_api.py:94"
+    "songnodes/scrapers/unified_scraper_api.py:94",
+    "python ast on songnodes/scrapers/unified_scraper_api.py:94 -> source, url, start_urls, params, task_id, max_pages, artist_name, search_query, limit, job_id",
+    "POST /scrape at :579; spider_name is derived from SPIDER_MAP[request.source] at :388"
    ],
    "_agent": "sn-backend",
-   "state": "built"
+   "state": "built",
+   "verifier": "corrected",
+   "verifier_method": "AST extraction of ScrapeRequest fields and route decorators"
   },
   {
    "id": "sn-be-c-enrich-8020",
@@ -20260,10 +20419,15 @@
    "finding": "metadata-enrichment is not in compose; 8020 is audio-analysis; enrichment runs in the worker via common/providers.",
    "evidence": [
     "songnodes/compose.dev.yaml:186",
-    "songnodes/services/common/providers/registry.py:42"
+    "songnodes/services/common/providers/registry.py:42",
+    "songnodes/scrapers/settings.py:93 APIEnrichmentPipeline at 250",
+    "songnodes/scrapers/pipelines/api_enrichment_pipeline.py:67-70 default http://metadata-enrichment:8020",
+    "compose.dev.yaml: no metadata-enrichment service and no METADATA_ENRICHMENT_URL on unified-scraper; :131 8020 is audio-analysis"
    ],
    "_agent": "sn-backend",
-   "state": "built"
+   "state": "built",
+   "verifier": "corrected (disagrees)",
+   "verifier_method": "Followed the registered scraper pipeline to its default URL"
   },
   {
    "id": "sn-be-c-ollama",
@@ -20272,10 +20436,15 @@
    "outcome": "not-reproducible",
    "finding": "No Ollama service in compose and the Ollama modules are not in ITEM_PIPELINES.",
    "evidence": [
-    "songnodes/scrapers/settings.py:90"
+    "songnodes/scrapers/settings.py:90",
+    "songnodes/scrapers/settings.py:72-74 DOWNLOADER_MIDDLEWARES = {} (empty)",
+    "grep CaptchaSolving/captcha in scrapers/spiders and unified_scraper_api.py -> none",
+    "compose.dev.yaml: no ollama service; settings.py:142 'Ollama Integration (Conceptual)'"
    ],
    "_agent": "sn-backend",
-   "state": "built"
+   "state": "built",
+   "verifier": "refuted (disagrees)",
+   "verifier_method": "Checked the downloader-middleware layer (where CAPTCHA solving lives), spider custom_settings and compose"
   },
   {
    "id": "sn-be-c-artist-enforce",
@@ -20286,10 +20455,16 @@
    "evidence": [
     "songnodes/services/graph-visualization-api/catalog.py:17",
     "songnodes/services/common/datalayer/ingest.py:254",
-    "songnodes/scrapers/pipelines/persistence_pipeline.py:1383"
+    "songnodes/scrapers/pipelines/persistence_pipeline.py:1383",
+    "applied views: gold_track_graph, v_metadata_conflicts, library.v_*, api_key_requirements, user_oauth_tokens_status - none filter artists",
+    "songnodes/services/graph-visualization-api/catalog.py:17-18 VISIBLE_TRACK",
+    "songnodes/services/common/datalayer/ingest.py:254 is_placeholder_artist",
+    "songnodes/scrapers/pipelines/persistence_pipeline.py:1386 'Unknown Artist' fallback into silver"
    ],
    "_agent": "sn-backend",
-   "state": "built"
+   "state": "built",
+   "verifier": "corrected",
+   "verifier_method": "Listed every view created by the migrations start-dev.sh/init apply; read ETL and scraper writer"
   },
   {
    "id": "sn-be-c-trigger-scrape",
@@ -20298,10 +20473,13 @@
    "outcome": "confirmed",
    "finding": "jobs.trigger_scrape enqueues kind scrape keyed by the header.",
    "evidence": [
-    "songnodes/services/rest_api/routers/jobs.py:66"
+    "songnodes/services/rest_api/routers/jobs.py:66",
+    "songnodes/services/rest_api/routers/jobs.py:66-82 (enqueue kind scrape, idempotency_key or uuid4)"
    ],
    "_agent": "sn-backend",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "Read route then enqueue"
   },
   {
    "id": "sn-be-c-pools",
@@ -20311,10 +20489,15 @@
    "finding": "graph-api uses pool_size 15 + max_overflow 15; rest-api asyncpg min 5 max 15.",
    "evidence": [
     "songnodes/services/graph-visualization-api/main.py:89",
-    "songnodes/services/rest_api/main.py:146"
+    "songnodes/services/rest_api/main.py:146",
+    "songnodes/services/graph-visualization-api/main.py:89-90 pool_size=15, max_overflow=15",
+    "songnodes/services/rest_api/main.py:146-147 min 5 max 15",
+    "no pool_size=5/max_overflow=10 anywhere"
    ],
    "_agent": "sn-backend",
-   "state": "built"
+   "state": "built",
+   "verifier": "corrected",
+   "verifier_method": "Repo-wide search for every pool setting in active services"
   },
   {
    "id": "sn-be-c-resource-limits",
@@ -20323,10 +20506,13 @@
    "outcome": "refuted",
    "finding": "Only audio-analysis has mem_limit (1g) in compose.",
    "evidence": [
-    "songnodes/compose.dev.yaml:191"
+    "songnodes/compose.dev.yaml:191",
+    "python yaml: only audio-analysis mem_limit=1g; no deploy.resources anywhere"
    ],
    "_agent": "sn-backend",
-   "state": "built"
+   "state": "built",
+   "verifier": "refuted",
+   "verifier_method": "PyYAML parse of mem_limit and deploy.resources on every service"
   },
   {
    "id": "sn-be-c-pg-unpublished",
@@ -20337,10 +20523,13 @@
    "evidence": [
     "songnodes/compose.dev.yaml:4",
     "songnodes/compose.dev.yaml:26",
-    "songnodes/compose.dev.yaml:86"
+    "songnodes/compose.dev.yaml:86",
+    "python yaml: postgres, redis, rabbitmq ports=None"
    ],
    "_agent": "sn-backend",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "PyYAML parse of ports"
   },
   {
    "id": "sn-be-c-backup",
@@ -20350,10 +20539,14 @@
    "finding": "Matches compose user and db; the scripts/backup_database.sh alternative targets musicdb.",
    "evidence": [
     "songnodes/compose.dev.yaml:7",
-    "songnodes/scripts/backup_database.sh:52"
+    "songnodes/scripts/backup_database.sh:52",
+    "compose.dev.yaml postgres env: POSTGRES_USER songnodes, POSTGRES_DB songnodes, HOST_AUTH_METHOD trust",
+    "songnodes/scripts/backup_database.sh:52 uses musicdb_user/musicdb"
    ],
    "_agent": "sn-backend",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "Parsed postgres environment"
   },
   {
    "id": "sn-be-c-scrape-writes-bronze",
@@ -20362,10 +20555,13 @@
    "outcome": "corrected",
    "finding": "It also writes silver tables and song_adjacency.",
    "evidence": [
-    "songnodes/scrapers/pipelines/persistence_pipeline.py:910"
+    "songnodes/scrapers/pipelines/persistence_pipeline.py:910",
+    "songnodes/scrapers/pipelines/persistence_pipeline.py:1117,1244,1291 bronze; :1375,1508,1610 silver; :1732 song_adjacency"
    ],
    "_agent": "sn-backend",
-   "state": "built"
+   "state": "built",
+   "verifier": "corrected",
+   "verifier_method": "INSERT targets of the registered persistence pipeline"
   },
   {
    "id": "sn-be-c-audio-no-db",
@@ -20375,10 +20571,15 @@
    "finding": "Startup tolerates missing DATABASE_URL and RabbitMQ; queue consumer stays off.",
    "evidence": [
     "songnodes/services/audio-analysis/main.py:112",
-    "songnodes/services/audio-analysis/main.py:178"
+    "songnodes/services/audio-analysis/main.py:178",
+    "songnodes/services/audio-analysis/main.py:44-54 import of /app/common/secrets_manager in try/except ImportError",
+    "build context services/audio-analysis has no common/ so validate_secrets is undefined -> NameError branch :107",
+    "main.py:114-116 DATABASE_URL optional; :178-180 RabbitMQ failure leaves consumer off"
    ],
    "_agent": "sn-backend",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "Traced the import guard against the image build context"
   },
   {
    "id": "sn-be-c-jobs-idem",
@@ -20387,10 +20588,13 @@
    "outcome": "confirmed",
    "finding": "ON CONFLICT (kind,idempotency_key) DO NOTHING then SELECT.",
    "evidence": [
-    "songnodes/services/common/datalayer/jobs.py:26"
+    "songnodes/services/common/datalayer/jobs.py:26",
+    "songnodes/services/common/datalayer/jobs.py:26-38 ON CONFLICT DO NOTHING RETURNING then SELECT"
    ],
    "_agent": "sn-backend",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "Read enqueue SQL"
   },
   {
    "id": "sn-be-c-outbox-skip",
@@ -20399,10 +20603,14 @@
    "outcome": "confirmed",
    "finding": "Reads only txid < pg_snapshot_xmin; side effect: long transactions stall consumers.",
    "evidence": [
-    "songnodes/services/common/datalayer/outbox.py:30"
+    "songnodes/services/common/datalayer/outbox.py:30",
+    "songnodes/sql/migrations/014_data_layer_up.sql:122 txid DEFAULT pg_current_xact_id()",
+    "songnodes/services/common/datalayer/outbox.py:17,30-37 e.txid < pg_snapshot_xmin"
    ],
    "_agent": "sn-backend",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "Checked txid default in migration and reasoned the cutoff"
   },
   {
    "id": "sn-be-c-ingest-409",
@@ -20411,10 +20619,14 @@
    "outcome": "refuted",
    "finding": "enqueue returns the existing job without comparing the body.",
    "evidence": [
-    "songnodes/services/common/datalayer/jobs.py:26"
+    "songnodes/services/common/datalayer/jobs.py:26",
+    "grep 409 services/rest_api services/common/datalayer: only artist/track clashes and job-state errors",
+    "songnodes/services/rest_api/routers/library_ingest.py:10-18 no body comparison"
    ],
    "_agent": "sn-backend",
-   "state": "built"
+   "state": "built",
+   "verifier": "refuted",
+   "verifier_method": "Searched rest_api and datalayer for any 409 on idempotency"
   },
   {
    "id": "sn-be-c-ingest-rows",
@@ -20423,10 +20635,13 @@
    "outcome": "refuted",
    "finding": "Endpoint returns {job_id,status,created}; per-row stats land in the job result.",
    "evidence": [
-    "songnodes/services/rest_api/routers/library_ingest.py:17"
+    "songnodes/services/rest_api/routers/library_ingest.py:17",
+    "songnodes/services/rest_api/routers/library_ingest.py:18 returns {job_id, status, created}"
    ],
    "_agent": "sn-backend",
-   "state": "built"
+   "state": "built",
+   "verifier": "refuted",
+   "verifier_method": "Read the handler return value"
   },
   {
    "id": "sn-be-c-orchestrator",
@@ -20435,10 +20650,14 @@
    "outcome": "corrected",
    "finding": "No services/scraper-orchestrator directory on main; root scraper-orchestrator holds only enrich_existing_tracks.py.",
    "evidence": [
-    "songnodes/scraper-orchestrator/enrich_existing_tracks.py:1"
+    "songnodes/scraper-orchestrator/enrich_existing_tracks.py:1",
+    "git ls-tree 7429821: only scraper-orchestrator/enrich_existing_tracks.py",
+    "gh api commits?path=services/scraper-orchestrator/main_enhanced.py -> c3010e2bb 2026-10-28 'remove legacy scraper-orchestrator'"
    ],
    "_agent": "sn-backend",
-   "state": "built"
+   "state": "built",
+   "verifier": "corrected",
+   "verifier_method": "git tree at 7429821 plus GitHub REST history of the file"
   },
   {
    "id": "sn-be-c-mock-search",
@@ -20448,10 +20667,15 @@
    "finding": "No Mock strings in rest-api main.py; it proxies to metadata-enrichment and returns 503 when unreachable (always, in compose).",
    "evidence": [
     "songnodes/services/rest_api/main.py:692",
-    "songnodes/services/rest_api/main.py:712"
+    "songnodes/services/rest_api/main.py:712",
+    "grep 'Mock Artist' services/rest_api -> none",
+    "songnodes/services/rest_api/main.py:672-712 proxies to METADATA_ENRICHMENT_URL default http://metadata-enrichment:8086; ClientConnectorError -> 503",
+    "compose rest-api env has no METADATA_ENRICHMENT_URL"
    ],
    "_agent": "sn-backend",
-   "state": "built"
+   "state": "built",
+   "verifier": "corrected",
+   "verifier_method": "Searched rest_api for Mock strings; parsed rest-api env in compose"
   },
   {
    "id": "sn-be-c-migrate-py",
@@ -20461,10 +20685,15 @@
    "finding": "start-dev.sh applies them with psql; migrate.py is used by the Helm hook or a manual compose run.",
    "evidence": [
     "songnodes/scripts/start-dev.sh:31",
-    "songnodes/services/worker/migrate.py:9"
+    "songnodes/services/worker/migrate.py:9",
+    "songnodes/scripts/start-dev.sh:34-36 psql < 012/013/014",
+    "compose postgres init mounts 012-014",
+    "deploy/helm/songnodes/templates/data-layer-migrations-job.yaml:35 only caller"
    ],
    "_agent": "sn-backend",
-   "state": "built"
+   "state": "built",
+   "verifier": "corrected",
+   "verifier_method": "Read start-dev.sh and compose init mounts; searched for migrate.py callers"
   },
   {
    "id": "sn-fe-c-port",
@@ -20474,10 +20703,14 @@
    "finding": "compose publishes 127.0.0.1:3006:8080; inline default.conf sends /api/(graph|v1/visualization|user-setlists) to graph-api and /api/ to rest-api",
    "evidence": [
     "songnodes/compose.dev.yaml:202",
-    "songnodes/frontend/Dockerfile:80-101"
+    "songnodes/frontend/Dockerfile:80-101",
+    "compose frontend ports 127.0.0.1:3006:8080",
+    "songnodes/frontend/Dockerfile location ~ ^/api/(graph|v1/visualization|user-setlists) -> graph_api; /api/ -> rest_api"
    ],
    "_agent": "sn-frontend",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "PyYAML ports plus nginx location blocks in the Dockerfile heredoc"
   },
   {
    "id": "sn-fe-c-import-order",
@@ -20486,10 +20719,13 @@
    "outcome": "corrected",
    "finding": "main.tsx imports no legacy CSS before tokens.css; order is tokens, bundle, legacy-aliases, app",
    "evidence": [
-    "songnodes/frontend/src/main.tsx:4-10"
+    "songnodes/frontend/src/main.tsx:4-10",
+    "songnodes/frontend/src/main.tsx:6-10 tokens.css, bundle.css, legacy-aliases.css, app.css"
    ],
    "_agent": "sn-frontend",
-   "state": "built"
+   "state": "built",
+   "verifier": "corrected",
+   "verifier_method": "Read main.tsx imports"
   },
   {
    "id": "sn-fe-c-g2",
@@ -20498,10 +20734,14 @@
    "outcome": "corrected",
    "finding": "true for library, sets, paths, harmony, sources/import; /, /graph, /sources/targets, /pipeline, /settings and * are still static entries in routes/registry.tsx",
    "evidence": [
-    "songnodes/frontend/src/routes/registry.tsx:13-45"
+    "songnodes/frontend/src/routes/registry.tsx:13-45",
+    "songnodes/frontend/src/routes/registry.tsx:13-23 STATIC_ROUTES; :27 glob ../features/*/route.tsx",
+    "features: aiSetlists /sources/import, camelot /harmony, musicLibrary /library /sets, pathfinder /paths (replaces static)"
    ],
    "_agent": "sn-frontend",
-   "state": "built"
+   "state": "built",
+   "verifier": "corrected",
+   "verifier_method": "Enumerated route.tsx files picked up by import.meta.glob"
   },
   {
    "id": "sn-fe-c-nav",
@@ -20511,10 +20751,14 @@
    "finding": "AppShell renders only AppHeader (menu + search) and NavDrawer; App.tsx comment says no visible nav bar",
    "evidence": [
     "songnodes/frontend/src/shell/AppShell.tsx",
-    "songnodes/frontend/src/App.tsx:1-4"
+    "songnodes/frontend/src/App.tsx:1-4",
+    "songnodes/frontend/src/shell/AppShell.tsx: AppHeader, NavDrawer, Outlet, CreditsFooter, ToastRegion; <nav> only in drawer (:83)",
+    "other <nav>: MobileTrackExplorer breadcrumb trail, TargetTracksManager pagination (not site nav)"
    ],
    "_agent": "sn-frontend",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "Component inventory of AppShell and all <nav> elements"
   },
   {
    "id": "sn-fe-c-stack",
@@ -20524,10 +20768,14 @@
    "finding": "package.json react ^19.3.1, typescript ^7.0.2, pixi.js ^8.22.0, zustand ^5.0.16; Dockerfile FROM node:26-alpine",
    "evidence": [
     "songnodes/frontend/package.json:62-100",
-    "songnodes/frontend/Dockerfile:2"
+    "songnodes/frontend/Dockerfile:2",
+    "react ^19.3.1, typescript ^7.0.2, pixi.js ^8.22.0, zustand ^5.0.16, engines node >=26",
+    "songnodes/frontend/Dockerfile:2 FROM node:26-alpine"
    ],
    "_agent": "sn-frontend",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "node -e require(package.json)"
   },
   {
    "id": "sn-fe-c-ds-sync",
@@ -20537,10 +20785,15 @@
    "finding": "sync-design-system.sh --check: \"design-system 1.10.0: frontend copy in sync\"; VERSION 1.10.0 = tokens.json 1.10.0",
    "evidence": [
     "songnodes/frontend/src/styles/design-system/VERSION",
-    "songnodes/design-system/tokens.json"
+    "songnodes/design-system/tokens.json",
+    "git archive 7429821 -> 'design-system 1.9.1: frontend copy in sync' exit 0",
+    "git archive HEAD(78d1d4f) -> '1.10.0 in sync' exit 0",
+    "worktree now -> 'out of sync: components/bundle.css' exit 1 (uncommitted edits)"
    ],
    "_agent": "sn-frontend",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "Ran sync --check on clean git-archive exports of 7429821 and HEAD, and on the worktree"
   },
   {
    "id": "sn-fe-c-no-alert",
@@ -20549,10 +20802,13 @@
    "outcome": "confirmed",
    "finding": "0 calls in frontend/src outside tests",
    "evidence": [
-    "M1 grep"
+    "M1 grep",
+    "grep -E '(^|[^.\\w$])(alert|confirm|prompt)\\s*\\(' frontend/src -> 0"
    ],
    "_agent": "sn-frontend",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "Word-boundary regex for bare and window./globalThis. alert|confirm|prompt calls, tests excluded"
   },
   {
    "id": "sn-fe-c-one-primary",
@@ -20562,10 +20818,14 @@
    "finding": "Set builder and Pathfinder show two primaries at once; the repo checker does not test this",
    "evidence": [
     "songnodes/frontend/src/features/musicLibrary/SetBuilderPage.tsx:450,590",
-    "songnodes/frontend/src/features/pathfinder/PathfinderPage.tsx:204,224"
+    "songnodes/frontend/src/features/pathfinder/PathfinderPage.tsx:204,224",
+    "songnodes/frontend/src/features/musicLibrary/SetBuilderPage.tsx:450 (header, always) + :590 (EmptyState when no slots)",
+    "songnodes/frontend/src/features/pathfinder/PathfinderPage.tsx:204 (always) + :224/:235 (EmptyState when no result)"
    ],
    "_agent": "sn-frontend",
-   "state": "built"
+   "state": "built",
+   "verifier": "refuted",
+   "verifier_method": "Checked render conditions for co-rendering of sn-btn--primary"
   },
   {
    "id": "sn-fe-c-en-dash",
@@ -20575,10 +20835,13 @@
    "finding": "AI setlists show 'Unknown Date'; OAuth page 'Unknown error'",
    "evidence": [
     "songnodes/frontend/src/features/aiSetlists/AISetlistsPage.tsx:338",
-    "songnodes/frontend/src/components/OAuthCallback.tsx:276"
+    "songnodes/frontend/src/components/OAuthCallback.tsx:276",
+    "songnodes/frontend/src/features/aiSetlists/AISetlistsPage.tsx:338 'Unknown Date' (missing value, Title Case)"
    ],
    "_agent": "sn-frontend",
-   "state": "built"
+   "state": "built",
+   "verifier": "refuted",
+   "verifier_method": "Regex for Unknown/N/A literals in TSX"
   },
   {
    "id": "sn-fe-c-pending-list",
@@ -20588,10 +20851,14 @@
    "finding": "all 37 lines are commented out as migrated; check_design_system.py --check exits 0 with no findings (but misses R2 and R5 violations found by grep)",
    "evidence": [
     "songnodes/frontend/design-system-pending.txt",
-    "scripts/check_design_system.py --check"
+    "scripts/check_design_system.py --check",
+    "frontend/design-system-pending.txt: 37 lines, 0 uncommented",
+    "python3 scripts/check_design_system.py --check -> exit 0"
    ],
    "_agent": "sn-frontend",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "Counted uncommented lines; ran the checker (read-only)"
   },
   {
    "id": "sn-fe-c-pointer-events",
@@ -20600,10 +20867,13 @@
    "outcome": "confirmed",
    "finding": "GraphVisualization: 8 pointerdown/pointerup uses, 0 .on('click')",
    "evidence": [
-    "songnodes/frontend/src/components/GraphVisualization.tsx"
+    "songnodes/frontend/src/components/GraphVisualization.tsx",
+    "songnodes/frontend/src/components/GraphVisualization.tsx:1700,1721 container.on('pointerdown'/'pointerup'); no .on('click')"
    ],
    "_agent": "sn-frontend",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "Listed pointer and click handlers in the component"
   },
   {
    "id": "sn-fe-c-shortcuts",
@@ -20613,10 +20883,15 @@
    "finding": "only case 'd' found in GraphVisualization; useKeyboardShortcuts is unreachable; Space/Escape/Ctrl+A handlers not located",
    "evidence": [
     "songnodes/frontend/src/components/GraphVisualization.tsx:3123",
-    "songnodes/frontend/src/hooks/useKeyboardShortcuts.ts"
+    "songnodes/frontend/src/hooks/useKeyboardShortcuts.ts",
+    "songnodes/frontend/src/components/GraphVisualization.tsx:3114 ' ' -> togglePause",
+    "GraphVisualization.tsx:3123 'd' debug; :3146 'escape' clearSelection; :3151-3160 Ctrl/Cmd+A selects visible nodes",
+    "GraphVisualization.tsx:3234 window.addEventListener('keydown')"
    ],
    "_agent": "sn-frontend",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed (disagrees)",
+   "verifier_method": "Read the window keydown handler in full"
   },
   {
    "id": "sn-fe-c-artist-filter",
@@ -20625,10 +20900,15 @@
    "outcome": "confirmed",
    "finding": "useDataLoader filters nodes with hasValidArtist on both primary and fallback loads (fallback edge filtering gap noted in R8)",
    "evidence": [
-    "songnodes/frontend/src/hooks/useDataLoader.ts:40,88"
+    "songnodes/frontend/src/hooks/useDataLoader.ts:40,88",
+    "songnodes/frontend/src/utils/dataLoaderUtils.ts:16-27",
+    "songnodes/frontend/src/hooks/useDataLoader.ts:40-41,88",
+    "used by components/DJInterface.tsx:25 and features/pathfinder/PathfinderPage.tsx:13"
    ],
    "_agent": "sn-frontend",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "Read hasValidArtist and both call sites; confirmed hook is used"
   },
   {
    "id": "sn-fe-c-frontend-mem",
@@ -20637,10 +20917,13 @@
    "outcome": "refuted",
    "finding": "compose.dev.yaml frontend service sets no mem_limit",
    "evidence": [
-    "songnodes/compose.dev.yaml:200-211"
+    "songnodes/compose.dev.yaml:200-211",
+    "python yaml frontend: build, ports, depends_on, healthcheck - no mem_limit"
    ],
    "_agent": "sn-frontend",
-   "state": "built"
+   "state": "built",
+   "verifier": "refuted",
+   "verifier_method": "PyYAML parse of the frontend service"
   },
   {
    "id": "sn-fe-c-indexeddb",
@@ -20649,10 +20932,14 @@
    "outcome": "refuted",
    "finding": "no indexedDB use anywhere in frontend/src",
    "evidence": [
-    "M1 grep indexedDB = 0"
+    "M1 grep indexedDB = 0",
+    "grep -i indexeddb|idb|dexie|localforage frontend/src -> 0",
+    "package.json: no idb/dexie/localforage dependency"
    ],
    "_agent": "sn-frontend",
-   "state": "built"
+   "state": "built",
+   "verifier": "refuted",
+   "verifier_method": "Case-insensitive search for indexedDB/idb/dexie/localforage plus package.json deps"
   },
   {
    "id": "sn-fe-c-frame-deny",
@@ -20661,10 +20948,14 @@
    "outcome": "corrected",
    "finding": "nginx/nginx.conf is not used by compose; the live frontend default.conf sets no frame headers",
    "evidence": [
-    "songnodes/frontend/Dockerfile:28-102"
+    "songnodes/frontend/Dockerfile:28-102",
+    "songnodes/nginx/nginx.conf:102,112 does set X-Frame-Options DENY and frame-ancestors 'none'",
+    "songnodes/frontend/Dockerfile:27-102 writes its own conf.d/default.conf; no COPY of nginx/nginx.conf; no frame headers"
    ],
    "_agent": "sn-frontend",
-   "state": "built"
+   "state": "built",
+   "verifier": "corrected",
+   "verifier_method": "Checked which nginx config the image uses"
   },
   {
    "id": "sn-fe-c-error-pages",
@@ -20674,10 +20965,14 @@
    "finding": "no error_page in the frontend default.conf; SPA 404 route handles unknown paths",
    "evidence": [
     "songnodes/frontend/Dockerfile:28-102",
-    "songnodes/frontend/src/pages/ModulePages.tsx:55"
+    "songnodes/frontend/src/pages/ModulePages.tsx:55",
+    "songnodes/frontend/Dockerfile: no error_page",
+    "songnodes/frontend/src/routes/registry.tsx:22 '*' -> NotFoundPage"
    ],
    "_agent": "sn-frontend",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "grep error_page in the inline nginx config"
   },
   {
    "id": "sn-fe-c-db1-fallback",
@@ -20686,10 +20981,15 @@
    "outcome": "refuted",
    "finding": "no fallback in data.ts and frontend/public has no data/ folder; failure surfaces as an error",
    "evidence": [
-    "songnodes/frontend/src/features/musicLibrary/data.ts:107-135"
+    "songnodes/frontend/src/features/musicLibrary/data.ts:107-135",
+    "songnodes/frontend/src/features/musicLibrary/data.ts:108-135 throws on !res.ok",
+    "ls frontend/public -> favicon.svg only",
+    "gh api: f85c69aa1 retired the static music-library.json fallback (#421)"
    ],
    "_agent": "sn-frontend",
-   "state": "built"
+   "state": "built",
+   "verifier": "refuted",
+   "verifier_method": "Read loadLibrary and public/ listing; history of the fallback removal"
   },
   {
    "id": "sn-fe-c-stages-poll",
@@ -20699,10 +20999,14 @@
    "finding": "STAGES_POLL_MS = 5000; slice(0, 5) on watched runs",
    "evidence": [
     "songnodes/frontend/src/features/pipeline/ScrapeJobStages.tsx:10,45",
-    "songnodes/frontend/src/pages/ScraperProgressPage.tsx:33-36"
+    "songnodes/frontend/src/pages/ScraperProgressPage.tsx:33-36",
+    "songnodes/frontend/src/features/pipeline/ScrapeJobStages.tsx:10,32,45,47",
+    "songnodes/frontend/src/pages/ScraperProgressPage.tsx:35-36 slice(0, 5)"
    ],
    "_agent": "sn-frontend",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "Read constants and visibility guard"
   },
   {
    "id": "sn-fe-c-gv2-next",
@@ -20711,10 +21015,13 @@
    "outcome": "confirmed",
    "finding": "useDataLoader still fetches /api/graph/data?limit=10000 with no view param (queued)",
    "evidence": [
-    "songnodes/frontend/src/hooks/useDataLoader.ts:28"
+    "songnodes/frontend/src/hooks/useDataLoader.ts:28",
+    "songnodes/frontend/src/hooks/useDataLoader.ts:28 /api/graph/data?limit=10000&offset=0"
    ],
    "_agent": "sn-frontend",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "Read the fetch URL"
   },
   {
    "id": "sn-fe-c-body-limit",
@@ -20724,10 +21031,14 @@
    "finding": "no client_max_body_size in frontend default.conf while FileDrop allows 50 MB",
    "evidence": [
     "songnodes/frontend/Dockerfile:28-102",
-    "songnodes/frontend/src/features/musicLibrary/components/LibraryImportDialog.tsx:24"
+    "songnodes/frontend/src/features/musicLibrary/components/LibraryImportDialog.tsx:24",
+    "songnodes/frontend/Dockerfile: no client_max_body_size",
+    "songnodes/frontend/src/features/musicLibrary/components/LibraryImportDialog.tsx:24 LIBRARY_MAX_MB=50; :114 POST /api/v1/library/ingest through nginx"
    ],
    "_agent": "sn-frontend",
-   "state": "built"
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "grep client_max_body_size; traced FileDrop upload target"
   },
   {
    "id": "sn-fe-c-ui9-debug",
@@ -20737,10 +21048,15 @@
    "finding": "true for those two files, but OAuthCallback still console.logs code/state prefixes and storage keys in production",
    "evidence": [
     "songnodes/frontend/src/lib/debugLog.ts",
-    "songnodes/frontend/src/components/OAuthCallback.tsx:170-172,230"
+    "songnodes/frontend/src/components/OAuthCallback.tsx:170-172,230",
+    "GraphVisualization.tsx: 29 console.log, all commented; 24 debugLog",
+    "useTokenRefresh.ts: 0 console.log, 11 debugLog",
+    "songnodes/frontend/src/components/OAuthCallback.tsx:24,47,170-172,181,196,230,248,259 live console.log"
    ],
    "_agent": "sn-frontend",
-   "state": "built"
+   "state": "built",
+   "verifier": "corrected",
+   "verifier_method": "Counted uncommented console.log vs debugLog per file"
   },
   {
    "id": "sn-fe-c-banner-day",
@@ -20749,9 +21065,168 @@
    "outcome": "confirmed",
    "finding": "bannerKey stores only the count; follow-up still queued",
    "evidence": [
-    "songnodes/frontend/src/features/musicLibrary/storage.ts:29-30"
+    "songnodes/frontend/src/features/musicLibrary/storage.ts:29-30",
+    "songnodes/frontend/src/features/musicLibrary/SetBuilderPage.tsx:63,456 stores the count only"
    ],
    "_agent": "sn-frontend",
+   "state": "built",
+   "verifier": "confirmed",
+   "verifier_method": "Read bannerKey and its writer"
+  },
+  {
+   "id": "BL-B01",
+   "claim": "12 pages",
+   "source": "documentation/data-flow-analysis/findings.json pages[] @1f296c3",
+   "outcome": "corrected",
+   "finding": "12 is the songnodes frontend route count (13 production routes found here, including the shadowed /paths placeholder); the estate holds 115 pages and entry points across both repos.",
+   "evidence": [
+    "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+    "documentation/data-flow-analysis/findings.json pages[] @1f296c3"
+   ],
+   "_agent": "baseline-581",
+   "state": "built"
+  },
+  {
+   "id": "BL-B02",
+   "claim": "8 stores",
+   "source": "findings.json stores[] @1f296c3",
+   "outcome": "corrected",
+   "finding": "39 internal stores plus 9 external systems (48) found by three scanners; #581 grouped Postgres by layer and omitted RabbitMQ, the artifact database, ref_mb and external APIs.",
+   "evidence": [
+    "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+    "findings.json stores[] @1f296c3"
+   ],
+   "_agent": "baseline-581",
+   "state": "built"
+  },
+  {
+   "id": "BL-B03",
+   "claim": "26 edges",
+   "source": "findings.json edges[] @1f296c3",
+   "outcome": "corrected",
+   "finding": "87 numbered flows, every one drawn in D2a–D2g.",
+   "evidence": [
+    "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+    "findings.json edges[] @1f296c3"
+   ],
+   "_agent": "baseline-581",
+   "state": "built"
+  },
+  {
+   "id": "BL-B04",
+   "claim": "5 personas",
+   "source": "findings.json personas[] @1f296c3",
+   "outcome": "corrected",
+   "finding": "8 personas (5 human, 2 system actors, 1 assisted); #581's selector, librarian, data engineer, resolution specialist and devops map onto P1/P2, P3, P4/P5, P3/P7 and P4.",
+   "evidence": [
+    "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+    "findings.json personas[] @1f296c3"
+   ],
+   "_agent": "baseline-581",
+   "state": "built"
+  },
+  {
+   "id": "BL-B05",
+   "claim": "5 gaps",
+   "source": "findings.json gaps[] @1f296c3",
+   "outcome": "corrected",
+   "finding": "28 gaps; all five #581 gaps are kept: GAP-01 Rekordbox feedback = ml-gap-rekordbox-feedback; GAP-02 dual storage = ml-gap-saved-set-shape and ml-gap-songnodes-field-loss; GAP-03 audio fingerprint segmenter is not evidenced in either repo (kept as Unverified); GAP-04 unwired target queue feedback = sn-be-gap-target-scrape-quota and sn-fe-gap-target-pending-sync; GAP-05 outbox projection lag = sn-be-gap-library-projection.",
+   "evidence": [
+    "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+    "findings.json gaps[] @1f296c3"
+   ],
+   "_agent": "baseline-581",
+   "state": "built"
+  },
+  {
+   "id": "BL-B06",
+   "claim": "Gate 1: 0 hard-coded colours or fonts outside token definitions",
+   "source": "PR #581 description",
+   "outcome": "refuted",
+   "finding": "243 literal hex colours in SVG fill/stroke attributes of report/index.html outside style blocks (this run's gate 2 regex over tags).",
+   "evidence": [
+    "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+    "PR #581 description"
+   ],
+   "_agent": "baseline-581",
+   "state": "built"
+  },
+  {
+   "id": "BL-B07",
+   "claim": "All 14 internal navigation anchors resolve",
+   "source": "PR #581 description",
+   "outcome": "confirmed",
+   "finding": "14 href=#… anchors, all with a matching id.",
+   "evidence": [
+    "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+    "PR #581 description"
+   ],
+   "_agent": "baseline-581",
+   "state": "built"
+  },
+  {
+   "id": "BL-B08",
+   "claim": "Standalone SVGs at viewBox 1800x1100",
+   "source": "PR #581 description",
+   "outcome": "confirmed",
+   "finding": "system-architecture-data-flow.svg viewBox 0 0 1800 1100.",
+   "evidence": [
+    "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+    "PR #581 description"
+   ],
+   "_agent": "baseline-581",
+   "state": "built"
+  },
+  {
+   "id": "BL-B09",
+   "claim": "enhanced-architecture-connections-and-gaps.svg and ARCHITECTURE_ENHANCEMENTS_AND_GAPS_REPORT.md produced",
+   "source": "STATUS.md SLOT:ARCH1 @1f296c3",
+   "outcome": "refuted",
+   "finding": "Neither file is in the branch (git diff --stat origin/main...1f296c3 lists 17 files without them); both exist in this run.",
+   "evidence": [
+    "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+    "STATUS.md SLOT:ARCH1 @1f296c3"
+   ],
+   "_agent": "baseline-581",
+   "state": "built"
+  },
+  {
+   "id": "BL-B10",
+   "claim": "Sister TODO written to E:\\musicLibrary\\TODO-ARCHITECTURAL-IMPROVEMENTS.md",
+   "source": "STATUS.md SLOT:ARCH1 @1f296c3",
+   "outcome": "confirmed",
+   "finding": "File present on tuf-boi (7,332 bytes, 6 Nov 2026 22:18 UTC); kept and extended, not replaced.",
+   "evidence": [
+    "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+    "STATUS.md SLOT:ARCH1 @1f296c3"
+   ],
+   "_agent": "baseline-581",
+   "state": "built"
+  },
+  {
+   "id": "BL-B11",
+   "claim": "PDF 1,775 KB, vector, searchable",
+   "source": "PR #581 description",
+   "outcome": "confirmed",
+   "finding": "1,817,715 bytes in the branch.",
+   "evidence": [
+    "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+    "PR #581 description"
+   ],
+   "_agent": "baseline-581",
+   "state": "built"
+  },
+  {
+   "id": "BL-B12",
+   "claim": "Rebuild pipeline passes in 3.2 s",
+   "source": "STATUS.md SLOT:ARCH1 @1f296c3",
+   "outcome": "not-reproducible",
+   "finding": "Not re-run: its build scripts are kept in the branch but superseded by build.py; timing is the author's figure.",
+   "evidence": [
+    "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+    "STATUS.md SLOT:ARCH1 @1f296c3"
+   ],
+   "_agent": "baseline-581",
    "state": "built"
   }
  ],
@@ -22812,7 +23287,7 @@
    ],
    [
     "Baseline report",
-    "None found in documentation/, docs/ or project artifacts. The verification register re-checks the repos' own documentation instead."
+    "PR #581 (ARCH1, opened 7 Nov 2026 09:23 by a parallel run on branch docs/data-flow-investigation): its numbers and gate claims are re-verified in the register (area baseline-581) and every topic it covers is kept; this report is merged into that branch. The register also re-checks the repos' own documentation."
    ],
    [
     "Standing rules",

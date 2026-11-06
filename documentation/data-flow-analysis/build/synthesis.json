@@ -82,7 +82,7 @@
    ],
    [
     "Baseline report",
-    "None found in documentation/, docs/ or project artifacts. The verification register re-checks the repos' own documentation instead."
+    "PR #581 (ARCH1, opened 7 Nov 2026 09:23 by a parallel run on branch docs/data-flow-investigation): its numbers and gate claims are re-verified in the register (area baseline-581) and every topic it covers is kept; this report is merged into that branch. The register also re-checks the repos' own documentation."
    ],
    [
     "Standing rules",
@@ -1053,5 +1053,168 @@
     "effort": "S"
    }
   }
+ },
+ "append": {
+  "claims": [
+   {
+    "id": "BL-B01",
+    "claim": "12 pages",
+    "source": "documentation/data-flow-analysis/findings.json pages[] @1f296c3",
+    "outcome": "corrected",
+    "finding": "12 is the songnodes frontend route count (13 production routes found here, including the shadowed /paths placeholder); the estate holds 115 pages and entry points across both repos.",
+    "evidence": [
+     "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+     "documentation/data-flow-analysis/findings.json pages[] @1f296c3"
+    ],
+    "_agent": "baseline-581",
+    "state": "built"
+   },
+   {
+    "id": "BL-B02",
+    "claim": "8 stores",
+    "source": "findings.json stores[] @1f296c3",
+    "outcome": "corrected",
+    "finding": "39 internal stores plus 9 external systems (48) found by three scanners; #581 grouped Postgres by layer and omitted RabbitMQ, the artifact database, ref_mb and external APIs.",
+    "evidence": [
+     "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+     "findings.json stores[] @1f296c3"
+    ],
+    "_agent": "baseline-581",
+    "state": "built"
+   },
+   {
+    "id": "BL-B03",
+    "claim": "26 edges",
+    "source": "findings.json edges[] @1f296c3",
+    "outcome": "corrected",
+    "finding": "87 numbered flows, every one drawn in D2a–D2g.",
+    "evidence": [
+     "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+     "findings.json edges[] @1f296c3"
+    ],
+    "_agent": "baseline-581",
+    "state": "built"
+   },
+   {
+    "id": "BL-B04",
+    "claim": "5 personas",
+    "source": "findings.json personas[] @1f296c3",
+    "outcome": "corrected",
+    "finding": "8 personas (5 human, 2 system actors, 1 assisted); #581's selector, librarian, data engineer, resolution specialist and devops map onto P1/P2, P3, P4/P5, P3/P7 and P4.",
+    "evidence": [
+     "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+     "findings.json personas[] @1f296c3"
+    ],
+    "_agent": "baseline-581",
+    "state": "built"
+   },
+   {
+    "id": "BL-B05",
+    "claim": "5 gaps",
+    "source": "findings.json gaps[] @1f296c3",
+    "outcome": "corrected",
+    "finding": "28 gaps; all five #581 gaps are kept: GAP-01 Rekordbox feedback = ml-gap-rekordbox-feedback; GAP-02 dual storage = ml-gap-saved-set-shape and ml-gap-songnodes-field-loss; GAP-03 audio fingerprint segmenter is not evidenced in either repo (kept as Unverified); GAP-04 unwired target queue feedback = sn-be-gap-target-scrape-quota and sn-fe-gap-target-pending-sync; GAP-05 outbox projection lag = sn-be-gap-library-projection.",
+    "evidence": [
+     "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+     "findings.json gaps[] @1f296c3"
+    ],
+    "_agent": "baseline-581",
+    "state": "built"
+   },
+   {
+    "id": "BL-B06",
+    "claim": "Gate 1: 0 hard-coded colours or fonts outside token definitions",
+    "source": "PR #581 description",
+    "outcome": "refuted",
+    "finding": "243 literal hex colours in SVG fill/stroke attributes of report/index.html outside style blocks (this run's gate 2 regex over tags).",
+    "evidence": [
+     "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+     "PR #581 description"
+    ],
+    "_agent": "baseline-581",
+    "state": "built"
+   },
+   {
+    "id": "BL-B07",
+    "claim": "All 14 internal navigation anchors resolve",
+    "source": "PR #581 description",
+    "outcome": "confirmed",
+    "finding": "14 href=#… anchors, all with a matching id.",
+    "evidence": [
+     "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+     "PR #581 description"
+    ],
+    "_agent": "baseline-581",
+    "state": "built"
+   },
+   {
+    "id": "BL-B08",
+    "claim": "Standalone SVGs at viewBox 1800x1100",
+    "source": "PR #581 description",
+    "outcome": "confirmed",
+    "finding": "system-architecture-data-flow.svg viewBox 0 0 1800 1100.",
+    "evidence": [
+     "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+     "PR #581 description"
+    ],
+    "_agent": "baseline-581",
+    "state": "built"
+   },
+   {
+    "id": "BL-B09",
+    "claim": "enhanced-architecture-connections-and-gaps.svg and ARCHITECTURE_ENHANCEMENTS_AND_GAPS_REPORT.md produced",
+    "source": "STATUS.md SLOT:ARCH1 @1f296c3",
+    "outcome": "refuted",
+    "finding": "Neither file is in the branch (git diff --stat origin/main...1f296c3 lists 17 files without them); both exist in this run.",
+    "evidence": [
+     "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+     "STATUS.md SLOT:ARCH1 @1f296c3"
+    ],
+    "_agent": "baseline-581",
+    "state": "built"
+   },
+   {
+    "id": "BL-B10",
+    "claim": "Sister TODO written to E:\\musicLibrary\\TODO-ARCHITECTURAL-IMPROVEMENTS.md",
+    "source": "STATUS.md SLOT:ARCH1 @1f296c3",
+    "outcome": "confirmed",
+    "finding": "File present on tuf-boi (7,332 bytes, 6 Nov 2026 22:18 UTC); kept and extended, not replaced.",
+    "evidence": [
+     "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+     "STATUS.md SLOT:ARCH1 @1f296c3"
+    ],
+    "_agent": "baseline-581",
+    "state": "built"
+   },
+   {
+    "id": "BL-B11",
+    "claim": "PDF 1,775 KB, vector, searchable",
+    "source": "PR #581 description",
+    "outcome": "confirmed",
+    "finding": "1,817,715 bytes in the branch.",
+    "evidence": [
+     "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+     "PR #581 description"
+    ],
+    "_agent": "baseline-581",
+    "state": "built"
+   },
+   {
+    "id": "BL-B12",
+    "claim": "Rebuild pipeline passes in 3.2 s",
+    "source": "STATUS.md SLOT:ARCH1 @1f296c3",
+    "outcome": "not-reproducible",
+    "finding": "Not re-run: its build scripts are kept in the branch but superseded by build.py; timing is the author's figure.",
+    "evidence": [
+     "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+     "STATUS.md SLOT:ARCH1 @1f296c3"
+    ],
+    "_agent": "baseline-581",
+    "state": "built"
+   }
+  ],
+  "unverified": [
+   "#581 GAP-03 (audio fingerprint and AcoustID transition segmenter): no code, schema or doc in either repo supports it; kept as a topic, not as a gap."
+  ]
  }
 }

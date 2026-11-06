@@ -7,6 +7,7 @@ final PDF. Paper size, margins, landscape pages and "Page X of Y" come from the 
 (@page doc / @page wide, design system 1.10.0); this script declares none. Requires Python Playwright + pypdf.
     python3 pdf.py <print-sheet.html> <out.pdf>
 """
+import html as htmllib
 import re
 import sys
 from pathlib import Path
@@ -49,9 +50,9 @@ def main(html_path, pdf_path, footer_path=None):
     html = Path(html_path).read_text(encoding="utf-8")
     targets = {}
     for m in re.finditer(r'id="([a-z0-9-]+)-t"><span class="sn-lead">(Section \d+):</span> ([^<]+)</h2>', html):
-        targets[m.group(1)] = "%s: %s" % (m.group(2), m.group(3).replace("&amp;", "&"))
+        targets[m.group(1)] = "%s: %s" % (m.group(2), htmllib.unescape(m.group(3)))
     for m in re.finditer(r'<figure class="sn-figure[^"]*" id="([a-z0-9-]+)" data-figure="([^"]+)"[^>]*><div class="sn-figure__head"><div class="sn-chart-frame__titles"><h3 class="sn-title title-s"><span class="sn-lead">[^<]+:</span> ([^<]+)</h3>', html):
-        targets[m.group(1)] = "%s: %s" % (m.group(2), m.group(3).replace("&amp;", "&"))
+        targets[m.group(1)] = "%s: %s" % (m.group(2), htmllib.unescape(m.group(3)))
     tmp = Path(pdf_path).with_suffix(".pass1.pdf")
     with sync_playwright() as p:
         b = p.chromium.launch()
