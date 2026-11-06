@@ -224,6 +224,27 @@
     });
   }
 
+  /* ---------- AppHeader More actions: theme (APG menu: arrows, Home/End, Esc, Tab) ---------- */
+  var mb = document.getElementById("hmore-btn"), menu = document.getElementById("hmore");
+  if (mb && menu) {
+    var items = $all('[role="menuitemradio"]', menu);
+    function mark() { var cur = S.prefs.get().theme; items.forEach(function (it) { it.setAttribute("aria-checked", it.getAttribute("data-theme") === cur ? "true" : "false"); }); }
+    function openM() { mark(); menu.hidden = false; mb.setAttribute("aria-expanded", "true"); items[0].focus(); }
+    function closeM(back) { menu.hidden = true; mb.setAttribute("aria-expanded", "false"); if (back) mb.focus(); }
+    mb.addEventListener("click", function () { if (menu.hidden) openM(); else closeM(true); });
+    menu.addEventListener("keydown", function (e) {
+      var i = items.indexOf(document.activeElement), n = items.length;
+      if (e.key === "ArrowDown") { e.preventDefault(); items[(i + 1) % n].focus(); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); items[(i - 1 + n) % n].focus(); }
+      else if (e.key === "Home") { e.preventDefault(); items[0].focus(); }
+      else if (e.key === "End") { e.preventDefault(); items[n - 1].focus(); }
+      else if (e.key === "Escape") { e.preventDefault(); closeM(true); }
+      else if (e.key === "Tab") closeM(false);
+    });
+    items.forEach(function (it) { it.addEventListener("click", function () { S.prefs.setTheme(it.getAttribute("data-theme")); mark(); closeM(true); say("Theme: " + it.textContent.trim()); }); });
+    document.addEventListener("pointerdown", function (e) { if (!menu.hidden && !menu.contains(e.target) && !mb.contains(e.target)) closeM(false); });
+  }
+
   /* ---------- TOC: mark the section in view ---------- */
   var tocLinks = $all(".sn-report-toc a[href^='#']");
   if ("IntersectionObserver" in window && tocLinks.length) {

@@ -1,0 +1,7 @@
+report/pdf-footer.html
+*.pages.json
+build/__pycache__/
+build/evidence/pdf-*.png
+build/evidence/pg-*.pgm
+build/evidence/*-own.html
+build/evidence/reference-home.html

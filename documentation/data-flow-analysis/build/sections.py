@@ -27,6 +27,30 @@ def num_of(sid):
 DEFER = []   # print: landscape figures wait until the end of their section, so no heading is stranded before a forced page break
 
 
+PAGE_W_MM, PAGE_H_MM, CHROME_MM = 273.0, 182.0, 34.0   # A4 landscape content box of @page wide; figure head, caption and meta line (Estimate)
+
+
+def print_height(f):
+    """Printed height of a wide figure in mm: drawing scaled to the landscape content width, plus its card chrome."""
+    m = re.search(r'viewBox="0 0 ([\d.]+) ([\d.]+)"', f["svg"])
+    w, h = (float(m.group(1)), float(m.group(2))) if m else (1600.0, 1000.0)
+    return min(PAGE_H_MM, PAGE_W_MM * h / w + CHROME_MM)
+
+
+def pack(items):
+    """First-fit decreasing: put a section's landscape figures on as few landscape pages as possible."""
+    bins = []
+    for h, mm in sorted(items, key=lambda x: -x[1]):
+        for b in bins:
+            if b[0] + mm <= PAGE_H_MM:
+                b[0] += mm
+                b[1].append((h, mm))
+                break
+        else:
+            bins.append([mm, [(h, mm)]])
+    return [x for b in bins for x in b[1]]
+
+
 def figs(FG, *ids, mode="web", defer=True):
     """Figures by ID; an ID also takes its panels (D2 -> D2, D2a, D2b …), never the per-persona D5-P* figures."""
     out = []
@@ -35,7 +59,7 @@ def figs(FG, *ids, mode="web", defer=True):
             if k == i or re.fullmatch(re.escape(i) + r"[a-z]", k):
                 h = figure_html(FG[k], mode)
                 if mode == "print" and defer and FG[k].get("wide"):
-                    DEFER.append(h)
+                    DEFER.append((h, print_height(FG[k])))
                 else:
                     out.append(h)
     return "".join(out)
@@ -53,7 +77,7 @@ def ev_short(ev):
 def sec(sid, inner, count=None, caveat=None):
     n = num_of(sid)
     name = dict(SECTIONS)[sid]
-    tail = "".join(DEFER)
+    tail = "".join(h for h, _ in pack(DEFER))
     DEFER.clear()
     return '<section class="sn-page__section" id="%s" aria-labelledby="%s-t">%s%s%s</section>' % (sid, sid, section_heading(n, name, sid, count, caveat), inner, tail)
 
@@ -88,7 +112,8 @@ def s_summary(F, FG, C, mode):
     body += '<section class="sn-card" aria-labelledby="holds-t">%s%s</section>' % (title("", "What holds", "title-s", "h3", "holds-t"), bullets(S["holds"]))
     body += '<section class="sn-card" aria-labelledby="strains-t">%s%s</section>' % (title("", "What strains", "title-s", "h3", "strains-t"), bullets(S["strains"]))
     body += "</div>"
-    body += para(S["loop"])
+    if mode == "web":
+        body += para(S["loop"])                # in print the cover carries this paragraph
     body += figs(FG, "D1", mode=mode)
     return sec("summary", body, caveat=F["meta"]["reading"])
 
@@ -105,8 +130,7 @@ def s_architecture(F, FG, C, mode):
     cols = [("n", "Flow", True), ("from", "From", False), ("to", "To", False), ("contract", "Data contract", False), ("channel", "Channel", False),
             ("domain", "Domain", False), ("state", "State", False), ("ev", "Evidence", False)]
     body = figs(FG, "D2", "D3", mode=mode)
-    body += sub_heading("Table", "Numbered flows", "t-flows-h", "%s flows" % fmt(C["flows"]))
-    body += table("t-flows", "Numbered flows", cols, rows, search=(mode == "web"), filters=None, kind="flow")
+    body += table("t-flows", "Numbered flows", cols, rows, search=(mode == "web"), filters=None, kind="flow", heading=sub_heading("Table", "Numbered flows", "t-flows-h", "%s flows" % fmt(C["flows"])))
     body += figs(FG, "D12", mode=mode)
     return sec("architecture", body, "%s flows" % fmt(C["flows"]), "Every flow in the table is drawn in D2 with the same number.")
 
@@ -135,7 +159,14 @@ def s_catalogue(F, FG, C, mode):
                 row[rule["id"]] = '<span class="sn-none" title="Not applicable">–</span>'
         rows.append(row)
     cols = [("page", "Page", False), ("repo", "Repo", False), ("domain", "Domain", False), ("cat", "Category", False), ("state", "State", False), ("size", "Bytes", True)]
-    cols += [(r["id"], r["id"], False) for r in rules] + [("ev", "Evidence", False)]
+    if mode == "web":
+        cols += [(r["id"], r["id"], False) for r in rules] + [("ev", "Evidence", False)]
+    else:   # print: one Rules column listing results other than pass, so the table fits a portrait page
+        for row, p in zip(rows, F["pages"]):
+            res = rr.get(p["id"], {})
+            odd = ["%s %s" % (k, RULE_STATUS.get(v["result"], ("", v["result"]))[1].lower()) for k, v in sorted(res.items()) if v["result"] not in ("pass", "n/a")]
+            row["rules"] = E("; ".join(odd)) if odd else (E("All checked rules pass") if res else none())
+        cols += [("rules", "Rules", False), ("ev", "Evidence", False)]
     def opts(key, vals):
         return [(v, l, sum(1 for p in F["pages"] if (p.get(key) or ("built" if key == "state" else "")) == v)) for v, l in vals]
     repos = sorted({p["repo"] for p in F["pages"]})
@@ -143,12 +174,10 @@ def s_catalogue(F, FG, C, mode):
                ("cls", "Category", opts("classification", [("production", "Production"), ("non-final", "Non-final")])),
                ("state", "State", opts("state", [("built", "Built"), ("queued", "Queued")]))] if mode == "web" else None
     body = figs(FG, "C1", "D4", mode=mode)
-    body += sub_heading("Rules", "Standing rules audited", "t-rules-h", "%d rules" % len(rules))
     body += table("t-rules", "Standing rules", [("id", "Rule", False), ("rule", "Rule text", False), ("src", "Source", False)],
-                  [{"_id": r["id"], "_kind": "rule", "id": '<span class="sn-mono">%s</span>' % r["id"], "rule": E(r["text"]), "src": code(r["source"])} for r in rules], sortable=False, kind="rule")
-    body += sub_heading("Table", "Page catalogue", "t-pages-h", "%s pages" % fmt(C["pages"]))
+                  [{"_id": r["id"], "_kind": "rule", "id": '<span class="sn-mono">%s</span>' % r["id"], "rule": E(r["text"]), "src": code(r["source"])} for r in rules], sortable=False, kind="rule", heading=sub_heading("Rules", "Standing rules audited", "t-rules-h", "%d rules" % len(rules)))
     body += table("t-pages", "Page catalogue", cols, rows, search=(mode == "web"), filters=filters, kind="page",
-                  note="Category uses at least two independent signals per page (naming, live-data wiring, route registration or inbound links, docs status); hover a pill for the first two.")
+                  note="Category uses at least two independent signals per page (naming, live-data wiring, route registration or inbound links, docs status); hover a pill for the first two.", heading=sub_heading("Table", "Page catalogue", "t-pages-h", "%s pages" % fmt(C["pages"])))
     body += figs(FG, "C8", "C7", mode=mode)
     return sec("catalogue", body, "%s pages" % fmt(C["pages"]), "%s production, %s non-final, %s rule violations." % (fmt(C["production"]), fmt(C["nonfinal"]), fmt(C["violations"])))
 
@@ -175,10 +204,8 @@ def s_stores(F, FG, C, mode):
     types = sorted({g.get("type") for g in F["signals"]})
     filters = [("type", "Primitive", [(t, t, sum(1 for g in F["signals"] if g.get("type") == t)) for t in types])] if mode == "web" else None
     body = figs(FG, "C2", "C4", "C3", mode=mode)
-    body += sub_heading("Table", "Stores and contracts", "t-stores-h", "%s stores" % fmt(C["stores"]))
-    body += table("t-stores", "Stores and contracts", cols, rows, search=(mode == "web"), kind="store")
-    body += sub_heading("Table", "Signals", "t-signals-h", "%s signals" % fmt(C["signals"]))
-    body += table("t-signals", "Signals", scols, srows, search=(mode == "web"), filters=filters, kind="signal")
+    body += table("t-stores", "Stores and contracts", cols, rows, search=(mode == "web"), kind="store", heading=sub_heading("Table", "Stores and contracts", "t-stores-h", "%s stores" % fmt(C["stores"])))
+    body += table("t-signals", "Signals", scols, srows, search=(mode == "web"), filters=filters, kind="signal", heading=sub_heading("Table", "Signals", "t-signals-h", "%s signals" % fmt(C["signals"])))
     return sec("stores", body, "%s stores · %s signals" % (fmt(C["stores"]), fmt(C["signals"])))
 
 
@@ -199,10 +226,8 @@ def s_protocols(F, FG, C, mode):
     body = figs(FG, "D6", "D7", mode=mode)
     body += '<div class="sn-figure-grid sn-figure-grid--2">%s</div>' % "".join(cards)
     body += figs(FG, "C5", "C6", mode=mode)
-    body += sub_heading("Table", "Timing constants", "t-timings-h", "%s constants" % fmt(C["timings"]))
-    body += table("t-timings", "Timing constants", [("name", "Constant", False), ("kind", "Kind", False), ("v", "Value", True), ("where", "Where", False), ("state", "State", False), ("ev", "Evidence", False)], trows, search=(mode == "web"), kind="timing")
-    body += sub_heading("Table", "Size and count limits", "t-limits-h", "%s limits" % fmt(C["limits"]))
-    body += table("t-limits", "Limits", [("name", "Limit", False), ("v", "Value", True), ("cur", "Current", True), ("where", "Where", False), ("state", "State", False), ("ev", "Evidence", False)], lrows, search=(mode == "web"), kind="limit")
+    body += table("t-timings", "Timing constants", [("name", "Constant", False), ("kind", "Kind", False), ("v", "Value", True), ("where", "Where", False), ("state", "State", False), ("ev", "Evidence", False)], trows, search=(mode == "web"), kind="timing", heading=sub_heading("Table", "Timing constants", "t-timings-h", "%s constants" % fmt(C["timings"])))
+    body += table("t-limits", "Limits", [("name", "Limit", False), ("v", "Value", True), ("cur", "Current", True), ("where", "Where", False), ("state", "State", False), ("ev", "Evidence", False)], lrows, search=(mode == "web"), kind="limit", heading=sub_heading("Table", "Size and count limits", "t-limits-h", "%s limits" % fmt(C["limits"])))
     return sec("protocols", body, "%d protocols" % len(F["protocols"]))
 
 
@@ -250,11 +275,9 @@ def s_debt(F, FG, C, mode):
     wrows = [{"_id": w["id"], "_kind": "wave", "id": '<span class="sn-mono">%s</span>' % E(w["id"]), "name": '<span class="body-strong">%s</span>' % E(w["name"]),
               "tasks": E(", ".join(w.get("tasks") or [])), "gate": E(w.get("gate") or "") or none(), "deps": E(", ".join(w.get("depends") or [])) or none()} for w in F["roadmap"]]
     body = figs(FG, "C10", mode=mode)
-    body += sub_heading("Table", "Technical debt, severity ranked", "t-debt-h", "%d items" % C["debt"])
-    body += table("t-debt", "Technical debt", cols, rows, search=(mode == "web"), filters=filters, kind="debt")
+    body += table("t-debt", "Technical debt", cols, rows, search=(mode == "web"), filters=filters, kind="debt", heading=sub_heading("Table", "Technical debt, severity ranked", "t-debt-h", "%d items" % C["debt"]))
     body += figs(FG, "D11", mode=mode)
-    body += sub_heading("Table", "Roadmap waves", "t-roadmap-h", "%d waves" % len(F["roadmap"]))
-    body += table("t-roadmap", "Roadmap", [("id", "Wave", False), ("name", "Goal", False), ("tasks", "Tasks", False), ("gate", "Gate", False), ("deps", "Depends on", False)], wrows, sortable=False, kind="wave")
+    body += table("t-roadmap", "Roadmap", [("id", "Wave", False), ("name", "Goal", False), ("tasks", "Tasks", False), ("gate", "Gate", False), ("deps", "Depends on", False)], wrows, sortable=False, kind="wave", heading=sub_heading("Table", "Roadmap waves", "t-roadmap-h", "%d waves" % len(F["roadmap"])))
     return sec("debt", body, "%d items" % C["debt"])
 
 
@@ -291,8 +314,7 @@ def s_projected(F, FG, C, mode):
     rows = [{"_id": q["id"], "_kind": "queued", "id": code(q["id"]), "what": E(q["title"]), "src": code(q.get("source")), "effect": E(q.get("effect") or "") or none(),
              "touches": E(", ".join(q.get("touches") or [])) or none()} for q in F["queued"]]
     body = figs(FG, "D9", mode=mode)
-    body += sub_heading("Table", "Queued work", "t-queued-h", "%d items" % len(F["queued"]))
-    body += table("t-queued", "Queued work", [("id", "ID", False), ("what", "What", False), ("src", "Source", False), ("effect", "Effect when applied", False), ("touches", "Touches", False)], rows, search=(mode == "web"), kind="queued")
+    body += table("t-queued", "Queued work", [("id", "ID", False), ("what", "What", False), ("src", "Source", False), ("effect", "Effect when applied", False), ("touches", "Touches", False)], rows, search=(mode == "web"), kind="queued", heading=sub_heading("Table", "Queued work", "t-queued-h", "%d items" % len(F["queued"])))
     return sec("projected", body, "%d queued items" % len(F["queued"]), "Built = songnodes main @%s and the musicLibrary snapshot of %s. Projected = Built with every queued item applied." % (F["meta"]["songnodes_commit"][:7], F["meta"]["ml_snapshot"]))
 
 
@@ -304,9 +326,8 @@ def s_tasks(F, FG, C, mode):
     projects = sorted({t["project"] for t in F["tasks"]})
     filters = [("project", "Project", [(p, p, sum(1 for t in F["tasks"] if t["project"] == p)) for p in projects])] if mode == "web" else None
     body = figs(FG, "C12", mode=mode)
-    body += sub_heading("Table", "Task matrix", "t-tasks-h", "%d tasks" % C["tasks"])
     body += table("t-tasks", "Sister-project task matrix", [("id", "Task", False), ("project", "Project", False), ("title", "Package", False), ("type", "Type", False), ("owned", "Owned paths", False),
-                  ("deps", "Depends on", False), ("verify", "Verification", False), ("status", "Status", False)], rows, search=(mode == "web"), filters=filters, kind="task")
+                  ("deps", "Depends on", False), ("verify", "Verification", False), ("status", "Status", False)], rows, search=(mode == "web"), filters=filters, kind="task", heading=sub_heading("Table", "Task matrix", "t-tasks-h", "%d tasks" % C["tasks"]))
     return sec("tasks", body, "%d tasks in %d projects" % (C["tasks"], len(projects)))
 
 
@@ -331,10 +352,8 @@ def s_methods(F, FG, C, mode):
     body = sub_heading("Profile", "Project profile as applied", "profile-h")
     body += kv([(k, E(v), False) for k, v in P])
     body += sub_heading("Pre-flight", "Tools and access", "preflight-h") + kv([(k, E(v), False) for k, v in F["meta"]["preflight"]])
-    body += sub_heading("Methods", "Where the methods agreed and disagreed", "methods-h", "%d notes" % len(mrows))
-    body += table("t-methods", "Method notes", [("item", "Item", False), ("m", "Methods", False), ("ag", "Result", False), ("note", "Note", False)], mrows, search=(mode == "web"), kind="method")
-    body += sub_heading("Secrets", "Secrets scan (location and type only)", "secrets-h", "%d findings" % len(srows))
-    body += table("t-secrets", "Secrets scan", [("path", "Location", False), ("type", "Type", False), ("risk", "Risk", False)], srows, kind="secret")
+    body += table("t-methods", "Method notes", [("item", "Item", False), ("m", "Methods", False), ("ag", "Result", False), ("note", "Note", False)], mrows, search=(mode == "web"), kind="method", heading=sub_heading("Methods", "Where the methods agreed and disagreed", "methods-h", "%d notes" % len(mrows)))
+    body += table("t-secrets", "Secrets scan", [("path", "Location", False), ("type", "Type", False), ("risk", "Risk", False)], srows, kind="secret", heading=sub_heading("Secrets", "Secrets scan (location and type only)", "secrets-h", "%d findings" % len(srows)))
     body += sub_heading("Unverified", "Unverified items", "unverified-h", "%d items" % len(F["unverified"])) + bullets(F["unverified"])
     body += sub_heading("Decisions", "Assumptions and open decisions", "decisions-h") + bullets(F["assumptions"])
     return sec("methods", body)

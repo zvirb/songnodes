@@ -2678,18 +2678,11 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
 
 
 <!-- SLOT:ARCH1 BEGIN -->
-### ARCH1: End-to-End Architectural Investigation, Data-Flow Mapping & System Topology
-- Start: 2026-11-07 (branch docs/data-flow-investigation off origin/main 7429821c).
-- Scope: Deterministic architectural investigation of SongNodes & musicLibrary:
-  1. Phase 0: Design System Inventory in documentation/data-flow-analysis/design-system-inventory.md.
-  2. Phase 1-3: Static codebase scan, data flow extraction, production audit, and 5 operational user journeys in findings.json.
-  3. Phase 4: Standalone SVG diagrams (viewBox 1800x1100): system-architecture-data-flow.svg, user-journey-operational-flow.svg, production-execution-closed-loop.svg, enhanced-architecture-connections-and-gaps.svg.
-  4. Phase 5: Canonical Markdown reports: DATA_FLOW_AND_PAGE_INTERACTION_REPORT.md and ARCHITECTURE_ENHANCEMENTS_AND_GAPS_REPORT.md.
-  5. Phase 6: Self-contained interactive web report (report/index.html) with embedded fonts/tokens and printable A4 PDF (DATA_FLOW_AND_PAGE_INTERACTION_REPORT.pdf). Rebuild pipeline in documentation/data-flow-analysis/build/.
-  6. Phase 7-8: Critical gap analysis (5 gaps, 4 single-purpose modules <500 LOC, unified storage backbone) and sister project task distribution in e:\musicLibrary\TODO-ARCHITECTURAL-IMPROVEMENTS.md.
-- Checks run:
-  - Phase 6d Verification Gates (6/6 passed: Token audit, Visual conformance, Completeness audit, PDF extractability, Offline check, In-page anchor check)
-  - Headless Chrome PDF compilation: 1775 KB vector searchable PDF
-  - Rebuild pipeline test: python documentation/data-flow-analysis/build/rebuild_all.py (passed in 3.2s)
-- Next: Submit PRs for docs/data-flow-investigation and feat/architecture-enhancements-and-gaps.
+### ARCH1: End-to-end data-flow investigation (SongNodes + musicLibrary)
+- 7 Nov 2026: a second, fuller run (Claude session 01NvWNfTGjhUeGYwDZx2H948) was merged into this branch at the owner's request. The first run's build scripts are kept; where both runs wrote the same report file the second run's version is kept, and the first run's figures are re-verified as baseline claims (register area baseline-581).
+- Scope now: 115 pages and entry points, 404 signals, 48 stores, 87 numbered flows, 8 personas, 28 gaps, 47 debt items, 81 verified claims, 51 figures (D1-D12, C1-C12), all computed from documentation/data-flow-analysis/findings.json.
+- Design system raised to 1.10.0 at the source (print document rules, named pages @page doc / @page wide with page numbers, ReportPage, diagram and report-chart patterns, linter glyph fix); frontend copy re-synced (sync --check passes).
+- Build: `python3 documentation/data-flow-analysis/build/build.py` (findings.json -> SVGs -> Markdown -> web report -> print sheet -> two-pass PDF -> gates.json).
+- Checks: gates.json (linter, tokens, parity, diagrams, colour, conformance, offline, secrets pass; PDF gate lists the landscape pages that hold one figure each); scripts/check_design_system.py --check 0 findings.
+- Next: enhancement report and sister TODOs in PR feat/architecture-enhancements-and-gaps (based on this branch); publish design system 1.10.0 to the design-system artifact.
 <!-- SLOT:ARCH1 END -->

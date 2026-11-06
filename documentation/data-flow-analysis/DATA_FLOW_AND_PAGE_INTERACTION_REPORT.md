@@ -1,6 +1,6 @@
 # SongNodes · Data flow report · 7 Nov 2026
 
-Built 7 Nov 2026, 10:16 AEDT by Claude (Opus 5.5) for Markus, session 01NvWNfTGjhUeGYwDZx2H948. songnodes `7429821` (docs/data-flow-investigation), musicLibrary snapshot 7 Nov 2026, `findings.json` sha256 `dc92fbc287f9`. Web report: `report/index.html`; PDF: `DATA_FLOW_AND_PAGE_INTERACTION_REPORT.pdf`. Every number below is computed from `findings.json`.
+Built 7 Nov 2026, 10:36 AEDT by Claude (Opus 5.5) for Markus, session 01NvWNfTGjhUeGYwDZx2H948. songnodes `7429821` (docs/data-flow-investigation), musicLibrary snapshot 7 Nov 2026, `findings.json` sha256 `e469b41763f1`. Web report: `report/index.html`; PDF: `DATA_FLOW_AND_PAGE_INTERACTION_REPORT.pdf`. Every number below is computed from `findings.json`.
 
 > Read as: one estate of two projects. songnodes (git, main @7429821) is the source of truth for SongNodes; E:\musicLibrary (no git) is read from a snapshot taken 7 Nov 2026 without its 58 GB data folder. Queued = open PRs #576–#580, musicLibrary plan/jules_payloads and unmerged briefs.
 
@@ -15,7 +15,7 @@ Built 7 Nov 2026, 10:16 AEDT by Claude (Opus 5.5) for Markus, session 01NvWNfTGj
 | 48 | Stores and external systems |
 | 404 | Signals extracted |
 | 17 | Standing-rule violations |
-| 34 | Doc claims corrected or refuted |
+| 42 | Doc claims corrected or refuted |
 | 14 | Queued items |
 | 16 | Sister-project tasks |
 
@@ -1232,7 +1232,7 @@ See `ARCHITECTURE_ENHANCEMENTS_AND_GAPS_REPORT.md` for the full gap analysis: 28
 
 ![C11: Verification outcome by area](c11-verification-outcome.svg)
 
-**C11 Verification outcome by area.** 33 of 69 repo claims hold as written; 18 needed correcting and 15 are refuted. *n = 69 · claims · state built · source claims[] (outcome, _agent) · method Count of claims per scanning area split by outcome; sorted by total.*
+**C11 Verification outcome by area.** 37 of 81 repo claims hold as written; 23 needed correcting and 17 are refuted. *n = 81 · claims · state built · source claims[] (outcome, _agent) · method Count of claims per scanning area split by outcome; sorted by total.*
 
 | ID | Claim | Source | Outcome | Verifier | Finding |
 |---|---|---|---|---|---|
@@ -1305,6 +1305,18 @@ See `ARCHITECTURE_ENHANCEMENTS_AND_GAPS_REPORT.md` for the full gap analysis: 28
 | sn-fe-c-body-limit | frontend nginx 1 MB default body limit is a follow-up | songnodes/STATUS.md:1899 | confirmed | confirmed | no client_max_body_size in frontend default.conf while FileDrop allows 50 MB |
 | sn-fe-c-ui9-debug | debug console.log calls in GraphVisualization and useTokenRefresh stay out of production | songnodes/STATUS.md (UI9 slot) | corrected | corrected | true for those two files, but OAuthCallback still console.logs code/state prefixes and storage keys in production |
 | sn-fe-c-banner-day | Banner dismissal should also end at the next Melbourne day (DR-051) | songnodes/STATUS.md:2236 | confirmed | confirmed | bannerKey stores only the count; follow-up still queued |
+| BL-B01 | 12 pages | documentation/data-flow-analysis/findings.json pages[] @1f296c3 | corrected | – | 12 is the songnodes frontend route count (13 production routes found here, including the shadowed /paths placeholder); the estate holds 115 pages and entry points across both repos. |
+| BL-B02 | 8 stores | findings.json stores[] @1f296c3 | corrected | – | 39 internal stores plus 9 external systems (48) found by three scanners; #581 grouped Postgres by layer and omitted RabbitMQ, the artifact database, ref_mb and external APIs. |
+| BL-B03 | 26 edges | findings.json edges[] @1f296c3 | corrected | – | 87 numbered flows, every one drawn in D2a–D2g. |
+| BL-B04 | 5 personas | findings.json personas[] @1f296c3 | corrected | – | 8 personas (5 human, 2 system actors, 1 assisted); #581's selector, librarian, data engineer, resolution specialist and devops map onto P1/P2, P3, P4/P5, P3/P7 and P4. |
+| BL-B05 | 5 gaps | findings.json gaps[] @1f296c3 | corrected | – | 28 gaps; all five #581 gaps are kept: GAP-01 Rekordbox feedback = ml-gap-rekordbox-feedback; GAP-02 dual storage = ml-gap-saved-set-shape and ml-gap-songnodes-field-loss; GAP-03 audio fingerprint segmenter is not evidenced in either repo (kept as Unverified); GAP-04 unwired target queue feedback = sn-be-gap-target-scrape-quota and sn-fe-gap-target-pending-sync; GAP-05 outbox projection lag = sn-be-gap-library-projection. |
+| BL-B06 | Gate 1: 0 hard-coded colours or fonts outside token definitions | PR #581 description | refuted | – | 243 literal hex colours in SVG fill/stroke attributes of report/index.html outside style blocks (this run's gate 2 regex over tags). |
+| BL-B07 | All 14 internal navigation anchors resolve | PR #581 description | confirmed | – | 14 href=#… anchors, all with a matching id. |
+| BL-B08 | Standalone SVGs at viewBox 1800x1100 | PR #581 description | confirmed | – | system-architecture-data-flow.svg viewBox 0 0 1800 1100. |
+| BL-B09 | enhanced-architecture-connections-and-gaps.svg and ARCHITECTURE_ENHANCEMENTS_AND_GAPS_REPORT.md produced | STATUS.md SLOT:ARCH1 @1f296c3 | refuted | – | Neither file is in the branch (git diff --stat origin/main...1f296c3 lists 17 files without them); both exist in this run. |
+| BL-B10 | Sister TODO written to E:\musicLibrary\TODO-ARCHITECTURAL-IMPROVEMENTS.md | STATUS.md SLOT:ARCH1 @1f296c3 | confirmed | – | File present on tuf-boi (7,332 bytes, 6 Nov 2026 22:18 UTC); kept and extended, not replaced. |
+| BL-B11 | PDF 1,775 KB, vector, searchable | PR #581 description | confirmed | – | 1,817,715 bytes in the branch. |
+| BL-B12 | Rebuild pipeline passes in 3.2 s | STATUS.md SLOT:ARCH1 @1f296c3 | not-reproducible | – | Not re-run: its build scripts are kept in the branch but superseded by build.py; timing is the author's figure. |
 
 ## 12. Methods, assumptions and open decisions
 
@@ -1313,7 +1325,7 @@ See `ARCHITECTURE_ENHANCEMENTS_AND_GAPS_REPORT.md` for the full gap analysis: 28
 | Scope | songnodes (E:\songnodes = github zvirb/songnodes main) and musicLibrary (E:\musicLibrary). Sub-projects scanned: songnodes frontend, services, scrapers, design-system; musicLibrary pipeline, artifact, ref_mb, plan. |
 | Page source of truth | songnodes source tree on main @7429821 (no built bundle is kept in the repo); musicLibrary artifact/build/index.html is the live page, artifact/index.html is the legacy page (agent ml, M3 render). |
 | Queued work | Open PRs #576–#580 (Duo 2FA, Cloudflare tunnel, login page, Sentinel sanitisation); musicLibrary plan/jules_payloads (30) and the unmerged WP7 brief. |
-| Baseline report | None found in documentation/, docs/ or project artifacts. The verification register re-checks the repos' own documentation instead. |
+| Baseline report | PR #581 (ARCH1, opened 7 Nov 2026 09:23 by a parallel run on branch docs/data-flow-investigation): its numbers and gate claims are re-verified in the register (area baseline-581) and every topic it covers is kept; this report is merged into that branch. The register also re-checks the repos' own documentation. |
 | Standing rules | R1–R8 from songnodes CLAUDE.md §2–§4 and AGENTS.md rule 12 (listed in section 3). |
 | Retired or excluded | deploy/ and k8s/ (kept but unused, CLAUDE.md §1); musicLibrary _to_delete/ and data/ (data/ listed only). |
 | Locale | en-AU, A4, Australia/Melbourne 24-hour time (design system 01-writing). |
@@ -1426,6 +1438,7 @@ See `ARCHITECTURE_ENHANCEMENTS_AND_GAPS_REPORT.md` for the full gap analysis: 28
 - Pathfinder export JSON branch content (pathfinder.machine.ts:80-90) not read in full.
 - PR #579 login page reviewed by grep of its files at the PR head only; not rendered.
 - sn-fe-sources-import R2 third-primary visibility inferred from markup, not rendered.
+- #581 GAP-03 (audio fingerprint and AcoustID transition segmenter): no code, schema or doc in either repo supports it; kept as a topic, not as a gap.
 
 **Assumptions and open decisions.**
 
@@ -1440,9 +1453,29 @@ See `ARCHITECTURE_ENHANCEMENTS_AND_GAPS_REPORT.md` for the full gap analysis: 28
 
 | Item | Value |
 |---|---|
-| Branch | docs/data-flow-investigation |
+| Pull request (master) | https://github.com/zvirb/songnodes/pull/581 |
+| Branch | docs/data-flow-investigation (merged with the parallel run's PR #581 branch) |
+| Deliverables | documentation/data-flow-analysis/: report/index.html, report/print-sheet.html, DATA_FLOW_AND_PAGE_INTERACTION_REPORT.pdf and .md, PAGE_CLASSIFICATION_AUDIT.md, findings.json, figures.json, 51 SVGs, build/ |
+| Design system | 1.10.0 (source changes in design-system/, frontend copy re-synced) |
+| Tool gaps | None blocking. PyMuPDF absent (not needed); musicLibrary has no git, so its files are written to E:\musicLibrary directly |
 
+| Gate | Result | Note |
+|---|---|---|
+| 1 linter | pass | 0 findings from design-system/linters/check.py |
+| 2 tokens | pass | 0 literal colours, sizes, spacing or radii outside design-system definitions |
+| 3 parity | pass | 0 items missing from a figure or table in web, sheet or PDF; 0 flows undrawn |
+| 4 diagrams | pass | 51 SVGs checked; 0 with overflow, collision or text under 9.5 px; 0 edges through nodes; crossings {'D1': 0, 'D2a': 1, 'D2b': 7, 'D2c': 3, 'D2d': 0, 'D2e': 1, 'D2f': 0, 'D2g': 0, 'D3a': 2, 'D3b': 0, 'D3c': 10, 'D3d': 12, 'D3e': 0, 'D3f': 0, 'D4a': 4, 'D4b': 0, 'D4c': 0, 'D5': 0, 'D5-P1': 0, 'D5-P2': 0, 'D5-P3': 0, 'D5-P4': 0, 'D5-P5': 0, 'D5-P6': 0, 'D5-P7': 0, 'D5-P8': 0, 'D6a': 0, 'D6b': 0, 'D6c': 0, 'D7a': 0, 'D7b': 0, 'D7c': 0, 'D8a': 0, 'D8b': 0, 'D8c': 0, 'D9': 0, 'D10': 0, 'D11': 1, 'D12': 0} |
+| 5 pdf | fail | 196 pages; pages over 40% empty (pages before an orientation change exempt): [(47, 0.43), (145, 0.41), (146, 0.44), (180, 0.44)] |
+| 6 colour | pass | 0 module-colour uses in figures; design-system contrast report passes; greyscale shots for QA in build/evidence |
+| 7 conformance | pass | 18 screenshots (report and reference, 3 widths × themes) for QA |
+| 8 offline | pass | 0 console errors, 0 unresolved anchors, 0 network requests with the network blocked |
+| 9 secrets | pass | 0 secret-shaped strings in outputs |
+| 10 claims | pass | 1 PR URLs in the handover, 0 not confirmed by the GitHub API |
 
+- Publish design system 1.10.0 to the design-system artifact so it stays mirrored (task DS-T01).
+- Close the security gate before PR #577's tunnel merges (wave W1: SN-T01, SN-T02).
+- Repair the cross-project contracts (wave W2), then run build.py again: a refresh is a findings.json swap.
+- Decide the two open questions: gold layer or silver plus projection; which Set Builder is primary.
 
 ## Appendix: page relationships
 
