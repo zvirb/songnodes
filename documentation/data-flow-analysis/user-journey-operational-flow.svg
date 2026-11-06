@@ -1,0 +1,342 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1100" width="100%" height="100%">
+  <title>SongNodes: Persona Operational Journeys &amp; Data Handoffs</title>
+  <rect width="1800" height="1100" class="bg"/>
+  {SVG_COMMON_DEFS}
+  
+  <!-- Header Banner -->
+  <g transform="translate(48, 48)">
+    <text class="text-title" font-size="28"><tspan class="text-lead">Operational Journeys:</tspan> Persona Swimlanes, Step Cards &amp; Data Handoffs</text>
+    <text class="text-body-muted" y="28">Step-by-step progressions across DJ Selector, Track Librarian, Scraper Pipeline Engineer, Entity Resolution Specialist, and Platform Admin</text>
+  </g>
+
+  <!-- SWIMLANE 1: Performing DJ / Selector -->
+  <g transform="translate(48, 110)">
+    <rect width="1704" height="170" class="card-neutral"/>
+    <rect x="0" y="0" width="12" height="170" fill="#e08a5f" rx="6"/>
+    
+    <g transform="translate(24, 28)">
+      <text class="text-body-strong" font-size="16" fill="#feeae0">Persona 1: Performing DJ / Selector</text>
+      <text class="text-caption">Objective: Construct wave-shaped harmonic sets with proven transitions, export to Rekordbox &amp; TIDAL</text>
+    </g>
+    
+    <!-- Steps -->
+    <g transform="translate(300, 20)">
+      <rect width="240" height="130" class="card-sunk"/>
+      <text class="text-label" x="12" y="22">Step 1 · /library</text>
+      <text class="text-body-strong" x="12" y="44">Crate Exploration</text>
+      <text class="text-caption" x="12" y="62">Filter by High Rotation &amp; Energy 5-7</text>
+      <text class="text-data" x="12" y="86">Data: Audition 30s preview</text>
+      <text class="text-caption" x="12" y="106" fill="#5fd08f">Trigger: Click 'Add to Set'</text>
+    </g>
+    
+    <path d="M 545 85 L 575 85" class="edge-active" marker-end="url(#arrow-brand)"/>
+    
+    <g transform="translate(580, 20)">
+      <rect width="240" height="130" class="card-sets"/>
+      <text class="text-label" x="12" y="22" fill="#feeae0">Step 2 · /sets</text>
+      <text class="text-body-strong" x="12" y="44" fill="#feeae0">Harmonic Wave Sequencing</text>
+      <text class="text-caption" x="12" y="62" fill="#e6b9a4">Drag track into Slot N; inspect Camelot</text>
+      <text class="text-data" x="12" y="86">Data: SN.compat (+1 key, +2 BPM)</text>
+      <text class="text-caption" x="12" y="106" fill="#5fd08f">Trigger: Detect harmonic gap</text>
+    </g>
+    
+    <path d="M 825 85 L 855 85" class="edge-active" marker-end="url(#arrow-brand)"/>
+    
+    <g transform="translate(860, 20)">
+      <rect width="240" height="130" class="card-paths"/>
+      <text class="text-label" x="12" y="22" fill="#fee7f2">Step 3 · /paths</text>
+      <text class="text-body-strong" x="12" y="44" fill="#fee7f2">Transition Route Finder</text>
+      <text class="text-caption" x="12" y="62" fill="#e3b5cb">Query Memgraph for 2-hop harmonic bridge</text>
+      <text class="text-data" x="12" y="86">Data: POST /api/v1/pathfinder</text>
+      <text class="text-caption" x="12" y="106" fill="#5fd08f">Trigger: Accept path -&gt; Sets</text>
+    </g>
+    
+    <path d="M 1105 85 L 1135 85" class="edge-active" marker-end="url(#arrow-brand)"/>
+    
+    <g transform="translate(1140, 20)">
+      <rect width="240" height="130" class="card-sunk"/>
+      <text class="text-label" x="12" y="22">Step 4 · /sets (Export)</text>
+      <text class="text-body-strong" x="12" y="44">Export &amp; Gig Delivery</text>
+      <text class="text-caption" x="12" y="62">Export Rekordbox XML &amp; push TIDAL</text>
+      <text class="text-data" x="12" y="86">Handoff: POST /api/v1/tidal/sets/send</text>
+      <text class="text-caption" x="12" y="106" fill="#5fd08f">Trigger: 'Send to TIDAL' toggle</text>
+    </g>
+    
+    <path d="M 1385 85 L 1415 85" class="edge-data" marker-end="url(#arrow-ok)"/>
+    
+    <g transform="translate(1420, 20)">
+      <rect width="260" height="130" class="card-library"/>
+      <text class="text-label" x="12" y="22" fill="#f6eedc">Step 5 · Floor Performance</text>
+      <text class="text-body-strong" x="12" y="44" fill="#f6eedc">Booth Playback on CDJs</text>
+      <text class="text-caption" x="12" y="62" fill="#d3c29f">Load setlist from USB; execute transitions</text>
+      <text class="text-data" x="12" y="86">Output: Pioneer HISTORY.m3u8</text>
+      <text class="text-caption" x="12" y="106" fill="#efb54a">Failure: Manual set drift at gig</text>
+    </g>
+  </g>
+
+  <!-- SWIMLANE 2: Music Curator / Track Librarian -->
+  <g transform="translate(48, 295)">
+    <rect width="1704" height="170" class="card-neutral"/>
+    <rect x="0" y="0" width="12" height="170" fill="#c9a85c" rx="6"/>
+    
+    <g transform="translate(24, 28)">
+      <text class="text-body-strong" font-size="16" fill="#f6eedc">Persona 2: Music Curator</text>
+      <text class="text-caption">Objective: Maintain metadata integrity, calibrate energy priors, and resolve review queues</text>
+    </g>
+    
+    <!-- Steps -->
+    <g transform="translate(300, 20)">
+      <rect width="240" height="130" class="card-sunk"/>
+      <text class="text-label" x="12" y="22">Step 1 · /library</text>
+      <text class="text-body-strong" x="12" y="44">Audit Uncalibrated Tracks</text>
+      <text class="text-caption" x="12" y="62">Filter by 'Needs Review' or BPM gap</text>
+      <text class="text-data" x="12" y="86">Data: Competing provider evidence</text>
+      <text class="text-caption" x="12" y="106" fill="#5fd08f">Trigger: Inspect track detail</text>
+    </g>
+    
+    <path d="M 545 85 L 575 85" class="edge-active" marker-end="url(#arrow-brand)"/>
+    
+    <g transform="translate(580, 20)">
+      <rect width="240" height="130" class="card-harmony"/>
+      <text class="text-label" x="12" y="22" fill="#dff4f1">Step 2 · /harmony</text>
+      <text class="text-body-strong" x="12" y="44" fill="#dff4f1">Camelot Key Audit</text>
+      <text class="text-caption" x="12" y="62" fill="#a5cec9">Cross-reference pitch with Camelot wheel</text>
+      <text class="text-data" x="12" y="86">Data: SN.camelot(rawKey)</text>
+      <text class="text-caption" x="12" y="106" fill="#5fd08f">Trigger: Validate harmonic code</text>
+    </g>
+    
+    <path d="M 825 85 L 855 85" class="edge-active" marker-end="url(#arrow-brand)"/>
+    
+    <g transform="translate(860, 20)">
+      <rect width="240" height="130" class="card-sunk"/>
+      <text class="text-label" x="12" y="22">Step 3 · Ledger Override</text>
+      <text class="text-body-strong" x="12" y="44">Commit Energy Override</text>
+      <text class="text-caption" x="12" y="62">Write verified rating to overrides.csv</text>
+      <text class="text-data" x="12" y="86">File: energy_overrides.csv</text>
+      <text class="text-caption" x="12" y="106" fill="#5fd08f">Trigger: Save override</text>
+    </g>
+    
+    <path d="M 1105 85 L 1135 85" class="edge-active" marker-end="url(#arrow-brand)"/>
+    
+    <g transform="translate(1140, 20)">
+      <rect width="240" height="130" class="card-sources"/>
+      <text class="text-label" x="12" y="22" fill="#e7f3de">Step 4 · /sources/targets</text>
+      <text class="text-body-strong" x="12" y="44" fill="#e7f3de">Promote Scraper Targets</text>
+      <text class="text-caption" x="12" y="62" fill="#b5cda5">Elevate artist to high-priority spider queue</text>
+      <text class="text-data" x="12" y="86">Data: POST /api/v1/target-tracks</text>
+      <text class="text-caption" x="12" y="106" fill="#5fd08f">Trigger: 'Set Target' button</text>
+    </g>
+    
+    <path d="M 1385 85 L 1415 85" class="edge-data" marker-end="url(#arrow-ok)"/>
+    
+    <g transform="translate(1420, 20)">
+      <rect width="260" height="130" class="card-sunk"/>
+      <text class="text-label" x="12" y="22">Step 5 · Rotation Reconcile</text>
+      <text class="text-body-strong" x="12" y="44">High/Standard/Archive Run</text>
+      <text class="text-caption" x="12" y="62">Run weekly calibrate.py &amp; db rebuild</text>
+      <text class="text-data" x="12" y="86">Output: dj_library.sqlite updated</text>
+      <text class="text-caption" x="12" y="106" fill="#5fd08f">Outcome: Crates updated for weekend</text>
+    </g>
+  </g>
+
+  <!-- SWIMLANE 3: Data Pipeline & Scraper Engineer -->
+  <g transform="translate(48, 480)">
+    <rect width="1704" height="170" class="card-neutral"/>
+    <rect x="0" y="0" width="12" height="170" fill="#7fa1b3" rx="6"/>
+    
+    <g transform="translate(24, 28)">
+      <text class="text-body-strong" font-size="16" fill="#e7f0f5">Persona 3: Scraper &amp; Pipeline Engineer</text>
+      <text class="text-caption">Objective: Maintain scraper fleet uptime, monitor Celery queues, revive DLQ, enforce 1..N order</text>
+    </g>
+    
+    <!-- Steps -->
+    <g transform="translate(300, 20)">
+      <rect width="240" height="130" class="card-pipeline"/>
+      <text class="text-label" x="12" y="22" fill="#e7f0f5">Step 1 · /pipeline</text>
+      <text class="text-body-strong" x="12" y="44" fill="#e7f0f5">Telemetry Inspection</text>
+      <text class="text-caption" x="12" y="62" fill="#b6c7d1">Review ScrapeWindow status &amp; active jobs</text>
+      <text class="text-data" x="12" y="86">Data: GET /api/v1/jobs</text>
+      <text class="text-caption" x="12" y="106" fill="#efb54a">Trigger: DLQ count alert (&gt;0)</text>
+    </g>
+    
+    <path d="M 545 85 L 575 85" class="edge-active" marker-end="url(#arrow-brand)"/>
+    
+    <g transform="translate(580, 20)">
+      <rect width="240" height="130" class="card-sunk"/>
+      <text class="text-label" x="12" y="22">Step 2 · /pipeline (DLQ)</text>
+      <text class="text-body-strong" x="12" y="44">Dead-Letter Diagnostics</text>
+      <text class="text-caption" x="12" y="62">Inspect trace (Cloudflare challenge / gap)</text>
+      <text class="text-data" x="12" y="86">Data: GET /api/v1/jobs/{{id}}/stages</text>
+      <text class="text-caption" x="12" y="106" fill="#5fd08f">Trigger: Click 'Revive / Retry'</text>
+    </g>
+    
+    <path d="M 825 85 L 855 85" class="edge-active" marker-end="url(#arrow-brand)"/>
+    
+    <g transform="translate(860, 20)">
+      <rect width="240" height="130" class="card-sources"/>
+      <text class="text-label" x="12" y="22" fill="#e7f3de">Step 3 · /sources/import</text>
+      <text class="text-body-strong" x="12" y="44" fill="#e7f3de">Manual Fallback Ingest</text>
+      <text class="text-caption" x="12" y="62" fill="#b5cda5">Paste raw tracklist; enforce 1..N order</text>
+      <text class="text-data" x="12" y="86">Data: POST /tracks/import-tracklist</text>
+      <text class="text-caption" x="12" y="106" fill="#5fd08f">Trigger: Commit import</text>
+    </g>
+    
+    <path d="M 1105 85 L 1135 85" class="edge-active" marker-end="url(#arrow-brand)"/>
+    
+    <g transform="translate(1140, 20)">
+      <rect width="240" height="130" class="card-sunk"/>
+      <text class="text-label" x="12" y="22">Step 4 · Bronze to Silver</text>
+      <text class="text-body-strong" x="12" y="44">Ingestion Execution</text>
+      <text class="text-caption" x="12" y="62">Celery worker commits silver transitions</text>
+      <text class="text-data" x="12" y="86">Contract: Completeness guard check</text>
+      <text class="text-caption" x="12" y="106" fill="#5fd08f">Trigger: Auto enqueue projection</text>
+    </g>
+    
+    <path d="M 1385 85 L 1415 85" class="edge-data" marker-end="url(#arrow-ok)"/>
+    
+    <g transform="translate(1420, 20)">
+      <rect width="260" height="130" class="card-sunk"/>
+      <text class="text-label" x="12" y="22">Step 5 · Outbox Verification</text>
+      <text class="text-body-strong" x="12" y="44">Lag &amp; Reconcile Check</text>
+      <text class="text-caption" x="12" y="62">Verify consumer lag = 0s on /outbox</text>
+      <text class="text-data" x="12" y="86">Data: GET /api/v1/outbox/status</text>
+      <text class="text-caption" x="12" y="106" fill="#5fd08f">Outcome: Projection healthy</text>
+    </g>
+  </g>
+
+  <!-- SWIMLANE 4: Entity Resolution Specialist -->
+  <g transform="translate(48, 665)">
+    <rect width="1704" height="170" class="card-neutral"/>
+    <rect x="0" y="0" width="12" height="170" fill="#9b85cb" rx="6"/>
+    
+    <g transform="translate(24, 28)">
+      <text class="text-body-strong" font-size="16" fill="#b4a2dc">Persona 4: Entity Resolution Specialist</text>
+      <text class="text-caption">Objective: Reconcile duplicate artists and tracks across providers without breaking historical links</text>
+    </g>
+    
+    <!-- Steps -->
+    <g transform="translate(300, 20)">
+      <rect width="240" height="130" class="card-services"/>
+      <text class="text-label" x="12" y="22" fill="#f0efe5">Step 1 · /settings</text>
+      <text class="text-body-strong" x="12" y="44" fill="#f0efe5">API Credentials Audit</text>
+      <text class="text-caption" x="12" y="62" fill="#c7c5b2">Verify MusicBrainz, Discogs, TIDAL keys</text>
+      <text class="text-data" x="12" y="86">Data: GET /api/v1/api-keys</text>
+      <text class="text-caption" x="12" y="106" fill="#5fd08f">Trigger: Credentials nominal</text>
+    </g>
+    
+    <path d="M 545 85 L 575 85" class="edge-active" marker-end="url(#arrow-brand)"/>
+    
+    <g transform="translate(580, 20)">
+      <rect width="240" height="130" class="card-sunk"/>
+      <text class="text-label" x="12" y="22">Step 2 · /metadata/review</text>
+      <text class="text-body-strong" x="12" y="44">Review Queue Audit</text>
+      <text class="text-caption" x="12" y="62">Inspect conflicting provider snapshots</text>
+      <text class="text-data" x="12" y="86">Data: bpm_conflict, key_near</text>
+      <text class="text-caption" x="12" y="106" fill="#5fd08f">Trigger: Evaluate shadow pairs</text>
+    </g>
+    
+    <path d="M 825 85 L 855 85" class="edge-active" marker-end="url(#arrow-brand)"/>
+    
+    <g transform="translate(860, 20)">
+      <rect width="240" height="130" class="card-sunk"/>
+      <text class="text-label" x="12" y="22">Step 3 · Reversible Merge</text>
+      <text class="text-body-strong" x="12" y="44">Execute Entity Merge</text>
+      <text class="text-caption" x="12" y="62">Consolidate aliases into canonical ID</text>
+      <text class="text-data" x="12" y="86">Data: POST /tracks/{{id}}/merge</text>
+      <text class="text-caption" x="12" y="106" fill="#5fd08f">Trigger: Write entity_redirects</text>
+    </g>
+    
+    <path d="M 1105 85 L 1135 85" class="edge-active" marker-end="url(#arrow-brand)"/>
+    
+    <g transform="translate(1140, 20)">
+      <rect width="240" height="130" class="card-sunk"/>
+      <text class="text-label" x="12" y="22">Step 4 · Verification</text>
+      <text class="text-body-strong" x="12" y="44">Redirect Persistence</text>
+      <text class="text-caption" x="12" y="62">Verify old ID resolves to canonical</text>
+      <text class="text-data" x="12" y="86">Data: GET /tracks/{{oldId}}/canonical</text>
+      <text class="text-caption" x="12" y="106" fill="#5fd08f">Trigger: Confirm clean redirect</text>
+    </g>
+    
+    <path d="M 1385 85 L 1415 85" class="edge-data" marker-end="url(#arrow-ok)"/>
+    
+    <g transform="translate(1420, 20)">
+      <rect width="260" height="130" class="card-sunk"/>
+      <text class="text-label" x="12" y="22">Step 5 · Projection Push</text>
+      <text class="text-body-strong" x="12" y="44">Rebuild Gold Cache</text>
+      <text class="text-caption" x="12" y="62">Propagate canonical ID to Memgraph</text>
+      <text class="text-data" x="12" y="86">Task: projection_rebuild</text>
+      <text class="text-caption" x="12" y="106" fill="#5fd08f">Outcome: Graph entities synced</text>
+    </g>
+  </g>
+
+  <!-- SWIMLANE 5: Platform & Infrastructure Admin -->
+  <g transform="translate(48, 850)">
+    <rect width="1704" height="170" class="card-neutral"/>
+    <rect x="0" y="0" width="12" height="170" fill="#a5a07b" rx="6"/>
+    
+    <g transform="translate(24, 28)">
+      <text class="text-body-strong" font-size="16" fill="#f0efe5">Persona 5: Platform Administrator</text>
+      <text class="text-caption">Objective: Maintain container stack uptime, verify schema migrations, manage volume backups</text>
+    </g>
+    
+    <!-- Steps -->
+    <g transform="translate(300, 20)">
+      <rect width="240" height="130" class="card-services"/>
+      <text class="text-label" x="12" y="22" fill="#f0efe5">Step 1 · /settings</text>
+      <text class="text-body-strong" x="12" y="44" fill="#f0efe5">Health Matrix Check</text>
+      <text class="text-caption" x="12" y="62" fill="#c7c5b2">Verify DB, Redis, Celery &amp; Scraper</text>
+      <text class="text-data" x="12" y="86">Data: GET /health</text>
+      <text class="text-caption" x="12" y="106" fill="#5fd08f">Trigger: Morning platform patrol</text>
+    </g>
+    
+    <path d="M 545 85 L 575 85" class="edge-active" marker-end="url(#arrow-brand)"/>
+    
+    <g transform="translate(580, 20)">
+      <rect width="240" height="130" class="card-pipeline"/>
+      <text class="text-label" x="12" y="22" fill="#e7f0f5">Step 2 · /pipeline</text>
+      <text class="text-body-strong" x="12" y="44" fill="#e7f0f5">Queue Latency Inspection</text>
+      <text class="text-caption" x="12" y="62" fill="#b6c7d1">Check Redis broker depths &amp; active leases</text>
+      <text class="text-data" x="12" y="86">Data: Redis keys celery</text>
+      <text class="text-caption" x="12" y="106" fill="#5fd08f">Trigger: Concurrency within budget</text>
+    </g>
+    
+    <path d="M 825 85 L 855 85" class="edge-active" marker-end="url(#arrow-brand)"/>
+    
+    <g transform="translate(860, 20)">
+      <rect width="240" height="130" class="card-sunk"/>
+      <text class="text-label" x="12" y="22">Step 3 · Docker CLI</text>
+      <text class="text-body-strong" x="12" y="44">Volume &amp; Resource Audit</text>
+      <text class="text-caption" x="12" y="62">Inspect disk allocation on E:\DockerData</text>
+      <text class="text-data" x="12" y="86">Command: docker compose ps</text>
+      <text class="text-caption" x="12" y="106" fill="#5fd08f">Trigger: Storage verified</text>
+    </g>
+    
+    <path d="M 1105 85 L 1135 85" class="edge-active" marker-end="url(#arrow-brand)"/>
+    
+    <g transform="translate(1140, 20)">
+      <rect width="240" height="130" class="card-sunk"/>
+      <text class="text-label" x="12" y="22">Step 4 · Schema Migrations</text>
+      <text class="text-body-strong" x="12" y="44">PostgreSQL DDL Audit</text>
+      <text class="text-caption" x="12" y="62">Verify all 280+ migrations applied</text>
+      <text class="text-data" x="12" y="86">Command: python migrate.py --check</text>
+      <text class="text-caption" x="12" y="106" fill="#5fd08f">Trigger: All tables consistent</text>
+    </g>
+    
+    <path d="M 1385 85 L 1415 85" class="edge-data" marker-end="url(#arrow-ok)"/>
+    
+    <g transform="translate(1420, 20)">
+      <rect width="260" height="130" class="card-sunk"/>
+      <text class="text-label" x="12" y="22">Step 5 · Backup &amp; Recovery</text>
+      <text class="text-body-strong" x="12" y="44">Automated Volume Snapshot</text>
+      <text class="text-caption" x="12" y="62">Execute backup_volumes.sh to cold disk</text>
+      <text class="text-data" x="12" y="86">File: backup_volumes.sh</text>
+      <text class="text-caption" x="12" y="106" fill="#5fd08f">Outcome: Safe recovery baseline</text>
+    </g>
+  </g>
+
+  <!-- Traceability Footer -->
+  <g transform="translate(48, 1045)">
+    <rect width="1704" height="42" class="card-sunk"/>
+    <text class="text-caption" x="20" y="26">SongNodes Operational Flow · 5 Personas · 25 Structured Step Cards · Verified against repo routes and scripts · Australia/Melbourne</text>
+  </g>
+</svg>

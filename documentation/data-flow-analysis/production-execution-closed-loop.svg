@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1100" width="100%" height="100%">
+  <title>SongNodes: Production Execution Closed-Loop Architecture</title>
+  <rect width="1800" height="1100" class="bg"/>
+  {SVG_COMMON_DEFS}
+  
+  <!-- Header Banner -->
+  <g transform="translate(48, 48)">
+    <text class="text-title" font-size="28"><tspan class="text-lead">Closed-Loop Architecture:</tspan> Demand Ingestion to Floor Execution &amp; Feedback</text>
+    <text class="text-body-muted" y="28">Complete industrial DJ curation cycle: Demand Ingestion -&gt; Scheduling -&gt; Normalisation -&gt; Graph Projection -&gt; Floor Execution -&gt; Reconciliation</text>
+  </g>
+  
+  <!-- Center Core Wheel Structure -->
+  <!-- Stage 1: Demand Ingestion & Target Discovery (Top Left) -->
+  <g transform="translate(100, 120)" filter="url(#shadow-1)">
+    <rect width="480" height="250" class="card-sources"/>
+    <rect x="0" y="0" width="10" height="250" fill="#8fbf6b" rx="5"/>
+    <text class="text-label" x="24" y="32" fill="#e7f3de">STAGE 1: Demand Ingestion &amp; Target Queue</text>
+    <text class="text-body-strong" x="24" y="60" font-size="16" fill="#e7f3de">Curator Search Priorities &amp; Radio Target Ingestion</text>
+    <text class="text-caption" x="24" y="80" fill="#b5cda5">Interface: /sources/targets, /library ('Set Target'), /sources/import (OCR)</text>
+    
+    <rect x="24" y="96" width="432" height="130" class="card-sunk"/>
+    <text class="text-data" x="38" y="122">Table: PostgreSQL target_tracks (migration 280)</text>
+    <text class="text-data" x="38" y="142">API: POST /api/v1/target-tracks {artist, title, priority}</text>
+    <text class="text-data" x="38" y="162">Radio Sources: PBS 106.7FM, 3RRR 102.7FM, TripleJ Doof</text>
+    <text class="text-data-strong" x="38" y="186">Guard: Unique artist/title constraint; prevents duplicate queueing</text>
+    <text class="text-caption" x="38" y="208" fill="#5fd08f">Handoff: Enqueued targets ready for unified scraper dispatch</text>
+  </g>
+
+  <!-- Arrow 1 -> 2 -->
+  <path d="M 580 245 L 680 245" class="edge-active" stroke-width="3" marker-end="url(#arrow-brand)"/>
+  <rect x="600" y="225" width="60" height="22" rx="4" fill="#1b1b1b" stroke="#3c3c3c"/>
+  <text class="text-data" x="608" y="240">Trigger</text>
+
+  <!-- Stage 2: Automated Scraper Scheduling (Top Right) -->
+  <g transform="translate(700, 120)" filter="url(#shadow-1)">
+    <rect width="480" height="250" class="card-pipeline"/>
+    <rect x="0" y="0" width="10" height="250" fill="#7fa1b3" rx="5"/>
+    <text class="text-label" x="24" y="32" fill="#e7f0f5">STAGE 2: Scraper Fleet &amp; Bronze Capture</text>
+    <text class="text-body-strong" x="24" y="60" font-size="16" fill="#e7f0f5">Sequential Tracklist Harvesting (1..N)</text>
+    <text class="text-caption" x="24" y="80" fill="#b6c7d1">Orchestrator: Scrapy + Playwright Chromium · Spiders: 1001TL, MixesDB, NTS</text>
+    
+    <rect x="24" y="96" width="432" height="130" class="card-sunk"/>
+    <text class="text-data" x="38" y="122">Engine: unified-scraper (:8012) POST /scrape</text>
+    <text class="text-data" x="38" y="142">Raw Table: PostgreSQL bronze_scraped_playlists</text>
+    <text class="text-data" x="38" y="162">Positions: Immutable bronze_scraped_tracks (1..N)</text>
+    <text class="text-data-strong" x="38" y="186">Guard: Completeness rule - zero gap tolerance</text>
+    <text class="text-caption" x="38" y="208" fill="#5fd08f">Handoff: Complete playlists trigger ingest_pending task</text>
+  </g>
+
+  <!-- Arrow 2 -> 3 -->
+  <path d="M 1180 245 L 1260 245 L 1260 440" class="edge-active" stroke-width="3" marker-end="url(#arrow-brand)"/>
+
+  <!-- Stage 3: Silver Normalisation & Enrichment Waterfall (Center Right) -->
+  <g transform="translate(1220, 440)" filter="url(#shadow-2)">
+    <rect width="480" height="250" class="card-neutral"/>
+    <rect x="0" y="0" width="10" height="250" fill="#9b85cb" rx="5"/>
+    <text class="text-label" x="24" y="32">STAGE 3: Silver Normalisation &amp; Waterfall</text>
+    <text class="text-body-strong" x="24" y="60" font-size="16">Multi-Provider Consensus &amp; Transition Synthesis</text>
+    <text class="text-caption" x="24" y="80">Celery Worker + Metadata Enrichment Service (:8081)</text>
+    
+    <rect x="24" y="96" width="432" height="130" class="card-sunk"/>
+    <text class="text-data" x="38" y="122">Waterfall: ref_mb -&gt; TIDAL v2 -&gt; Deezer -&gt; Discogs -&gt; Last.fm</text>
+    <text class="text-data" x="38" y="142">Silver Tables: silver_enriched_tracks, silver_track_transitions</text>
+    <text class="text-data" x="38" y="162">Transitions: pos N -&gt; pos N+1 with occurrence counts</text>
+    <text class="text-data-strong" x="38" y="186">Rule: Unknown stays unknown (no fabricated BPM or key)</text>
+    <text class="text-caption" x="38" y="208" fill="#5fd08f">Handoff: Outbox event emission triggers graph projection</text>
+  </g>
+
+  <!-- Arrow 3 -> 4 -->
+  <path d="M 1460 690 L 1460 760 L 1180 760" class="edge-active" stroke-width="3" marker-end="url(#arrow-brand)"/>
+
+  <!-- Stage 4: Graph Projection & Memgraph Wave Routing (Bottom Right) -->
+  <g transform="translate(700, 680)" filter="url(#shadow-1)">
+    <rect width="480" height="250" class="card-graph"/>
+    <rect x="0" y="0" width="10" height="250" fill="#6fa8dc" rx="5"/>
+    <text class="text-label" x="24" y="32" fill="#e2f0fe">STAGE 4: In-Memory Graph &amp; Wave Routing</text>
+    <text class="text-body-strong" x="24" y="60" font-size="16" fill="#e2f0fe">Memgraph Bolt Topology &amp; Pathfinder Queries</text>
+    <text class="text-caption" x="24" y="80" fill="#acc8e3">Memgraph (:7687) + projection_consume worker (15s poll)</text>
+    
+    <rect x="24" y="96" width="432" height="130" class="card-sunk"/>
+    <text class="text-data" x="38" y="122">Nodes: (:Track {id, bpm, camelot, energy_1_10})</text>
+    <text class="text-data" x="38" y="142">Edges: [:TRANSITIONS_TO {occurrences, weight}]</text>
+    <text class="text-data" x="38" y="162">Algorithm: Shortest harmonic paths with energy curve</text>
+    <text class="text-data-strong" x="38" y="186">Energy Scale: Canonical 1-10 (Warm 1-4, Build 5-7, Peak 8-10)</text>
+    <text class="text-caption" x="38" y="208" fill="#5fd08f">Handoff: Sub-50ms transition stepping stones to Set Builder</text>
+  </g>
+
+  <!-- Arrow 4 -> 5 -->
+  <path d="M 700 805 L 580 805" class="edge-active" stroke-width="3" marker-end="url(#arrow-brand)"/>
+
+  <!-- Stage 5: Floor Execution & Set Delivery (Bottom Left) -->
+  <g transform="translate(100, 680)" filter="url(#shadow-1)">
+    <rect width="480" height="250" class="card-sets"/>
+    <rect x="0" y="0" width="10" height="250" fill="#e08a5f" rx="5"/>
+    <text class="text-label" x="24" y="32" fill="#feeae0">STAGE 5: Floor Execution &amp; DJ Set Delivery</text>
+    <text class="text-body-strong" x="24" y="60" font-size="16" fill="#feeae0">Harmonic Wave Sequencing &amp; Multi-Format Export</text>
+    <text class="text-caption" x="24" y="80" fill="#e6b9a4">Interface: /sets · SetBuilderPage.tsx + Naarm Set Builder Artifact</text>
+    
+    <rect x="24" y="96" width="432" height="130" class="card-sunk"/>
+    <text class="text-data" x="38" y="122">Exports: Rekordbox XML, Extended M3U, CSV (OWASP guard)</text>
+    <text class="text-data" x="38" y="142">TIDAL API: Automatic sync to SET · &lt;name&gt; playlists</text>
+    <text class="text-data" x="38" y="162">Persistence: LocalStorage outbox + PostgreSQL library.saved_sets</text>
+    <text class="text-data-strong" x="38" y="186">Live Gig: DJ plays set on CDJ-3000 / Rekordbox USB</text>
+    <text class="text-caption" x="38" y="208" fill="#5fd08f">Handoff: Rekordbox USB generates HISTORY.m3u8</text>
+  </g>
+
+  <!-- Arrow 5 -> 6 (The Crucial Feedback Loop) -->
+  <path d="M 340 680 L 340 540 L 440 540" class="edge-data" stroke-width="3" marker-end="url(#arrow-ok)"/>
+
+  <!-- Stage 6: Floor Feedback & Rotation Reconciliation (Center Left) -->
+  <g transform="translate(440, 440)" filter="url(#shadow-2)">
+    <rect width="480" height="200" class="card-library"/>
+    <rect x="0" y="0" width="10" height="200" fill="#c9a85c" rx="5"/>
+    <text class="text-label" x="24" y="32" fill="#f6eedc">STAGE 6: Shift Audit, OEE &amp; Rotation Feedback</text>
+    <text class="text-body-strong" x="24" y="60" font-size="16" fill="#f6eedc">Gig History Reconciliation &amp; Crate Lifecycle</text>
+    <text class="text-caption" x="24" y="80" fill="#d3c29f">Closes the Loop: Booth performance updates track rotation &amp; transitions</text>
+    
+    <rect x="24" y="96" width="432" height="85" class="card-sunk"/>
+    <text class="text-data" x="38" y="120">Harvest: Pioneer HISTORY.m3u8 booth play logs</text>
+    <text class="text-data" x="38" y="138">Update: Increment silver_track_transitions occurrence_count</text>
+    <text class="text-data-strong" x="38" y="158">Reconcile: High -&gt; Standard -&gt; Archive rotation decay</text>
+  </g>
+
+  <!-- Arrow 6 -> 1 (Complete Loop) -->
+  <path d="M 440 470 L 340 470 L 340 370" class="edge-data" stroke-width="3" marker-end="url(#arrow-ok)"/>
+  <rect x="300" y="410" width="80" height="22" rx="4" fill="#1b1b1b" stroke="#3c3c3c"/>
+  <text class="text-data" x="308" y="425">Re-seed</text>
+
+  <!-- Central Watermark / Closed Loop Hub -->
+  <g transform="translate(950, 470)">
+    <circle cx="120" cy="80" r="70" fill="#1b1b1b" stroke="#9b85cb" stroke-width="3"/>
+    <text class="text-body-strong" x="120" y="75" text-anchor="middle" fill="#b4a2dc" font-size="14">CLOSED</text>
+    <text class="text-body-strong" x="120" y="95" text-anchor="middle" fill="#b4a2dc" font-size="14">LOOP</text>
+  </g>
+
+  <!-- Traceability Footer -->
+  <g transform="translate(48, 1045)">
+    <rect width="1704" height="42" class="card-sunk"/>
+    <text class="text-caption" x="20" y="26">SongNodes Industrial DJ Closed Loop · Demand -&gt; Scheduling -&gt; Normalisation -&gt; Graph -&gt; Execution -&gt; Audit · Single Source of Truth</text>
+  </g>
+</svg>

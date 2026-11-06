@@ -1,0 +1,380 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1100" width="100%" height="100%">
+  <title>SongNodes: System Architecture, Storage Hubs &amp; Data Flow</title>
+  <rect width="1800" height="1100" class="bg"/>
+  {SVG_COMMON_DEFS}
+  
+  <!-- Header Banner -->
+  <g transform="translate(48, 48)">
+    <text class="text-title" font-size="28"><tspan class="text-lead">System Architecture:</tspan> End-to-End Data Flow, Storage Hubs &amp; Service Contracts</text>
+    <text class="text-body-muted" y="28">Authoritative topology map covering Scrapers, PostgreSQL Medallion Core, Memgraph Graph, Redis Broker, and Sister Project (musicLibrary)</text>
+  </g>
+  
+  <!-- TIER 1: External Sources & Ingestion Orchestrator (Top Left) -->
+  <g transform="translate(48, 110)" filter="url(#shadow-1)">
+    <rect width="360" height="380" class="card-neutral"/>
+    <text class="text-label" x="20" y="32">External Web &amp; Broadcast Sources</text>
+    
+    <g transform="translate(20, 50)">
+      <rect width="320" height="52" class="card-sunk"/>
+      <text class="text-body-strong" x="14" y="22">1001Tracklists &amp; MixesDB Spiders</text>
+      <text class="text-caption" x="14" y="40">Playwright Chromium &amp; MediaWiki API · Complete sets</text>
+    </g>
+    
+    <g transform="translate(20, 112)">
+      <rect width="320" height="52" class="card-sunk"/>
+      <text class="text-body-strong" x="14" y="22">Community Radio (PBS, 3RRR, TripleJ)</text>
+      <text class="text-caption" x="14" y="40">Airnet REST &amp; HTML scraping · Weekly Sunday harvest</text>
+    </g>
+    
+    <g transform="translate(20, 174)">
+      <rect width="320" height="52" class="card-sunk"/>
+      <text class="text-body-strong" x="14" y="22">Metadata Waterfall Providers</text>
+      <text class="text-caption" x="14" y="40">TIDAL v2, Deezer, MusicBrainz ref_mb, Discogs, Last.fm</text>
+    </g>
+    
+    <g transform="translate(20, 240)">
+      <rect width="320" height="115" class="card-sources"/>
+      <text class="text-body-strong" x="14" y="24" fill="#e7f3de">Unified Scraper Service (:8012)</text>
+      <text class="text-caption" x="14" y="42" fill="#b5cda5">POST /scrape · Scrapy + Playwright headless engine</text>
+      <rect x="14" y="56" width="292" height="45" rx="6" fill="#1b1b1b" stroke="#465d35"/>
+      <text class="text-data" x="22" y="74">Contract: RawScrapePayload</text>
+      <text class="text-data" x="22" y="90">Guards: No gaps in track sequence 1..N</text>
+    </g>
+  </g>
+  
+  <!-- TIER 2: PostgreSQL Medallion Core (Center Column) -->
+  <g transform="translate(448, 110)" filter="url(#shadow-2)">
+    <rect width="440" height="930" class="card-neutral"/>
+    <text class="text-label" x="24" y="32">Storage Hub: PostgreSQL 16 Medallion Store (pgdata)</text>
+    
+    <!-- Bronze Layer -->
+    <g transform="translate(24, 50)">
+      <rect width="392" height="150" class="card-sunk"/>
+      <rect x="0" y="0" width="8" height="150" fill="#c9a85c" rx="4"/>
+      <text class="text-body-strong" x="20" y="28">Bronze Layer (Raw Immutable Storage)</text>
+      <text class="text-caption" x="20" y="46">Unprocessed external tracklist captures preserving source positions</text>
+      
+      <rect x="20" y="58" width="352" height="78" rx="6" fill="#222222" stroke="#3c3c3c"/>
+      <text class="text-data" x="30" y="80">TABLE: bronze_scraped_playlists</text>
+      <text class="text-data" x="30" y="98">TABLE: bronze_scraped_tracks (1..N)</text>
+      <text class="text-caption" x="30" y="122" fill="#5fd08f">Rule: Incomplete playlists marked failed immediately</text>
+    </g>
+    
+    <!-- Celery Ingestion Worker Engine -->
+    <g transform="translate(24, 220)">
+      <rect width="392" height="130" class="card-pipeline"/>
+      <text class="text-body-strong" x="16" y="26" fill="#e7f0f5">Celery Ingestion &amp; Enrichment Worker</text>
+      <text class="text-caption" x="16" y="44" fill="#b6c7d1">Drains ingestion_jobs · Idempotent by key · Distributed lease</text>
+      
+      <rect x="16" y="54" width="360" height="62" rx="6" fill="#1b1b1b" stroke="#475861"/>
+      <text class="text-data" x="26" y="74">Jobs: ingest_pending (60s) · er_shadow</text>
+      <text class="text-data" x="26" y="92">Jobs: enrichment_backfill · camelot_repair</text>
+    </g>
+    
+    <!-- Silver Layer -->
+    <g transform="translate(24, 370)">
+      <rect width="392" height="230" class="card-sunk"/>
+      <rect x="0" y="0" width="8" height="230" fill="#9b85cb" rx="4"/>
+      <text class="text-body-strong" x="20" y="28">Silver Layer (Cleaned &amp; Enriched Truth)</text>
+      <text class="text-caption" x="20" y="46">Canonical entities, multi-provider evidence &amp; observed transitions</text>
+      
+      <rect x="20" y="58" width="352" height="156" rx="6" fill="#222222" stroke="#3c3c3c"/>
+      <text class="text-data" x="30" y="80">TABLE: silver_enriched_tracks</text>
+      <text class="text-data" x="30" y="98">TABLE: silver_enriched_artists</text>
+      <text class="text-data" x="30" y="116">TABLE: silver_track_transitions (pos N -&gt; N+1)</text>
+      <text class="text-data" x="30" y="134">TABLE: silver_track_metadata_evidence</text>
+      <text class="text-data" x="30" y="152">TABLE: silver_sets &amp; entity_redirects</text>
+      <text class="text-caption" x="30" y="186" fill="#5fd08f">Guards: Valid artist on both ends; no placeholder IDs</text>
+    </g>
+    
+    <!-- Gold Projection Layer -->
+    <g transform="translate(24, 620)">
+      <rect width="392" height="130" class="card-sunk"/>
+      <rect x="0" y="0" width="8" height="130" fill="#5fd08f" rx="4"/>
+      <text class="text-body-strong" x="20" y="28">Gold Projection Layer (Denormalized Cache)</text>
+      <text class="text-caption" x="20" y="46">Fast query views refreshed by projection_consume worker</text>
+      
+      <rect x="20" y="58" width="352" height="60" rx="6" fill="#222222" stroke="#3c3c3c"/>
+      <text class="text-data" x="30" y="80">TABLE: projection_tracks (rebuildable)</text>
+      <text class="text-data" x="30" y="98">VIEW: v_ready_transitions</text>
+    </g>
+    
+    <!-- Library Overlay Schema -->
+    <g transform="translate(24, 770)">
+      <rect width="392" height="135" class="card-library"/>
+      <text class="text-body-strong" x="16" y="26" fill="#f6eedc">Library Overlay Schema (library.*)</text>
+      <text class="text-caption" x="16" y="44" fill="#d3c29f">User crate curation, rotation status, saved setlists &amp; tags</text>
+      
+      <rect x="16" y="56" width="360" height="66" rx="6" fill="#1b1b1b" stroke="#63532f"/>
+      <text class="text-data" x="26" y="78">TABLES: library.crates, library.saved_sets</text>
+      <text class="text-data" x="26" y="96">TABLES: library.appearances, library.track_tags</text>
+    </g>
+  </g>
+  
+  <!-- TIER 3: Fast Graph & In-Memory Hubs (Bottom Left) -->
+  <g transform="translate(48, 520)" filter="url(#shadow-1)">
+    <rect width="360" height="520" class="card-neutral"/>
+    <text class="text-label" x="20" y="32">Operational Memory &amp; Graph Topology</text>
+    
+    <!-- Memgraph DB -->
+    <g transform="translate(20, 50)">
+      <rect width="320" height="200" class="card-graph"/>
+      <text class="text-body-strong" x="14" y="26" fill="#e2f0fe">Memgraph Graph Database (:7687 Bolt)</text>
+      <text class="text-caption" x="14" y="44" fill="#acc8e3">In-memory Cypher engine for transition traversals</text>
+      
+      <rect x="14" y="56" width="292" height="130" rx="6" fill="#1b1b1b" stroke="#3d5872"/>
+      <text class="text-data" x="24" y="78">Node: (:Track {id, bpm, camelot, energy})</text>
+      <text class="text-data" x="24" y="96">Edge: [:TRANSITIONS_TO {occurrences, w}]</text>
+      <text class="text-data" x="24" y="120">Query: shortestPath((a)-[*]-(b))</text>
+      <text class="text-data" x="24" y="138">Sub-50ms wave-shaped harmonic routing</text>
+      <text class="text-data-strong" x="24" y="162">Sync: Batched from Silver Transitions</text>
+    </g>
+    
+    <!-- Redis Cache & Broker -->
+    <g transform="translate(20, 270)">
+      <rect width="320" height="225" class="card-sunk"/>
+      <text class="text-body-strong" x="14" y="26">Redis 7.2 Broker &amp; Cache (:6379)</text>
+      <text class="text-caption" x="14" y="44">Task queuing, rate limits, lock leases &amp; telemetry</text>
+      
+      <rect x="14" y="56" width="292" height="152" rx="6" fill="#222222" stroke="#3c3c3c"/>
+      <text class="text-data" x="24" y="78">Celery Broker Queue: celery</text>
+      <text class="text-data" x="24" y="96">Worker Leases: job_leases:* (TTL)</text>
+      <text class="text-data" x="24" y="114">Scraper Window Telemetry: scraper_window:*</text>
+      <text class="text-data" x="24" y="132">Rate Limits: rate_limit:tidal:*</text>
+      <text class="text-data" x="24" y="150">FastAPI Cached Queries: cache:library:*</text>
+      <text class="text-caption" x="24" y="186" fill="#bbbbbb">Guards: Atomic lock acquisition; auto-expiry</text>
+    </g>
+  </g>
+  
+  <!-- TIER 4: FastAPI REST API & Application Layer (Right Center) -->
+  <g transform="translate(928, 110)" filter="url(#shadow-2)">
+    <rect width="400" height="930" class="card-neutral"/>
+    <text class="text-label" x="24" y="32">Application Services: FastAPI REST API (:8082)</text>
+    
+    <!-- REST Core Routers -->
+    <g transform="translate(20, 50)">
+      <rect width="360" height="420" class="card-sunk"/>
+      <text class="text-body-strong" x="16" y="26">Modular Router Registry (G3 Pattern)</text>
+      <text class="text-caption" x="16" y="44">Discovered by router_registry · Self-registering endpoints</text>
+      
+      <g transform="translate(16, 56)">
+        <rect width="328" height="50" class="card-library"/>
+        <text class="text-body-strong" x="12" y="20" fill="#f6eedc">library_search &amp; catalog_reads</text>
+        <text class="text-data" x="12" y="38">GET /api/v1/library/search | /tracks</text>
+      </g>
+      
+      <g transform="translate(16, 114)">
+        <rect width="328" height="50" class="card-sets"/>
+        <text class="text-body-strong" x="12" y="20" fill="#feeae0">tidal_playlists &amp; spotify_playlists</text>
+        <text class="text-data" x="12" y="38">POST /api/v1/tidal/sets/send</text>
+      </g>
+      
+      <g transform="translate(16, 172)">
+        <rect width="328" height="50" class="card-paths"/>
+        <text class="text-body-strong" x="12" y="20" fill="#fee7f2">pathfinder &amp; datalayer</text>
+        <text class="text-data" x="12" y="38">POST /api/v1/pathfinder/find-path</text>
+      </g>
+      
+      <g transform="translate(16, 230)">
+        <rect width="328" height="50" class="card-sources"/>
+        <text class="text-body-strong" x="12" y="20" fill="#e7f3de">target_tracks &amp; catalog_writes</text>
+        <text class="text-data" x="12" y="38">POST /api/v1/tracks/import-tracklist</text>
+      </g>
+      
+      <g transform="translate(16, 288)">
+        <rect width="328" height="50" class="card-pipeline"/>
+        <text class="text-body-strong" x="12" y="20" fill="#e7f0f5">jobs &amp; scrape_window</text>
+        <text class="text-data" x="12" y="38">GET /api/v1/jobs | /scrape/window</text>
+      </g>
+      
+      <g transform="translate(16, 346)">
+        <rect width="328" height="50" class="card-services"/>
+        <text class="text-body-strong" x="12" y="20" fill="#f0efe5">music_auth &amp; api_keys (SEC6)</text>
+        <text class="text-data" x="12" y="38">OAuth token exchange · Encrypted keys</text>
+      </g>
+    </g>
+    
+    <!-- Companion Microservices -->
+    <g transform="translate(20, 490)">
+      <rect width="360" height="420" class="card-sunk"/>
+      <text class="text-body-strong" x="16" y="26">Internal Engine &amp; Worker Services</text>
+      <text class="text-caption" x="16" y="44">Specialised backend capabilities running in container network</text>
+      
+      <g transform="translate(16, 60)">
+        <rect width="328" height="100" class="card-neutral"/>
+        <text class="text-body-strong" x="12" y="22">Metadata Enrichment Service (:8081)</text>
+        <text class="text-caption" x="12" y="40">Waterfall logic with strict consensus scoring</text>
+        <text class="text-data" x="12" y="62">Evidence: snapshotted per provider</text>
+        <text class="text-data" x="12" y="80">Rule: Unknown stays unknown (no BPM 0)</text>
+      </g>
+      
+      <g transform="translate(16, 175)">
+        <rect width="328" height="100" class="card-neutral"/>
+        <text class="text-body-strong" x="12" y="22">Graph Projection Service</text>
+        <text class="text-caption" x="12" y="40">Silver-to-Gold and Silver-to-Memgraph projection</text>
+        <text class="text-data" x="12" y="62">Polls outbox events every 15 seconds</text>
+        <text class="text-data" x="12" y="80">Computes transition weights &amp; cuts</text>
+      </g>
+      
+      <g transform="translate(16, 290)">
+        <rect width="328" height="110" class="card-neutral"/>
+        <text class="text-body-strong" x="12" y="22">Reference Data &amp; Entity Resolver</text>
+        <text class="text-caption" x="12" y="40">Consolidated under services/reference_data/</text>
+        <text class="text-data" x="12" y="62">ref_mb: SQLite mirror of MusicBrainz</text>
+        <text class="text-data" x="12" y="80">ISRC matching · Reversible merges</text>
+        <text class="text-data" x="12" y="98">Legacy ID redirection preservation</text>
+      </g>
+    </g>
+  </g>
+  
+  <!-- TIER 5: Frontend Web Application & Sister Project (Far Right) -->
+  <g transform="translate(1368, 110)" filter="url(#shadow-1)">
+    <rect width="384" height="930" class="card-neutral"/>
+    <text class="text-label" x="20" y="32">Client Interfaces &amp; musicLibrary</text>
+    
+    <!-- React Frontend Pages -->
+    <g transform="translate(20, 50)">
+      <rect width="344" height="470" class="card-sunk"/>
+      <text class="text-body-strong" x="16" y="26">SongNodes React App (Vite + TS)</text>
+      <text class="text-caption" x="16" y="44">Single Design System source of truth · AppShell</text>
+      
+      <g transform="translate(14, 56)">
+        <rect width="316" height="42" class="card-library"/>
+        <text class="text-body-strong" x="10" y="20" fill="#f6eedc">/library · LibraryPage.tsx</text>
+        <text class="text-caption" x="10" y="35" fill="#d3c29f">Crate filter · Audio preview · Set Target</text>
+      </g>
+      
+      <g transform="translate(14, 106)">
+        <rect width="316" height="42" class="card-sets"/>
+        <text class="text-body-strong" x="10" y="20" fill="#feeae0">/sets · SetBuilderPage.tsx</text>
+        <text class="text-caption" x="10" y="35" fill="#e6b9a4">Wave curve · Camelot compat · Send to TIDAL</text>
+      </g>
+      
+      <g transform="translate(14, 156)">
+        <rect width="316" height="42" class="card-paths"/>
+        <text class="text-body-strong" x="10" y="20" fill="#fee7f2">/paths · PathfinderPage.tsx</text>
+        <text class="text-caption" x="10" y="35" fill="#e3b5cb">Harmonic stepping stones · Graph query</text>
+      </g>
+      
+      <g transform="translate(14, 206)">
+        <rect width="316" height="42" class="card-sources"/>
+        <text class="text-body-strong" x="10" y="20" fill="#e7f3de">/sources/targets &amp; /sources/import</text>
+        <text class="text-caption" x="10" y="35" fill="#b5cda5">Target tracks queue · AI OCR parser</text>
+      </g>
+      
+      <g transform="translate(14, 256)">
+        <rect width="316" height="42" class="card-pipeline"/>
+        <text class="text-body-strong" x="10" y="20" fill="#e7f0f5">/pipeline · ScraperProgressPage.tsx</text>
+        <text class="text-caption" x="10" y="35" fill="#b6c7d1">Scraper telemetry · Dead-letter retry</text>
+      </g>
+      
+      <g transform="translate(14, 306)">
+        <rect width="316" height="42" class="card-services"/>
+        <text class="text-body-strong" x="10" y="20" fill="#f0efe5">/settings · SettingsPage.tsx</text>
+        <text class="text-caption" x="10" y="35" fill="#c7c5b2">OAuth callbacks · Encrypted API tokens</text>
+      </g>
+      
+      <!-- Client Storage -->
+      <g transform="translate(14, 360)">
+        <rect width="316" height="95" rx="8" fill="#1b1b1b" stroke="#3c3c3c"/>
+        <text class="text-body-strong" x="12" y="20">Browser Storage &amp; Exports</text>
+        <text class="text-data" x="12" y="40">localStorage: songnodes_saved_sets</text>
+        <text class="text-data" x="12" y="58">localStorage: songnodes_theme</text>
+        <text class="text-data" x="12" y="78">Exports: CSV (OWASP guard) | M3U | Print</text>
+      </g>
+    </g>
+    
+    <!-- Sister Project: musicLibrary (Bottom Right) -->
+    <g transform="translate(20, 540)">
+      <rect width="344" height="370" class="card-library"/>
+      <text class="text-body-strong" x="16" y="26" fill="#f6eedc">Sister Project: musicLibrary</text>
+      <text class="text-caption" x="16" y="44" fill="#d3c29f">e:\musicLibrary · Melbourne Club DJ Pipeline</text>
+      
+      <rect x="16" y="56" width="312" height="65" rx="6" fill="#1b1b1b" stroke="#63532f"/>
+      <text class="text-body-strong" x="12" y="20" fill="#f6eedc">pipeline/run_weekly.py</text>
+      <text class="text-caption" x="12" y="36" fill="#bbbbbb">Sunday 7:37am scheduled pipeline run</text>
+      <text class="text-data" x="12" y="54">scrape -&gt; resolve -&gt; process -&gt; db</text>
+      
+      <rect x="16" y="130" width="312" height="65" rx="6" fill="#1b1b1b" stroke="#63532f"/>
+      <text class="text-body-strong" x="12" y="20" fill="#f6eedc">db/dj_library.sqlite</text>
+      <text class="text-caption" x="12" y="36" fill="#bbbbbb">Tracks, appearances, crates, rotation</text>
+      <text class="text-data" x="12" y="54">Outputs: library.json, crates/*.csv</text>
+      
+      <rect x="16" y="205" width="312" height="65" rx="6" fill="#1b1b1b" stroke="#63532f"/>
+      <text class="text-body-strong" x="12" y="20" fill="#f6eedc">Rekordbox XML &amp; TIDAL Sync</text>
+      <text class="text-caption" x="12" y="36" fill="#bbbbbb">outputs/rekordbox_musicLibrary.xml</text>
+      <text class="text-data" x="12" y="54">TIDAL Playlists: 01_HighRot_*, SET · *</text>
+      
+      <rect x="16" y="280" width="312" height="75" rx="6" fill="#1b1b1b" stroke="#63532f"/>
+      <text class="text-body-strong" x="12" y="20" fill="#f6eedc">Naarm Set Builder (Artifact)</text>
+      <text class="text-caption" x="12" y="36" fill="#bbbbbb">artifact/index.html · Standalone selector</text>
+      <text class="text-data" x="12" y="54">Bridge: sync-music-library.sh</text>
+      <text class="text-caption" x="12" y="68" fill="#5fd08f">Design System aligned v1.4.0</text>
+    </g>
+  </g>
+  
+  <!-- DATA FLOW EDGES & LABELS -->
+  <!-- Edge: Scrapers -> Bronze -->
+  <path d="M 408 400 L 472 200" class="edge-active" marker-end="url(#arrow-brand)"/>
+  <rect x="400" y="280" width="130" height="24" rx="4" fill="#1b1b1b" stroke="#3c3c3c"/>
+  <text class="text-data" x="406" y="296">SQL Ingestion</text>
+
+  <!-- Edge: Bronze -> Celery Worker -->
+  <path d="M 640 200 L 640 220" class="edge-active" marker-end="url(#arrow-brand)"/>
+
+  <!-- Edge: Celery Worker -> Silver -->
+  <path d="M 640 350 L 640 370" class="edge-active" marker-end="url(#arrow-brand)"/>
+
+  <!-- Edge: Silver -> Enrichment -->
+  <path d="M 840 450 L 948 550" class="edge" marker-end="url(#arrow)"/>
+  <rect x="850" y="480" width="120" height="24" rx="4" fill="#1b1b1b" stroke="#3c3c3c"/>
+  <text class="text-data" x="856" y="496">Enrichment Task</text>
+
+  <!-- Edge: Silver -> Gold Projection -->
+  <path d="M 640 600 L 640 620" class="edge-data" marker-end="url(#arrow-ok)"/>
+
+  <!-- Edge: Silver -> Memgraph -->
+  <path d="M 472 520 L 380 570" class="edge-active" marker-end="url(#arrow-brand)"/>
+  <rect x="360" y="530" width="130" height="24" rx="4" fill="#1b1b1b" stroke="#3c3c3c"/>
+  <text class="text-data" x="366" y="546">Bolt Cypher Sync</text>
+
+  <!-- Edge: Gold / Silver -> REST API -->
+  <path d="M 840 680 L 928 250" class="edge-active" marker-end="url(#arrow-brand)"/>
+  <rect x="850" y="320" width="120" height="24" rx="4" fill="#1b1b1b" stroke="#3c3c3c"/>
+  <text class="text-data" x="856" y="336">asyncpg pool</text>
+
+  <!-- Edge: REST API -> React Frontend -->
+  <path d="M 1328 200 L 1368 200" class="edge-data" marker-end="url(#arrow-ok)"/>
+  <rect x="1310" y="170" width="80" height="22" rx="4" fill="#1b1b1b" stroke="#3c3c3c"/>
+  <text class="text-data" x="1316" y="185">HTTP JSON</text>
+
+  <!-- Edge: musicLibrary -> Rekordbox / SongNodes -->
+  <path d="M 1540 540 L 1540 520" class="edge-data" marker-end="url(#arrow-ok)"/>
+  
+  <!-- Formal Legend Footer -->
+  <g transform="translate(48, 1045)">
+    <rect width="1704" height="42" class="card-sunk"/>
+    <text class="text-label" x="20" y="26">Legend &amp; Architectural Conventions:</text>
+    
+    <circle cx="340" cy="21" r="6" fill="#9b85cb"/>
+    <text class="text-caption" x="354" y="25">Silver Truth Layer</text>
+    
+    <circle cx="500" cy="21" r="6" fill="#5fd08f"/>
+    <text class="text-caption" x="514" y="25">Verified Transition Edge</text>
+    
+    <circle cx="680" cy="21" r="6" fill="#c9a85c"/>
+    <text class="text-caption" x="694" y="25">Curated Library &amp; Crates</text>
+    
+    <circle cx="860" cy="21" r="6" fill="#6fa8dc"/>
+    <text class="text-caption" x="874" y="25">Memgraph Graph Topology</text>
+    
+    <circle cx="1060" cy="21" r="6" fill="#e08a5f"/>
+    <text class="text-caption" x="1074" y="25">Setlist Waveform</text>
+    
+    <line x1="1220" y1="21" x2="1260" y2="21" stroke="#9b85cb" stroke-width="2.5"/>
+    <text class="text-caption" x="1270" y="25">Internal Service Contract</text>
+    
+    <line x1="1440" y1="21" x2="1480" y2="21" stroke="#5fd08f" stroke-width="2"/>
+    <text class="text-caption" x="1490" y="25">Client / Synchronised Feed</text>
+  </g>
+</svg>
