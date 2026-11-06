@@ -1,0 +1,31 @@
+/* ===== Report charts (source/css/65-report-charts.css) =====
+   Static report charts (data-flow report C-series): bars, matrix cells, bullet bands, log-axis dots and
+   pattern lines that ChartFrame does not define. Tokens only. Grid, base, tick and axis-title come from
+   .sn-chart-frame__* in 40-charts.css. Marks take their series colour from style="--c: var(--chart-N)". */
+.sn-chart { overflow: visible; font-family: var(--font-body); }
+.sn-rchart__bar { fill: var(--c, var(--chart-1)); }
+.sn-rchart__bar--proj { fill: none; stroke: var(--line-strong); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.sn-rchart__bar--none { fill: var(--surface-3); stroke: var(--line-strong); stroke-width: 1; }
+.sn-rchart__pat-line { stroke: var(--surface-1); stroke-width: 1.5; }
+.sn-rchart__label { fill: var(--fg-2); font-family: var(--font-body); font-size: 0.75rem; }
+.sn-rchart__label--strong { fill: var(--fg); font-weight: 600; }
+.sn-rchart__value { fill: var(--fg); font-family: var(--font-data); font-size: 0.6875rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.sn-rchart__halo { paint-order: stroke; stroke: var(--surface-1); stroke-width: 3; stroke-linejoin: round; }
+.sn-rchart__ref { stroke: var(--chart-ref); stroke-width: 1.5; stroke-dasharray: 5 4; fill: none; }
+.sn-rchart__ref-label { fill: var(--fg-2); font-family: var(--font-body); font-size: 0.6875rem; }
+.sn-rchart__cell { fill: var(--surface-3); stroke: var(--line-strong); stroke-width: 1; }
+.sn-rchart__cell--empty { fill: none; stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 2; }
+.sn-rchart__cell--queued { stroke-dasharray: 4 3; }
+.sn-rchart__cell--ok { fill: var(--status-ok-bg); }
+.sn-rchart__cell--fair { fill: var(--status-fair-bg); }
+.sn-rchart__cell--warn { fill: var(--status-warn-bg); }
+.sn-rchart__cell--bad { fill: var(--status-bad-bg); }
+.sn-rchart__cell--info { fill: var(--status-info-bg); }
+.sn-rchart__cell-text { fill: var(--fg); font-family: var(--font-data); font-size: 0.6875rem; font-weight: 600; }
+.sn-rchart__cell-id { fill: var(--fg-2); font-family: var(--font-data); font-size: 0.6875rem; }
+.sn-rchart__dot { fill: var(--c, var(--fg-2)); stroke: var(--surface-1); stroke-width: 1.5; }
+.sn-rchart__dot--proj { fill: var(--surface-1); stroke: var(--fg-2); stroke-width: 1.5; stroke-dasharray: 2 2; }
+.sn-rchart__band { fill: var(--surface-2); }
+.sn-rchart__band--near { fill: var(--surface-3); }
+.sn-rchart__mark { stroke: var(--fg); stroke-width: 2; }
+.sn-rchart__lane { stroke: var(--chart-grid); stroke-width: 1; shape-rendering: crispEdges; }

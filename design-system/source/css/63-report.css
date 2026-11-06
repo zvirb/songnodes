@@ -51,7 +51,6 @@
   .sn-report-toc, .sn-figure__tools { display: none; }
   .sn-page-report__body { gap: var(--space-8); }
   .sn-print-cover { break-after: page; }
-  .sn-print-toc-page { break-after: page; }
   .sn-figure { box-shadow: none; padding: 0; border: 0; break-inside: avoid; }
   .sn-figure__canvas { overflow: visible; border: 0; background: transparent; }
   .sn-figure__canvas > svg { transform: none; }
