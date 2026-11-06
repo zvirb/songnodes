@@ -1,0 +1,89 @@
+/* Diagram (1.10.0): build-time SVG diagrams for investigation reports (D-series figures).
+   Colour: one domain map, .sn-dg-c1 … .sn-dg-c8 set --dg-c to chart-1 … chart-8 (strokes and stripes only).
+   Nodes are neutral cards (surface-1, fg text); state is carried by outline style plus a word:
+   production solid, non-final dotted, queued dashed (sim), proposed dashed (brand). Gaps are status-bad dashed with a cross glyph.
+   Interaction hooks: [data-hl] highlights, [data-dim] fades, :focus-visible shows the focus ring. */
+.sn-diagram { font-family: var(--font-body); color: var(--fg); }
+.sn-diagram__bg { fill: var(--bg); }
+.sn-dg-c1 { --dg-c: var(--chart-1); }
+.sn-dg-c2 { --dg-c: var(--chart-2); }
+.sn-dg-c3 { --dg-c: var(--chart-3); }
+.sn-dg-c4 { --dg-c: var(--chart-4); }
+.sn-dg-c5 { --dg-c: var(--chart-5); }
+.sn-dg-c6 { --dg-c: var(--chart-6); }
+.sn-dg-c7 { --dg-c: var(--chart-7); }
+.sn-dg-c8 { --dg-c: var(--chart-8); }
+
+.sn-diagram__t { fill: var(--fg); }
+.sn-diagram__t--2 { fill: var(--fg-2); }
+.sn-diagram__t--3 { fill: var(--fg-3); }
+
+.sn-diagram__group { fill: none; stroke: var(--line); stroke-width: var(--graph-edge-w-1); }
+.sn-diagram__lane { fill: var(--surface-2); stroke: var(--line); stroke-width: var(--graph-edge-w-1); }
+.sn-diagram__lane--alt { fill: none; }
+.sn-diagram__grid { fill: none; stroke: var(--chart-grid); stroke-width: var(--graph-edge-w-1); }
+
+.sn-diagram__node { cursor: pointer; }
+.sn-diagram__box { fill: var(--surface-1); stroke: var(--line-strong); stroke-width: var(--graph-edge-w-1); filter: drop-shadow(var(--shadow-1)); }
+.sn-diagram__stripe { fill: var(--dg-c, var(--line-strong)); stroke: none; }
+.sn-diagram__node--nonfinal .sn-diagram__box,
+.sn-diagram__legend-box.sn-diagram__node--nonfinal { stroke-dasharray: 1.5 3; stroke-linecap: round; stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__node--queued .sn-diagram__box,
+.sn-diagram__legend-box.sn-diagram__node--queued { stroke: var(--sim); stroke-dasharray: 6 4; stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__node--proposed .sn-diagram__box,
+.sn-diagram__legend-box.sn-diagram__node--proposed { stroke: var(--brand); stroke-dasharray: 6 4; stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__node--gap .sn-diagram__box { stroke: var(--status-bad); stroke-dasharray: 4 3; stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__node--note .sn-diagram__box { fill: var(--surface-2); stroke: var(--line); filter: none; }
+.sn-diagram__node--fallback .sn-diagram__box { fill: var(--surface-2); stroke: var(--line-strong); stroke-dasharray: 4 3; filter: none; }
+.sn-diagram__node--changed .sn-diagram__box { stroke: var(--status-warn); stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__legend-box { fill: var(--surface-1); stroke: var(--line-strong); stroke-width: var(--graph-edge-w-1); }
+.sn-diagram__swatch { fill: var(--dg-c); }
+.sn-diagram__lock { fill: none; stroke: var(--fg-2); stroke-width: var(--graph-edge-w-1); stroke-linejoin: round; }
+
+.sn-diagram__edge { cursor: pointer; }
+.sn-diagram__line { fill: none; stroke: var(--dg-c, var(--line-strong)); stroke-width: var(--graph-edge-w-2); stroke-linejoin: round; opacity: var(--graph-edge-op-4); }
+.sn-diagram__head { fill: var(--dg-c, var(--line-strong)); stroke: none; }
+.sn-diagram__edge--queued .sn-diagram__line { stroke: var(--sim); stroke-dasharray: 6 4; }
+.sn-diagram__edge--queued .sn-diagram__head { fill: var(--sim); }
+.sn-diagram__edge--gap .sn-diagram__line { stroke: var(--status-bad); stroke-dasharray: 5 4; }
+.sn-diagram__edge--gap .sn-diagram__head { fill: var(--status-bad); }
+.sn-diagram__edge--proposed .sn-diagram__line { stroke: var(--brand); stroke-dasharray: 6 4; }
+.sn-diagram__edge--proposed .sn-diagram__head { fill: var(--brand); }
+.sn-diagram__edge--return .sn-diagram__line { stroke-dasharray: 4 3; }
+.sn-diagram__edge--fallback .sn-diagram__line { stroke: var(--line-strong); stroke-dasharray: 4 3; stroke-width: var(--graph-edge-w-1); }
+.sn-diagram__edge--fallback .sn-diagram__head { fill: var(--line-strong); }
+.sn-diagram__edge--neutral .sn-diagram__line { stroke: var(--line-strong); }
+.sn-diagram__edge--neutral .sn-diagram__head { fill: var(--line-strong); }
+.sn-diagram__lifeline { fill: none; stroke: var(--line-strong); stroke-width: var(--graph-edge-w-1); stroke-dasharray: 4 4; }
+
+.sn-diagram__badge-box { fill: var(--surface-1); stroke: var(--dg-c, var(--line-strong)); stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__edge--queued .sn-diagram__badge-box { stroke: var(--sim); stroke-dasharray: 3 2; }
+.sn-diagram__badge--gap .sn-diagram__badge-box,
+.sn-diagram__edge--gap .sn-diagram__badge-box { fill: var(--status-bad-bg); stroke: var(--status-bad); }
+.sn-diagram__badge--proposed .sn-diagram__badge-box,
+.sn-diagram__edge--proposed .sn-diagram__badge-box { fill: var(--brand-soft); stroke: var(--brand); }
+.sn-diagram__badge--neutral .sn-diagram__badge-box { stroke: var(--line-strong); }
+.sn-diagram__mark-box { fill: var(--status-bad-bg); stroke: var(--status-bad); stroke-width: var(--graph-edge-w-1); }
+.sn-diagram__mark--warn .sn-diagram__mark-box { fill: var(--status-warn-bg); stroke: var(--status-warn); }
+.sn-diagram__mark--info .sn-diagram__mark-box { fill: var(--surface-2); stroke: var(--line-strong); }
+.sn-diagram__now { fill: none; stroke: var(--now); stroke-width: var(--graph-edge-w-3); }
+.sn-diagram__gate { fill: var(--surface-1); stroke: var(--fg-2); stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__cell { fill: var(--surface-1); stroke: var(--line); stroke-width: var(--graph-edge-w-1); }
+
+/* interaction */
+.sn-diagram [data-dim] { opacity: var(--opacity-faded); }
+.sn-diagram__node[data-hl] .sn-diagram__box { stroke: var(--fg); stroke-width: var(--graph-edge-w-3); }
+.sn-diagram__edge[data-hl] .sn-diagram__line { stroke-width: var(--graph-edge-w-3); }
+.sn-diagram__node:focus-visible .sn-diagram__box,
+.sn-diagram__edge:focus-visible .sn-diagram__badge-box { stroke: var(--focus); stroke-width: var(--graph-edge-w-3); }
+.sn-diagram__edge:focus-visible .sn-diagram__line { stroke: var(--focus); stroke-width: var(--graph-edge-w-3); }
+
+@media print {
+  .sn-diagram__box { filter: none; }
+  .sn-diagram [data-dim] { opacity: 1; }
+}
+/* corner radii by part (SVG2 rx as a CSS property): tokens only */
+.sn-diagram__box, .sn-diagram__legend-box { rx: var(--radius-control); }
+.sn-diagram__badge-box { rx: var(--radius-pill); }
+.sn-diagram__mark-box, .sn-diagram__cell, .sn-diagram__stripe, .sn-diagram__swatch { rx: var(--radius-chip); }
+.sn-diagram__group, .sn-diagram__lane { rx: var(--radius-card); }
