@@ -1,0 +1,1015 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1461 804" role="img" aria-labelledby="D8d-t D8d-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
+:root, [data-theme="dark"] {
+  --bg: #222222;
+  --surface-1: #2d2d2d;
+  --surface-2: #373737;
+  --surface-3: #414141;
+  --sunk: #1b1b1b;
+  --line: #3c3c3c;
+  --line-strong: #858585;
+  --fg: #f9f9f9;
+  --fg-2: #bbbbbb;
+  --fg-3: #a3a3a3;
+  --fg-disabled: #6a6a6a;
+  --overlay: rgba(0, 0, 0, 0.55);
+  --brand: #9b85cb;
+  --brand-strong: #b4a2dc;
+  --brand-soft: #332b45;
+  --on-brand: #160f26;
+  --link: var(--brand-strong);
+  --focus: var(--brand);
+  --hover-bg: rgba(255, 255, 255, 0.06);
+  --flag-bg: #3a3020;
+  --mod-graph: #6fa8dc;
+  --mod-graph-bg: #22313e;
+  --mod-graph-raised: #2d4256;
+  --mod-graph-line: #3d5872;
+  --mod-graph-ink: #e2f0fe;
+  --mod-graph-muted: #acc8e3;
+  --on-mod-graph: #0a1c2c;
+  --mod-library: #c9a85c;
+  --mod-library-bg: #362e1b;
+  --mod-library-raised: #4a3e22;
+  --mod-library-line: #63532f;
+  --mod-library-ink: #f6eedc;
+  --mod-library-muted: #d3c29f;
+  --on-mod-library: #231902;
+  --mod-sets: #e08a5f;
+  --mod-sets-bg: #3f291e;
+  --mod-sets-raised: #573726;
+  --mod-sets-line: #744935;
+  --mod-sets-ink: #feeae0;
+  --mod-sets-muted: #e6b9a4;
+  --on-mod-sets: #2c1206;
+  --mod-paths: #d27aa8;
+  --mod-paths-bg: #3e2732;
+  --mod-paths-raised: #553345;
+  --mod-paths-line: #71455c;
+  --mod-paths-ink: #fee7f2;
+  --mod-paths-muted: #e3b5cb;
+  --on-mod-paths: #2b101e;
+  --mod-harmony: #5fb8b0;
+  --mod-harmony-bg: #1e3432;
+  --mod-harmony-raised: #264743;
+  --mod-harmony-line: #345e5a;
+  --mod-harmony-ink: #dff4f1;
+  --mod-harmony-muted: #a5cec9;
+  --on-mod-harmony: #03201d;
+  --mod-sources: #8fbf6b;
+  --mod-sources-bg: #27331e;
+  --mod-sources-raised: #344627;
+  --mod-sources-line: #465d35;
+  --mod-sources-ink: #e7f3de;
+  --mod-sources-muted: #b5cda5;
+  --on-mod-sources: #111f06;
+  --mod-pipeline: #7fa1b3;
+  --mod-pipeline-bg: #283135;
+  --mod-pipeline-raised: #354249;
+  --mod-pipeline-line: #475861;
+  --mod-pipeline-ink: #e7f0f5;
+  --mod-pipeline-muted: #b6c7d1;
+  --on-mod-pipeline: #121c22;
+  --mod-services: #a5a07b;
+  --mod-services-bg: #312f26;
+  --mod-services-raised: #424032;
+  --mod-services-line: #585644;
+  --mod-services-ink: #f0efe5;
+  --mod-services-muted: #c7c5b2;
+  --on-mod-services: #1d1b10;
+  --status-ok: #5fd08f;
+  --status-ok-bg: #143321;
+  --status-fair: #b6d35a;
+  --status-fair-bg: #282f11;
+  --status-warn: #efb54a;
+  --status-warn-bg: #38280c;
+  --status-bad: #ff7469;
+  --status-bad-bg: #41211e;
+  --status-info: #bbbbbb;
+  --status-info-bg: #2b2b2b;
+  --on-status-bad: #2a0806;
+  --compat-perfect: var(--status-ok);
+  --compat-compatible: var(--status-fair);
+  --compat-possible: var(--status-warn);
+  --compat-clash: var(--status-bad);
+  --progress-fill: var(--fg-2);
+  --progress-track: var(--surface-3);
+  --energy-1: #3b3a8f;
+  --energy-2: #4c3fa6;
+  --energy-3: #6a43b3;
+  --energy-4: #8a47b5;
+  --energy-5: #a94ba9;
+  --energy-6: #c55394;
+  --energy-7: #db6278;
+  --energy-8: #ea795c;
+  --energy-9: #f39a45;
+  --energy-10: #f7c04a;
+  --key-1a: #17a478;
+  --key-1b: #5ed8a9;
+  --key-2a: #689d48;
+  --key-2b: #99d079;
+  --key-3a: #989016;
+  --key-3b: #cac256;
+  --key-4a: #ba7f14;
+  --key-4b: #eeb154;
+  --key-5a: #cc7044;
+  --key-5b: #ffa47a;
+  --key-6a: #cf6872;
+  --key-6b: #fe9fa6;
+  --key-7a: #c3699e;
+  --key-7b: #f99bd1;
+  --key-8a: #aa72c2;
+  --key-8b: #dda4f7;
+  --key-9a: #857fd7;
+  --key-9b: #b6b4fe;
+  --key-10a: #528ed9;
+  --key-10b: #91c1ff;
+  --key-11a: #089ac3;
+  --key-11b: #49cffc;
+  --key-12a: #09a0a0;
+  --key-12b: #2ad7d7;
+  --chart-1: #56b4e9;
+  --chart-2: #e69f00;
+  --chart-3: #3fc29a;
+  --chart-4: #cc79a7;
+  --chart-5: #e8d95a;
+  --chart-6: #5aa0e0;
+  --chart-7: #f08a4b;
+  --chart-8: #999999;
+  --chart-grid: #353535;
+  --chart-axis: var(--fg-3);
+  --chart-ref: #d9d9d9;
+  --on-now: #1f1600;
+  --now: #f7c04a;
+  --sim: #8f8f8f;
+  --svc-spotify: #1db954;
+  --on-svc-spotify: #000000;
+  --svc-tidal: #000000;
+  --on-svc-tidal: #ffffff;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.30);
+  --shadow-2: 0 6px 20px rgba(0, 0, 0, 0.45);
+  --shadow-3: 0 18px 48px rgba(0, 0, 0, 0.55);
+}
+[data-theme="light"] {
+  --bg: #f4f4f1;
+  --surface-1: #ffffff;
+  --surface-2: #ecece8;
+  --surface-3: #e1e1dc;
+  --sunk: #e9e9e5;
+  --line: #d9d9d4;
+  --line-strong: #86867f;
+  --fg: #1c1c1e;
+  --fg-2: #47474b;
+  --fg-3: #616166;
+  --fg-disabled: #a3a3a0;
+  --overlay: rgba(20, 20, 24, 0.40);
+  --brand: #6a52a6;
+  --brand-strong: #56408f;
+  --brand-soft: #ebe5f7;
+  --on-brand: #ffffff;
+  --link: var(--brand);
+  --focus: var(--brand);
+  --hover-bg: rgba(0, 0, 0, 0.045);
+  --flag-bg: #fbf0d9;
+  --mod-graph: #2b679a;
+  --mod-graph-bg: #e5f2fe;
+  --mod-graph-raised: #cbe5fd;
+  --mod-graph-line: #accbe9;
+  --mod-graph-ink: #14283b;
+  --mod-graph-muted: #2d4a66;
+  --on-mod-graph: #ffffff;
+  --mod-library: #7d5e01;
+  --mod-library-bg: #f9efda;
+  --mod-library-raised: #eee0c0;
+  --mod-library-line: #d8c59e;
+  --mod-library-ink: #302508;
+  --mod-library-muted: #56451d;
+  --on-mod-library: #ffffff;
+  --mod-sets: #9b4816;
+  --mod-sets-bg: #ffece3;
+  --mod-sets-raised: #fcd9c8;
+  --mod-sets-line: #e9bca7;
+  --mod-sets-ink: #3c1d0d;
+  --mod-sets-muted: #673a24;
+  --on-mod-sets: #ffffff;
+  --mod-paths: #964070;
+  --mod-paths-bg: #ffe9f3;
+  --mod-paths-raised: #f9d6e6;
+  --mod-paths-line: #e6b8ce;
+  --mod-paths-ink: #3a1a2b;
+  --mod-paths-muted: #64364e;
+  --on-mod-paths: #ffffff;
+  --mod-harmony: #00736c;
+  --mod-harmony-bg: #def6f3;
+  --mod-harmony-raised: #c5eae6;
+  --mod-harmony-line: #a5d2cd;
+  --mod-harmony-ink: #0a2d2a;
+  --mod-harmony-muted: #21514d;
+  --on-mod-harmony: #ffffff;
+  --mod-sources: #447214;
+  --mod-sources-bg: #e8f5e0;
+  --mod-sources-raised: #d6e8ca;
+  --mod-sources-line: #b8d0a8;
+  --mod-sources-ink: #1b2c0e;
+  --mod-sources-muted: #375024;
+  --on-mod-sources: #ffffff;
+  --mod-pipeline: #46687a;
+  --mod-pipeline-bg: #e7f2f8;
+  --mod-pipeline-raised: #d4e4ed;
+  --mod-pipeline-line: #b8cbd5;
+  --mod-pipeline-ink: #1c282f;
+  --mod-pipeline-muted: #394b54;
+  --on-mod-pipeline: #ffffff;
+  --mod-services: #6a6440;
+  --mod-services-bg: #f2f1e5;
+  --mod-services-raised: #e4e2d1;
+  --mod-services-line: #cbc8b3;
+  --mod-services-ink: #29271a;
+  --mod-services-muted: #4b4835;
+  --on-mod-services: #ffffff;
+  --status-ok: #1d7a45;
+  --status-ok-bg: #daf7e2;
+  --status-fair: #5d7414;
+  --status-fair-bg: #e9f4d5;
+  --status-warn: #8a5a00;
+  --status-warn-bg: #feebd3;
+  --status-bad: #b3261e;
+  --status-bad-bg: #fee9e5;
+  --status-info: #47474b;
+  --status-info-bg: #eeeef0;
+  --on-status-bad: #ffffff;
+  --compat-perfect: var(--status-ok);
+  --compat-compatible: var(--status-fair);
+  --compat-possible: var(--status-warn);
+  --compat-clash: var(--status-bad);
+  --progress-fill: var(--fg-2);
+  --progress-track: var(--surface-3);
+  --key-1a: #057c59;
+  --key-1b: #029e72;
+  --key-2a: #467922;
+  --key-2b: #629742;
+  --key-3a: #736c01;
+  --key-3b: #928a07;
+  --key-4a: #8d5e00;
+  --key-4b: #b37903;
+  --key-5a: #a44c1d;
+  --key-5b: #c56a3e;
+  --key-6a: #a64450;
+  --key-6b: #c8626d;
+  --key-7a: #9b467a;
+  --key-7b: #bc6398;
+  --key-8a: #854f9c;
+  --key-8b: #a36cbc;
+  --key-9a: #635bb0;
+  --key-9b: #7f79d1;
+  --key-10a: #2e69b2;
+  --key-10b: #4c88d3;
+  --key-11a: #027493;
+  --key-11b: #0994ba;
+  --key-12a: #047879;
+  --key-12b: #009a9a;
+  --chart-1: #0072b2;
+  --chart-2: #b36b00;
+  --chart-3: #007a5a;
+  --chart-4: #b0477f;
+  --chart-5: #8a7d00;
+  --chart-6: #005a8c;
+  --chart-7: #b34700;
+  --chart-8: #6b6b6b;
+  --chart-grid: #e4e4df;
+  --chart-axis: var(--fg-3);
+  --chart-ref: #3a3a3d;
+  --on-now: #ffffff;
+  --now: #9a6400;
+  --sim: #76767a;
+  --shadow-1: 0 1px 2px rgba(20, 20, 24, 0.08);
+  --shadow-2: 0 6px 20px rgba(20, 20, 24, 0.14);
+  --shadow-3: 0 18px 48px rgba(20, 20, 24, 0.22);
+}
+[data-theme="booth"] {
+  --bg: #000000;
+  --surface-1: #0f0f0f;
+  --surface-2: #1c1c1c;
+  --surface-3: #2a2a2a;
+  --sunk: #000000;
+  --line: #5e5e5e;
+  --line-strong: #a8a8a8;
+  --fg: #ffffff;
+  --fg-2: #e8e8e8;
+  --fg-3: #cfcfcf;
+  --fg-disabled: #8a8a8a;
+  --overlay: rgba(0, 0, 0, 0.80);
+  --brand: #c9b9f0;
+  --brand-strong: #e0d6fa;
+  --brand-soft: #271e3d;
+  --on-brand: #000000;
+  --link: var(--brand);
+  --focus: var(--brand);
+  --hover-bg: rgba(255, 255, 255, 0.14);
+  --flag-bg: #3a2a00;
+  --mod-graph: #acd6fe;
+  --mod-graph-bg: #081725;
+  --mod-graph-raised: #162d42;
+  --mod-graph-line: #658aad;
+  --mod-graph-ink: #fafcfe;
+  --mod-graph-muted: #d1e8fe;
+  --on-mod-graph: #000000;
+  --mod-library: #e9ce92;
+  --mod-library-bg: #1d1502;
+  --mod-library-raised: #372908;
+  --mod-library-line: #998352;
+  --mod-library-ink: #fffbf4;
+  --mod-library-muted: #f1e3c6;
+  --on-mod-library: #000000;
+  --mod-sets: #fec1a4;
+  --mod-sets-bg: #250f05;
+  --mod-sets-raised: #43210f;
+  --mod-sets-line: #b0765a;
+  --mod-sets-ink: #fefbf9;
+  --mod-sets-muted: #ffdccc;
+  --on-mod-sets: #000000;
+  --mod-paths: #feb9db;
+  --mod-paths-bg: #240d19;
+  --mod-paths-raised: #411d31;
+  --mod-paths-line: #ad718f;
+  --mod-paths-ink: #fefbfc;
+  --mod-paths-muted: #ffd8ea;
+  --on-mod-paths: #000000;
+  --mod-harmony: #9ce0d9;
+  --mod-harmony-bg: #031a18;
+  --mod-harmony-raised: #0b322f;
+  --mod-harmony-line: #59928d;
+  --mod-harmony-ink: #f5fefd;
+  --mod-harmony-muted: #ccede9;
+  --on-mod-harmony: #000000;
+  --mod-sources: #b8df9c;
+  --mod-sources-bg: #0e1a05;
+  --mod-sources-raised: #1f320f;
+  --mod-sources-line: #72925a;
+  --mod-sources-ink: #f9fdf6;
+  --mod-sources-muted: #d8eccb;
+  --on-mod-sources: #000000;
+  --mod-pipeline: #bad6e5;
+  --mod-pipeline-bg: #0f171c;
+  --mod-pipeline-raised: #202e35;
+  --mod-pipeline-line: #738a96;
+  --mod-pipeline-ink: #f9fcfe;
+  --mod-pipeline-muted: #d9e7ef;
+  --on-mod-pipeline: #000000;
+  --mod-services: #d6d2b4;
+  --mod-services-bg: #18160d;
+  --mod-services-raised: #2e2c1d;
+  --mod-services-line: #8a876e;
+  --mod-services-ink: #fdfcf5;
+  --mod-services-muted: #e7e5d6;
+  --on-mod-services: #000000;
+  --status-ok: #6fe0a0;
+  --status-ok-bg: #001709;
+  --status-fair: #c6e36a;
+  --status-fair-bg: #0f1400;
+  --status-warn: #f7c35a;
+  --status-warn-bg: #1a0f00;
+  --status-bad: #ff8a80;
+  --status-bad-bg: #240706;
+  --status-info: #e8e8e8;
+  --status-info-bg: #121212;
+  --on-status-bad: #000000;
+  --compat-perfect: var(--status-ok);
+  --compat-compatible: var(--status-fair);
+  --compat-possible: var(--status-warn);
+  --compat-clash: var(--status-bad);
+  --progress-fill: var(--fg-2);
+  --progress-track: var(--surface-3);
+  --energy-1: #47489f;
+  --energy-2: #4e41a9;
+  --key-1a: #2dc08e;
+  --key-1b: #68eeba;
+  --key-2a: #7db85a;
+  --key-2b: #a9e686;
+  --key-3a: #b2a92a;
+  --key-3b: #dfd65f;
+  --key-4a: #d79628;
+  --key-4b: #fec675;
+  --key-5a: #eb8656;
+  --key-5b: #fec1a6;
+  --key-6a: #ef7d88;
+  --key-6b: #ffbdc1;
+  --key-7a: #e17eb9;
+  --key-7b: #feb8df;
+  --key-8a: #c588e0;
+  --key-8b: #eabdfe;
+  --key-9a: #9c96f8;
+  --key-9b: #cbcbfe;
+  --key-10a: #65a7fa;
+  --key-10b: #b3d4ff;
+  --key-11a: #03b5e4;
+  --key-11b: #8cdeff;
+  --key-12a: #08bcbc;
+  --key-12b: #2eeded;
+  --chart-grid: #3a3a3a;
+  --chart-axis: var(--fg-3);
+  --chart-ref: #ffffff;
+  --on-now: #000000;
+  --now: #ffd166;
+  --sim: #bdbdbd;
+  --shadow-1: none;
+  --shadow-2: 0 0 0 1px #a8a8a8;
+  --shadow-3: 0 0 0 2px #ffffff;
+}
+:root {
+  --space-0: 0px;
+  --space-0\.5: 2px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --radius-chip: 4px;
+  --radius-control: 8px;
+  --radius-card: 14px;
+  --radius-sheet: 18px;
+  --radius-pill: 999px;
+  --control-sm: 32px;
+  --control-md: 40px;
+  --control-lg: 48px;
+  --touch-min: 44px;
+  --row-compact: 32px;
+  --row-comfortable: 40px;
+  --row-two-line: 56px;
+  --header-h: 56px;
+  --drawer-w: 300px;
+  --rail-w: 248px;
+  --content-max: 1400px;
+  --print-wide-h: 150mm;
+  --print-wide-w: 273mm;
+  --prose-max: 68ch;
+  --z-base: 0;
+  --z-sticky: 10;
+  --z-header: 20;
+  --z-drawer: 40;
+  --z-overlay: 50;
+  --z-dialog: 60;
+  --z-popover: 70;
+  --z-toast: 80;
+  --z-tooltip: 90;
+  --duration-instant: 0ms;
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 1, 1);
+  --bp-phone: 480px;
+  --bp-tablet: 768px;
+  --bp-desktop: 1100px;
+  --bp-wide: 1440px;
+  --bp-wall: 1920px;
+  --opacity-disabled: 0.45;
+  --opacity-faded: 0.15;
+  --opacity-edge: 0.6;
+  --graph-edge-w-1: 1px;
+  --graph-edge-w-2: 2px;
+  --graph-edge-w-3: 3.5px;
+  --graph-edge-w-4: 6px;
+  --graph-edge-op-1: 0.35;
+  --graph-edge-op-2: 0.55;
+  --graph-edge-op-3: 0.8;
+  --graph-edge-op-4: 1;
+  --graph-edge-dim: 0.25;
+  --graph-ring-first: 58px;
+  --graph-ring-step: 40px;
+  --graph-ring-aspect: 1.7;
+  --graph-seat-gap: 30px;
+  --graph-label-zoom: 1.5;
+  --graph-hood-steps: 3;
+  --graph-hood-max: 200;
+  --font-display: "Sora", "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+.display-xl { font-family: var(--font-display); font-size: 2.5rem; line-height: 1.1; font-weight: 700; letter-spacing: -0.01em; }
+.title-l { font-family: var(--font-display); font-size: 1.75rem; line-height: 1.2; font-weight: 700; }
+.title-m { font-family: var(--font-display); font-size: 1.375rem; line-height: 1.25; font-weight: 700; }
+.title-s { font-family: var(--font-display); font-size: 1.125rem; line-height: 1.3; font-weight: 700; }
+.title-lead { font-family: var(--font-display); font-size: 1em; line-height: 1.2; font-weight: 400; }
+.figure { font-family: var(--font-display); font-size: 2rem; line-height: 1.05; font-weight: 700; }
+.body-l { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.55; font-weight: 400; }
+.body { font-family: var(--font-body); font-size: 0.9375rem; line-height: 1.45; font-weight: 400; }
+.body-strong { font-family: var(--font-body); font-size: 0.9375rem; line-height: 1.45; font-weight: 600; }
+.body-s { font-family: var(--font-body); font-size: 0.8125rem; line-height: 1.4; font-weight: 400; }
+.label { font-family: var(--font-body); font-size: 0.75rem; line-height: 1.3; font-weight: 600; letter-spacing: 0.08em; }
+.caption { font-family: var(--font-body); font-size: 0.75rem; line-height: 1.35; font-weight: 400; }
+.data { font-family: var(--font-data); font-size: 0.8125rem; line-height: 1.4; font-weight: 400; }
+.data-strong { font-family: var(--font-data); font-size: 0.8125rem; line-height: 1.4; font-weight: 600; }
+.data-s { font-family: var(--font-data); font-size: 0.6875rem; line-height: 1.35; font-weight: 400; }
+
+
+
+
+
+@media (prefers-color-scheme: light) {
+:root:not([data-theme]) {
+  --bg: #f4f4f1;
+  --surface-1: #ffffff;
+  --surface-2: #ecece8;
+  --surface-3: #e1e1dc;
+  --sunk: #e9e9e5;
+  --line: #d9d9d4;
+  --line-strong: #86867f;
+  --fg: #1c1c1e;
+  --fg-2: #47474b;
+  --fg-3: #616166;
+  --fg-disabled: #a3a3a0;
+  --overlay: rgba(20, 20, 24, 0.40);
+  --brand: #6a52a6;
+  --brand-strong: #56408f;
+  --brand-soft: #ebe5f7;
+  --on-brand: #ffffff;
+  --link: var(--brand);
+  --hover-bg: rgba(0, 0, 0, 0.045);
+  --flag-bg: #fbf0d9;
+  --mod-graph: #2b679a;
+  --mod-graph-bg: #e5f2fe;
+  --mod-graph-raised: #cbe5fd;
+  --mod-graph-line: #accbe9;
+  --mod-graph-ink: #14283b;
+  --mod-graph-muted: #2d4a66;
+  --on-mod-graph: #ffffff;
+  --mod-library: #7d5e01;
+  --mod-library-bg: #f9efda;
+  --mod-library-raised: #eee0c0;
+  --mod-library-line: #d8c59e;
+  --mod-library-ink: #302508;
+  --mod-library-muted: #56451d;
+  --on-mod-library: #ffffff;
+  --mod-sets: #9b4816;
+  --mod-sets-bg: #ffece3;
+  --mod-sets-raised: #fcd9c8;
+  --mod-sets-line: #e9bca7;
+  --mod-sets-ink: #3c1d0d;
+  --mod-sets-muted: #673a24;
+  --on-mod-sets: #ffffff;
+  --mod-paths: #964070;
+  --mod-paths-bg: #ffe9f3;
+  --mod-paths-raised: #f9d6e6;
+  --mod-paths-line: #e6b8ce;
+  --mod-paths-ink: #3a1a2b;
+  --mod-paths-muted: #64364e;
+  --on-mod-paths: #ffffff;
+  --mod-harmony: #00736c;
+  --mod-harmony-bg: #def6f3;
+  --mod-harmony-raised: #c5eae6;
+  --mod-harmony-line: #a5d2cd;
+  --mod-harmony-ink: #0a2d2a;
+  --mod-harmony-muted: #21514d;
+  --on-mod-harmony: #ffffff;
+  --mod-sources: #447214;
+  --mod-sources-bg: #e8f5e0;
+  --mod-sources-raised: #d6e8ca;
+  --mod-sources-line: #b8d0a8;
+  --mod-sources-ink: #1b2c0e;
+  --mod-sources-muted: #375024;
+  --on-mod-sources: #ffffff;
+  --mod-pipeline: #46687a;
+  --mod-pipeline-bg: #e7f2f8;
+  --mod-pipeline-raised: #d4e4ed;
+  --mod-pipeline-line: #b8cbd5;
+  --mod-pipeline-ink: #1c282f;
+  --mod-pipeline-muted: #394b54;
+  --on-mod-pipeline: #ffffff;
+  --mod-services: #6a6440;
+  --mod-services-bg: #f2f1e5;
+  --mod-services-raised: #e4e2d1;
+  --mod-services-line: #cbc8b3;
+  --mod-services-ink: #29271a;
+  --mod-services-muted: #4b4835;
+  --on-mod-services: #ffffff;
+  --status-ok: #1d7a45;
+  --status-ok-bg: #daf7e2;
+  --status-fair: #5d7414;
+  --status-fair-bg: #e9f4d5;
+  --status-warn: #8a5a00;
+  --status-warn-bg: #feebd3;
+  --status-bad: #b3261e;
+  --status-bad-bg: #fee9e5;
+  --status-info: #47474b;
+  --status-info-bg: #eeeef0;
+  --on-status-bad: #ffffff;
+  --energy-1: #3b3a8f;
+  --energy-2: #4c3fa6;
+  --energy-3: #6a43b3;
+  --energy-4: #8a47b5;
+  --energy-5: #a94ba9;
+  --energy-6: #c55394;
+  --energy-7: #db6278;
+  --energy-8: #ea795c;
+  --energy-9: #f39a45;
+  --energy-10: #f7c04a;
+  --key-1a: #057c59;
+  --key-1b: #029e72;
+  --key-2a: #467922;
+  --key-2b: #629742;
+  --key-3a: #736c01;
+  --key-3b: #928a07;
+  --key-4a: #8d5e00;
+  --key-4b: #b37903;
+  --key-5a: #a44c1d;
+  --key-5b: #c56a3e;
+  --key-6a: #a64450;
+  --key-6b: #c8626d;
+  --key-7a: #9b467a;
+  --key-7b: #bc6398;
+  --key-8a: #854f9c;
+  --key-8b: #a36cbc;
+  --key-9a: #635bb0;
+  --key-9b: #7f79d1;
+  --key-10a: #2e69b2;
+  --key-10b: #4c88d3;
+  --key-11a: #027493;
+  --key-11b: #0994ba;
+  --key-12a: #047879;
+  --key-12b: #009a9a;
+  --chart-1: #0072b2;
+  --chart-2: #b36b00;
+  --chart-3: #007a5a;
+  --chart-4: #b0477f;
+  --chart-5: #8a7d00;
+  --chart-6: #005a8c;
+  --chart-7: #b34700;
+  --chart-8: #6b6b6b;
+  --chart-grid: #e4e4df;
+  --chart-ref: #3a3a3d;
+  --on-now: #ffffff;
+  --now: #9a6400;
+  --sim: #76767a;
+  --svc-tidal: #000000;
+  --shadow-1: 0 1px 2px rgba(20, 20, 24, 0.08);
+  --shadow-2: 0 6px 20px rgba(20, 20, 24, 0.14);
+  --shadow-3: 0 18px 48px rgba(20, 20, 24, 0.22);
+  color-scheme: light;
+}
+}
+.sn-m-graph    { --m: var(--mod-graph);    --m-bg: var(--mod-graph-bg);    --m-raised: var(--mod-graph-raised);    --m-line: var(--mod-graph-line);    --m-ink: var(--mod-graph-ink);    --m-muted: var(--mod-graph-muted);    --m-on: var(--on-mod-graph); }
+.sn-m-library  { --m: var(--mod-library);  --m-bg: var(--mod-library-bg);  --m-raised: var(--mod-library-raised);  --m-line: var(--mod-library-line);  --m-ink: var(--mod-library-ink);  --m-muted: var(--mod-library-muted);  --m-on: var(--on-mod-library); }
+.sn-m-sets     { --m: var(--mod-sets);     --m-bg: var(--mod-sets-bg);     --m-raised: var(--mod-sets-raised);     --m-line: var(--mod-sets-line);     --m-ink: var(--mod-sets-ink);     --m-muted: var(--mod-sets-muted);     --m-on: var(--on-mod-sets); }
+.sn-m-paths    { --m: var(--mod-paths);    --m-bg: var(--mod-paths-bg);    --m-raised: var(--mod-paths-raised);    --m-line: var(--mod-paths-line);    --m-ink: var(--mod-paths-ink);    --m-muted: var(--mod-paths-muted);    --m-on: var(--on-mod-paths); }
+.sn-m-harmony  { --m: var(--mod-harmony);  --m-bg: var(--mod-harmony-bg);  --m-raised: var(--mod-harmony-raised);  --m-line: var(--mod-harmony-line);  --m-ink: var(--mod-harmony-ink);  --m-muted: var(--mod-harmony-muted);  --m-on: var(--on-mod-harmony); }
+.sn-m-sources  { --m: var(--mod-sources);  --m-bg: var(--mod-sources-bg);  --m-raised: var(--mod-sources-raised);  --m-line: var(--mod-sources-line);  --m-ink: var(--mod-sources-ink);  --m-muted: var(--mod-sources-muted);  --m-on: var(--on-mod-sources); }
+.sn-m-pipeline { --m: var(--mod-pipeline); --m-bg: var(--mod-pipeline-bg); --m-raised: var(--mod-pipeline-raised); --m-line: var(--mod-pipeline-line); --m-ink: var(--mod-pipeline-ink); --m-muted: var(--mod-pipeline-muted); --m-on: var(--on-mod-pipeline); }
+.sn-m-services { --m: var(--mod-services); --m-bg: var(--mod-services-bg); --m-raised: var(--mod-services-raised); --m-line: var(--mod-services-line); --m-ink: var(--mod-services-ink); --m-muted: var(--mod-services-muted); --m-on: var(--on-mod-services); }
+.sn-m-icon { color: var(--m); }
+/* Diagram (1.10.0): build-time SVG diagrams for investigation reports (D-series figures).
+   Colour: one domain map, .sn-dg-c1 … .sn-dg-c8 set --dg-c to chart-1 … chart-8 (strokes and stripes only).
+   Nodes are neutral cards (surface-1, fg text); state is carried by outline style plus a word:
+   production solid, non-final dotted, queued dashed (sim), proposed dashed (brand). Gaps are status-bad dashed with a cross glyph.
+   Interaction hooks: [data-hl] highlights, [data-dim] fades, :focus-visible shows the focus ring. */
+.sn-diagram { font-family: var(--font-body); color: var(--fg); }
+.sn-diagram__bg { fill: var(--bg); }
+.sn-dg-c1 { --dg-c: var(--chart-1); }
+.sn-dg-c2 { --dg-c: var(--chart-2); }
+.sn-dg-c3 { --dg-c: var(--chart-3); }
+.sn-dg-c4 { --dg-c: var(--chart-4); }
+.sn-dg-c5 { --dg-c: var(--chart-5); }
+.sn-dg-c6 { --dg-c: var(--chart-6); }
+.sn-dg-c7 { --dg-c: var(--chart-7); }
+.sn-dg-c8 { --dg-c: var(--chart-8); }
+
+.sn-diagram__t { fill: var(--fg); }
+.sn-diagram__t--2 { fill: var(--fg-2); }
+.sn-diagram__t--3 { fill: var(--fg-3); }
+
+.sn-diagram__group { fill: none; stroke: var(--line); stroke-width: var(--graph-edge-w-1); }
+.sn-diagram__lane { fill: var(--surface-2); stroke: var(--line); stroke-width: var(--graph-edge-w-1); }
+.sn-diagram__lane--alt { fill: none; }
+.sn-diagram__grid { fill: none; stroke: var(--chart-grid); stroke-width: var(--graph-edge-w-1); }
+
+.sn-diagram__node { cursor: pointer; }
+.sn-diagram__box { fill: var(--surface-1); stroke: var(--line-strong); stroke-width: var(--graph-edge-w-1); filter: drop-shadow(var(--shadow-1)); }
+.sn-diagram__stripe { fill: var(--dg-c, var(--line-strong)); stroke: none; }
+.sn-diagram__node--nonfinal .sn-diagram__box,
+.sn-diagram__legend-box.sn-diagram__node--nonfinal { stroke-dasharray: 1.5 3; stroke-linecap: round; stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__node--queued .sn-diagram__box,
+.sn-diagram__legend-box.sn-diagram__node--queued { stroke: var(--sim); stroke-dasharray: 6 4; stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__node--proposed .sn-diagram__box,
+.sn-diagram__legend-box.sn-diagram__node--proposed { stroke: var(--brand); stroke-dasharray: 6 4; stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__node--gap .sn-diagram__box { stroke: var(--status-bad); stroke-dasharray: 4 3; stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__node--note .sn-diagram__box { fill: var(--surface-2); stroke: var(--line); filter: none; }
+.sn-diagram__node--fallback .sn-diagram__box { fill: var(--surface-2); stroke: var(--line-strong); stroke-dasharray: 4 3; filter: none; }
+.sn-diagram__node--changed .sn-diagram__box { stroke: var(--status-warn); stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__legend-box { fill: var(--surface-1); stroke: var(--line-strong); stroke-width: var(--graph-edge-w-1); }
+.sn-diagram__swatch { fill: var(--dg-c); }
+.sn-diagram__lock { fill: none; stroke: var(--fg-2); stroke-width: var(--graph-edge-w-1); stroke-linejoin: round; }
+
+.sn-diagram__edge { cursor: pointer; }
+.sn-diagram__line { fill: none; stroke: var(--dg-c, var(--line-strong)); stroke-width: var(--graph-edge-w-2); stroke-linejoin: round; opacity: var(--graph-edge-op-4); }
+.sn-diagram__head { fill: var(--dg-c, var(--line-strong)); stroke: none; }
+.sn-diagram__edge--queued .sn-diagram__line { stroke: var(--sim); stroke-dasharray: 6 4; }
+.sn-diagram__edge--queued .sn-diagram__head { fill: var(--sim); }
+.sn-diagram__edge--gap .sn-diagram__line { stroke: var(--status-bad); stroke-dasharray: 5 4; }
+.sn-diagram__edge--gap .sn-diagram__head { fill: var(--status-bad); }
+.sn-diagram__edge--proposed .sn-diagram__line { stroke: var(--brand); stroke-dasharray: 6 4; }
+.sn-diagram__edge--proposed .sn-diagram__head { fill: var(--brand); }
+.sn-diagram__edge--return .sn-diagram__line { stroke-dasharray: 4 3; }
+.sn-diagram__edge--fallback .sn-diagram__line { stroke: var(--line-strong); stroke-dasharray: 4 3; stroke-width: var(--graph-edge-w-1); }
+.sn-diagram__edge--fallback .sn-diagram__head { fill: var(--line-strong); }
+.sn-diagram__edge--neutral .sn-diagram__line { stroke: var(--line-strong); }
+.sn-diagram__edge--neutral .sn-diagram__head { fill: var(--line-strong); }
+.sn-diagram__lifeline { fill: none; stroke: var(--line-strong); stroke-width: var(--graph-edge-w-1); stroke-dasharray: 4 4; }
+
+.sn-diagram__badge-box { fill: var(--surface-1); stroke: var(--dg-c, var(--line-strong)); stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__edge--queued .sn-diagram__badge-box { stroke: var(--sim); stroke-dasharray: 3 2; }
+.sn-diagram__badge--gap .sn-diagram__badge-box,
+.sn-diagram__edge--gap .sn-diagram__badge-box { fill: var(--status-bad-bg); stroke: var(--status-bad); }
+.sn-diagram__badge--proposed .sn-diagram__badge-box,
+.sn-diagram__edge--proposed .sn-diagram__badge-box { fill: var(--brand-soft); stroke: var(--brand); }
+.sn-diagram__badge--neutral .sn-diagram__badge-box { stroke: var(--line-strong); }
+.sn-diagram__mark-box { fill: var(--status-bad-bg); stroke: var(--status-bad); stroke-width: var(--graph-edge-w-1); }
+.sn-diagram__mark--warn .sn-diagram__mark-box { fill: var(--status-warn-bg); stroke: var(--status-warn); }
+.sn-diagram__mark--info .sn-diagram__mark-box { fill: var(--surface-2); stroke: var(--line-strong); }
+.sn-diagram__now { fill: none; stroke: var(--now); stroke-width: var(--graph-edge-w-3); }
+.sn-diagram__gate { fill: var(--surface-1); stroke: var(--fg-2); stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__cell { fill: var(--surface-1); stroke: var(--line); stroke-width: var(--graph-edge-w-1); }
+
+/* interaction */
+.sn-diagram [data-dim] { opacity: var(--opacity-faded); }
+.sn-diagram__node[data-hl] .sn-diagram__box { stroke: var(--fg); stroke-width: var(--graph-edge-w-3); }
+.sn-diagram__edge[data-hl] .sn-diagram__line { stroke-width: var(--graph-edge-w-3); }
+.sn-diagram__node:focus-visible .sn-diagram__box,
+.sn-diagram__edge:focus-visible .sn-diagram__badge-box { stroke: var(--focus); stroke-width: var(--graph-edge-w-3); }
+.sn-diagram__edge:focus-visible .sn-diagram__line { stroke: var(--focus); stroke-width: var(--graph-edge-w-3); }
+
+@media print {
+  .sn-diagram__box { filter: none; }
+  .sn-diagram [data-dim] { opacity: 1; }
+}
+/* corner radii by part (SVG2 rx as a CSS property): tokens only */
+.sn-diagram__box, .sn-diagram__legend-box { rx: var(--radius-control); }
+.sn-diagram__badge-box { rx: var(--radius-pill); }
+.sn-diagram__mark-box, .sn-diagram__cell, .sn-diagram__stripe, .sn-diagram__swatch { rx: var(--radius-chip); }
+.sn-diagram__group, .sn-diagram__lane { rx: var(--radius-card); }
+
+/* ===== Report charts (source/css/65-report-charts.css) =====
+   Static report charts (data-flow report C-series): bars, matrix cells, bullet bands, log-axis dots and
+   pattern lines that ChartFrame does not define. Tokens only. Grid, base, tick and axis-title come from
+   .sn-chart-frame__* in 40-charts.css. Marks take their series colour from style="--c: var(--chart-N)". */
+.sn-chart { overflow: visible; font-family: var(--font-body); }
+.sn-rchart__bar { fill: var(--c, var(--chart-1)); }
+.sn-rchart__bar--proj { fill: none; stroke: var(--line-strong); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.sn-rchart__bar--none { fill: var(--surface-3); stroke: var(--line-strong); stroke-width: 1; }
+.sn-rchart__pat-line { stroke: var(--surface-1); stroke-width: 1.5; }
+.sn-rchart__label { fill: var(--fg-2); font-family: var(--font-body); font-size: 0.75rem; }
+.sn-rchart__label--strong { fill: var(--fg); font-weight: 600; }
+.sn-rchart__value { fill: var(--fg); font-family: var(--font-data); font-size: 0.6875rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.sn-rchart__halo { paint-order: stroke; stroke: var(--surface-1); stroke-width: 3; stroke-linejoin: round; }
+.sn-rchart__ref { stroke: var(--chart-ref); stroke-width: 1.5; stroke-dasharray: 5 4; fill: none; }
+.sn-rchart__ref-label { fill: var(--fg-2); font-family: var(--font-body); font-size: 0.6875rem; }
+.sn-rchart__cell { fill: var(--surface-3); stroke: var(--line-strong); stroke-width: 1; }
+.sn-rchart__cell--empty { fill: none; stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 2; }
+.sn-rchart__cell--queued { stroke-dasharray: 4 3; }
+.sn-rchart__cell--ok { fill: var(--status-ok-bg); }
+.sn-rchart__cell--fair { fill: var(--status-fair-bg); }
+.sn-rchart__cell--warn { fill: var(--status-warn-bg); }
+.sn-rchart__cell--bad { fill: var(--status-bad-bg); }
+.sn-rchart__cell--info { fill: var(--status-info-bg); }
+.sn-rchart__cell-text { fill: var(--fg); font-family: var(--font-data); font-size: 0.6875rem; font-weight: 600; }
+.sn-rchart__cell-id { fill: var(--fg-2); font-family: var(--font-data); font-size: 0.6875rem; }
+.sn-rchart__dot { fill: var(--c, var(--fg-2)); stroke: var(--surface-1); stroke-width: 1.5; }
+.sn-rchart__dot--proj { fill: var(--surface-1); stroke: var(--fg-2); stroke-width: 1.5; stroke-dasharray: 2 2; }
+.sn-rchart__band { fill: var(--surface-2); }
+.sn-rchart__band--near { fill: var(--surface-3); }
+.sn-rchart__mark { stroke: var(--fg); stroke-width: 2; }
+.sn-rchart__lane { stroke: var(--chart-grid); stroke-width: 1; shape-rendering: crispEdges; }
+
+.sn-chart-frame__grid { stroke: var(--chart-grid); stroke-width: 1; shape-rendering: crispEdges; }
+.sn-chart-frame__base { stroke: var(--line-strong); stroke-width: 1; shape-rendering: crispEdges; }
+.sn-chart-frame__tick { fill: var(--chart-axis); font-family: var(--font-data); font-size: 0.6875rem; font-variant-numeric: tabular-nums; }
+.sn-chart-frame__axis-title { fill: var(--chart-axis); font-family: var(--font-body); font-size: 0.6875rem; }</style>
+<title id="D8d-t">Gap map: songnodes frontend</title>
+<desc id="D8d-d">8 gaps drawn as red dashed edges between the parts they affect, each badge numbered G1… and its contract listed below; proposed modules are dashed brand cards linked to the gaps they close.</desc>
+<rect class="sn-diagram__bg" x="0" y="0" width="1461" height="804"/>
+<g class="sn-diagram__groups"></g>
+<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--proposed" data-from="M1" data-to="sn-fe-sets" data-edge="M1&gt;sn-fe-gap-artifact-sets-tidal-flag" tabindex="0" aria-label="M1 Set exchange closes G24">
+<title>M1 Set exchange closes G24</title>
+<path class="sn-diagram__line" d="M339.8 68.0 L415.3 68.0"/>
+<path class="sn-diagram__head" d="M415.3 68.0 L408.3 64.2 L408.3 71.8 Z"/>
+</g>
+<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--gap" data-from="sn-fe-sets" data-to="ml-cli-weekly" data-edge="sn-fe-gap-artifact-sets-tidal-flag" tabindex="0" aria-label="G24 artifact_sets.json lacks the tidal flag musicLibrary needs – contract: artifact_sets/v2: SavedSet[] + {tidal:boolean} &#x28;severity critical, effort M)">
+<title>G24 artifact_sets.json lacks the tidal flag musicLibrary needs – contract: artifact_sets/v2: SavedSet[] + {tidal:boolean} &#x28;severity critical, effort M)</title>
+<path class="sn-diagram__line" d="M555.8 68.0 L631.1 68.0"/>
+<path class="sn-diagram__head" d="M631.1 68.0 L624.1 64.2 L624.1 71.8 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="564.5" y="55.5" width="57.7" height="25.0"/><text class="sn-diagram__t body-strong" x="593.4" y="72.8" text-anchor="middle">&#x2715; G24</text></g>
+</g>
+<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--gap" data-from="file:songnodes/frontend/src/components/LiveDataLoader.tsx" data-to="contract:sn-fe-gap-graph-ws" data-edge="sn-fe-gap-graph-ws" tabindex="0" aria-label="G27 Graph WebSocket has a server but no client – contract: graph-ws/v1 message {type: nodes|edges|delta, payload} &#x28;severity medium, effort S)">
+<title>G27 Graph WebSocket has a server but no client – contract: graph-ws/v1 message {type: nodes|edges|delta, payload} &#x28;severity medium, effort S)</title>
+<path class="sn-diagram__line" d="M1033.8 346.0 L1109.2 346.0"/>
+<path class="sn-diagram__head" d="M1109.2 346.0 L1102.2 342.1 L1102.2 349.9 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1043.2" y="333.5" width="56.6" height="25.0"/><text class="sn-diagram__t body-strong" x="1071.5" y="350.8" text-anchor="middle">&#x2715; G27</text></g>
+</g>
+<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--gap" data-from="file:songnodes/frontend/src/features/musicLibrary/data.ts" data-to="file:songnodes/frontend/src/hooks/useDataLoader.ts" data-edge="sn-fe-gap-indexeddb-cache" tabindex="0" aria-label="G23 No IndexedDB last-good-data cache despite design-system rule – contract: sn-cache/v1 {key, data, fetchedAt &#x49;SO, apiVersion} &#x28;severity medium, effort S)">
+<title>G23 No IndexedDB last-good-data cache despite design-system rule – contract: sn-cache/v1 {key, data, fetchedAt &#x49;SO, apiVersion} &#x28;severity medium, effort S)</title>
+<path class="sn-diagram__line" d="M449.7 184.5 L525.2 184.5"/>
+<path class="sn-diagram__head" d="M525.2 184.5 L518.2 180.7 L518.2 188.3 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="458.7" y="172.0" width="57.5" height="25.0"/><text class="sn-diagram__t body-strong" x="487.4" y="189.3" text-anchor="middle">&#x2715; G23</text></g>
+</g>
+<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--gap" data-from="file:songnodes/frontend/Dockerfile" data-to="file:songnodes/frontend/src/features/musicLibrary/components/LibraryImportDialog.tsx" data-edge="sn-fe-gap-ingest-body-limit" tabindex="0" aria-label="G28 Library ingest allows 50 MB but frontend nginx accepts 1 MB – contract: ingest upload limit = FileDrop maxMb = nginx client_max_body_size = rest-api request limit &#x28;severity medium, effort M)">
+<title>G28 Library ingest allows 50 MB but frontend nginx accepts 1 MB – contract: ingest upload limit = FileDrop maxMb = nginx client_max_body_size = rest-api request limit &#x28;severity medium, effort M)</title>
+<path class="sn-diagram__line" d="M1025.9 202.0 L1101.2 202.0"/>
+<path class="sn-diagram__head" d="M1101.2 202.0 L1094.2 198.2 L1094.2 205.8 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1034.7" y="189.5" width="57.6" height="25.0"/><text class="sn-diagram__t body-strong" x="1063.5" y="206.8" text-anchor="middle">&#x2715; G28</text></g>
+</g>
+<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--gap" data-from="file:songnodes/frontend/src/features/musicLibrary/data.ts" data-to="sn-be-svc-rest-api" data-edge="sn-fe-gap-library-generated" tabindex="0" aria-label="G26 Library freshness stamp is always unknown – contract: library-meta/v1 = LibraryFile minus tracks &#x28;severity medium, effort S)">
+<title>G26 Library freshness stamp is always unknown – contract: library-meta/v1 = LibraryFile minus tracks &#x28;severity medium, effort S)</title>
+<path class="sn-diagram__line" d="M449.7 234.2 L554.9 234.2"/>
+<path class="sn-diagram__head" d="M554.9 234.2 L547.9 230.3 L547.9 238.0 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="473.5" y="221.7" width="57.6" height="25.0"/><text class="sn-diagram__t body-strong" x="502.3" y="239.0" text-anchor="middle">&#x2715; G26</text></g>
+</g>
+<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--gap" data-from="sn-fe-oauth-callback" data-to="sn-fe-settings" data-edge="sn-fe-gap-oauth-session-tokens" tabindex="0" aria-label="G21 OAuth tokens written to sessionStorage have no reader – contract: oauth-handoff/v1: {service, access_token, refresh_token, expires_at} consumed exactly once by the credentials slice &#x28;severity high, effort M)">
+<title>G21 OAuth tokens written to sessionStorage have no reader – contract: oauth-handoff/v1: {service, access_token, refresh_token, expires_at} consumed exactly once by the credentials slice &#x28;severity high, effort M)</title>
+<path class="sn-diagram__line" d="M473.7 451.0 L549.4 451.0"/>
+<path class="sn-diagram__head" d="M549.4 451.0 L542.4 447.1 L542.4 454.9 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="484.4" y="438.5" width="54.2" height="25.0"/><text class="sn-diagram__t body-strong" x="511.5" y="455.8" text-anchor="middle">&#x2715; G21</text></g>
+</g>
+<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--gap" data-from="file:songnodes/frontend/src/components/&#x44;JInterface.tsx" data-to="contract:sn-fe-gap-scrapers-endpoints" data-edge="sn-fe-gap-scrapers-endpoints" tabindex="0" aria-label="G22 Graph page calls scraper endpoints that do not exist – contract: frontend-endpoint-manifest.json checked against rest-api /openapi.json in CI &#x28;severity medium, effort M)">
+<title>G22 Graph page calls scraper endpoints that do not exist – contract: frontend-endpoint-manifest.json checked against rest-api /openapi.json in CI &#x28;severity medium, effort M)</title>
+<path class="sn-diagram__line" d="M450.7 346.0 L526.3 346.0"/>
+<path class="sn-diagram__head" d="M526.3 346.0 L519.3 342.1 L519.3 349.9 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="459.8" y="333.5" width="57.3" height="25.0"/><text class="sn-diagram__t body-strong" x="488.5" y="350.8" text-anchor="middle">&#x2715; G22</text></g>
+</g>
+<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--gap" data-from="file:songnodes/frontend/src/services/trackSyncAdapter.ts" data-to="file:songnodes/frontend/src/hooks/useUnifiedTracks.ts" data-edge="sn-fe-gap-target-pending-sync" tabindex="0" aria-label="G25 Pending target syncs are never retried and override the server – contract: sn-target-tracks-v2 {isTarget, priority, pendingSync, lastAttempt} &#x28;severity medium, effort S)">
+<title>G25 Pending target syncs are never retried and override the server – contract: sn-target-tracks-v2 {isTarget, priority, pendingSync, lastAttempt} &#x28;severity medium, effort S)</title>
+<path class="sn-diagram__line" d="M1026.7 451.0 L1102.2 451.0"/>
+<path class="sn-diagram__head" d="M1102.2 451.0 L1095.2 447.1 L1095.2 454.9 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1035.7" y="438.5" width="57.4" height="25.0"/><text class="sn-diagram__t body-strong" x="1064.4" y="455.8" text-anchor="middle">&#x2715; G25</text></g>
+</g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--proposed" data-node="M1" tabindex="0" aria-label="M1 Set exchange &#x28;proposed module): Reads either saved-set shape and writes one versioned `songnodes.saved-set/2` document &#x28;name, shape, minutes, tracks[{isrc, tidal_id, ledger_id, tgt}], tidal) to musicLibrary inbox/artifact_sets.json, rejecting rows it cannot map.">
+<title>M1 Set exchange &#x28;proposed module): Reads either saved-set shape and writes one versioned `songnodes.saved-set/2` document &#x28;name, shape, minutes, tracks[{isrc, tidal_id, ledger_id, tgt}], tidal) to musicLibrary inbox/artifact_sets.json, rejecting rows it cannot map.</title>
+<rect class="sn-diagram__box" x="175.5" y="40.0" width="164.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="177.0" y="41.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="189.5" y="62.3">M1 Set exchange</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="189.5" y="83.3">proposed · convert</text>
+</g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--proposed" data-node="M5" tabindex="0" aria-label="M5 Run monitor &#x28;proposed module): Compares each run&apos;s resolve yield, source counts and job failures with the last four runs and raises one Banner-shaped warning with a source link when a figure drops by half.">
+<title>M5 Run monitor &#x28;proposed module): Compares each run&apos;s resolve yield, source counts and job failures with the last four runs and raises one Banner-shaped warning with a source link when a figure drops by half.</title>
+<rect class="sn-diagram__box" x="993.5" y="40.0" width="144.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="995.0" y="41.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="1007.5" y="62.3">M5 Run monitor</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1007.5" y="83.3">proposed · alert</text>
+</g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--gap" data-node="contract:sn-fe-gap-graph-ws" tabindex="0" aria-label="G27 contract: graph-ws/v1 message {type: nodes|edges|delta, payload}">
+<title>G27 contract: graph-ws/v1 message {type: nodes|edges|delta, payload}</title>
+<rect class="sn-diagram__box" x="1109.5" y="307.5" width="187.0" height="77.0"/>
+<rect class="sn-diagram__stripe" x="1111.0" y="309.0" width="5" height="74.0"/>
+<text class="sn-diagram__t body-strong" x="1123.5" y="329.8">missing contract</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1123.5" y="350.8">graph-ws/v1 message</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1123.5" y="371.8">{type:…</text>
+</g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--gap" data-node="contract:sn-fe-gap-scrapers-endpoints" tabindex="0" aria-label="G22 contract: frontend-endpoint-manifest.json checked against rest-api /openapi.json in CI">
+<title>G22 contract: frontend-endpoint-manifest.json checked against rest-api /openapi.json in CI</title>
+<rect class="sn-diagram__box" x="526.5" y="307.5" width="197.0" height="77.0"/>
+<rect class="sn-diagram__stripe" x="528.0" y="309.0" width="5" height="74.0"/>
+<text class="sn-diagram__t body-strong" x="540.5" y="329.8">missing contract</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="540.5" y="350.8">frontend-endpoint-man</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="540.5" y="371.8">ifest.json checked…</text>
+</g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="file:songnodes/frontend/Dockerfile" tabindex="0" aria-label="songnodes/frontend/Dockerfile &#x28;file named by the gap)">
+<title>songnodes/frontend/Dockerfile &#x28;file named by the gap)</title>
+<rect class="sn-diagram__box" x="829.5" y="163.5" width="196.0" height="77.0"/>
+<rect class="sn-diagram__stripe" x="831.0" y="165.0" width="5" height="74.0"/>
+<text class="sn-diagram__t body-strong" x="843.5" y="185.8">songnodes/frontend/D</text>
+<text class="sn-diagram__t body-strong" x="843.5" y="206.8">ockerfile</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="843.5" y="227.8">ops · file</text>
+</g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="file:songnodes/frontend/src/components/&#x44;JInterface.tsx" tabindex="0" aria-label="songnodes/frontend/src/components/&#x44;JInterface.tsx &#x28;file named by the gap)">
+<title>songnodes/frontend/src/components/&#x44;JInterface.tsx &#x28;file named by the gap)</title>
+<rect class="sn-diagram__box" x="251.5" y="307.5" width="199.0" height="77.0"/>
+<rect class="sn-diagram__stripe" x="253.0" y="309.0" width="5" height="74.0"/>
+<text class="sn-diagram__t body-strong" x="265.5" y="329.8">songnodes/frontend/sr</text>
+<text class="sn-diagram__t body-strong" x="265.5" y="350.8">c/components/&#x44;JInt…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="265.5" y="371.8">ops · file</text>
+</g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="file:songnodes/frontend/src/components/LiveDataLoader.tsx" tabindex="0" aria-label="songnodes/frontend/src/components/LiveDataLoader.tsx &#x28;file named by the gap)">
+<title>songnodes/frontend/src/components/LiveDataLoader.tsx &#x28;file named by the gap)</title>
+<rect class="sn-diagram__box" x="834.5" y="307.5" width="199.0" height="77.0"/>
+<rect class="sn-diagram__stripe" x="836.0" y="309.0" width="5" height="74.0"/>
+<text class="sn-diagram__t body-strong" x="848.5" y="329.8">songnodes/frontend/sr</text>
+<text class="sn-diagram__t body-strong" x="848.5" y="350.8">c/components/LiveD…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="848.5" y="371.8">ops · file</text>
+</g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="file:songnodes/frontend/src/features/musicLibrary/components/LibraryImportDialog.tsx" tabindex="0" aria-label="songnodes/frontend/src/features/musicLibrary/components/LibraryImportDialog.tsx &#x28;file named by the gap)">
+<title>songnodes/frontend/src/features/musicLibrary/components/LibraryImportDialog.tsx &#x28;file named by the gap)</title>
+<rect class="sn-diagram__box" x="1101.5" y="163.5" width="199.0" height="77.0"/>
+<rect class="sn-diagram__stripe" x="1103.0" y="165.0" width="5" height="74.0"/>
+<text class="sn-diagram__t body-strong" x="1115.5" y="185.8">songnodes/frontend/sr</text>
+<text class="sn-diagram__t body-strong" x="1115.5" y="206.8">c/features/musicLibr…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1115.5" y="227.8">ops · file</text>
+</g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="file:songnodes/frontend/src/features/musicLibrary/data.ts" tabindex="0" aria-label="songnodes/frontend/src/features/musicLibrary/data.ts &#x28;file named by the gap)">
+<title>songnodes/frontend/src/features/musicLibrary/data.ts &#x28;file named by the gap)</title>
+<rect class="sn-diagram__box" x="250.5" y="168.5" width="199.0" height="77.0"/>
+<rect class="sn-diagram__stripe" x="252.0" y="170.0" width="5" height="74.0"/>
+<text class="sn-diagram__t body-strong" x="264.5" y="190.8">songnodes/frontend/sr</text>
+<text class="sn-diagram__t body-strong" x="264.5" y="211.8">c/features/musicLibr…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="264.5" y="232.8">ops · file</text>
+</g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="file:songnodes/frontend/src/hooks/useDataLoader.ts" tabindex="0" aria-label="songnodes/frontend/src/hooks/useDataLoader.ts &#x28;file named by the gap)">
+<title>songnodes/frontend/src/hooks/useDataLoader.ts &#x28;file named by the gap)</title>
+<rect class="sn-diagram__box" x="525.5" y="123.5" width="199.0" height="77.0"/>
+<rect class="sn-diagram__stripe" x="527.0" y="125.0" width="5" height="74.0"/>
+<text class="sn-diagram__t body-strong" x="539.5" y="145.8">songnodes/frontend/sr</text>
+<text class="sn-diagram__t body-strong" x="539.5" y="166.8">c/hooks/useDataLoa…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="539.5" y="187.8">ops · file</text>
+</g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="file:songnodes/frontend/src/hooks/useUnifiedTracks.ts" tabindex="0" aria-label="songnodes/frontend/src/hooks/useUnifiedTracks.ts &#x28;file named by the gap)">
+<title>songnodes/frontend/src/hooks/useUnifiedTracks.ts &#x28;file named by the gap)</title>
+<rect class="sn-diagram__box" x="1102.5" y="412.5" width="199.0" height="77.0"/>
+<rect class="sn-diagram__stripe" x="1104.0" y="414.0" width="5" height="74.0"/>
+<text class="sn-diagram__t body-strong" x="1116.5" y="434.8">songnodes/frontend/sr</text>
+<text class="sn-diagram__t body-strong" x="1116.5" y="455.8">c/hooks/useUnifiedT…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1116.5" y="476.8">ops · file</text>
+</g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="file:songnodes/frontend/src/services/trackSyncAdapter.ts" tabindex="0" aria-label="songnodes/frontend/src/services/trackSyncAdapter.ts &#x28;file named by the gap)">
+<title>songnodes/frontend/src/services/trackSyncAdapter.ts &#x28;file named by the gap)</title>
+<rect class="sn-diagram__box" x="827.5" y="412.5" width="199.0" height="77.0"/>
+<rect class="sn-diagram__stripe" x="829.0" y="414.0" width="5" height="74.0"/>
+<text class="sn-diagram__t body-strong" x="841.5" y="434.8">songnodes/frontend/sr</text>
+<text class="sn-diagram__t body-strong" x="841.5" y="455.8">c/services/trackSyn…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="841.5" y="476.8">ops · file</text>
+</g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-cli-weekly" tabindex="0" aria-label="run_weekly weekly &#x28;ml-cli-weekly) – ops, cli, Production">
+<title>run_weekly weekly &#x28;ml-cli-weekly) – ops, cli, Production</title>
+<rect class="sn-diagram__box" x="631.5" y="40.0" width="168.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="633.0" y="41.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="645.5" y="62.3">run_weekly weekly</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="645.5" y="83.3">ops · cli</text>
+</g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-svc-rest-api" tabindex="0" aria-label="&#x52;EST &#x41;PI &#x28;sn-be-svc-rest-api) – ops, service-ui, Production">
+<title>&#x52;EST &#x41;PI &#x28;sn-be-svc-rest-api) – ops, service-ui, Production</title>
+<rect class="sn-diagram__box" x="555.0" y="223.0" width="140.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="556.5" y="224.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="569.0" y="245.3">&#x52;EST &#x41;PI</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="569.0" y="266.3">ops · service</text>
+</g>
+<g class="sn-diagram__node sn-dg-c7 sn-diagram__node--production" data-node="sn-fe-oauth-callback" tabindex="0" aria-label="Service sign-in return &#x28;sn-fe-oauth-callback) – services, route, Production">
+<title>Service sign-in return &#x28;sn-fe-oauth-callback) – services, route, Production</title>
+<rect class="sn-diagram__box" x="285.5" y="423.0" width="188.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="287.0" y="424.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="299.5" y="445.3">Service sign-in return</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="299.5" y="466.3">services · route</text>
+</g>
+<g class="sn-diagram__node sn-dg-c4 sn-diagram__node--production" data-node="sn-fe-sets" tabindex="0" aria-label="Set builder &#x28;sn-fe-sets) – sets, route, Production">
+<title>Set builder &#x28;sn-fe-sets) – sets, route, Production</title>
+<rect class="sn-diagram__box" x="415.5" y="40.0" width="140.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="417.0" y="41.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="429.5" y="62.3">Set builder</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="429.5" y="83.3">sets · route</text>
+</g>
+<g class="sn-diagram__node sn-dg-c7 sn-diagram__node--production" data-node="sn-fe-settings" tabindex="0" aria-label="Settings &#x28;sn-fe-settings) – services, route, Production">
+<title>Settings &#x28;sn-fe-settings) – services, route, Production</title>
+<rect class="sn-diagram__box" x="549.5" y="423.0" width="140.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="551.0" y="424.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="563.5" y="445.3">Settings</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="563.5" y="466.3">services · route</text>
+</g>
+<g class="sn-diagram__key">
+<text class="sn-diagram__t body-strong" x="24.0" y="524.8">Gap contracts</text>
+<text class="sn-diagram__t body-strong" x="24.0" y="549.8">G21</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="67.6" y="549.8">oauth-handoff/v1: {service, access_token, refresh_token, expires_at} consumed exactly</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="67.6" y="570.8">once by the credentials slice &#x28;high)</text>
+<text class="sn-diagram__t body-strong" x="24.0" y="595.8">G22</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="67.6" y="595.8">frontend-endpoint-manifest.json checked against rest-api /openapi.json in CI &#x28;medium)</text>
+<text class="sn-diagram__t body-strong" x="24.0" y="620.8">G23</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="67.6" y="620.8">sn-cache/v1 {key, data, fetchedAt &#x49;SO, apiVersion} &#x28;medium)</text>
+<text class="sn-diagram__t body-strong" x="24.0" y="645.8">G24</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="67.6" y="645.8">artifact_sets/v2: SavedSet[] + {tidal:boolean} &#x28;critical)</text>
+<text class="sn-diagram__t body-strong" x="742.5" y="549.8">G25</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="786.0" y="549.8">sn-target-tracks-v2 {isTarget, priority, pendingSync, lastAttempt} &#x28;medium)</text>
+<text class="sn-diagram__t body-strong" x="742.5" y="574.8">G26</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="786.0" y="574.8">library-meta/v1 = LibraryFile minus tracks &#x28;medium)</text>
+<text class="sn-diagram__t body-strong" x="742.5" y="599.8">G27</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="786.0" y="599.8">graph-ws/v1 message {type: nodes|edges|delta, payload} &#x28;medium)</text>
+<text class="sn-diagram__t body-strong" x="742.5" y="624.8">G28</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="786.0" y="624.8">ingest upload limit = FileDrop maxMb = nginx client_max_body_size = rest-api request</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="786.0" y="645.8">limit &#x28;medium)</text>
+</g>
+<g class="sn-diagram__legend" aria-label="Legend">
+<text class="sn-diagram__t body-strong" x="24.0" y="686.8">Key</text>
+<rect class="sn-diagram__swatch sn-dg-c4" x="24.0" y="707.0" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="54.0" y="716.8">sets</text>
+<rect class="sn-diagram__swatch sn-dg-c7" x="102.5" y="707.0" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="132.5" y="716.8">services</text>
+<rect class="sn-diagram__swatch sn-dg-c8" x="212.7" y="707.0" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="242.7" y="716.8">ops and design</text>
+<rect class="sn-diagram__legend-box sn-diagram__node--production" x="373.6" y="704.0" width="22" height="16"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="403.6" y="716.8">Production &#x28;solid outline)</text>
+<rect class="sn-diagram__legend-box sn-diagram__node--proposed" x="605.9" y="704.0" width="22" height="16"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="635.9" y="716.8">Proposed &#x28;brand, dashed)</text>
+<g class="sn-diagram__edge--gap"><path class="sn-diagram__line" d="M846.7 712.0 L868.7 712.0"/></g>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="876.7" y="716.8">Gap &#x28;red dashed, &#x2715;)</text>
+<g class="sn-diagram__edge--proposed"><path class="sn-diagram__line" d="M1042.6 712.0 L1064.6 712.0"/></g>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1072.6" y="716.8">Proposed link &#x28;brand dashed)</text>
+</g>
+</svg>

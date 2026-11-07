@@ -1,0 +1,1046 @@
+"""
+Build script for SongNodes architectural findings.json
+Outputs: documentation/data-flow-analysis/findings.json
+"""
+import json
+import os
+from datetime import datetime
+
+findings = {
+    "meta": {
+        "title": "SongNodes Architectural Investigation & End-to-End Data Flow Map",
+        "generated_at": "2026-11-07T09:05:00+11:00",
+        "commit_sha": "7429821ca1c0d2e7f81b51c3d6b79b4bcce1e8cb",
+        "project": "SongNodes",
+        "project_description": "DJ Track Transition Graph, Curated Library Platform, and Harmonic Wave Set Builder",
+        "sister_project": "musicLibrary",
+        "sister_project_path": "e:\\musicLibrary",
+        "design_system_version": "1.4.0",
+        "locale": "en-AU",
+        "timezone": "Australia/Melbourne"
+    },
+    "summary": {
+        "total_pages": 12,
+        "production_pages": 10,
+        "non_final_pages": 2,
+        "total_stores": 8,
+        "total_signals": 42,
+        "total_data_edges": 26,
+        "total_personas": 5,
+        "total_gaps": 5,
+        "total_sister_tasks": 6,
+        "total_proposed_modules": 4
+    },
+    "pages": [
+        {
+            "id": "home",
+            "route": "/",
+            "title": "SongNodes",
+            "lead": "Home",
+            "module": "home",
+            "module_token": "--bg",
+            "description": "System launcher, high-level operational overview, and real-time statistics console.",
+            "primary_components": ["AppHeader", "NavDrawer", "SearchField", "LauncherGrid", "StatsPanel", "CreditsFooter"],
+            "inbound_signals": [
+                {"type": "api", "target": "/api/v1/jobs", "method": "GET", "contract": "JobListResponse"},
+                {"type": "api", "target": "/api/v1/library/search", "method": "GET", "contract": "LibrarySearchResponse"}
+            ],
+            "outbound_signals": [
+                {"type": "navigation", "target": "/library", "trigger": "Module link click"},
+                {"type": "navigation", "target": "/sets", "trigger": "Module link click"},
+                {"type": "navigation", "target": "/graph", "trigger": "Module link click"},
+                {"type": "navigation", "target": "/pipeline", "trigger": "Module link click"}
+            ],
+            "classification": "production",
+            "rationale": "Static entry route registered in registry.tsx:14; uses production AppShell and Design System SN helpers; live statistics and quick launcher.",
+            "evidence_files": [
+                "frontend/src/pages/HomePage.tsx:1-63",
+                "frontend/src/routes/registry.tsx:14",
+                "frontend/src/shell/AppShell.tsx:86-90"
+            ],
+            "test_coverage": "frontend/src/pages/HomePage.test.tsx"
+        },
+        {
+            "id": "library",
+            "route": "/library",
+            "title": "Music Library",
+            "lead": "Explore",
+            "module": "library",
+            "module_token": "--mod-library",
+            "description": "Curated DJ track catalog, crate filtering, energy tier exploration, and track-to-target scraper promotion.",
+            "primary_components": ["PageHeader", "FilterRail", "TrackTable", "TrackRow", "EnergyBar", "KeyBadge", "AudioPreviewPlayer", "TargetActionButton"],
+            "inbound_signals": [
+                {"type": "api", "target": "/api/v1/library/search", "method": "GET", "contract": "LibrarySearchResponse"},
+                {"type": "url_params", "target": "searchParams", "contract": "{query, crate, energy, key, sort}"},
+                {"type": "static_fallback", "target": "/data/music-library.json", "contract": "LibraryDocument"}
+            ],
+            "outbound_signals": [
+                {"type": "api", "target": "/api/v1/target-tracks", "method": "POST", "contract": "TargetTrackCreateRequest"},
+                {"type": "api", "target": "/api/v1/library/tracks/{id}/preview", "method": "GET", "contract": "TrackPreviewResponse"},
+                {"type": "file_export", "target": "songnodes-library-*.csv", "contract": "RFC 4180 CSV with OWASP injection guard"},
+                {"type": "navigation", "target": "/sets?add={trackId}", "trigger": "Add to Set action"}
+            ],
+            "classification": "production",
+            "rationale": "Dynamic feature route discovered via registry.tsx:27 and musicLibrary/route.tsx:9; verified live backend search integration; audited in PR #259.",
+            "evidence_files": [
+                "frontend/src/features/musicLibrary/LibraryPage.tsx:1-485",
+                "frontend/src/features/musicLibrary/route.tsx:9",
+                "services/rest_api/routers/library_search.py:1-120"
+            ],
+            "test_coverage": "frontend/src/features/musicLibrary/LibraryPage.test.tsx"
+        },
+        {
+            "id": "sets",
+            "route": "/sets",
+            "title": "Set Builder",
+            "lead": "Make",
+            "module": "sets",
+            "module_token": "--mod-sets",
+            "description": "Harmonic wave-shaped DJ set sequencer with Camelot transition analysis, energy curve tracking, and multi-platform export.",
+            "primary_components": ["SetHeader", "WaveGraph", "SetSlotList", "SetSlot", "CompatBadge", "SpareSuggestions", "ExportDialog", "SendToTidalDialog"],
+            "inbound_signals": [
+                {"type": "local_storage", "target": "songnodes_saved_sets", "contract": "SavedSetsMap"},
+                {"type": "api", "target": "/api/v1/library/sets", "method": "GET", "contract": "LibrarySetsResponse"},
+                {"type": "url_params", "target": "searchParams", "contract": "{set: string}"}
+            ],
+            "outbound_signals": [
+                {"type": "local_storage", "target": "songnodes_saved_sets", "contract": "SavedSetsMap (JSON)"},
+                {"type": "api", "target": "/api/v1/library/sets", "method": "POST", "contract": "SetlistCreate"},
+                {"type": "api", "target": "/api/v1/tidal/sets/send", "method": "POST", "contract": "TidalSetSendRequest"},
+                {"type": "file_export", "target": "songnodes-set-*.csv", "contract": "CSV with Camelot/BPM metrics"},
+                {"type": "file_export", "target": "songnodes-set-*.m3u", "contract": "Extended M3U Playlist"},
+                {"type": "print", "target": "/sets/:id/print", "contract": "A4 PrintSheet (media print)"}
+            ],
+            "classification": "production",
+            "rationale": "Production operational tool; dual persistence (LocalStorage outbox + PostgreSQL library.saved_sets); handles full setlist lifecycle.",
+            "evidence_files": [
+                "frontend/src/features/musicLibrary/SetBuilderPage.tsx:1-681",
+                "frontend/src/features/musicLibrary/route.tsx:10",
+                "services/rest_api/routers/tidal_playlists.py:1-150"
+            ],
+            "test_coverage": "frontend/src/features/musicLibrary/SetBuilderPage.test.tsx"
+        },
+        {
+            "id": "paths",
+            "route": "/paths",
+            "title": "Pathfinder",
+            "lead": "Make",
+            "module": "paths",
+            "module_token": "--mod-paths",
+            "description": "Graph-based transition pathfinder calculating harmonic, energy-aligned stepping stones between distant tracks.",
+            "primary_components": ["PathfinderForm", "TrackSelector", "PathGraphPreview", "StepCardList", "HarmonicStepBadge", "AddToSetButton"],
+            "inbound_signals": [
+                {"type": "api", "target": "/api/v1/pathfinder/find-path", "method": "POST", "contract": "PathfinderResponse"},
+                {"type": "url_params", "target": "searchParams", "contract": "{start: string, end: string, maxHops: number}"}
+            ],
+            "outbound_signals": [
+                {"type": "navigation", "target": "/sets?importPath=true", "trigger": "Export Route to Set Builder"},
+                {"type": "api", "target": "/api/v1/library/tracks/{id}/preview", "method": "GET", "contract": "TrackPreviewResponse"}
+            ],
+            "classification": "production",
+            "rationale": "Restored in package R2 (#177) and wired in P1 (#180); connects directly to Memgraph pathfinding Cypher queries via REST API.",
+            "evidence_files": [
+                "frontend/src/features/pathfinder/PathfinderPage.tsx:1-337",
+                "frontend/src/features/pathfinder/route.tsx:1-6",
+                "services/rest_api/routers/pathfinder.py:1-250"
+            ],
+            "test_coverage": "frontend/src/features/pathfinder/PathfinderPage.test.tsx"
+        },
+        {
+            "id": "harmony",
+            "route": "/harmony",
+            "title": "Camelot Matrix",
+            "lead": "Explore",
+            "module": "harmony",
+            "module_token": "--mod-harmony",
+            "description": "Interactive Camelot wheel and harmonic modulation matrix displaying musical compatibility and energy shift potential.",
+            "primary_components": ["CamelotWheel", "KeySelectorGrid", "CompatibleTrackTable", "ModulationRuleSelector", "BpmToleranceSlider"],
+            "inbound_signals": [
+                {"type": "api", "target": "/api/v1/library/search", "method": "GET", "contract": "LibrarySearchResponse"},
+                {"type": "url_params", "target": "searchParams", "contract": "{key: string, bpm: number}"}
+            ],
+            "outbound_signals": [
+                {"type": "navigation", "target": "/library?key={code}", "trigger": "Select Key Filter"},
+                {"type": "navigation", "target": "/sets?add={trackId}", "trigger": "Queue Track in Set"}
+            ],
+            "classification": "production",
+            "rationale": "Consolidated into single production route in package P2 (#182); implements official SN.camelot and SN.compat mathematical models.",
+            "evidence_files": [
+                "frontend/src/features/camelot/CamelotPage.tsx:1-236",
+                "frontend/src/features/camelot/route.tsx:1-10",
+                "frontend/src/lib/songnodes.tsx:78-85"
+            ],
+            "test_coverage": "frontend/src/features/camelot/CamelotPage.test.tsx"
+        },
+        {
+            "id": "sources_targets",
+            "route": "/sources/targets",
+            "title": "Scrape Targets",
+            "lead": "Collect",
+            "module": "sources",
+            "module_token": "--mod-sources",
+            "description": "Priority queue and management console for artist and track search targets dispatched to unified scrapers.",
+            "primary_components": ["TargetTable", "AddTargetDialog", "PriorityBadge", "SearchStatusPill", "ArchiveTargetButton", "TriggerScrapeButton"],
+            "inbound_signals": [
+                {"type": "api", "target": "/api/v1/target-tracks", "method": "GET", "contract": "TargetTrackListResponse"},
+                {"type": "api", "target": "/api/v1/target-tracks/suggestions", "method": "GET", "contract": "TargetSuggestionsResponse"}
+            ],
+            "outbound_signals": [
+                {"type": "api", "target": "/api/v1/target-tracks", "method": "POST", "contract": "TargetTrackCreate"},
+                {"type": "api", "target": "/api/v1/scrape/trigger", "method": "POST", "contract": "ScrapeTriggerRequest"},
+                {"type": "api", "target": "/api/v1/target-tracks/{id}/archive", "method": "POST", "contract": "ArchiveResponse"}
+            ],
+            "classification": "production",
+            "rationale": "Production target dispatch tool; backed by PostgreSQL migration 280; prevents duplicate target insertion and coordinates scraper runs.",
+            "evidence_files": [
+                "frontend/src/pages/ModulePages.tsx:35-85",
+                "frontend/src/components/TargetTracksManager.tsx:1-350",
+                "services/rest_api/routers/target_tracks.py:1-200"
+            ],
+            "test_coverage": "frontend/src/components/TargetTracksManager.test.tsx"
+        },
+        {
+            "id": "sources_import",
+            "route": "/sources/import",
+            "title": "Tracklist Import",
+            "lead": "Collect",
+            "module": "sources",
+            "module_token": "--mod-sources",
+            "description": "AI-assisted tracklist ingestion, OCR text parsing, and sequential playlist bronze layer loader.",
+            "primary_components": ["TextImportArea", "ParsedTrackTable", "ArtistResolutionBadge", "SequentialOrderValidator", "CommitImportButton"],
+            "inbound_signals": [
+                {"type": "user_input", "target": "textarea", "contract": "Plaintext tracklist (1..N)"},
+                {"type": "api", "target": "/api/v1/ai/complete", "method": "POST", "contract": "AIProxyResponse"}
+            ],
+            "outbound_signals": [
+                {"type": "api", "target": "/api/v1/tracks/import-tracklist", "method": "POST", "contract": "TracklistImportRequest"},
+                {"type": "navigation", "target": "/pipeline", "trigger": "View Ingestion Progress"}
+            ],
+            "classification": "production",
+            "rationale": "Feature route wired in P3 (#185); enforces completeness guard (positions 1..N with no gaps) and loads into bronze_scraped_playlists.",
+            "evidence_files": [
+                "frontend/src/features/aiSetlists/AISetlistsPage.tsx:1-393",
+                "frontend/src/features/aiSetlists/route.tsx:1-9",
+                "services/rest_api/routers/catalog_writes.py:1-120"
+            ],
+            "test_coverage": "frontend/src/features/aiSetlists/AISetlistsPage.test.tsx"
+        },
+        {
+            "id": "pipeline",
+            "route": "/pipeline",
+            "title": "Pipeline Telemetry",
+            "lead": "System",
+            "module": "pipeline",
+            "module_token": "--mod-pipeline",
+            "description": "Real-time scraper telemetry, Celery queue drain rates, Medallion stage progression, and job dead-letter revival.",
+            "primary_components": ["ScrapeWindowCard", "JobStageTracker", "ActiveJobsTable", "DeadLetterQueueList", "ReviveJobButton", "OutboxLagMeter"],
+            "inbound_signals": [
+                {"type": "api", "target": "/api/v1/scrape/window", "method": "GET", "contract": "ScrapeWindowStatusResponse"},
+                {"type": "api", "target": "/api/v1/jobs", "method": "GET", "contract": "JobListResponse"},
+                {"type": "api", "target": "/api/v1/jobs/{id}/stages", "method": "GET", "contract": "JobStagesResponse"},
+                {"type": "api", "target": "/api/v1/outbox/status", "method": "GET", "contract": "OutboxStatusResponse"}
+            ],
+            "outbound_signals": [
+                {"type": "api", "target": "/api/v1/jobs/{id}/retry", "method": "POST", "contract": "JobRetryResponse"},
+                {"type": "api", "target": "/api/v1/scrapers/queue/clear", "method": "POST", "contract": "QueueClearResponse"}
+            ],
+            "classification": "production",
+            "rationale": "Core operational health console; monitors async Celery execution and ensures data layer consistency across Medallion tiers.",
+            "evidence_files": [
+                "frontend/src/pages/ScraperProgressPage.tsx:1-573",
+                "frontend/src/features/pipeline/usePipelineTelemetry.ts:1-250",
+                "services/rest_api/routers/jobs.py:1-220"
+            ],
+            "test_coverage": "frontend/src/pages/ScraperProgressPage.test.tsx"
+        },
+        {
+            "id": "settings",
+            "route": "/settings",
+            "title": "System Settings",
+            "lead": "System",
+            "module": "services",
+            "module_token": "--mod-services",
+            "description": "Credential store, OAuth streaming token manager (TIDAL & Spotify), API provider configuration, and display preferences.",
+            "primary_components": ["SettingsOverview", "CredentialCardList", "OAuthConnectButton", "ServiceHealthGrid", "ThemeSelector", "DataResetDialog"],
+            "inbound_signals": [
+                {"type": "api", "target": "/api/v1/api-keys", "method": "GET", "contract": "APIKeyListResponse"},
+                {"type": "api", "target": "/api/v1/api-keys/requirements", "method": "GET", "contract": "RequirementsResponse"},
+                {"type": "session_storage", "target": "oauth_state", "contract": "UUID string"},
+                {"type": "post_message", "target": "window.opener", "contract": "OAuthCallbackPayload"}
+            ],
+            "outbound_signals": [
+                {"type": "api", "target": "/api/v1/api-keys", "method": "POST", "contract": "APIKeyUpdate"},
+                {"type": "api", "target": "/api/v1/api-keys/test", "method": "POST", "contract": "APIKeyTestRequest"},
+                {"type": "api", "target": "/api/v1/music-auth/tidal/oauth/init", "method": "POST", "contract": "OAuthInitResponse"},
+                {"type": "local_storage", "target": "songnodes_theme", "contract": "'dark' | 'light' | 'booth'"}
+            ],
+            "classification": "production",
+            "rationale": "Production administrative and preferences engine; securely manages API credentials without committing raw secrets (SEC6).",
+            "evidence_files": [
+                "frontend/src/pages/SettingsPage.tsx:1-1180",
+                "frontend/src/routes/registry.tsx:20-21",
+                "services/rest_api/routers/music_auth.py:1-350"
+            ],
+            "test_coverage": "frontend/src/pages/SettingsPage.test.tsx"
+        },
+        {
+            "id": "not_found",
+            "route": "*",
+            "title": "Page Not Found",
+            "lead": "Error 404",
+            "module": "home",
+            "module_token": "--bg",
+            "description": "Honest empty/error boundary state displayed when a requested URL is unregistered.",
+            "primary_components": ["EmptyState", "SnIcon", "BackButton", "HomeButton"],
+            "inbound_signals": [
+                {"type": "router", "target": "window.location.pathname", "contract": "string"}
+            ],
+            "outbound_signals": [
+                {"type": "navigation", "target": "/", "trigger": "Return Home click"}
+            ],
+            "classification": "production",
+            "rationale": "Canonical error boundary adhering to Design System rule 08 (Honest states, never mock data); registered in registry.tsx:22.",
+            "evidence_files": [
+                "frontend/src/pages/ModulePages.tsx:8-13",
+                "frontend/src/routes/registry.tsx:22"
+            ],
+            "test_coverage": "frontend/src/pages/ModulePages.test.tsx"
+        },
+        {
+            "id": "graph",
+            "route": "/graph",
+            "title": "Transition Graph",
+            "lead": "Explore",
+            "module": "graph",
+            "module_token": "--mod-graph",
+            "description": "Legacy 2D transition graph visualiser (PIXI/Canvas prototype slated for Sigma.js replacement in Milestone 6).",
+            "primary_components": ["CanvasWrapper", "GraphControls", "TrackSelectionDrawer", "LegacyPixiRenderer"],
+            "inbound_signals": [
+                {"type": "api", "target": "/api/v1/graph/nodes", "method": "GET", "contract": "Unverified legacy nodes endpoint"},
+                {"type": "api", "target": "/api/v1/graph/edges", "method": "GET", "contract": "Unverified legacy edges endpoint"}
+            ],
+            "outbound_signals": [
+                {"type": "canvas_interaction", "target": "WebGL Context", "contract": "Pointer events"}
+            ],
+            "classification": "non_final",
+            "rationale": "Classified as superseded prototype. docs/IMPLEMENTATION_PLAN.md:120 mandates replacing legacy PIXI renderer with Sigma.js; fails design system conformance (pending exemption in design-system-pending.txt:14).",
+            "evidence_files": [
+                "frontend/src/pages/GraphPage.tsx:1-61",
+                "docs/IMPLEMENTATION_PLAN.md:115-135",
+                "frontend/design-system-pending.txt:14"
+            ],
+            "test_coverage": "frontend/src/pages/ModulePages.test.tsx"
+        },
+        {
+            "id": "planned_paths_stub",
+            "route": "/paths (stub)",
+            "title": "Planned Module",
+            "lead": "Notice",
+            "module": "paths",
+            "module_token": "--mod-paths",
+            "description": "Static fallback placeholder that is dynamically superseded by the real Pathfinder feature route.",
+            "primary_components": ["PlannedModuleMessage", "PlaceholderIcon"],
+            "inbound_signals": [],
+            "outbound_signals": [],
+            "classification": "non_final",
+            "rationale": "Classified as redirect/stub. Provided only as static fallback in registry.tsx:16; replaced dynamically at runtime by features/pathfinder/route.tsx.",
+            "evidence_files": [
+                "frontend/src/pages/ModulePages.tsx:15-20",
+                "frontend/src/routes/registry.tsx:16",
+                "frontend/src/routes/registry.tsx:43-46"
+            ],
+            "test_coverage": "frontend/src/routes/registry.test.tsx"
+        }
+    ],
+    "stores": [
+        {
+            "id": "postgres_bronze",
+            "name": "PostgreSQL Bronze Ingestion Store",
+            "type": "relational_db",
+            "role": "Raw, immutable capture of external scraped playlists and track items.",
+            "schema_or_format": "PostgreSQL bronze_scraped_playlists, bronze_scraped_tracks",
+            "physical_path": "Docker Volume pgdata (PostgreSQL port 5432)",
+            "lock_or_concurrency": "Transaction-scoped MVCC; unique constraints on (source, source_playlist_id)",
+            "source_of_truth": "Yes, for un-normalized raw source payloads.",
+            "evidence": "docs/DATA_LAYER.md:6-8; sql/migrations/001_initial_schema.sql"
+        },
+        {
+            "id": "postgres_silver",
+            "name": "PostgreSQL Silver Normalized Store",
+            "type": "relational_db",
+            "role": "Deduplicated, enriched tracks, verified sequential transitions (1..N), and provider consensus evidence.",
+            "schema_or_format": "PostgreSQL silver_enriched_tracks, silver_enriched_artists, silver_track_transitions, silver_track_metadata_evidence",
+            "physical_path": "Docker Volume pgdata (PostgreSQL port 5432)",
+            "lock_or_concurrency": "Row-level locks during Celery enrichment worker drain; idempotent by job_id",
+            "source_of_truth": "Yes, authoritative single source of truth for all verified track pairings and metadata consensus.",
+            "evidence": "docs/DATA_LAYER.md:9-17; services/rest_api/routers/catalog_reads.py:1-150"
+        },
+        {
+            "id": "postgres_gold_projection",
+            "name": "PostgreSQL Gold Projection Store",
+            "type": "relational_db",
+            "role": "Denormalized, read-optimized projection of tracks and transitions for fast API queries.",
+            "schema_or_format": "PostgreSQL projection_tracks, projection_transitions",
+            "physical_path": "Docker Volume pgdata (PostgreSQL port 5432)",
+            "lock_or_concurrency": "Maintained by projection_consume Celery worker; rebuildable from silver.",
+            "source_of_truth": "No, disposable derived projection.",
+            "evidence": "docs/DATA_LAYER.md:14-16; services/graph-projection/projection.py"
+        },
+        {
+            "id": "memgraph_gold_graph",
+            "name": "Memgraph Graph Database",
+            "type": "graph_db",
+            "role": "In-memory graph topology enabling sub-50ms Cypher queries for harmonic pathfinding and transition traversals.",
+            "schema_or_format": "Nodes: (:Track {id, title, artist, bpm, camelot, energy}); Edges: [:TRANSITIONS_TO {occurrences, weight}]",
+            "physical_path": "Docker container songnodes-memgraph (Bolt port 7687)",
+            "lock_or_concurrency": "Internal Memgraph Bolt transaction concurrency",
+            "source_of_truth": "No, projected from PostgreSQL silver transitions.",
+            "evidence": "docs/IMPLEMENTATION_PLAN.md:75-90; services/rest_api/routers/pathfinder.py:35-80"
+        },
+        {
+            "id": "redis_queue_cache",
+            "name": "Redis Broker, Lease & Telemetry Store",
+            "type": "in_memory_kv",
+            "role": "Celery job queue broker, worker lease management, rate-limiting counters, and real-time scraper window telemetry.",
+            "schema_or_format": "Redis keys: celery, job_leases:*, scraper_window:*, rate_limit:*",
+            "physical_path": "Docker container songnodes-redis (port 6379)",
+            "lock_or_concurrency": "Redis single-threaded atomic operations; TTL-backed leases",
+            "source_of_truth": "No, transient operational state.",
+            "evidence": "docs/DATA_LAYER.md:19-22; compose.dev.yaml:45-65"
+        },
+        {
+            "id": "musiclibrary_sqlite",
+            "name": "musicLibrary Curated SQLite Database",
+            "type": "sqlite_db",
+            "role": "Local offline curated DJ database holding crates, appearances, rotation history, and setlists.",
+            "schema_or_format": "SQLite: tracks, track_tags, appearances, chart_positions, rotation_history, sets, set_tracks",
+            "physical_path": "e:\\musicLibrary\\db\\dj_library.sqlite",
+            "lock_or_concurrency": "File-based SQLite locks; single-writer batch rebuild via pipeline/run_weekly.py db",
+            "source_of_truth": "Yes, authoritative for DJ crate assignments and High/Standard/Archive rotation lifecycle.",
+            "evidence": "e:\\musicLibrary\\README.md:25-29; e:\\musicLibrary\\pipeline\\run_weekly.py"
+        },
+        {
+            "id": "filesystem_ledgers_outputs",
+            "name": "Filesystem Ledger & Export Volumes",
+            "type": "filesystem",
+            "role": "Immutable weekly ledger snapshots, crate CSVs, Rekordbox XML exports, and static sync files.",
+            "schema_or_format": "TSV / CSV / XML (Rekordbox MusicLibrary XML schema) / JSON",
+            "physical_path": "e:\\musicLibrary\\ledger\\, e:\\musicLibrary\\outputs\\, frontend\\public\\data\\",
+            "lock_or_concurrency": "Atomic file rename/write operations",
+            "source_of_truth": "Yes, ledger is the permanent audit trail for weekly rotation calculations.",
+            "evidence": "e:\\musicLibrary\\README.md:32-42; e:\\musicLibrary\\outputs\\rekordbox_musicLibrary.xml"
+        },
+        {
+            "id": "client_browser_storage",
+            "name": "Client Browser LocalStorage & SessionStorage",
+            "type": "browser_kv",
+            "role": "Offline set outbox, active UI theme preference ('dark'|'light'|'booth'), and transient OAuth state.",
+            "schema_or_format": "JSON strings: songnodes_saved_sets, songnodes_theme, oauth_state",
+            "physical_path": "Browser Origin LocalStorage / SessionStorage",
+            "lock_or_concurrency": "Single-thread per tab; storage events across same-origin tabs",
+            "source_of_truth": "Yes, for un-synced offline draft setlists.",
+            "evidence": "frontend/src/features/musicLibrary/storage.ts:1-120; frontend/src/pages/SettingsPage.tsx"
+        }
+    ],
+    "signals": {
+        "client_storage": [
+            {"key": "songnodes_saved_sets", "storage": "localStorage", "producer": "SetBuilderPage.tsx:420", "consumer": "SetBuilderPage.tsx:112", "schema": "Record<string, SavedSet>"},
+            {"key": "songnodes_theme", "storage": "localStorage", "producer": "SettingsPage.tsx:850", "consumer": "tokens.js / index.html", "schema": "'dark' | 'light' | 'booth'"},
+            {"key": "oauth_state", "storage": "sessionStorage", "producer": "SettingsPage.tsx:920", "consumer": "OAuthCallback.tsx:35", "schema": "UUID string"}
+        ],
+        "inter_tab": [
+            {"channel": "window.postMessage", "producer": "OAuthCallback.tsx:65", "consumer": "SettingsPage.tsx:940", "payload": "{type: 'OAUTH_SUCCESS', service: 'tidal', token: string}"},
+            {"channel": "storage_event", "producer": "SetBuilderPage.tsx", "consumer": "LibraryPage.tsx", "payload": "Updated set count"}
+        ],
+        "file_io": [
+            {"format": ".csv", "mime": "text/csv", "producer": "exporters.ts:45", "guard": "OWASP formula guard (apostrophe on [=, +, -, @])", "destination": "songnodes-set-*.csv"},
+            {"format": ".m3u", "mime": "audio/x-mpegurl", "producer": "exporters.ts:95", "guard": "Extended M3U headers", "destination": "songnodes-set-*.m3u"},
+            {"format": ".json", "mime": "application/json", "producer": "exporters.ts:140", "guard": "songnodes.set/1.0.0 schema", "destination": "songnodes-set-*.json"},
+            {"format": ".xml", "mime": "text/xml", "producer": "musicLibrary/pipeline/run_weekly.py", "guard": "Rekordbox 6/7 XML collection schema", "destination": "outputs/rekordbox_musicLibrary.xml"}
+        ],
+        "network_endpoints": [
+            {"method": "GET", "path": "/api/v1/library/search", "handler": "services/rest_api/routers/library_search.py:25", "rate_limit": "None (Internal / Cached)"},
+            {"method": "POST", "path": "/api/v1/pathfinder/find-path", "handler": "services/rest_api/routers/pathfinder.py:45", "rate_limit": "20 req/min"},
+            {"method": "POST", "path": "/api/v1/tidal/sets/send", "handler": "services/rest_api/routers/tidal_playlists.py:80", "rate_limit": "5 req/min (TIDAL API rate guard)"},
+            {"method": "POST", "path": "/api/v1/tracks/import-tracklist", "handler": "services/rest_api/routers/catalog_writes.py:35", "rate_limit": "10 req/min"},
+            {"method": "GET", "path": "/api/v1/jobs", "handler": "services/rest_api/routers/jobs.py:30", "rate_limit": "Polled at 10s intervals"},
+            {"method": "GET", "path": "/api/v1/scrape/window", "handler": "services/rest_api/routers/scrape_window.py:20", "rate_limit": "Polled at 5s intervals"}
+        ]
+    },
+    "edges": [
+        {
+            "id": "edge_01",
+            "source": "Web Spiders (1001TL, MixesDB, NTS)",
+            "target": "Unified Scraper API",
+            "transport": "HTTP POST /scrape",
+            "contract": "RawScrapePayload (HTML / JSON)",
+            "frequency": "Triggered on-demand or periodic window",
+            "evidence": "scrapers/unified_scraper.py:45"
+        },
+        {
+            "id": "edge_02",
+            "source": "Unified Scraper API",
+            "target": "PostgreSQL Bronze Layer",
+            "transport": "SQL INSERT",
+            "contract": "bronze_scraped_playlists, bronze_scraped_tracks",
+            "frequency": "Batch commit per scraped playlist",
+            "evidence": "services/rest_api/routers/catalog_writes.py:55"
+        },
+        {
+            "id": "edge_03",
+            "source": "PostgreSQL Bronze Layer",
+            "target": "Celery Ingestion Worker",
+            "transport": "PostgreSQL poll / Redis Celery task",
+            "contract": "ingest_pending {limit: 100}",
+            "frequency": "Every 60 seconds recurring",
+            "evidence": "docs/DATA_LAYER.md:48; services/worker/tasks.py:110"
+        },
+        {
+            "id": "edge_04",
+            "source": "Celery Ingestion Worker",
+            "target": "PostgreSQL Silver Layer",
+            "transport": "SQL UPSERT transaction",
+            "contract": "silver_enriched_tracks, silver_track_transitions (positions 1..N)",
+            "frequency": "Per completed playlist ingest",
+            "evidence": "services/common/datalayer/ingest.py:120-180"
+        },
+        {
+            "id": "edge_05",
+            "source": "PostgreSQL Silver Layer",
+            "target": "Metadata Enrichment Waterfall",
+            "transport": "Redis task 'enrichment_backfill'",
+            "contract": "TrackEnrichmentRequest {track_id, artist, title}",
+            "frequency": "Continuous worker drain with 7-day cooldown",
+            "evidence": "services/metadata-enrichment/pipeline.py:85"
+        },
+        {
+            "id": "edge_06",
+            "source": "Metadata Enrichment Waterfall",
+            "target": "Local MusicBrainz DB (ref_mb)",
+            "transport": "SQLite / Local SQL Query",
+            "contract": "mb_release_info {isrc, date, genre}",
+            "frequency": "Step 1 of waterfall",
+            "evidence": "services/reference_data/musicbrainz.py:40"
+        },
+        {
+            "id": "edge_07",
+            "source": "Metadata Enrichment Waterfall",
+            "target": "TIDAL v2 REST API",
+            "transport": "HTTPS REST Bearer Token",
+            "contract": "TidalTrackResponse {bpm, key, isrc, duration}",
+            "frequency": "Step 2 of waterfall (cached, rate guarded)",
+            "evidence": "services/metadata-enrichment/providers/tidal.py:65"
+        },
+        {
+            "id": "edge_08",
+            "source": "Metadata Enrichment Waterfall",
+            "target": "Deezer Public API",
+            "transport": "HTTPS REST",
+            "contract": "DeezerTrackResponse {bpm, duration, preview}",
+            "frequency": "Step 3 of waterfall",
+            "evidence": "services/metadata-enrichment/providers/deezer.py:50"
+        },
+        {
+            "id": "edge_09",
+            "source": "Metadata Enrichment Waterfall",
+            "target": "PostgreSQL Silver Metadata Evidence",
+            "transport": "SQL INSERT snapshot",
+            "contract": "silver_track_metadata_evidence (immutable snapshots)",
+            "frequency": "Per provider response",
+            "evidence": "docs/DATA_LAYER.md:36; services/common/datalayer/evidence.py:45"
+        },
+        {
+            "id": "edge_10",
+            "source": "PostgreSQL Silver Layer",
+            "target": "PostgreSQL Gold Projection",
+            "transport": "Celery task 'projection_consume'",
+            "contract": "projection_tracks (denormalized fast read table)",
+            "frequency": "Every 15 seconds recurring",
+            "evidence": "docs/DATA_LAYER.md:52; services/worker/tasks.py:145"
+        },
+        {
+            "id": "edge_11",
+            "source": "PostgreSQL Silver Layer",
+            "target": "Memgraph Graph Database",
+            "transport": "Bolt Protocol Cypher MERGE",
+            "contract": "MERGE (:Track)-[:TRANSITIONS_TO]->(:Track)",
+            "frequency": "Batched post-ingest projection",
+            "evidence": "services/graph-projection/memgraph_syncer.py:75"
+        },
+        {
+            "id": "edge_12",
+            "source": "PostgreSQL Gold / Silver",
+            "target": "FastAPI REST API Service",
+            "transport": "asyncpg connection pool",
+            "contract": "Pydantic Models (TrackResponse, SetlistResponse)",
+            "frequency": "Per client HTTP request",
+            "evidence": "services/rest_api/main.py:10-30; services/rest_api/routers/catalog_reads.py"
+        },
+        {
+            "id": "edge_13",
+            "source": "FastAPI REST API",
+            "target": "React Frontend (LibraryPage.tsx)",
+            "transport": "HTTP GET /api/v1/library/search",
+            "contract": "LibrarySearchResponse JSON",
+            "frequency": "User navigation & search filter inputs",
+            "evidence": "frontend/src/features/musicLibrary/LibraryPage.tsx:75"
+        },
+        {
+            "id": "edge_14",
+            "source": "React Frontend (SetBuilderPage.tsx)",
+            "target": "Browser LocalStorage",
+            "transport": "Direct DOM Storage API",
+            "contract": "songnodes_saved_sets (JSON)",
+            "frequency": "Immediate on track drop, slot reorder, or save click",
+            "evidence": "frontend/src/features/musicLibrary/SetBuilderPage.tsx:425"
+        },
+        {
+            "id": "edge_15",
+            "source": "React Frontend (SetBuilderPage.tsx)",
+            "target": "FastAPI REST API (/api/v1/tidal/sets/send)",
+            "transport": "HTTP POST",
+            "contract": "TidalSetSendRequest {setName, trackIds, isrcs}",
+            "frequency": "Explicit user action 'Send to TIDAL'",
+            "evidence": "frontend/src/features/setBuilder/sendToTidal.ts:35"
+        },
+        {
+            "id": "edge_16",
+            "source": "FastAPI REST API",
+            "target": "TIDAL Developer API",
+            "transport": "HTTPS POST /v1/users/{id}/playlists",
+            "contract": "TidalPlaylistCreateResponse",
+            "frequency": "On set delivery request",
+            "evidence": "services/rest_api/routers/tidal_playlists.py:110"
+        },
+        {
+            "id": "edge_17",
+            "source": "React Frontend (PathfinderPage.tsx)",
+            "target": "FastAPI REST API (/api/v1/pathfinder/find-path)",
+            "transport": "HTTP POST",
+            "contract": "PathfinderRequest {startId, endId, maxHops}",
+            "frequency": "Explicit user route find trigger",
+            "evidence": "frontend/src/features/pathfinder/PathfinderPage.tsx:120"
+        },
+        {
+            "id": "edge_18",
+            "source": "FastAPI REST API",
+            "target": "Memgraph Bolt Endpoint",
+            "transport": "Neo4j Python Driver Bolt query",
+            "contract": "MATCH p = shortestPath((a)-[:TRANSITIONS_TO*]-(b))",
+            "frequency": "Per pathfinder query",
+            "evidence": "services/rest_api/routers/pathfinder.py:65"
+        },
+        {
+            "id": "edge_19",
+            "source": "React Frontend (ScraperProgressPage.tsx)",
+            "target": "FastAPI REST API (/api/v1/jobs)",
+            "transport": "HTTP GET (10s polling interval)",
+            "contract": "JobListResponse",
+            "frequency": "While /pipeline view is mounted",
+            "evidence": "frontend/src/features/pipeline/usePipelineTelemetry.ts:45"
+        },
+        {
+            "id": "edge_20",
+            "source": "musicLibrary Weekly Script",
+            "target": "PBS / 3RRR / TripleJ Radio Feeds",
+            "transport": "HTTPS GET (Airnet REST / HTML)",
+            "contract": "Raw Radio Episode Playlist",
+            "frequency": "Scheduled weekly (Sunday 7:37am)",
+            "evidence": "e:\\musicLibrary\\README.md:52-62; pipeline/run_weekly.py"
+        },
+        {
+            "id": "edge_21",
+            "source": "musicLibrary Weekly Script",
+            "target": "musicLibrary SQLite (dj_library.sqlite)",
+            "transport": "sqlite3 Python connection",
+            "contract": "Full ledger rebuild into tracks, appearances, crates",
+            "frequency": "Weekly post-process step 'db'",
+            "evidence": "e:\\musicLibrary\\README.md:25-29; pipeline/run_weekly.py"
+        },
+        {
+            "id": "edge_22",
+            "source": "musicLibrary Weekly Script",
+            "target": "Rekordbox XML File",
+            "transport": "Filesystem write",
+            "contract": "outputs/rekordbox_musicLibrary.xml (DJ software import format)",
+            "frequency": "Weekly post-process step 'process'",
+            "evidence": "e:\\musicLibrary\\README.md:37; outputs/rekordbox_musicLibrary.xml"
+        },
+        {
+            "id": "edge_23",
+            "source": "musicLibrary Weekly Script",
+            "target": "SongNodes Static Library Bridge",
+            "transport": "Filesystem copy via sync-music-library.sh",
+            "contract": "outputs/artifact/library.json -> frontend/public/data/music-library.json",
+            "frequency": "Manual / scripted after weekly run",
+            "evidence": "e:\\musicLibrary\\README.md:47; scripts/sync-music-library.sh"
+        },
+        {
+            "id": "edge_24",
+            "source": "React Frontend (TargetTracksManager.tsx)",
+            "target": "FastAPI REST API (/api/v1/target-tracks)",
+            "transport": "HTTP POST",
+            "contract": "TargetTrackCreate {artist, title, priority, search_terms}",
+            "frequency": "Curator addition of priority artists",
+            "evidence": "frontend/src/components/TargetTracksManager.tsx:140"
+        },
+        {
+            "id": "edge_25",
+            "source": "FastAPI REST API",
+            "target": "PostgreSQL target_tracks Table",
+            "transport": "SQL INSERT ON CONFLICT DO NOTHING",
+            "contract": "PostgreSQL target_tracks (migration 280)",
+            "frequency": "Per target addition",
+            "evidence": "services/rest_api/routers/target_tracks.py:75"
+        },
+        {
+            "id": "edge_26",
+            "source": "FastAPI REST API (target_scrape.py)",
+            "target": "Unified Scraper API",
+            "transport": "HTTP POST /scrape",
+            "contract": "ScrapeJobRequest {search_query: 'Artist - Title', source: '1001tracklists|mixesdb'}",
+            "frequency": "Triggered when target queue is drained",
+            "evidence": "STATUS.md:2559; services/worker/target_scrape.py:60"
+        }
+    ],
+    "personas": [
+        {
+            "id": "persona_selector",
+            "role": "Performing DJ / Live Selector",
+            "objective": "Design harmonically locked, energy-curved DJ setlists with proven track pairings, exportable to USB / Rekordbox / TIDAL.",
+            "routine": "Opens /sets or /library on Friday afternoon before weekend gigs; reviews freshly scraped high-rotation crates; constructs 2-hour wave curve.",
+            "progression": [
+                {"step": 1, "page": "/ (Home)", "action": "Review latest library track count and freshness stamp", "trigger": "Initial login / load"},
+                {"step": 2, "page": "/library", "action": "Filter by 'High Rotation' and energy tier 'Building (5-7)'", "trigger": "Click 'Explore Library' tile"},
+                {"step": 3, "page": "/library", "action": "Audition 30s preview snippets; click 'Add to Set'", "trigger": "Audio player preview / Add action"},
+                {"step": 4, "page": "/sets", "action": "Drag track into Slot N; inspect Camelot compatibility badge (SN.compat)", "trigger": "Navigate to Set Builder"},
+                {"step": 5, "page": "/paths", "action": "Stuck bridging between 8A (124 BPM) and 3B (128 BPM); query pathfinder for 2-step harmonic bridge", "trigger": "Click 'Find Bridge' on slot"},
+                {"step": 6, "page": "/sets", "action": "Accept suggested bridge; click 'Export Set' -> choose Rekordbox XML and TIDAL playlist", "trigger": "Click 'Export' button"}
+            ],
+            "transition_triggers": "User track drag-and-drop, audio audition play/pause, 'Send to TIDAL' toggle switch, 'Export' modal submit.",
+            "data_handoff": "JSON payload to /api/v1/tidal/sets/send; songnodes-set-*.csv with OWASP injection guard; extended M3U file.",
+            "failure_modes": [
+                {"mode": "Backend API unreachable", "fallback": "Dual persistence saves draft set directly to browser LocalStorage (songnodes_saved_sets); shows offline warning toast."},
+                {"mode": "Missing audio preview snippet", "fallback": "Displays honest en dash (sn-none) with no audio playback; does not fabricate audio."},
+                {"mode": "Track missing local audio file path", "fallback": "Rekordbox XML export skips unlinked tracks and alerts selector with detailed missing-files list."}
+            ]
+        },
+        {
+            "id": "persona_librarian",
+            "role": "Music Curator / Track Librarian",
+            "objective": "Maintain metadata accuracy, curate High/Standard/Archive rotation lifecycles, and resolve multi-provider discrepancies.",
+            "routine": "Runs weekly ingestion review on Sunday morning; checks review_queue.csv; inspects uncalibrated tracks in /library.",
+            "progression": [
+                {"step": 1, "page": "/library", "action": "Filter tracks by 'Review Needed' or 'Uncalibrated Energy'", "trigger": "Curator review session"},
+                {"step": 2, "page": "/library", "action": "Open Track Detail modal; compare TIDAL, Deezer, and MusicBrainz metadata evidence", "trigger": "Click track row"},
+                {"step": 3, "page": "/harmony", "action": "Verify Camelot key modulation and pitch shifts against Camelot wheel", "trigger": "Click 'Inspect Harmony' link"},
+                {"step": 4, "page": "overrides/energy_overrides.csv", "action": "Commit manual override for energy, pillar, or rotation lock", "trigger": "Curator verification"},
+                {"step": 5, "page": "/sources/targets", "action": "Promote key artist to priority scraper queue", "trigger": "Click 'Set as Scraper Target'"}
+            ],
+            "transition_triggers": "Batch ingestion finish, review queue threshold, user manual edit.",
+            "data_handoff": "Row in overrides/energy_overrides.csv; HTTP POST to /api/v1/target-tracks; SQLite ledger update.",
+            "failure_modes": [
+                {"mode": "Conflicting BPM from TIDAL vs Deezer (e.g. 124 vs 62)", "fallback": "System flags track into review_queue.csv with reason 'bpm_conflict'; does not guess."},
+                {"mode": "Duplicate artist variations (e.g. 'Bicep' vs 'Bicep (UK)')", "fallback": "Curator routes pair to er_shadow queue for human-approved reversible merge."}
+            ]
+        },
+        {
+            "id": "persona_data_engineer",
+            "role": "Data Pipeline & Scraper Engineer",
+            "objective": "Maintain scraper fleet reliability (1001Tracklists, MixesDB, NTS), ensure complete playlist ingestion (1..N), and monitor worker health.",
+            "routine": "Monitors /pipeline telemetry dashboard; watches scraper window completion; revives dead-letter Celery jobs.",
+            "progression": [
+                {"step": 1, "page": "/pipeline", "action": "Review scrape window status and active Celery worker count", "trigger": "Daily pipeline check"},
+                {"step": 2, "page": "/pipeline", "action": "Inspect Dead-Letter Queue (DLQ) for failed scrape jobs", "trigger": "DLQ count > 0"},
+                {"step": 3, "page": "/pipeline", "action": "Examine job error traces (e.g. Playwright timeout, Cloudflare 403); click 'Retry Job'", "trigger": "Click Revive / Retry"},
+                {"step": 4, "page": "/sources/targets", "action": "Inspect active search targets; verify playlists_found count is updating", "trigger": "Navigate to Targets"},
+                {"step": 5, "page": "/sources/import", "action": "Manually ingest missing DJ setlist via OCR / plaintext parser", "trigger": "Unscraped priority gig"}
+            ],
+            "transition_triggers": "Scraper cron schedule (Sunday 7:37am), dead-letter alert, target addition.",
+            "data_handoff": "Bronze ingestion JSON (bronze_scraped_playlists); Celery task execution payload; HTTP 202 Accepted.",
+            "failure_modes": [
+                {"mode": "1001Tracklists bot-detection / Cloudflare challenge", "fallback": "Worker marks job 'failed' with error detail; logs backoff cooldown; scraper orchestrator falls back to MixesDB."},
+                {"mode": "Incomplete playlist scraped (missing position in 1..N)", "fallback": "Ingest validator rejects entire playlist with 'completeness_error'; no partial transition edges created."}
+            ]
+        },
+        {
+            "id": "persona_resolution_specialist",
+            "role": "Entity Resolution & Consensus Specialist",
+            "objective": "Reconcile duplicate tracks and artists across heterogeneous providers without destroying legacy identifiers.",
+            "routine": "Audits /api/v1/metadata/review and er_shadow scoring results; executes entity merges with full audit trail.",
+            "progression": [
+                {"step": 1, "page": "/settings", "action": "Verify upstream API credentials (MusicBrainz, TIDAL, Deezer, Discogs, Last.fm)", "trigger": "Weekly configuration audit"},
+                {"step": 2, "page": "/api/v1/metadata/review", "action": "Examine tracks with competing provider metadata snapshots", "trigger": "Review queue batch"},
+                {"step": 3, "page": "/api/v1/tracks/{id}/merge", "action": "Execute reversible merge of duplicate track into canonical ID", "trigger": "Confirm match score > 0.95"},
+                {"step": 4, "page": "/pipeline", "action": "Trigger projection_rebuild to propagate merged entity to gold layer", "trigger": "Post-merge reconciliation"}
+            ],
+            "transition_triggers": "er_shadow batch completion, provider evidence conflict event.",
+            "data_handoff": "entity_redirects mapping; silver_track_metadata_evidence legacy snapshot.",
+            "failure_modes": [
+                {"mode": "Provider API downtime or rate limit (HTTP 429)", "fallback": "Provider marked degraded; exponential backoff applied; fallback to next provider in waterfall."},
+                {"mode": "Erroneous merge executed", "fallback": "Specialist calls POST /api/v1/merges/{id}/revert; entity_redirects unlinked; original silver entities restored."}
+            ]
+        },
+        {
+            "id": "persona_devops",
+            "role": "Platform & Infrastructure Administrator",
+            "objective": "Ensure high availability of PostgreSQL, Redis, Memgraph, Celery workers, and Docker services.",
+            "routine": "Checks container health metrics, disk volume usage on E:\\DockerData, and database migration alignment.",
+            "progression": [
+                {"step": 1, "page": "/settings", "action": "Review live system health matrix and database connectivity", "trigger": "Platform morning check"},
+                {"step": 2, "page": "/pipeline", "action": "Inspect outbox consumer lag and Redis lease expirations", "trigger": "Navigate to pipeline"},
+                {"step": 3, "page": "Terminal (Docker CLI)", "action": "Inspect container resource utilisation (docker compose ps, stats)", "trigger": "Lag alert"},
+                {"step": 4, "page": "Terminal (migrate.py)", "action": "Execute 'python migrate.py --check' to verify PostgreSQL schema migrations", "trigger": "Post-deployment validation"}
+            ],
+            "transition_triggers": "Container crash restart, Prometheus health alert, deployment release.",
+            "data_handoff": "HealthCheckResponse JSON; Docker logs; Prometheus metrics.",
+            "failure_modes": [
+                {"mode": "PostgreSQL connection pool exhausted", "fallback": "asyncpg connection pool recycles idle connections; REST API returns honest 503 code: database_unavailable."},
+                {"mode": "Memgraph out of memory during graph projection", "fallback": "Worker retries projection with batched sub-graphs; limits projection window to active library tracks."}
+            ]
+        }
+    ],
+    "production_audit": [
+        {
+            "page": "HomePage.tsx (/)",
+            "category": "Production-level",
+            "status": "Operational",
+            "signals": ["Static entry route in registry.tsx:14", "Full Design System AppShell and SN token integration"],
+            "rationale": "Everyday operational dashboard and launcher; provides real-time system stats and module navigation."
+        },
+        {
+            "page": "LibraryPage.tsx (/library)",
+            "category": "Production-level",
+            "status": "Operational",
+            "signals": ["Dynamic feature route in musicLibrary/route.tsx:9", "Live API search integration via /api/v1/library/search"],
+            "rationale": "Primary track curation and crate exploration interface; includes audio preview and scraper target dispatch."
+        },
+        {
+            "page": "SetBuilderPage.tsx (/sets)",
+            "category": "Production-level",
+            "status": "Operational",
+            "signals": ["Registered feature route in musicLibrary/route.tsx:10", "Dual persistence (LocalStorage outbox + PostgreSQL)"],
+            "rationale": "Core DJ operational tool for harmonic set building, energy waveform shaping, and multi-format export."
+        },
+        {
+            "page": "PathfinderPage.tsx (/paths)",
+            "category": "Production-level",
+            "status": "Operational",
+            "signals": ["Discovered dynamically via features/pathfinder/route.tsx:4", "Live Memgraph shortest-path Cypher query wiring"],
+            "rationale": "Graph-based transition route finder connecting start and destination tracks through verified DJ pairings."
+        },
+        {
+            "page": "CamelotPage.tsx (/harmony)",
+            "category": "Production-level",
+            "status": "Operational",
+            "signals": ["Registered via features/camelot/route.tsx:6", "Interactive Camelot wheel mathematics (SN.camelot)"],
+            "rationale": "Harmonic transition explorer mapping musical key compatibility and pitch modulation rules."
+        },
+        {
+            "page": "TargetTracksManager.tsx (/sources/targets)",
+            "category": "Production-level",
+            "status": "Operational",
+            "signals": ["Static route in registry.tsx:18", "PostgreSQL migration 280 target queue CRUD"],
+            "rationale": "Operational scraper target manager controlling priority artist discovery and deduplication."
+        },
+        {
+            "page": "AISetlistsPage.tsx (/sources/import)",
+            "category": "Production-level",
+            "status": "Operational",
+            "signals": ["Feature route in features/aiSetlists/route.tsx:6", "Direct Bronze layer ingestion (/api/v1/tracks/import-tracklist)"],
+            "rationale": "AI-assisted tracklist ingestion tool enforcing strict 1..N sequential completeness checks."
+        },
+        {
+            "page": "ScraperProgressPage.tsx (/pipeline)",
+            "category": "Production-level",
+            "status": "Operational",
+            "signals": ["Static route in registry.tsx:19", "Real-time Celery queue telemetry and dead-letter revival"],
+            "rationale": "Mission-critical pipeline monitoring and scraper fleet management console."
+        },
+        {
+            "page": "SettingsPage.tsx (/settings)",
+            "category": "Production-level",
+            "status": "Operational",
+            "signals": ["Static route in registry.tsx:20-21", "Secure server-side credential management (SEC6)"],
+            "rationale": "Production administrative console for API keys, OAuth tokens (TIDAL/Spotify), and theme preferences."
+        },
+        {
+            "page": "NotFoundPage (*)",
+            "category": "Production-level",
+            "status": "Operational",
+            "signals": ["Wildcard catch-all route in registry.tsx:22", "Design System compliant honest empty state"],
+            "rationale": "System-wide 404 error boundary preventing application crashes on invalid navigation."
+        },
+        {
+            "page": "GraphPage.tsx (/graph)",
+            "category": "Non-final (Superseded Prototype)",
+            "status": "Slated for Replacement",
+            "signals": ["docs/IMPLEMENTATION_PLAN.md:120 mandates Sigma.js replacement", "Design system exemption in design-system-pending.txt:14"],
+            "rationale": "Legacy PIXI/Canvas transition graph visualizer; unverified API contract; slated for Milestone 6 replacement."
+        },
+        {
+            "page": "PlannedModulePage (/paths stub)",
+            "category": "Non-final (Redirect/Stub)",
+            "status": "Superseded at Runtime",
+            "signals": ["Defined as static placeholder in ModulePages.tsx:15", "Overwritten at runtime by getAppRoutes() registry"],
+            "rationale": "Static placeholder stub replaced dynamically when the Pathfinder feature module is discovered."
+        }
+    ],
+    "gaps": [
+        {
+            "id": "GAP-01",
+            "title": "Disconnected Rekordbox Booth Performance Feedback Loop",
+            "severity": "High",
+            "domain": "Floor Execution -> Silver Ingestion",
+            "current_state": "Sets are exported to Rekordbox XML (outputs/rekordbox_musicLibrary.xml), but actual live DJ booth history (played order, timestamps, crowd reactions) remains trapped on USB drives / HISTORY.m3u8 and never returns to SongNodes.",
+            "consequence": "Live transitions performed at gigs do not increment occurrence_count in silver_track_transitions; rotation aging algorithms cannot observe real play history.",
+            "proposed_fix": "Implement Pioneer USB Booth History Ingester (services/library/booth_history.py + /sets/history view) that parses Pioneer HISTORY.m3u8 files, updates track play history, and commits verified live transitions into silver_track_transitions.",
+            "contract": "BoothHistoryIngestContract {m3u8_content, venue_name, set_date, transitions: [{from_id, to_id, played_at}]}",
+            "evidence": "e:\\musicLibrary\\README.md:37; docs/DATA_LAYER.md:9-11"
+        },
+        {
+            "id": "GAP-02",
+            "title": "Dual Storage Disconnect (PostgreSQL library.* vs SQLite dj_library.sqlite)",
+            "severity": "High",
+            "domain": "Storage Architecture & Curation",
+            "current_state": "The weekly pipeline writes to SQLite (dj_library.sqlite), while the SongNodes web application writes to PostgreSQL schema library.*. The sync script only copies a static JSON file (data/music-library.json).",
+            "consequence": "Curator tag edits or crate adjustments made in the web UI do not propagate back to the weekly SQLite ledger, leading to split-brain library state.",
+            "proposed_fix": "Deploy Bi-Directional Library Synchronization Bridge (services/library/bridge.py) with checksum reconciliation and single-writer lease enforcement.",
+            "contract": "LibrarySyncContract {version, checksum_sha256, last_reconciled_at, changes: [{table, action, key, data}]}",
+            "evidence": "e:\\musicLibrary\\README.md:47; services/rest_api/routers/catalog_writes.py"
+        },
+        {
+            "id": "GAP-03",
+            "title": "Missing Audio Fingerprint & AcoustID Transition Segmenter",
+            "severity": "Medium",
+            "domain": "Audio Telemetry & Verification",
+            "current_state": "Pairing transitions rely exclusively on scraped textual tracklists (1001Tracklists, MixesDB). Recorded DJ audio mixes cannot be automatically segmented or verified against audio fingerprints.",
+            "consequence": "Un-tracklisted DJ sets and radio broadcasts cannot be mined for transitions; track version mismatches (e.g. Dub Mix vs Vocal Mix) cannot be validated by audio waveform.",
+            "proposed_fix": "Deploy Essentia / Chromaprint Audio Segmenter worker (services/audio-analysis/segmenter.py) that ingests recorded audio mixes, detects transition crossfades, and queries AcoustID for automated setlist synthesis.",
+            "contract": "AudioMixSegmentContract {audio_url, duration, segments: [{start_sec, end_sec, chromaprint, acoustid_match}]}",
+            "evidence": "docs/IMPLEMENTATION_PLAN.md:210-230; services/audio-analysis/"
+        },
+        {
+            "id": "GAP-04",
+            "title": "Unwired Scraper Target Queue Feedback",
+            "severity": "Medium",
+            "domain": "Demand Ingestion -> Unified Scrapers",
+            "current_state": "When a curator adds an artist target in /library or /sources/targets, it writes to target_tracks in PostgreSQL. However, the standalone musicLibrary pipeline reads static config/sources.json and does not poll this queue.",
+            "consequence": "High-priority targets added by the user remain dormant until manually scraped, creating an operational bottleneck.",
+            "proposed_fix": "Wire automated target dispatcher cron that syncs PostgreSQL target_tracks directly into the weekly scraper schedule.",
+            "contract": "TargetScrapeSyncContract {target_id, artist_name, priority, source_allowlist}",
+            "evidence": "STATUS.md:2478; e:\\musicLibrary\\config\\sources.json"
+        },
+        {
+            "id": "GAP-05",
+            "title": "Outbox Projection Lag Invisibility",
+            "severity": "Low",
+            "domain": "Pipeline Telemetry -> User Interface",
+            "current_state": "Graph projection (projection_consume) polls PostgreSQL outbox every 15 seconds. During bulk scraping, projection lags behind silver ingestion with no real-time push notification to the UI.",
+            "consequence": "Users browsing /library or /paths see stale transition data without an indicator that background projection is currently catching up.",
+            "proposed_fix": "Add WebSocket or Server-Sent Events (SSE) notification stream on /api/v1/outbox/status that broadcasts active projection lag and displays a non-intrusive FreshnessStamp pill.",
+            "contract": "ProjectionLagEvent {consumer_lag_seconds, pending_events_count, is_rebuilding}",
+            "evidence": "docs/DATA_LAYER.md:65; services/rest_api/routers/jobs.py"
+        }
+    ],
+    "sister_tasks": [
+        {
+            "project": "musicLibrary",
+            "task_id": "ML-TASK-01",
+            "title": "Implement Booth History Ingestion for Pioneer Rekordbox HISTORY.m3u8",
+            "files": ["e:\\musicLibrary\\pipeline\\run_weekly.py", "e:\\musicLibrary\\pipeline\\ingest_booth.py"],
+            "dependencies": ["outputs/rekordbox_musicLibrary.xml"],
+            "impact": "Closes Gap 01 by harvesting live performance setlists from USB drives, updating rotation decay, and writing verified transitions to SongNodes.",
+            "verification": "python3 pipeline/run_weekly.py ingest-booth --file sample_history.m3u8 parses order and outputs valid transition pairs."
+        },
+        {
+            "project": "musicLibrary",
+            "task_id": "ML-TASK-02",
+            "title": "Bi-Directional PostgreSQL Library Synchronizer",
+            "files": ["e:\\musicLibrary\\pipeline\\sync_songnodes.py", "scripts/sync-music-library.sh"],
+            "dependencies": ["services/rest_api/routers/library_ingest.py"],
+            "impact": "Closes Gap 02 by enabling automated two-way synchronization between dj_library.sqlite and PostgreSQL library.* schema.",
+            "verification": "Run sync_songnodes.py; verify checksum equality between SQLite tracks and PostgreSQL library.tracks."
+        },
+        {
+            "project": "musicLibrary",
+            "task_id": "ML-TASK-03",
+            "title": "Target Scrape Queue Ingestion Integration",
+            "files": ["e:\\musicLibrary\\pipeline\\run_weekly.py", "e:\\musicLibrary\\config\\sources.json"],
+            "dependencies": ["SongNodes REST API /api/v1/target-tracks"],
+            "impact": "Closes Gap 04 by pulling priority target tracks from SongNodes into the Sunday morning scrape batch.",
+            "verification": "Weekly run fetches target_tracks list and appends to weekly spider targets."
+        },
+        {
+            "project": "musicLibrary",
+            "task_id": "ML-TASK-04",
+            "title": "Formula Guard Enforcement on All Crate CSV Exports",
+            "files": ["e:\\musicLibrary\\pipeline\\process.py", "e:\\musicLibrary\\outputs\\crates\\"],
+            "dependencies": ["design-system/15-print-export.md"],
+            "impact": "Guarantees OWASP CSV injection protection by prepending apostrophes to text cells starting with =, +, -, @ across all weekly CSV exports.",
+            "verification": "Inspect generated outputs/crates/*.csv; verify malicious prefixes are guarded."
+        },
+        {
+            "project": "musicLibrary",
+            "task_id": "ML-TASK-05",
+            "title": "Design System Token Alignment on Standalone Set Builder Artifact",
+            "files": ["e:\\musicLibrary\\artifact\\index.html"],
+            "dependencies": ["design-system/tokens.css", "design-system/components/bundle.css"],
+            "impact": "Eliminates legacy hardcoded CSS in artifact/index.html; replaces with exact SongNodes Design System v1.4.0 tokens.",
+            "verification": "Visual regression check; run token audit script to ensure 0 undeclared hex/font literals."
+        },
+        {
+            "project": "musicLibrary",
+            "task_id": "ML-TASK-06",
+            "title": "Automated Audio Preview Snippet Linker",
+            "files": ["e:\\musicLibrary\\pipeline\\resolve.py"],
+            "dependencies": ["Deezer API / TIDAL API"],
+            "impact": "Resolves and stores 30s audio preview URLs directly into dj_library.sqlite to enable offline auditioning in Naarm Set Builder.",
+            "verification": "Query SQLite: SELECT preview_url FROM tracks WHERE preview_url IS NOT NULL returns valid CDN links."
+        }
+    ],
+    "proposed_modules": [
+        {
+            "id": "MOD-01",
+            "name": "Booth History Ingester",
+            "target_users": ["Performing DJ", "Music Curator"],
+            "verb": "Harvest",
+            "lines_of_code": 340,
+            "data_inputs": ["Pioneer DJ HISTORY.m3u8", "Rekordbox USB play history", "Venue metadata"],
+            "core_operation": "Parses sequential timestamps from Pioneer booth exports, matches track titles against silver_enriched_tracks, increments rotation counters, and commits live transitions into silver_track_transitions."
+        },
+        {
+            "id": "MOD-02",
+            "name": "Realtime Graph Outbox Daemon",
+            "target_users": ["Platform Admin", "Graph Specialist"],
+            "verb": "Stream",
+            "lines_of_code": 280,
+            "data_inputs": ["PostgreSQL LISTEN/NOTIFY events on silver_track_transitions", "Memgraph Bolt connection"],
+            "core_operation": "Replaces 15-second polling projection with sub-second event-driven Bolt synchronization directly updating Memgraph nodes and transition edges."
+        },
+        {
+            "id": "MOD-03",
+            "name": "Bi-Directional Library Bridge",
+            "target_users": ["Curator", "Data Pipeline Engineer"],
+            "verb": "Reconcile",
+            "lines_of_code": 410,
+            "data_inputs": ["PostgreSQL library.* schema", "SQLite dj_library.sqlite", "music-library.json"],
+            "core_operation": "Enforces single-writer locks, compares table checksums, bi-directionally syncs crate memberships and user tags, and exports fresh static JSON."
+        },
+        {
+            "id": "MOD-04",
+            "name": "Audio Preview Stream Caching Proxy",
+            "target_users": ["Performing DJ", "Selector"],
+            "verb": "Cache",
+            "lines_of_code": 290,
+            "data_inputs": ["Deezer / TIDAL 30s preview stream URLs", "Local disk volume /var/songnodes/audio"],
+            "core_operation": "Downloads and caches 30-second audio preview snippets locally, generates waveform peak JSON arrays, and streams audio offline with zero external network latency."
+        }
+    ]
+}
+
+os.makedirs("documentation/data-flow-analysis", exist_ok=True)
+with open("documentation/data-flow-analysis/findings.json", "w", encoding="utf-8") as f:
+    json.dump(findings, f, indent=2)
+
+print("Saved documentation/data-flow-analysis/findings.json successfully.")

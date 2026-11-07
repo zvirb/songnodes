@@ -209,6 +209,16 @@ services:
       timeout: 5s
       retries: 6
 
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: songnodes-cloudflared
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN:-}
+    depends_on:
+      frontend: { condition: service_healthy }
+
 volumes:
   dev-postgres:
   dev-postgres-18:

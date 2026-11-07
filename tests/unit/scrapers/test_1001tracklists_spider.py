@@ -369,3 +369,11 @@ class Test1001TracklistsSpider:
         assert tracks['Strobe (Kaskade Remix)']['is_remix'] is True
         assert tracks['Strobe (Kaskade Remix)']['is_mashup'] is False
         assert tracks['Opus vs. Strobe']['is_mashup'] is True
+
+    def test_search_query_sets_force_run(self):
+        spider = OneThousandOneTracklistsSpider(search_query="Deadmau5 Strobe")
+        assert spider.force_run is True
+
+    def test_targeted_mode_sets_force_run(self):
+        spider = OneThousandOneTracklistsSpider(search_mode="targeted")
+        assert spider.force_run is True
