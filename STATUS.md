@@ -2944,3 +2944,10 @@ One job: replace the pipeline review-queue placeholder with the real count endpo
 Owned paths: frontend/src/pages/ScraperProgressPage.tsx and ScraperProgressPage.test.tsx, STATUS.md CIC07 slot.
 Changed to GET /library/review-queue/count and render only a non-negative integer count, including zero; missing response stays an en dash. Removed hardcoded 413. Passed TypeScript and 11 focused component tests. Follow-up: pipeline smoke expectations and reviewed Linux visual baselines remain separate packages.
 <!-- SLOT:CIC07 END -->
+
+<!-- SLOT:CIC08 BEGIN -->
+## CIC08 — started 2026-11-07
+One job: align the pipeline route smoke test with the intentional Health page.
+Owned paths: frontend/tests/e2e/routes.smoke.spec.ts, STATUS.md CIC08 slot.
+Changed smoke test to assert Health heading, four named summary tiles, retained sections, current run-empty text and disclosure opening the queue form. Playwright discovered all 13 Chromium route smoke tests successfully; diff whitespace check against main passed. Actual test execution remains CI's canonical stack. Next: inspect the new Linux run and refresh only reviewed changed pipeline snapshots in another package.
+<!-- SLOT:CIC08 END -->

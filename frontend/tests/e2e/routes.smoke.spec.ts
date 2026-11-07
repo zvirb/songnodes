@@ -18,16 +18,23 @@ test('/harmony opens the Camelot explorer', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Acoustic mood and energy profile' })).toBeVisible();
 });
 
-test('/pipeline opens the telemetry dashboard', async ({ page }) => {
+test('/pipeline opens the health dashboard', async ({ page }) => {
   await openRoute(page, '/pipeline');
   // Sections that render on a fresh database (no scrape runs, workers or target tracks yet)
-  await expect(page.getByRole('heading', { level: 1, name: 'Pipeline: Telemetry' })).toBeVisible();
-  for (const section of ['Scrape runs', 'System health', 'Medallion pipeline flow', 'Workers']) {
+  await expect(page.getByRole('heading', { level: 1, name: 'Pipeline: Health' })).toBeVisible();
+  const summary = page.getByRole('list', { name: 'Pipeline at a glance' });
+  await expect(summary.getByRole('listitem')).toHaveCount(4);
+  for (const label of ['Last run', 'Resolve yield', 'Review queue', 'Last backup']) {
+    await expect(summary.getByText(label, { exact: true })).toBeVisible();
+  }
+  for (const section of ['Recent scrape runs', 'Medallion pipeline flow', 'Workers']) {
     await expect(page.getByRole('heading', { name: section })).toBeVisible();
   }
   // A fresh database shows the empty state; one with scrape history shows the runs table.
-  await expect(page.getByText('No scrape has run yet. Queue one from the target tracks below.')
-    .or(page.getByRole('table', { name: 'Scrape runs' }))).toBeVisible();
+  await expect(page.getByText('No scrape runs recorded yet.')
+    .or(page.getByRole('table', { name: 'Recent scrape runs' }))).toBeVisible();
+  await page.getByText('Queue a scrape', { exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Queue scrape', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Run Scrapers' })).toHaveCount(0);
 });
 
