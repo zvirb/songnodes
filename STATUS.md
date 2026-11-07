@@ -2742,3 +2742,10 @@ Validated the three existing proposed fixes in an isolated checkout; original lo
 Passed: conformance, feature boundaries, design-system sync (1.9.1), type-check, lint (warnings, zero errors), 68 unit files / 586 tests, production build and diff whitespace check. Initial host Python/WSL/Git Bash sandbox issues were resolved using bundled Python and elevated Git Bash; the first sandbox unit run passed but its subsequent build was interrupted, then the unit suite and build both passed outside the sandbox.
 Not run: full Docker E2E (Docker daemon unavailable). Remaining failures: /paths primary actions, visual snapshots, PR 578 credentials and missing respx, CodeQL findings on older PRs. Next task: review and merge CIC01, then rebase affected PRs and investigate E2E in a separate package.
 <!-- SLOT:CIC01 END -->
+
+<!-- SLOT:CIC02 BEGIN -->
+## CIC02 — started 2026-11-07
+One job: show only the relevant primary action on /paths.
+Owned paths: plan/agents/CIC02_path_primary.md, STATUS.md CIC02 slot, frontend/src/features/pathfinder/PathfinderPage.tsx and PathfinderPage.test.tsx.
+Changed: hide route controls for empty/error/loading libraries; show the standalone Find path action only during calculation, errors or results. Added two regression tests. Passed: 5 component tests, type-check, conformance and git diff --check. No deletions. Next: publish CIC02 stacked on CIC01; Linux snapshot repair follows as CIC03.
+<!-- SLOT:CIC02 END -->
