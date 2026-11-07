@@ -27,7 +27,7 @@ def num_of(sid):
 DEFER = []   # print: landscape figures wait until the end of their section, so no heading is stranded before a forced page break
 
 
-PAGE_W_MM, PAGE_H_MM, CHROME_MM = 273.0, 182.0, 34.0   # A4 landscape content box of @page wide; figure head, caption and meta line (Estimate)
+PAGE_W_MM, PAGE_H_MM, CHROME_MM = 273.0, 182.0, 30.0   # print-wide-w, landscape content height, figure title + caption + notes (Estimate)   # A4 landscape content box of @page wide; figure head, caption and meta line (Estimate)
 
 
 def print_height(f):
@@ -201,6 +201,8 @@ def s_stores(F, FG, C, mode):
                       "m": E(", ".join(g.get("methods") or [])) or none(), "ev": ev_short(g.get("evidence"))})
     scols = [("type", "Primitive", False), ("name", "Key or endpoint", False), ("dir", "Direction", False), ("from", "From", False), ("to", "To", False),
              ("fmt", "Format", False), ("schema", "Schema", False), ("state", "State", False), ("m", "Methods", False), ("ev", "Evidence", False)]
+    if mode == "print":   # paper keeps eight columns; schema and methods are in the web report and the Markdown
+        scols = [c for c in scols if c[0] not in ("schema", "m")]
     types = sorted({g.get("type") for g in F["signals"]})
     filters = [("type", "Primitive", [(t, t, sum(1 for g in F["signals"] if g.get("type") == t)) for t in types])] if mode == "web" else None
     body = figs(FG, "C2", "C4", "C3", mode=mode)

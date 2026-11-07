@@ -141,7 +141,7 @@ def print_page(F, FG, D, icons, stamp, sha):
              '<p class="sn-print-cover__meta body-l">%s</p><div class="sn-figure-tile-row" role="list" aria-label="At a glance">%s</div>%s'
              '<p class="sn-print-cover__meta caption">Built %s by %s · songnodes %s on %s · musicLibrary snapshot %s · design system %s · findings.json sha256 %s</p></section>') % (
         render.title("Data flow report", stamp["date"], "title-l", "h1"), E(F["summary"]["loop"]), tiles,
-        render.figure_html(dict(FG["D1"], id="D1", wide=False), "print") if "D1" in FG else "",
+        render.figure_html(dict(FG["D1"], id="D1", wide=False, anchor="fig-d1-cover"), "print") if "D1" in FG else "",
         E(stamp["text"]), E(F["meta"]["builder"]), E(F["meta"]["songnodes_commit"][:7]), E(F["meta"]["branch"]), E(F["meta"]["ml_snapshot"]), D["version"], sha[:12])
     tocp = ('<section class="sn-print-toc-page sn-print-only" aria-label="Contents">%s<ol class="sn-print-toc">%s</ol>%s<ol class="sn-print-toc">%s</ol></section>') % (
         render.title("", "Contents", "title-m", "h2"), "".join(toc(F, FG, "print")), render.title("", "Figures", "title-m", "h2"), "".join(list_of_figures(FG, "print")))

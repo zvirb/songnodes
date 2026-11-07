@@ -183,6 +183,14 @@ def main():
         run(["pdftoppm", "-r", "70", "-png", str(PDF), str(SHOTS / "pdf")])
     else:
         fails.append("no PDF")
+    # Chromium shrinks every printed page when any portrait block is wider than the portrait content width
+    ov = run(["node", "-e", "const {chromium}=require('playwright');(async()=>{const b=await chromium.launch();const p=await b.newPage({viewport:{width:703,height:1000}});"
+              "await p.goto('file://%s');await p.emulateMedia({media:'print'});"
+              "console.log(await p.evaluate(()=>[...document.querySelectorAll('body *')].filter(e=>!e.closest('.sn-print-wide')&&e.getBoundingClientRect().right>705).length));await b.close()})()" % SHEET], cwd=str(HERE))
+    n_ov = int((ov.stdout or "-1").strip() or -1)
+    notes.append("%d portrait elements wider than the page" % n_ov)
+    if n_ov != 0:
+        fails.append("%d elements overflow the portrait width (the whole PDF would be shrunk)" % n_ov)
     gate(5, "pdf", not fails, "; ".join(notes + fails) if (notes or fails) else "ok", fails)
 
     # 6 colour

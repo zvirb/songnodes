@@ -32,27 +32,27 @@
   "n": 11,
   "state": "built",
   "source": "flows[] (n, id, from, to, label, domain, state); pages[]/stores[] (title, name, domain, kind, classification, state); domain_order; colour_map",
-  "method": "graphviz dot layered layout (LR, order reverse; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 1 crossings, 0 edges through nodes",
+  "method": "graphviz dot layered layout (TB, order reverse; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 1 crossings, 0 edges through nodes",
   "wide": true,
   "checks": {
    "crossings": 1,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 10.89,
-   "font_floor_used": 12,
+   "min_font_units": 12.56,
+   "font_floor_used": 15,
    "viewbox": [
-    1183,
-    781
+    1364,
+    601
    ],
    "projected": {
     "crossings": 1,
     "edges_through_nodes": 0,
     "label_collisions": 0,
-    "min_font_units": 10.89,
-    "font_floor_used": 12,
+    "min_font_units": 12.56,
+    "font_floor_used": 15,
     "viewbox": [
-     1183,
-     781
+     1364,
+     601
     ]
    }
   },
@@ -68,27 +68,27 @@
   "n": 14,
   "state": "built",
   "source": "flows[] (n, id, from, to, label, domain, state); pages[]/stores[] (title, name, domain, kind, classification, state); domain_order; colour_map",
-  "method": "graphviz dot layered layout (TB, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 7 crossings, 0 edges through nodes",
+  "method": "graphviz dot layered layout (LR, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 4 crossings, 0 edges through nodes",
   "wide": true,
   "checks": {
-   "crossings": 7,
+   "crossings": 4,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 10.85,
-   "font_floor_used": 12,
+   "min_font_units": 12.37,
+   "font_floor_used": 15,
    "viewbox": [
-    1178,
-    778
+    1344,
+    739
    ],
    "projected": {
-    "crossings": 7,
+    "crossings": 4,
     "edges_through_nodes": 0,
     "label_collisions": 0,
-    "min_font_units": 10.85,
-    "font_floor_used": 12,
+    "min_font_units": 12.37,
+    "font_floor_used": 15,
     "viewbox": [
-     1178,
-     778
+     1344,
+     739
     ]
    }
   },
@@ -104,27 +104,27 @@
   "n": 16,
   "state": "built",
   "source": "flows[] (n, id, from, to, label, domain, state); pages[]/stores[] (title, name, domain, kind, classification, state); domain_order; colour_map",
-  "method": "graphviz dot layered layout (LR, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 3 crossings, 0 edges through nodes",
+  "method": "graphviz dot layered layout (TB, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 5 crossings, 0 edges through nodes",
   "wide": true,
   "checks": {
-   "crossings": 3,
+   "crossings": 5,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 13.33,
+   "min_font_units": 12.91,
    "font_floor_used": 15,
    "viewbox": [
-    1448,
-    956
+    1402,
+    766
    ],
    "projected": {
-    "crossings": 3,
+    "crossings": 5,
     "edges_through_nodes": 0,
     "label_collisions": 0,
-    "min_font_units": 13.33,
+    "min_font_units": 12.91,
     "font_floor_used": 15,
     "viewbox": [
-     1448,
-     956
+     1402,
+     766
     ]
    }
   },
@@ -140,27 +140,27 @@
   "n": 8,
   "state": "built",
   "source": "flows[] (n, id, from, to, label, domain, state); pages[]/stores[] (title, name, domain, kind, classification, state); domain_order; colour_map",
-  "method": "graphviz dot layered layout (LR, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes",
+  "method": "graphviz dot layered layout (TB, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes",
   "wide": true,
   "checks": {
    "crossings": 0,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 8.52,
+   "min_font_units": 9.58,
    "font_floor_used": 12,
    "viewbox": [
-    925,
-    611
+    1041,
+    573
    ],
    "projected": {
     "crossings": 0,
     "edges_through_nodes": 0,
     "label_collisions": 0,
-    "min_font_units": 8.52,
+    "min_font_units": 9.58,
     "font_floor_used": 12,
     "viewbox": [
-     925,
-     611
+     1041,
+     573
     ]
    }
   },
@@ -176,27 +176,27 @@
   "n": 17,
   "state": "built+queued",
   "source": "flows[] (n, id, from, to, label, domain, state); pages[]/stores[] (title, name, domain, kind, classification, state); domain_order; colour_map",
-  "method": "graphviz dot layered layout (LR, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 1 crossings, 0 edges through nodes",
+  "method": "graphviz dot layered layout (TB, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 0 crossings, 0 edges through nodes",
   "wide": true,
   "checks": {
-   "crossings": 1,
+   "crossings": 0,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 13.47,
+   "min_font_units": 14.29,
    "font_floor_used": 15,
    "viewbox": [
-    1464,
-    966
+    1552,
+    820
    ],
    "projected": {
-    "crossings": 1,
+    "crossings": 0,
     "edges_through_nodes": 0,
     "label_collisions": 0,
-    "min_font_units": 13.47,
+    "min_font_units": 14.29,
     "font_floor_used": 15,
     "viewbox": [
-     1464,
-     966
+     1552,
+     851
     ]
    }
   },
@@ -212,26 +212,26 @@
   "n": 11,
   "state": "built",
   "source": "flows[] (n, id, from, to, label, domain, state); pages[]/stores[] (title, name, domain, kind, classification, state); domain_order; colour_map",
-  "method": "graphviz dot layered layout (TB, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes",
+  "method": "graphviz dot layered layout (LR, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes",
   "wide": true,
   "checks": {
    "crossings": 0,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 10.24,
+   "min_font_units": 10.83,
    "font_floor_used": 12,
    "viewbox": [
-    1112,
-    734
+    1176,
+    634
    ],
    "projected": {
     "crossings": 0,
     "edges_through_nodes": 0,
     "label_collisions": 0,
-    "min_font_units": 12.57,
+    "min_font_units": 14.59,
     "font_floor_used": 15,
     "viewbox": [
-     1365,
+     1585,
      872
     ]
    }
@@ -248,27 +248,27 @@
   "n": 10,
   "state": "built+queued",
   "source": "flows[] (n, id, from, to, label, domain, state); pages[]/stores[] (title, name, domain, kind, classification, state); domain_order; colour_map",
-  "method": "graphviz dot layered layout (LR, order given, components packed 4 across, ungrouped; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes",
+  "method": "graphviz dot layered layout (TB, order given, components packed 4 across, ungrouped; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes",
   "wide": true,
   "checks": {
    "crossings": 0,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 8.7,
+   "min_font_units": 10.15,
    "font_floor_used": 12,
    "viewbox": [
-    945,
-    624
+    1103,
+    527
    ],
    "projected": {
     "crossings": 0,
     "edges_through_nodes": 0,
     "label_collisions": 0,
-    "min_font_units": 14.98,
+    "min_font_units": 14.76,
     "font_floor_used": 15,
     "viewbox": [
-     1627,
-     1074
+     1603,
+     562
     ]
    }
   },
@@ -284,17 +284,17 @@
   "n": 12,
   "state": "built",
   "source": "stores[] (kind, location, owner, readers, concurrency); flows[] touching stores",
-  "method": "graphviz dot layered layout (TB, order reverse, ungrouped; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 2 crossings, 0 edges through nodes",
+  "method": "graphviz dot layered layout (LR, order reverse, ungrouped; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 17 units; 3 crossings, 0 edges through nodes",
   "wide": true,
   "checks": {
-   "crossings": 2,
+   "crossings": 3,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 14.67,
-   "font_floor_used": 15,
+   "min_font_units": 16.79,
+   "font_floor_used": 17,
    "viewbox": [
-    1594,
-    1052
+    1824,
+    1003
    ]
   },
   "file": "storage-topology.svg",
@@ -309,17 +309,17 @@
   "n": 10,
   "state": "built",
   "source": "stores[] (kind, location, owner, readers, concurrency); flows[] touching stores",
-  "method": "graphviz dot layered layout (TB, order given, components packed 2 across, ungrouped; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 0 crossings, 0 edges through nodes",
+  "method": "graphviz dot layered layout (TB, order reverse; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 18 units; 24 crossings, 0 edges through nodes",
   "wide": true,
   "checks": {
-   "crossings": 0,
+   "crossings": 24,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 12.94,
-   "font_floor_used": 15,
+   "min_font_units": 17.73,
+   "font_floor_used": 18,
    "viewbox": [
-    1406,
-    875
+    1926,
+    670
    ]
   },
   "file": "storage-topology-b.svg",
@@ -334,17 +334,17 @@
   "n": 9,
   "state": "built",
   "source": "stores[] (kind, location, owner, readers, concurrency); flows[] touching stores",
-  "method": "graphviz dot layered layout (LR, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 10 crossings, 0 edges through nodes",
+  "method": "graphviz dot layered layout (LR, order given, ungrouped; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 0 crossings, 0 edges through nodes",
   "wide": true,
   "checks": {
-   "crossings": 10,
+   "crossings": 0,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 14.05,
+   "min_font_units": 14.5,
    "font_floor_used": 15,
    "viewbox": [
-    1526,
-    1007
+    1575,
+    866
    ]
   },
   "file": "storage-topology-c.svg",
@@ -359,17 +359,17 @@
   "n": 6,
   "state": "built",
   "source": "stores[] (kind, location, owner, readers, concurrency); flows[] touching stores",
-  "method": "graphviz dot layered layout (TB, order reverse; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 12 crossings, 0 edges through nodes",
+  "method": "graphviz dot layered layout (LR, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 19 crossings, 0 edges through nodes",
   "wide": true,
   "checks": {
-   "crossings": 12,
+   "crossings": 19,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 13.31,
-   "font_floor_used": 15,
+   "min_font_units": 10.72,
+   "font_floor_used": 12,
    "viewbox": [
-    1445,
-    954
+    1165,
+    641
    ]
   },
   "file": "storage-topology-d.svg",
@@ -390,10 +390,10 @@
    "crossings": 0,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 9.91,
+   "min_font_units": 11.89,
    "font_floor_used": 12,
    "viewbox": [
-    1077,
+    1292,
     711
    ]
   },
@@ -415,10 +415,10 @@
    "crossings": 0,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 7.71,
+   "min_font_units": 8.08,
    "font_floor_used": 12,
    "viewbox": [
-    838,
+    877,
     483
    ]
   },
@@ -434,27 +434,27 @@
   "n": 17,
   "state": "built+queued",
   "source": "pages[] (links_out, classification, state, domain); flows[] between pages; rule_results[] (result = violation)",
-  "method": "graphviz dot layered layout (TB, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 4 crossings, 0 edges through nodes",
+  "method": "graphviz dot layered layout (LR, order degree, ungrouped; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 1 crossings, 0 edges through nodes",
   "wide": true,
   "checks": {
-   "crossings": 4,
+   "crossings": 1,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 13.37,
+   "min_font_units": 13.03,
    "font_floor_used": 15,
    "viewbox": [
-    1452,
-    939
+    1415,
+    726
    ],
    "projected": {
-    "crossings": 10,
+    "crossings": 4,
     "edges_through_nodes": 0,
     "label_collisions": 0,
-    "min_font_units": 13.45,
-    "font_floor_used": 15,
+    "min_font_units": 17.82,
+    "font_floor_used": 18,
     "viewbox": [
-     1461,
-     939
+     1936,
+     1065
     ]
    }
   },
@@ -470,27 +470,27 @@
   "n": 20,
   "state": "built+queued",
   "source": "pages[] (links_out, classification, state, domain); flows[] between pages; rule_results[] (result = violation)",
-  "method": "graphviz dot layered layout (TB, order degree, components packed 2 across, ungrouped; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes",
+  "method": "graphviz dot layered layout (TB, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 17 units; 3 crossings, 0 edges through nodes",
   "wide": true,
   "checks": {
-   "crossings": 0,
+   "crossings": 3,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 10.43,
-   "font_floor_used": 12,
+   "min_font_units": 15.84,
+   "font_floor_used": 17,
    "viewbox": [
-    1133,
-    748
+    1721,
+    638
    ],
    "projected": {
     "crossings": 0,
     "edges_through_nodes": 0,
     "label_collisions": 0,
-    "min_font_units": 11.83,
+    "min_font_units": 11.69,
     "font_floor_used": 12,
     "viewbox": [
-     1285,
-     848
+     1270,
+     662
     ]
    }
   },
@@ -506,27 +506,27 @@
   "n": 19,
   "state": "built",
   "source": "pages[] (links_out, classification, state, domain); flows[] between pages; rule_results[] (result = violation)",
-  "method": "graphviz dot layered layout (TB, order given, components packed 4 across, ungrouped; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes",
+  "method": "graphviz dot layered layout (LR, order reverse, ungrouped; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 0 crossings, 0 edges through nodes",
   "wide": true,
   "checks": {
    "crossings": 0,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 11.93,
-   "font_floor_used": 12,
+   "min_font_units": 14.56,
+   "font_floor_used": 15,
    "viewbox": [
-    1296,
-    856
+    1582,
+    870
    ],
    "projected": {
     "crossings": 0,
     "edges_through_nodes": 0,
     "label_collisions": 0,
-    "min_font_units": 11.93,
-    "font_floor_used": 12,
+    "min_font_units": 14.56,
+    "font_floor_used": 15,
     "viewbox": [
-     1296,
-     856
+     1582,
+     870
     ]
    }
   },
@@ -548,11 +548,11 @@
    "crossings": 0,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 11.88,
-   "font_floor_used": 12,
+   "min_font_units": 13.98,
+   "font_floor_used": 15,
    "viewbox": [
-    1290,
-    786
+    1518,
+    835
    ]
   },
   "file": "user-journey-operational-flow.svg",
@@ -591,17 +591,17 @@
   "n": 8,
   "state": "built",
   "source": "personas[].steps[] (n, page, action, writes, trigger, handoff, fallback); pages[].domain",
-  "method": "hand-placed swimlane (lanes = systems, columns = steps, card width 160); orthogonal arrows in the column gaps; 0 crossings by construction",
+  "method": "hand-placed swimlane (lanes = systems, columns = steps, card width 180); orthogonal arrows in the column gaps; 0 crossings by construction",
   "wide": true,
   "checks": {
    "crossings": 0,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 14.79,
-   "font_floor_used": 15,
+   "min_font_units": 16.77,
+   "font_floor_used": 17,
    "viewbox": [
-    1607,
-    1041
+    1821,
+    1002
    ]
   },
   "file": "d5-p2-set-planner.svg"
@@ -625,7 +625,7 @@
    "font_floor_used": 15,
    "viewbox": [
     1607,
-    902
+    776
    ]
   },
   "file": "d5-p3-library-curator.svg"
@@ -649,34 +649,58 @@
    "font_floor_used": 15,
    "viewbox": [
     1596,
-    986
+    860
    ]
   },
   "file": "d5-p4-pipeline-operator.svg"
  },
  {
-  "id": "D5-P5",
+  "id": "D5-P5a",
   "kind": "diagram",
-  "title": "Swimlane – P5 Developer",
-  "caption": "Developer: 8 steps across 3 lanes; 4 steps name a fallback.",
+  "title": "Swimlane – P5 Developer, steps 1–4",
+  "caption": "Developer: 4 steps across 1 lane; 4 steps name a fallback.",
   "unit": "steps",
-  "n": 8,
+  "n": 4,
   "state": "built",
   "source": "personas[].steps[] (n, page, action, writes, trigger, handoff, fallback); pages[].domain",
-  "method": "hand-placed swimlane (lanes = systems, columns = steps, card width 160); orthogonal arrows in the column gaps; 0 crossings by construction",
+  "method": "hand-placed swimlane (lanes = systems, columns = steps, card width 220); orthogonal arrows in the column gaps; 0 crossings by construction",
   "wide": true,
   "checks": {
    "crossings": 0,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 14.79,
-   "font_floor_used": 15,
+   "min_font_units": 10.16,
+   "font_floor_used": 12,
    "viewbox": [
-    1607,
-    1041
+    1104,
+    367
    ]
   },
-  "file": "d5-p5-developer.svg"
+  "file": "d5-p5a-developer.svg"
+ },
+ {
+  "id": "D5-P5b",
+  "kind": "diagram",
+  "title": "Swimlane – P5 Developer, steps 5–8",
+  "caption": "Developer: 4 steps across 2 lanes; 0 steps name a fallback.",
+  "unit": "steps",
+  "n": 4,
+  "state": "built",
+  "source": "personas[].steps[] (n, page, action, writes, trigger, handoff, fallback); pages[].domain",
+  "method": "hand-placed swimlane (lanes = systems, columns = steps, card width 220); orthogonal arrows in the column gaps; 0 crossings by construction",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 10.3,
+   "font_floor_used": 12,
+   "viewbox": [
+    1119,
+    534
+   ]
+  },
+  "file": "d5-p5b-developer.svg"
  },
  {
   "id": "D5-P6",
@@ -717,10 +741,10 @@
    "crossings": 0,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 8.48,
+   "min_font_units": 10.18,
    "font_floor_used": 12,
    "viewbox": [
-    922,
+    1106,
     608
    ]
   },
@@ -765,11 +789,11 @@
    "crossings": 0,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 11.88,
-   "font_floor_used": 12,
+   "min_font_units": 14.54,
+   "font_floor_used": 15,
    "viewbox": [
-    1290,
-    739
+    1580,
+    869
    ]
   },
   "file": "sequence-scrape-to-bronze-silver-and-projections.svg"
@@ -789,11 +813,11 @@
    "crossings": 0,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 11.88,
-   "font_floor_used": 12,
+   "min_font_units": 12.2,
+   "font_floor_used": 15,
    "viewbox": [
-    1290,
-    605
+    1325,
+    729
    ]
   },
   "file": "sequence-weekly-musiclibrary-run-to-tidal-and-songnodes.svg"
@@ -813,11 +837,11 @@
    "crossings": 0,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 11.49,
-   "font_floor_used": 12,
+   "min_font_units": 14.61,
+   "font_floor_used": 15,
    "viewbox": [
-    1248,
-    795
+    1587,
+    873
    ]
   },
   "file": "sequence-tidal-and-spotify-oauth-connect.svg"
@@ -861,10 +885,10 @@
    "crossings": 0,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 6.64,
+   "min_font_units": 7.97,
    "font_floor_used": 12,
    "viewbox": [
-    722,
+    866,
     476
    ]
   },
@@ -879,17 +903,17 @@
   "n": 7,
   "state": "built",
   "source": "protocols sn-fe-proto-oauth, sn-be-proto-oauth-pkce, ml-proto-tidal-login; timings sn-be-t-oauth-state, sn-fe-t-token-buffer, sn-fe-t-token-check, sn-fe-t-token-default-expiry, sn-fe-t-oauth-error-redirect, ml-t-pkce-age",
-  "method": "graphviz dot layered layout (LR, order reverse; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes",
+  "method": "graphviz dot layered layout (LR, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes",
   "wide": true,
   "checks": {
    "crossings": 0,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 7.93,
+   "min_font_units": 7.94,
    "font_floor_used": 12,
    "viewbox": [
-    862,
-    569
+    863,
+    415
    ]
   },
   "file": "state-machine-oauth-token.svg"
@@ -903,17 +927,17 @@
   "n": 9,
   "state": "built",
   "source": "gaps[] (title, contract, affects, severity, effort); modules[]; tasks[] (gaps, title)",
-  "method": "graphviz dot layered layout (LR, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes; gap endpoints = first two affected paths matched to pages by path prefix",
+  "method": "graphviz dot layered layout (TB, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 0 crossings, 0 edges through nodes; gap endpoints = first two affected paths matched to pages by path prefix",
   "wide": true,
   "checks": {
    "crossings": 0,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 11.53,
-   "font_floor_used": 12,
+   "min_font_units": 14.44,
+   "font_floor_used": 15,
    "viewbox": [
-    1252,
-    817
+    1569,
+    863
    ]
   },
   "file": "enhanced-architecture-connections-and-gaps.svg"
@@ -927,17 +951,17 @@
   "n": 11,
   "state": "built",
   "source": "gaps[] (title, contract, affects, severity, effort); modules[]; tasks[] (gaps, title)",
-  "method": "graphviz dot layered layout (LR, order given, components packed 4 across; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 0 crossings, 0 edges through nodes; gap endpoints = first two affected paths matched to pages by path prefix",
+  "method": "graphviz dot layered layout (LR, order given, components packed 3 across, ungrouped; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 18 units; 0 crossings, 0 edges through nodes; gap endpoints = first two affected paths matched to pages by path prefix",
   "wide": true,
   "checks": {
    "crossings": 0,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 14.02,
-   "font_floor_used": 15,
+   "min_font_units": 18.36,
+   "font_floor_used": 18,
    "viewbox": [
-    1523,
-    1005
+    1994,
+    976
    ]
   },
   "file": "enhanced-architecture-connections-and-gaps-b.svg"
@@ -951,17 +975,17 @@
   "n": 8,
   "state": "built",
   "source": "gaps[] (title, contract, affects, severity, effort); modules[]; tasks[] (gaps, title)",
-  "method": "graphviz dot layered layout (LR, order given, components packed 4 across; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes; gap endpoints = first two affected paths matched to pages by path prefix",
+  "method": "graphviz dot layered layout (LR, order given, components packed 4 across; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 0 crossings, 0 edges through nodes; gap endpoints = first two affected paths matched to pages by path prefix",
   "wide": true,
   "checks": {
    "crossings": 0,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 10.7,
-   "font_floor_used": 12,
+   "min_font_units": 13.45,
+   "font_floor_used": 15,
    "viewbox": [
-    1162,
-    732
+    1461,
+    804
    ]
   },
   "file": "enhanced-architecture-connections-and-gaps-c.svg"
@@ -975,7 +999,7 @@
   "n": 51,
   "state": "built+queued",
   "source": "queued[] (PR touches and effect, brief notes); flows[] and pages[]/stores[] with state queued",
-  "method": "graphviz dot layered layout (LR, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes",
+  "method": "graphviz dot layered layout (LR, order given, components packed 2 across; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes",
   "wide": true,
   "checks": {
    "crossings": 0,
@@ -985,17 +1009,17 @@
    "font_floor_used": 12,
    "viewbox": [
     688,
-    405
+    314
    ],
    "projected": {
     "crossings": 0,
     "edges_through_nodes": 0,
     "label_collisions": 0,
-    "min_font_units": 13.83,
+    "min_font_units": 14.87,
     "font_floor_used": 15,
     "viewbox": [
-     1502,
-     905
+     1616,
+     764
     ]
    }
   },
@@ -1016,11 +1040,11 @@
    "crossings": 0,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 11.86,
-   "font_floor_used": 12,
+   "min_font_units": 16.14,
+   "font_floor_used": 17,
    "viewbox": [
-    1288,
-    814
+    1753,
+    964
    ]
   },
   "file": "storage-backbone-before-after.svg"
@@ -1040,11 +1064,11 @@
    "crossings": 1,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 11.86,
-   "font_floor_used": 12,
+   "min_font_units": 14.48,
+   "font_floor_used": 15,
    "viewbox": [
-    1288,
-    746
+    1573,
+    865
    ]
   },
   "file": "roadmap-timeline.svg"
@@ -1058,17 +1082,17 @@
   "n": 15,
   "state": "built",
   "source": "flows[] aggregated by repo pair (pages[]/stores[].repo); tasks[].project; design-system pages",
-  "method": "graphviz dot layered layout (LR, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 0 crossings, 0 edges through nodes",
+  "method": "graphviz dot layered layout (TB, order degree; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 17 units; 0 crossings, 0 edges through nodes",
   "wide": true,
   "checks": {
    "crossings": 0,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 13.92,
-   "font_floor_used": 15,
+   "min_font_units": 15.1,
+   "font_floor_used": 17,
    "viewbox": [
-    1512,
-    998
+    1640,
+    698
    ]
   },
   "file": "sister-project-dependencies.svg"

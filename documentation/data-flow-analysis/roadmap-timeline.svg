@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1288 746" role="img" aria-labelledby="D11-t D11-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1573 865" role="img" aria-labelledby="D11-t D11-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
 :root, [data-theme="dark"] {
   --bg: #222222;
   --surface-1: #2d2d2d;
@@ -445,6 +445,7 @@
   --drawer-w: 300px;
   --rail-w: 248px;
   --content-max: 1400px;
+  --print-wide-h: 150mm;
   --print-wide-w: 273mm;
   --prose-max: 68ch;
   --z-base: 0;
@@ -789,299 +790,303 @@
 .sn-chart-frame__axis-title { fill: var(--chart-axis); font-family: var(--font-body); font-size: 0.6875rem; }</style>
 <title id="D11-t">Roadmap: waves, tasks and gates</title>
 <desc id="D11-d">5 waves as columns from Today; 16 task cards with dependency arrows, a gate diamond under each wave and wave-to-wave dependencies across the top.</desc>
-<rect class="sn-diagram__bg" x="0" y="0" width="1288" height="746"/>
+<rect class="sn-diagram__bg" x="0" y="0" width="1573" height="865"/>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--note" data-node="W1" data-wave="W1" tabindex="0" aria-label="W1: Close the security gate before any tunnel">
 <title>W1: Close the security gate before any tunnel</title>
-<rect class="sn-diagram__box" x="54.0" y="48.8" width="208.0" height="56.0"/>
-<rect class="sn-diagram__stripe" x="55.5" y="50.3" width="5" height="53.0"/>
-<text class="sn-diagram__t body-strong" x="68.0" y="71.1">W1 Close the security</text>
-<text class="sn-diagram__t body-strong" x="68.0" y="92.1">gate before any tunnel</text>
+<rect class="sn-diagram__box" x="54.0" y="53.0" width="208.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="55.5" y="54.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="68.0" y="75.3">W1 Close the security</text>
+<text class="sn-diagram__t body-strong" x="68.0" y="96.3">gate before any tunnel</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--note" data-node="W2" data-wave="W2" tabindex="0" aria-label="W2: Repair the cross-project contracts">
 <title>W2: Repair the cross-project contracts</title>
-<rect class="sn-diagram__box" x="296.0" y="48.8" width="208.0" height="56.0"/>
-<rect class="sn-diagram__stripe" x="297.5" y="50.3" width="5" height="53.0"/>
-<text class="sn-diagram__t body-strong" x="310.0" y="71.1">W2 Repair the</text>
-<text class="sn-diagram__t body-strong" x="310.0" y="92.1">cross-project contracts</text>
+<rect class="sn-diagram__box" x="296.0" y="53.0" width="208.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="297.5" y="54.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="310.0" y="75.3">W2 Repair the</text>
+<text class="sn-diagram__t body-strong" x="310.0" y="96.3">cross-project contracts</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--note" data-node="W3" data-wave="W3" tabindex="0" aria-label="W3: Make the data layers honest">
 <title>W3: Make the data layers honest</title>
-<rect class="sn-diagram__box" x="538.0" y="48.8" width="208.0" height="56.0"/>
-<rect class="sn-diagram__stripe" x="539.5" y="50.3" width="5" height="53.0"/>
-<text class="sn-diagram__t body-strong" x="552.0" y="71.1">W3 Make the data</text>
-<text class="sn-diagram__t body-strong" x="552.0" y="92.1">layers honest</text>
+<rect class="sn-diagram__box" x="538.0" y="53.0" width="208.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="539.5" y="54.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="552.0" y="75.3">W3 Make the data</text>
+<text class="sn-diagram__t body-strong" x="552.0" y="96.3">layers honest</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--note" data-node="W4" data-wave="W4" tabindex="0" aria-label="W4: Close the feedback loop">
 <title>W4: Close the feedback loop</title>
-<rect class="sn-diagram__box" x="780.0" y="48.8" width="208.0" height="56.0"/>
-<rect class="sn-diagram__stripe" x="781.5" y="50.3" width="5" height="53.0"/>
-<text class="sn-diagram__t body-strong" x="794.0" y="71.1">W4 Close the feedback</text>
-<text class="sn-diagram__t body-strong" x="794.0" y="92.1">loop</text>
+<rect class="sn-diagram__box" x="780.0" y="53.0" width="208.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="781.5" y="54.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="794.0" y="75.3">W4 Close the feedback</text>
+<text class="sn-diagram__t body-strong" x="794.0" y="96.3">loop</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--note" data-node="W5" data-wave="W5" tabindex="0" aria-label="W5: Observability and clean-up">
 <title>W5: Observability and clean-up</title>
-<rect class="sn-diagram__box" x="1022.0" y="48.8" width="208.0" height="56.0"/>
-<rect class="sn-diagram__stripe" x="1023.5" y="50.3" width="5" height="53.0"/>
-<text class="sn-diagram__t body-strong" x="1036.0" y="71.1">W5 Observability and</text>
-<text class="sn-diagram__t body-strong" x="1036.0" y="92.1">clean-up</text>
+<rect class="sn-diagram__box" x="1022.0" y="53.0" width="208.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="1023.5" y="54.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="1036.0" y="75.3">W5 Observability and</text>
+<text class="sn-diagram__t body-strong" x="1036.0" y="96.3">clean-up</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--queued" data-node="SN-T01" data-task="SN-T01" tabindex="0" aria-label="SN-T01 &#x28;songnodes, security): Require the &#x41;PI token on write and admin routes. Verify: curl without token gets 401 on every &#x50;OST/&#x50;UT/&#x44;ELETE; scripts pass with the token">
 <title>SN-T01 &#x28;songnodes, security): Require the &#x41;PI token on write and admin routes. Verify: curl without token gets 401 on every &#x50;OST/&#x50;UT/&#x44;ELETE; scripts pass with the token</title>
-<rect class="sn-diagram__box" x="54.0" y="134.8" width="208.0" height="85.4"/>
-<rect class="sn-diagram__stripe" x="55.5" y="136.3" width="5" height="82.4"/>
-<text class="sn-diagram__t data-strong" x="68.0" y="155.1">SN-T01</text>
-<text class="sn-diagram__t body-s" x="68.0" y="173.3">Require the &#x41;PI token on</text>
-<text class="sn-diagram__t body-s" x="68.0" y="191.5">write and admin routes</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="68.0" y="208.6">ops · songnodes · security</text>
+<rect class="sn-diagram__box" x="54.0" y="139.0" width="208.0" height="98.0"/>
+<rect class="sn-diagram__stripe" x="55.5" y="140.5" width="5" height="95.0"/>
+<text class="sn-diagram__t body-strong" x="68.0" y="161.3">SN-T01</text>
+<text class="sn-diagram__t body" x="68.0" y="182.3">Require the &#x41;PI token on</text>
+<text class="sn-diagram__t body" x="68.0" y="203.3">write and admin routes</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="68.0" y="224.3">ops · songnodes ·…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--queued" data-node="SN-T02" data-task="SN-T02" tabindex="0" aria-label="SN-T02 &#x28;songnodes, security): Remove the default admin login from the queued auth router. Verify: no login succeeds without a configured user">
 <title>SN-T02 &#x28;songnodes, security): Remove the default admin login from the queued auth router. Verify: no login succeeds without a configured user</title>
-<rect class="sn-diagram__box" x="54.0" y="250.2" width="208.0" height="85.4"/>
-<rect class="sn-diagram__stripe" x="55.5" y="251.7" width="5" height="82.4"/>
-<text class="sn-diagram__t data-strong" x="68.0" y="270.5">SN-T02</text>
-<text class="sn-diagram__t body-s" x="68.0" y="288.7">Remove the default admin</text>
-<text class="sn-diagram__t body-s" x="68.0" y="306.9">login from the queued aut…</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="68.0" y="324.0">ops · songnodes · security</text>
+<rect class="sn-diagram__box" x="54.0" y="267.0" width="208.0" height="98.0"/>
+<rect class="sn-diagram__stripe" x="55.5" y="268.5" width="5" height="95.0"/>
+<text class="sn-diagram__t body-strong" x="68.0" y="289.3">SN-T02</text>
+<text class="sn-diagram__t body" x="68.0" y="310.3">Remove the default</text>
+<text class="sn-diagram__t body" x="68.0" y="331.3">admin login from the…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="68.0" y="352.3">ops · songnodes ·…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--queued" data-node="ML-T01" data-task="ML-T01" tabindex="0" aria-label="ML-T01 &#x28;musicLibrary, docs): Correct the &#x52;EADME songnodes contract. Verify: every path in the &#x52;EADME exists">
 <title>ML-T01 &#x28;musicLibrary, docs): Correct the &#x52;EADME songnodes contract. Verify: every path in the &#x52;EADME exists</title>
-<rect class="sn-diagram__box" x="296.0" y="134.8" width="208.0" height="85.4"/>
-<rect class="sn-diagram__stripe" x="297.5" y="136.3" width="5" height="82.4"/>
-<text class="sn-diagram__t data-strong" x="310.0" y="155.1">ML-T01</text>
-<text class="sn-diagram__t body-s" x="310.0" y="173.3">Correct the &#x52;EADME</text>
-<text class="sn-diagram__t body-s" x="310.0" y="191.5">songnodes contract</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="310.0" y="208.6">ops · musicLibrary · docs</text>
+<rect class="sn-diagram__box" x="296.0" y="139.0" width="208.0" height="98.0"/>
+<rect class="sn-diagram__stripe" x="297.5" y="140.5" width="5" height="95.0"/>
+<text class="sn-diagram__t body-strong" x="310.0" y="161.3">ML-T01</text>
+<text class="sn-diagram__t body" x="310.0" y="182.3">Correct the &#x52;EADME</text>
+<text class="sn-diagram__t body" x="310.0" y="203.3">songnodes contract</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="310.0" y="224.3">ops · musicLibrary ·…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--queued" data-node="ML-T02" data-task="ML-T02" tabindex="0" aria-label="ML-T02 &#x28;musicLibrary, module): Build the set exchange &#x28;M1). Verify: a songnodes set reaches &#x54;IDAL through sync-sets">
 <title>ML-T02 &#x28;musicLibrary, module): Build the set exchange &#x28;M1). Verify: a songnodes set reaches &#x54;IDAL through sync-sets</title>
-<rect class="sn-diagram__box" x="296.0" y="250.2" width="208.0" height="85.4"/>
-<rect class="sn-diagram__stripe" x="297.5" y="251.7" width="5" height="82.4"/>
-<text class="sn-diagram__t data-strong" x="310.0" y="270.5">ML-T02</text>
-<text class="sn-diagram__t body-s" x="310.0" y="288.7">Build the set exchange &#x28;M1)</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="310.0" y="305.8">ops · musicLibrary · module</text>
+<rect class="sn-diagram__box" x="296.0" y="267.0" width="208.0" height="98.0"/>
+<rect class="sn-diagram__stripe" x="297.5" y="268.5" width="5" height="95.0"/>
+<text class="sn-diagram__t body-strong" x="310.0" y="289.3">ML-T02</text>
+<text class="sn-diagram__t body" x="310.0" y="310.3">Build the set exchange</text>
+<text class="sn-diagram__t body" x="310.0" y="331.3">&#x28;M1)</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="310.0" y="352.3">ops · musicLibrary ·…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--queued" data-node="SN-T03" data-task="SN-T03" tabindex="0" aria-label="SN-T03 &#x28;songnodes, contract): Accept and keep musicLibrary pipeline fields on library ingest. Verify: fixture round-trip keeps energy, rotation, pillar and &#x49;SRC">
 <title>SN-T03 &#x28;songnodes, contract): Accept and keep musicLibrary pipeline fields on library ingest. Verify: fixture round-trip keeps energy, rotation, pillar and &#x49;SRC</title>
-<rect class="sn-diagram__box" x="296.0" y="365.6" width="208.0" height="85.4"/>
-<rect class="sn-diagram__stripe" x="297.5" y="367.1" width="5" height="82.4"/>
-<text class="sn-diagram__t data-strong" x="310.0" y="385.9">SN-T03</text>
-<text class="sn-diagram__t body-s" x="310.0" y="404.1">Accept and keep</text>
-<text class="sn-diagram__t body-s" x="310.0" y="422.3">musicLibrary pipeline field…</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="310.0" y="439.4">ops · songnodes · contract</text>
+<rect class="sn-diagram__box" x="296.0" y="395.0" width="208.0" height="98.0"/>
+<rect class="sn-diagram__stripe" x="297.5" y="396.5" width="5" height="95.0"/>
+<text class="sn-diagram__t body-strong" x="310.0" y="417.3">SN-T03</text>
+<text class="sn-diagram__t body" x="310.0" y="438.3">Accept and keep</text>
+<text class="sn-diagram__t body" x="310.0" y="459.3">musicLibrary pipeline…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="310.0" y="480.3">ops · songnodes ·…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--queued" data-node="SN-T04" data-task="SN-T04" tabindex="0" aria-label="SN-T04 &#x28;songnodes, fix): Raise the frontend nginx body limit to the ingest limit. Verify: a 5 MB library import returns 202, not 413">
 <title>SN-T04 &#x28;songnodes, fix): Raise the frontend nginx body limit to the ingest limit. Verify: a 5 MB library import returns 202, not 413</title>
-<rect class="sn-diagram__box" x="296.0" y="481.0" width="208.0" height="85.4"/>
-<rect class="sn-diagram__stripe" x="297.5" y="482.5" width="5" height="82.4"/>
-<text class="sn-diagram__t data-strong" x="310.0" y="501.3">SN-T04</text>
-<text class="sn-diagram__t body-s" x="310.0" y="519.5">Raise the frontend nginx</text>
-<text class="sn-diagram__t body-s" x="310.0" y="537.7">body limit to the ingest limit</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="310.0" y="554.8">ops · songnodes · fix</text>
+<rect class="sn-diagram__box" x="296.0" y="523.0" width="208.0" height="98.0"/>
+<rect class="sn-diagram__stripe" x="297.5" y="524.5" width="5" height="95.0"/>
+<text class="sn-diagram__t body-strong" x="310.0" y="545.3">SN-T04</text>
+<text class="sn-diagram__t body" x="310.0" y="566.3">Raise the frontend nginx</text>
+<text class="sn-diagram__t body" x="310.0" y="587.3">body limit to the ingest…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="310.0" y="608.3">ops · songnodes · fix</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--queued" data-node="SN-T05" data-task="SN-T05" tabindex="0" aria-label="SN-T05 &#x28;songnodes, data-integrity): Stop the unified scraper at bronze. Verify: a scrape writes bronze rows only; ingest creates silver once">
 <title>SN-T05 &#x28;songnodes, data-integrity): Stop the unified scraper at bronze. Verify: a scrape writes bronze rows only; ingest creates silver once</title>
-<rect class="sn-diagram__box" x="538.0" y="134.8" width="208.0" height="85.4"/>
-<rect class="sn-diagram__stripe" x="539.5" y="136.3" width="5" height="82.4"/>
-<text class="sn-diagram__t data-strong" x="552.0" y="155.1">SN-T05</text>
-<text class="sn-diagram__t body-s" x="552.0" y="173.3">Stop the unified scraper at</text>
-<text class="sn-diagram__t body-s" x="552.0" y="191.5">bronze</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="552.0" y="208.6">ops · songnodes ·…</text>
+<rect class="sn-diagram__box" x="538.0" y="139.0" width="208.0" height="98.0"/>
+<rect class="sn-diagram__stripe" x="539.5" y="140.5" width="5" height="95.0"/>
+<text class="sn-diagram__t body-strong" x="552.0" y="161.3">SN-T05</text>
+<text class="sn-diagram__t body" x="552.0" y="182.3">Stop the unified scraper</text>
+<text class="sn-diagram__t body" x="552.0" y="203.3">at bronze</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="552.0" y="224.3">ops · songnodes ·…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c3 sn-diagram__node--queued" data-node="SN-T06" data-task="SN-T06" tabindex="0" aria-label="SN-T06 &#x28;songnodes, docs): Decide and document the real layer model. Verify: docs and compose name the same jobs">
 <title>SN-T06 &#x28;songnodes, docs): Decide and document the real layer model. Verify: docs and compose name the same jobs</title>
-<rect class="sn-diagram__box" x="538.0" y="250.2" width="208.0" height="85.4"/>
-<rect class="sn-diagram__stripe" x="539.5" y="251.7" width="5" height="82.4"/>
-<text class="sn-diagram__t data-strong" x="552.0" y="270.5">SN-T06</text>
-<text class="sn-diagram__t body-s" x="552.0" y="288.7">Decide and document the</text>
-<text class="sn-diagram__t body-s" x="552.0" y="306.9">real layer model</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="552.0" y="324.0">graph · songnodes · docs</text>
+<rect class="sn-diagram__box" x="538.0" y="267.0" width="208.0" height="98.0"/>
+<rect class="sn-diagram__stripe" x="539.5" y="268.5" width="5" height="95.0"/>
+<text class="sn-diagram__t body-strong" x="552.0" y="289.3">SN-T06</text>
+<text class="sn-diagram__t body" x="552.0" y="310.3">Decide and document</text>
+<text class="sn-diagram__t body" x="552.0" y="331.3">the real layer model</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="552.0" y="352.3">graph · songnodes ·…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--queued" data-node="SN-T07" data-task="SN-T07" tabindex="0" aria-label="SN-T07 &#x28;songnodes, fix): Let target scrapes bypass the daily discovery quota. Verify: two target scrapes in an hour both run">
 <title>SN-T07 &#x28;songnodes, fix): Let target scrapes bypass the daily discovery quota. Verify: two target scrapes in an hour both run</title>
-<rect class="sn-diagram__box" x="538.0" y="365.6" width="208.0" height="85.4"/>
-<rect class="sn-diagram__stripe" x="539.5" y="367.1" width="5" height="82.4"/>
-<text class="sn-diagram__t data-strong" x="552.0" y="385.9">SN-T07</text>
-<text class="sn-diagram__t body-s" x="552.0" y="404.1">Let target scrapes bypass</text>
-<text class="sn-diagram__t body-s" x="552.0" y="422.3">the daily discovery quota</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="552.0" y="439.4">ops · songnodes · fix</text>
+<rect class="sn-diagram__box" x="538.0" y="395.0" width="208.0" height="98.0"/>
+<rect class="sn-diagram__stripe" x="539.5" y="396.5" width="5" height="95.0"/>
+<text class="sn-diagram__t body-strong" x="552.0" y="417.3">SN-T07</text>
+<text class="sn-diagram__t body" x="552.0" y="438.3">Let target scrapes</text>
+<text class="sn-diagram__t body" x="552.0" y="459.3">bypass the daily…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="552.0" y="480.3">ops · songnodes · fix</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--queued" data-node="ML-T03" data-task="ML-T03" tabindex="0" aria-label="ML-T03 &#x28;musicLibrary, data-integrity): Merge Deezer &#x42;PM and key onto the chosen version. Verify: more than 0 tracks have &#x42;PM and key after one run">
 <title>ML-T03 &#x28;musicLibrary, data-integrity): Merge Deezer &#x42;PM and key onto the chosen version. Verify: more than 0 tracks have &#x42;PM and key after one run</title>
-<rect class="sn-diagram__box" x="780.0" y="134.8" width="208.0" height="85.4"/>
-<rect class="sn-diagram__stripe" x="781.5" y="136.3" width="5" height="82.4"/>
-<text class="sn-diagram__t data-strong" x="794.0" y="155.1">ML-T03</text>
-<text class="sn-diagram__t body-s" x="794.0" y="173.3">Merge Deezer &#x42;PM and key</text>
-<text class="sn-diagram__t body-s" x="794.0" y="191.5">onto the chosen version</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="794.0" y="208.6">ops · musicLibrary ·…</text>
+<rect class="sn-diagram__box" x="780.0" y="139.0" width="208.0" height="98.0"/>
+<rect class="sn-diagram__stripe" x="781.5" y="140.5" width="5" height="95.0"/>
+<text class="sn-diagram__t body-strong" x="794.0" y="161.3">ML-T03</text>
+<text class="sn-diagram__t body" x="794.0" y="182.3">Merge Deezer &#x42;PM and</text>
+<text class="sn-diagram__t body" x="794.0" y="203.3">key onto the chosen…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="794.0" y="224.3">ops · musicLibrary ·…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--queued" data-node="ML-T04" data-task="ML-T04" tabindex="0" aria-label="ML-T04 &#x28;musicLibrary, module): Build the play-history import &#x28;M2). Verify: calibrate.py reports rotation timings from plays">
 <title>ML-T04 &#x28;musicLibrary, module): Build the play-history import &#x28;M2). Verify: calibrate.py reports rotation timings from plays</title>
-<rect class="sn-diagram__box" x="780.0" y="250.2" width="208.0" height="85.4"/>
-<rect class="sn-diagram__stripe" x="781.5" y="251.7" width="5" height="82.4"/>
-<text class="sn-diagram__t data-strong" x="794.0" y="270.5">ML-T04</text>
-<text class="sn-diagram__t body-s" x="794.0" y="288.7">Build the play-history import</text>
-<text class="sn-diagram__t body-s" x="794.0" y="306.9">&#x28;M2)</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="794.0" y="324.0">ops · musicLibrary · module</text>
+<rect class="sn-diagram__box" x="780.0" y="267.0" width="208.0" height="98.0"/>
+<rect class="sn-diagram__stripe" x="781.5" y="268.5" width="5" height="95.0"/>
+<text class="sn-diagram__t body-strong" x="794.0" y="289.3">ML-T04</text>
+<text class="sn-diagram__t body" x="794.0" y="310.3">Build the play-history</text>
+<text class="sn-diagram__t body" x="794.0" y="331.3">import &#x28;M2)</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="794.0" y="352.3">ops · musicLibrary ·…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--queued" data-node="SN-T08" data-task="SN-T08" tabindex="0" aria-label="SN-T08 &#x28;songnodes, module): Publish the transition feed &#x28;M3). Verify: &#x47;ET returns transitions/1 for library &#x49;SRCs">
 <title>SN-T08 &#x28;songnodes, module): Publish the &#116;ransition feed &#x28;M3). Verify: &#x47;ET returns &#116;ransitions/1 for library &#x49;SRCs</title>
-<rect class="sn-diagram__box" x="780.0" y="365.6" width="208.0" height="85.4"/>
-<rect class="sn-diagram__stripe" x="781.5" y="367.1" width="5" height="82.4"/>
-<text class="sn-diagram__t data-strong" x="794.0" y="385.9">SN-T08</text>
-<text class="sn-diagram__t body-s" x="794.0" y="404.1">Publish the &#116;ransition feed</text>
-<text class="sn-diagram__t body-s" x="794.0" y="422.3">&#x28;M3)</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="794.0" y="439.4">ops · songnodes · module</text>
+<rect class="sn-diagram__box" x="780.0" y="395.0" width="208.0" height="98.0"/>
+<rect class="sn-diagram__stripe" x="781.5" y="396.5" width="5" height="95.0"/>
+<text class="sn-diagram__t body-strong" x="794.0" y="417.3">SN-T08</text>
+<text class="sn-diagram__t body" x="794.0" y="438.3">Publish the &#116;ransition</text>
+<text class="sn-diagram__t body" x="794.0" y="459.3">feed &#x28;M3)</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="794.0" y="480.3">ops · songnodes ·…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--queued" data-node="ML-T05" data-task="ML-T05" tabindex="0" aria-label="ML-T05 &#x28;musicLibrary, contract): Move setlist files into exchange/ and import them. Verify: JohnCourse and kiki appear as songnodes setlists">
 <title>ML-T05 &#x28;musicLibrary, contract): Move setlist files into exchange/ and import them. Verify: JohnCourse and kiki appear as songnodes setlists</title>
-<rect class="sn-diagram__box" x="780.0" y="481.0" width="208.0" height="85.4"/>
-<rect class="sn-diagram__stripe" x="781.5" y="482.5" width="5" height="82.4"/>
-<text class="sn-diagram__t data-strong" x="794.0" y="501.3">ML-T05</text>
-<text class="sn-diagram__t body-s" x="794.0" y="519.5">Move setlist files into</text>
-<text class="sn-diagram__t body-s" x="794.0" y="537.7">exchange/ and import them</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="794.0" y="554.8">ops · musicLibrary · contract</text>
+<rect class="sn-diagram__box" x="780.0" y="523.0" width="208.0" height="98.0"/>
+<rect class="sn-diagram__stripe" x="781.5" y="524.5" width="5" height="95.0"/>
+<text class="sn-diagram__t body-strong" x="794.0" y="545.3">ML-T05</text>
+<text class="sn-diagram__t body" x="794.0" y="566.3">Move setlist files into</text>
+<text class="sn-diagram__t body" x="794.0" y="587.3">exchange/ and import…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="794.0" y="608.3">ops · musicLibrary ·…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c7 sn-diagram__node--queued" data-node="SN-T09" data-task="SN-T09" tabindex="0" aria-label="SN-T09 &#x28;songnodes, fix): Fix the OAuth token hand-off and remove dead scraper calls. Verify: Send to &#x54;IDAL finds a token after a fresh login; no 404 in the graph page network log">
 <title>SN-T09 &#x28;songnodes, fix): Fix the OAuth token hand-off and remove dead scraper calls. Verify: Send to &#x54;IDAL finds a token after a fresh login; no 404 in the graph page network log</title>
-<rect class="sn-diagram__box" x="1022.0" y="134.8" width="208.0" height="85.4"/>
-<rect class="sn-diagram__stripe" x="1023.5" y="136.3" width="5" height="82.4"/>
-<text class="sn-diagram__t data-strong" x="1036.0" y="155.1">SN-T09</text>
-<text class="sn-diagram__t body-s" x="1036.0" y="173.3">Fix the OAuth token</text>
-<text class="sn-diagram__t body-s" x="1036.0" y="191.5">hand-off and remove dead…</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="1036.0" y="208.6">services · songnodes · fix</text>
+<rect class="sn-diagram__box" x="1022.0" y="139.0" width="208.0" height="98.0"/>
+<rect class="sn-diagram__stripe" x="1023.5" y="140.5" width="5" height="95.0"/>
+<text class="sn-diagram__t body-strong" x="1036.0" y="161.3">SN-T09</text>
+<text class="sn-diagram__t body" x="1036.0" y="182.3">Fix the OAuth token</text>
+<text class="sn-diagram__t body" x="1036.0" y="203.3">hand-off and remove…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1036.0" y="224.3">services · songnodes ·…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--queued" data-node="ML-T06" data-task="ML-T06" tabindex="0" aria-label="ML-T06 &#x28;musicLibrary, observability): Warn on resolve yield drops and retry rejected pending. Verify: a run with half the usual yield writes a warning">
 <title>ML-T06 &#x28;musicLibrary, observability): Warn on resolve yield drops and retry rejected pending. Verify: a run with half the usual yield writes a warning</title>
-<rect class="sn-diagram__box" x="1022.0" y="250.2" width="208.0" height="85.4"/>
-<rect class="sn-diagram__stripe" x="1023.5" y="251.7" width="5" height="82.4"/>
-<text class="sn-diagram__t data-strong" x="1036.0" y="270.5">ML-T06</text>
-<text class="sn-diagram__t body-s" x="1036.0" y="288.7">Warn on resolve yield drops</text>
-<text class="sn-diagram__t body-s" x="1036.0" y="306.9">and retry rejected pending</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="1036.0" y="324.0">ops · musicLibrary ·…</text>
+<rect class="sn-diagram__box" x="1022.0" y="267.0" width="208.0" height="98.0"/>
+<rect class="sn-diagram__stripe" x="1023.5" y="268.5" width="5" height="95.0"/>
+<text class="sn-diagram__t body-strong" x="1036.0" y="289.3">ML-T06</text>
+<text class="sn-diagram__t body" x="1036.0" y="310.3">Warn on resolve yield</text>
+<text class="sn-diagram__t body" x="1036.0" y="331.3">drops and retry rejecte…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1036.0" y="352.3">ops · musicLibrary ·…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--queued" data-node="DS-T01" data-task="DS-T01" tabindex="0" aria-label="DS-T01 &#x28;design-system, design-system): Publish 1.10.0 to the design-system artifact. Verify: artifact tokens.json version is 1.10.0">
 <title>DS-T01 &#x28;design-system, design-system): Publish 1.10.0 to the design-system artifact. Verify: artifact tokens.json version is 1.10.0</title>
-<rect class="sn-diagram__box" x="1022.0" y="365.6" width="208.0" height="85.4"/>
-<rect class="sn-diagram__stripe" x="1023.5" y="367.1" width="5" height="82.4"/>
-<text class="sn-diagram__t data-strong" x="1036.0" y="385.9">DS-T01</text>
-<text class="sn-diagram__t body-s" x="1036.0" y="404.1">Publish 1.10.0 to the</text>
-<text class="sn-diagram__t body-s" x="1036.0" y="422.3">design-system artifact</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="1036.0" y="439.4">design · design-system ·…</text>
+<rect class="sn-diagram__box" x="1022.0" y="395.0" width="208.0" height="98.0"/>
+<rect class="sn-diagram__stripe" x="1023.5" y="396.5" width="5" height="95.0"/>
+<text class="sn-diagram__t body-strong" x="1036.0" y="417.3">DS-T01</text>
+<text class="sn-diagram__t body" x="1036.0" y="438.3">Publish 1.10.0 to the</text>
+<text class="sn-diagram__t body" x="1036.0" y="459.3">design-system artifact</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1036.0" y="480.3">design · design-syste…</text>
 </g>
-<path class="sn-diagram__gate" d="M66.0 612.2 L78.0 624.2 L66.0 636.2 L54.0 624.2 Z"/>
+<path class="sn-diagram__gate" d="M66.0 681.5 L78.0 693.5 L66.0 705.5 L54.0 693.5 Z"/>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--note" data-node="W1" data-gate="W1" tabindex="0" aria-label="W1 gate: PR &#35;577 not merged until W1 passes">
 <title>W1 gate: PR &#35;577 not merged until W1 passes</title>
-<rect class="sn-diagram__box" x="84.0" y="600.4" width="178.0" height="47.6"/>
-<rect class="sn-diagram__stripe" x="85.5" y="601.9" width="5" height="44.6"/>
-<text class="sn-diagram__t caption" x="98.0" y="619.6">Gate: PR &#35;577 not</text>
-<text class="sn-diagram__t caption" x="98.0" y="636.4">merged until W1 passes</text>
+<rect class="sn-diagram__box" x="84.0" y="655.0" width="178.0" height="77.0"/>
+<rect class="sn-diagram__stripe" x="85.5" y="656.5" width="5" height="74.0"/>
+<text class="sn-diagram__t body" x="98.0" y="677.3">Gate: PR &#35;577 not</text>
+<text class="sn-diagram__t body" x="98.0" y="698.3">merged until W1</text>
+<text class="sn-diagram__t body" x="98.0" y="719.3">passes</text>
 </g>
-<path class="sn-diagram__gate" d="M308.0 612.2 L320.0 624.2 L308.0 636.2 L296.0 624.2 Z"/>
+<path class="sn-diagram__gate" d="M308.0 681.5 L320.0 693.5 L308.0 705.5 L296.0 693.5 Z"/>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--note" data-node="W2" data-gate="W2" tabindex="0" aria-label="W2 gate: Contract check &#x28;M4) green">
 <title>W2 gate: Contract check &#x28;M4) green</title>
-<rect class="sn-diagram__box" x="326.0" y="600.4" width="178.0" height="47.6"/>
-<rect class="sn-diagram__stripe" x="327.5" y="601.9" width="5" height="44.6"/>
-<text class="sn-diagram__t caption" x="340.0" y="619.6">Gate: Contract check</text>
-<text class="sn-diagram__t caption" x="340.0" y="636.4">&#x28;M4) green</text>
+<rect class="sn-diagram__box" x="326.0" y="655.0" width="178.0" height="77.0"/>
+<rect class="sn-diagram__stripe" x="327.5" y="656.5" width="5" height="74.0"/>
+<text class="sn-diagram__t body" x="340.0" y="677.3">Gate: Contract</text>
+<text class="sn-diagram__t body" x="340.0" y="698.3">check &#x28;M4) green</text>
 </g>
-<path class="sn-diagram__gate" d="M550.0 612.2 L562.0 624.2 L550.0 636.2 L538.0 624.2 Z"/>
+<path class="sn-diagram__gate" d="M550.0 681.5 L562.0 693.5 L550.0 705.5 L538.0 693.5 Z"/>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--note" data-node="W3" data-gate="W3" tabindex="0" aria-label="W3 gate: Layer model decided and documented">
 <title>W3 gate: Layer model decided and documented</title>
-<rect class="sn-diagram__box" x="568.0" y="600.4" width="178.0" height="47.6"/>
-<rect class="sn-diagram__stripe" x="569.5" y="601.9" width="5" height="44.6"/>
-<text class="sn-diagram__t caption" x="582.0" y="619.6">Gate: Layer model</text>
-<text class="sn-diagram__t caption" x="582.0" y="636.4">decided and documented</text>
+<rect class="sn-diagram__box" x="568.0" y="655.0" width="178.0" height="77.0"/>
+<rect class="sn-diagram__stripe" x="569.5" y="656.5" width="5" height="74.0"/>
+<text class="sn-diagram__t body" x="582.0" y="677.3">Gate: Layer model</text>
+<text class="sn-diagram__t body" x="582.0" y="698.3">decided and</text>
+<text class="sn-diagram__t body" x="582.0" y="719.3">documented</text>
 </g>
-<path class="sn-diagram__gate" d="M792.0 612.2 L804.0 624.2 L792.0 636.2 L780.0 624.2 Z"/>
+<path class="sn-diagram__gate" d="M792.0 681.5 L804.0 693.5 L792.0 705.5 L780.0 693.5 Z"/>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--note" data-node="W4" data-gate="W4" tabindex="0" aria-label="W4 gate: Play history visible in calibrate.py output">
 <title>W4 gate: Play history visible in calibrate.py output</title>
-<rect class="sn-diagram__box" x="810.0" y="600.4" width="178.0" height="47.6"/>
-<rect class="sn-diagram__stripe" x="811.5" y="601.9" width="5" height="44.6"/>
-<text class="sn-diagram__t caption" x="824.0" y="619.6">Gate: Play history visible</text>
-<text class="sn-diagram__t caption" x="824.0" y="636.4">in calibrate.py output</text>
+<rect class="sn-diagram__box" x="810.0" y="655.0" width="178.0" height="77.0"/>
+<rect class="sn-diagram__stripe" x="811.5" y="656.5" width="5" height="74.0"/>
+<text class="sn-diagram__t body" x="824.0" y="677.3">Gate: Play history</text>
+<text class="sn-diagram__t body" x="824.0" y="698.3">visible in</text>
+<text class="sn-diagram__t body" x="824.0" y="719.3">calibrate.py output</text>
 </g>
-<path class="sn-diagram__gate" d="M1034.0 612.2 L1046.0 624.2 L1034.0 636.2 L1022.0 624.2 Z"/>
+<path class="sn-diagram__gate" d="M1034.0 681.5 L1046.0 693.5 L1034.0 705.5 L1022.0 693.5 Z"/>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--note" data-node="W5" data-gate="W5" tabindex="0" aria-label="W5 gate: Run monitor raises a test warning">
 <title>W5 gate: Run monitor raises a test warning</title>
-<rect class="sn-diagram__box" x="1052.0" y="600.4" width="178.0" height="47.6"/>
-<rect class="sn-diagram__stripe" x="1053.5" y="601.9" width="5" height="44.6"/>
-<text class="sn-diagram__t caption" x="1066.0" y="619.6">Gate: Run monitor raises</text>
-<text class="sn-diagram__t caption" x="1066.0" y="636.4">a test warning</text>
+<rect class="sn-diagram__box" x="1052.0" y="655.0" width="178.0" height="77.0"/>
+<rect class="sn-diagram__stripe" x="1053.5" y="656.5" width="5" height="74.0"/>
+<text class="sn-diagram__t body" x="1066.0" y="677.3">Gate: Run monitor</text>
+<text class="sn-diagram__t body" x="1066.0" y="698.3">raises a test warning</text>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--neutral" data-from="W1" data-to="W2" data-edge="W1&gt;W2" tabindex="0" aria-label="W2 depends on W1">
 <title>W2 depends on W1</title>
-<path class="sn-diagram__line" d="M262.0 76.8 L296.0 76.8"/>
-<path class="sn-diagram__head" d="M296.0 76.8 L289.0 73.0 L289.0 80.6 Z"/>
+<path class="sn-diagram__line" d="M262.0 81.0 L296.0 81.0"/>
+<path class="sn-diagram__head" d="M296.0 81.0 L289.0 77.2 L289.0 84.8 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--neutral" data-from="W2" data-to="W3" data-edge="W2&gt;W3" tabindex="0" aria-label="W3 depends on W2">
 <title>W3 depends on W2</title>
-<path class="sn-diagram__line" d="M504.0 76.8 L538.0 76.8"/>
-<path class="sn-diagram__head" d="M538.0 76.8 L531.0 73.0 L531.0 80.6 Z"/>
+<path class="sn-diagram__line" d="M504.0 81.0 L538.0 81.0"/>
+<path class="sn-diagram__head" d="M538.0 81.0 L531.0 77.2 L531.0 84.8 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--neutral" data-from="W2" data-to="W4" data-edge="W2&gt;W4" tabindex="0" aria-label="W4 depends on W2">
 <title>W4 depends on W2</title>
-<path class="sn-diagram__line" d="M478.0 48.8 L478.0 42.8 L806.0 42.8 L806.0 48.8"/>
-<path class="sn-diagram__head" d="M806.0 48.8 L802.1 41.8 L809.9 41.8 Z"/>
+<path class="sn-diagram__line" d="M478.0 53.0 L478.0 47.0 L806.0 47.0 L806.0 53.0"/>
+<path class="sn-diagram__head" d="M806.0 53.0 L802.1 46.0 L809.9 46.0 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--neutral" data-from="W3" data-to="W5" data-edge="W3&gt;W5" tabindex="0" aria-label="W5 depends on W3">
 <title>W5 depends on W3</title>
-<path class="sn-diagram__line" d="M714.0 48.8 L714.0 36.8 L1054.0 36.8 L1054.0 48.8"/>
-<path class="sn-diagram__head" d="M1054.0 48.8 L1050.2 41.8 L1057.8 41.8 Z"/>
+<path class="sn-diagram__line" d="M714.0 53.0 L714.0 41.0 L1054.0 41.0 L1054.0 53.0"/>
+<path class="sn-diagram__head" d="M1054.0 53.0 L1050.2 46.0 L1057.8 46.0 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--neutral" data-from="W4" data-to="W5" data-edge="W4&gt;W5" tabindex="0" aria-label="W5 depends on W4">
 <title>W5 depends on W4</title>
-<path class="sn-diagram__line" d="M988.0 76.8 L1022.0 76.8"/>
-<path class="sn-diagram__head" d="M1022.0 76.8 L1015.0 73.0 L1015.0 80.6 Z"/>
+<path class="sn-diagram__line" d="M988.0 81.0 L1022.0 81.0"/>
+<path class="sn-diagram__head" d="M1022.0 81.0 L1015.0 77.2 L1015.0 84.8 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--queued" data-from="SN-T03" data-to="ML-T02" data-edge="SN-T03&gt;ML-T02" tabindex="0" aria-label="ML-T02 depends on SN-T03">
 <title>ML-T02 depends on SN-T03</title>
-<path class="sn-diagram__line" d="M480.0 365.6 L480.0 335.6"/>
-<path class="sn-diagram__head" d="M480.0 335.6 L476.1 342.6 L483.9 342.6 Z"/>
+<path class="sn-diagram__line" d="M480.0 395.0 L480.0 365.0"/>
+<path class="sn-diagram__head" d="M480.0 365.0 L476.1 372.0 L483.9 372.0 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--queued" data-from="SN-T03" data-to="ML-T05" data-edge="SN-T03&gt;ML-T05" tabindex="0" aria-label="ML-T05 depends on SN-T03">
 <title>ML-T05 depends on SN-T03</title>
-<path class="sn-diagram__line" d="M504.0 408.3 L520.0 408.3 L520.0 462.0 L770.0 462.0 L770.0 523.7 L780.0 523.7"/>
-<path class="sn-diagram__head" d="M780.0 523.7 L773.0 519.9 L773.0 527.6 Z"/>
+<path class="sn-diagram__line" d="M504.0 444.0 L520.0 444.0 L520.0 504.0 L770.0 504.0 L770.0 572.0 L780.0 572.0"/>
+<path class="sn-diagram__head" d="M780.0 572.0 L773.0 568.1 L773.0 575.9 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--queued" data-from="SN-T01" data-to="SN-T02" data-edge="SN-T01&gt;SN-T02" tabindex="0" aria-label="SN-T02 depends on SN-T01">
 <title>SN-T02 depends on SN-T01</title>
-<path class="sn-diagram__line" d="M238.0 220.2 L238.0 250.2"/>
-<path class="sn-diagram__head" d="M238.0 250.2 L234.2 243.2 L241.8 243.2 Z"/>
+<path class="sn-diagram__line" d="M238.0 237.0 L238.0 267.0"/>
+<path class="sn-diagram__head" d="M238.0 267.0 L234.2 260.0 L241.8 260.0 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c3 sn-diagram__edge--queued" data-from="SN-T05" data-to="SN-T06" data-edge="SN-T05&gt;SN-T06" tabindex="0" aria-label="SN-T06 depends on SN-T05">
 <title>SN-T06 depends on SN-T05</title>
-<path class="sn-diagram__line" d="M722.0 220.2 L722.0 250.2"/>
-<path class="sn-diagram__head" d="M722.0 250.2 L718.1 243.2 L725.9 243.2 Z"/>
+<path class="sn-diagram__line" d="M722.0 237.0 L722.0 267.0"/>
+<path class="sn-diagram__head" d="M722.0 267.0 L718.1 260.0 L725.9 260.0 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--queued" data-from="SN-T03" data-to="SN-T08" data-edge="SN-T03&gt;SN-T08" tabindex="0" aria-label="SN-T08 depends on SN-T03">
 <title>SN-T08 depends on SN-T03</title>
-<path class="sn-diagram__line" d="M504.0 408.3 L520.0 408.3 L520.0 346.6 L762.0 346.6 L762.0 408.3 L780.0 408.3"/>
-<path class="sn-diagram__head" d="M780.0 408.3 L773.0 404.4 L773.0 412.2 Z"/>
+<path class="sn-diagram__line" d="M504.0 444.0 L520.0 444.0 L520.0 376.0 L762.0 376.0 L762.0 444.0 L780.0 444.0"/>
+<path class="sn-diagram__head" d="M780.0 444.0 L773.0 440.1 L773.0 447.9 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c7 sn-diagram__edge--queued" data-from="SN-T01" data-to="SN-T09" data-edge="SN-T01&gt;SN-T09" tabindex="0" aria-label="SN-T09 depends on SN-T01">
 <title>SN-T09 depends on SN-T01</title>
-<path class="sn-diagram__line" d="M262.0 177.5 L270.0 177.5 L270.0 115.8 L1012.0 115.8 L1012.0 177.5 L1022.0 177.5"/>
-<path class="sn-diagram__head" d="M1022.0 177.5 L1015.0 173.7 L1015.0 181.3 Z"/>
+<path class="sn-diagram__line" d="M262.0 188.0 L270.0 188.0 L270.0 120.0 L1012.0 120.0 L1012.0 188.0 L1022.0 188.0"/>
+<path class="sn-diagram__head" d="M1022.0 188.0 L1015.0 184.2 L1015.0 191.8 Z"/>
 </g>
-<path class="sn-diagram__now" d="M40.0 24.0 L40.0 654.0"/>
-<g class="sn-diagram__today"><text class="sn-diagram__t caption" x="46.0" y="34.2">Today 7 Nov 2026</text></g>
+<path class="sn-diagram__now" d="M40.0 24.0 L40.0 738.0"/>
+<g class="sn-diagram__today"><text class="sn-diagram__t body" x="46.0" y="37.3">Today 7 Nov 2026</text></g>
 <g class="sn-diagram__legend" aria-label="Legend">
-<text class="sn-diagram__t body-strong" x="24.0" y="685.3">Key</text>
-<rect class="sn-diagram__swatch sn-dg-c3" x="24.0" y="703.4" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="54.0" y="712.2">graph</text>
-<rect class="sn-diagram__swatch sn-dg-c7" x="106.4" y="703.4" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="136.4" y="712.2">services</text>
-<rect class="sn-diagram__swatch sn-dg-c8" x="204.2" y="703.4" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="234.2" y="712.2">ops and design</text>
-<rect class="sn-diagram__legend-box sn-diagram__node--queued" x="342.5" y="700.4" width="22" height="16"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="372.5" y="712.2">Queued &#x28;dashed)</text>
-<g class="sn-diagram__edge--neutral"><path class="sn-diagram__line" d="M493.0 708.4 L515.0 708.4"/></g>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="523.0" y="712.2">Wave depends on wave</text>
-<g class="sn-diagram__edge--queued"><path class="sn-diagram__line" d="M681.4 708.4 L703.4 708.4"/></g>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="711.4" y="712.2">Task depends on task</text>
-<path class="sn-diagram__gate" d="M869.4 699.4 L878.4 708.4 L869.4 717.4 L860.4 708.4 Z"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="888.4" y="712.2">Gate that closes the wave</text>
-<path class="sn-diagram__now" d="M1069.5 699.4 L1069.5 717.4"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="1088.5" y="712.2">Today</text>
+<text class="sn-diagram__t body-strong" x="24.0" y="769.3">Key</text>
+<rect class="sn-diagram__swatch sn-dg-c3" x="24.0" y="789.5" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="54.0" y="799.3">graph</text>
+<rect class="sn-diagram__swatch sn-dg-c7" x="115.0" y="789.5" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="145.0" y="799.3">services</text>
+<rect class="sn-diagram__swatch sn-dg-c8" x="225.2" y="789.5" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="255.2" y="799.3">ops and design</text>
+<rect class="sn-diagram__legend-box sn-diagram__node--queued" x="386.1" y="786.5" width="22" height="16"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="416.1" y="799.3">Queued &#x28;dashed)</text>
+<g class="sn-diagram__edge--neutral"><path class="sn-diagram__line" d="M562.2 794.5 L584.2 794.5"/></g>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="592.2" y="799.3">Wave depends on wave</text>
+<g class="sn-diagram__edge--queued"><path class="sn-diagram__line" d="M785.8 794.5 L807.8 794.5"/></g>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="815.8" y="799.3">Task depends on task</text>
+<path class="sn-diagram__gate" d="M1006.0 785.5 L1015.0 794.5 L1006.0 803.5 L997.0 794.5 Z"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1025.0" y="799.3">Gate that closes the wave</text>
+<path class="sn-diagram__now" d="M1244.1 785.5 L1244.1 803.5"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1263.1" y="799.3">Today</text>
 </g>
 </svg>
