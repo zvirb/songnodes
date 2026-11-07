@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { vi, describe, beforeEach, afterEach, it, expect } from 'vitest';
 import ScraperProgressPage from './ScraperProgressPage';
 import { showToast } from '../components/ds';
+import { api } from '../services/api';
 
 const telemetryState = vi.hoisted(() => ({ scrapeRuns: [] as any[] }));
 
@@ -45,6 +46,7 @@ vi.mock('../features/pipeline/ScrapeWindowCard', () => ({
 vi.mock('../services/api', () => ({
   api: {
     post: vi.fn(),
+    get: vi.fn().mockResolvedValue({ data: { count: 0 } }),
   },
 }));
 
@@ -78,6 +80,7 @@ describe('ScraperProgressPage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(api.get).mockResolvedValue({ data: { count: 0 } });
     telemetryState.scrapeRuns = [];
     fetchMock = vi.fn();
     global.fetch = fetchMock;
@@ -88,10 +91,26 @@ describe('ScraperProgressPage', () => {
     global.fetch = originalFetch;
   });
 
+  it.each([0, 27])('shows the actual review queue count %s', async (count) => {
+    vi.mocked(api.get).mockResolvedValue({ data: { count } });
+    render(<MemoryRouter><ScraperProgressPage /></MemoryRouter>);
+    const tile = screen.getByText('Review queue').closest('.sn-figure-tile')!;
+    await waitFor(() => expect(tile.querySelector('.sn-figure-tile__figure')?.textContent).toBe(String(count)));
+    expect(api.get).toHaveBeenCalledWith('/library/review-queue/count');
+  });
+
+  it('leaves the review queue count unknown when the response has no count', async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: {} });
+    render(<MemoryRouter><ScraperProgressPage /></MemoryRouter>);
+    const tile = screen.getByText('Review queue').closest('.sn-figure-tile')!;
+    await waitFor(() => expect(api.get).toHaveBeenCalled());
+    expect(tile.querySelector('.sn-figure-tile__figure')?.textContent).toBe('–');
+  });
+
   it('renders the queue a scrape form', () => {
     render(<MemoryRouter><ScraperProgressPage /></MemoryRouter>);
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Pipeline: Telemetry' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Pipeline: Health' })).toBeTruthy();
     expect(screen.getAllByRole('heading', { name: 'Queue a scrape' }).length).toBeGreaterThan(0);
     expect(screen.getByTestId('scrape-window-card')).toBeTruthy();
 
@@ -205,5 +224,26 @@ describe('ScraperProgressPage', () => {
   it('shows no stages card when no scrape is unfinished', () => {
     render(<MemoryRouter><ScraperProgressPage /></MemoryRouter>);
     expect(screen.queryByTestId('job-stages')).toBeNull();
+  });
+
+  it('opens on a warn Banner naming the run and linking to /pipeline/runs when yield is half the previous four', () => {
+    telemetryState.scrapeRuns = [
+      { id: 'latest', source: 'mixesdb', query: 'Yield Drop Run', state: 'done', createdAt: '2026-11-01T12:00:00Z', finishedAt: '2026-11-01T12:05:00Z', seconds: 300, playlists: 1, tracks: 10, error: null },
+      { id: 'prev1', source: 'mixesdb', query: 'Run 1', state: 'done', createdAt: '2026-11-01T11:00:00Z', finishedAt: '2026-11-01T11:05:00Z', seconds: 300, playlists: 1, tracks: 100, error: null },
+      { id: 'prev2', source: 'mixesdb', query: 'Run 2', state: 'done', createdAt: '2026-11-01T10:00:00Z', finishedAt: '2026-11-01T10:05:00Z', seconds: 300, playlists: 1, tracks: 100, error: null },
+      { id: 'prev3', source: 'mixesdb', query: 'Run 3', state: 'done', createdAt: '2026-11-01T09:00:00Z', finishedAt: '2026-11-01T09:05:00Z', seconds: 300, playlists: 1, tracks: 100, error: null },
+      { id: 'prev4', source: 'mixesdb', query: 'Run 4', state: 'done', createdAt: '2026-11-01T08:00:00Z', finishedAt: '2026-11-01T08:05:00Z', seconds: 300, playlists: 1, tracks: 100, error: null },
+    ];
+
+    render(<MemoryRouter><ScraperProgressPage /></MemoryRouter>);
+
+    const banner = screen.getByRole('alert');
+    expect(banner).toBeTruthy();
+    expect(banner.getAttribute('data-status')).toBe('warn');
+    expect(screen.getByText(/Resolve yield dropped for Yield Drop Run/)).toBeTruthy();
+
+    const link = screen.getByRole('link', { name: 'See run history' });
+    expect(link).toBeTruthy();
+    expect(link.getAttribute('href')).toBe('/pipeline/runs');
   });
 });

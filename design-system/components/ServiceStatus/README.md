@@ -26,6 +26,9 @@ One row per connected music service (Spotify, TIDAL, Beatport) showing its conne
 | Not connected | idle "Not connected" | what connecting enables | "Connect Beatport" |
 | Error | bad "Error" | what happened, when it retries, whether to act | "Reconnect Spotify" (service colour) |
 
+### Honest OAuth state (UX-11)
+A service row must never show "Connected" or "Configured" merely because credentials or tokens exist in storage. If the access token is missing, status is "Not connected". If the token is expired or revoked, status must be "Expired" with a warning pill (`data-status="warn"`), stating when it expired and what features are blocked (e.g. "Sunday’s “Send to TIDAL” run will skip until you reconnect."). If an API call fails authentication, status must be "Error" (`data-status="bad"`).
+
 ## Visual rules
 Service colours (`svc-spotify`, `svc-tidal` and their `on-` pairs) appear only on Connect and Reconnect buttons (`__btn--spotify`, `__btn--tidal`). Beatport has no token, so it uses a secondary button. State is never shown by brand colour.
 
@@ -36,4 +39,4 @@ Each row is a labelled section. Buttons name the service ("Reconnect TIDAL"). Wh
 Below 600px the action moves under the text at full width.
 
 ## In SongNodes
-Replaces the connect blocks in `SettingsPanel.tsx` (the 🎵 icon, "TIDAL - CONNECTED ✓" and the `alert()` messages) and the connection notes in `TidalPlaylistManager.tsx` and `SpotifyPlaylistManager.tsx`.
+Replaces the connect blocks in `SettingsPage.tsx` and `SettingsPanel.tsx` (the 🎵 icon, "TIDAL - CONNECTED ✓" and the `alert()` messages) and the connection notes in `TidalPlaylistManager.tsx` and `SpotifyPlaylistManager.tsx` with honest OAuth status rows (UX-11).

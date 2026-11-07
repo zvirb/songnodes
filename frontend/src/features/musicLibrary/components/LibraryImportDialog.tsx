@@ -119,6 +119,9 @@ export const LibraryImportDialog: React.FC<LibraryImportDialogProps> = ({ open, 
         },
         body: fileContent,
       });
+      if (res.status === 413) {
+        throw new Error('Upload exceeds the maximum file size limit (50 MB)');
+      }
       if (!res.ok) throw new Error('Ingest failed');
       const data = await res.json();
       setJobId(data.job_id);
@@ -129,7 +132,10 @@ export const LibraryImportDialog: React.FC<LibraryImportDialogProps> = ({ open, 
   };
 
   const retryJob = async () => {
-    if (!jobId) return;
+    if (!jobId) {
+      startImport();
+      return;
+    }
     setJobStatus('queued');
     setJobError(null);
     try {
@@ -177,9 +183,20 @@ export const LibraryImportDialog: React.FC<LibraryImportDialogProps> = ({ open, 
   }, [jobId, jobStatus, onReload, pollMs]);
 
   const steps = [
-    { name: 'Upload file', state: jobStatus ? 'done' : 'waiting' },
-    { name: 'Queue job', state: jobStatus === 'queued' ? 'running' : (jobStatus === 'running' || jobStatus === 'succeeded' || jobStatus === 'dead' ? 'done' : 'waiting') },
-    { name: 'Import tracks', state: jobStatus === 'running' ? 'running' : (jobStatus === 'succeeded' ? 'done' : (jobStatus === 'dead' ? 'failed' : 'waiting')), detail: jobStatus === 'dead' ? jobError || 'Failed' : undefined }
+    {
+      name: 'Upload file',
+      state: jobStatus === 'failed' ? 'failed' : (jobStatus ? 'done' : 'waiting'),
+      detail: jobStatus === 'failed' ? jobError || 'Upload failed' : undefined,
+    },
+    {
+      name: 'Queue job',
+      state: jobStatus === 'queued' ? 'running' : (jobStatus === 'running' || jobStatus === 'succeeded' || jobStatus === 'dead' ? 'done' : 'waiting'),
+    },
+    {
+      name: 'Import tracks',
+      state: jobStatus === 'running' ? 'running' : (jobStatus === 'succeeded' ? 'done' : (jobStatus === 'dead' ? 'failed' : 'waiting')),
+      detail: jobStatus === 'dead' ? jobError || 'Failed' : undefined,
+    },
   ];
 
   return (

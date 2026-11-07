@@ -4,6 +4,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import SettingsPage from './SettingsPage';
+import useStore from '../store/useStore';
 
 // Mock fetch globally
 global.fetch = vi.fn().mockImplementation((url: string) => {
@@ -328,5 +329,39 @@ describe('SettingsPage', () => {
     renderAt('/settings/service-1001tracklists');
     expect(await screen.findByText('Username')).toBeTruthy();
     expect(screen.getByText('Your 1001tracklists.com account username')).toBeTruthy();
+  });
+
+  it('renders honest OAuth states: Expired when token is expired, Connected when valid, and Not connected', () => {
+    // 1. Not connected initially
+    const { unmount } = renderAt('/settings/tidal-connection');
+    expect(screen.getByText('Not connected')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Connect TIDAL' })).toBeTruthy();
+    unmount();
+
+    // 2. Expired OAuth token
+    useStore.getState().credentials.updateCredentials('tidal', {
+      accessToken: 'expired-token',
+      expiresAt: Date.now() - 100000,
+      isConnected: true,
+    });
+    const { unmount: unmountExpired } = renderAt('/settings/tidal-connection');
+    expect(screen.getByText('Expired')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Reconnect TIDAL' })).toBeTruthy();
+    expect(screen.getByText(/Sunday’s “Send to TIDAL” run will skip until you reconnect/i)).toBeTruthy();
+    unmountExpired();
+
+    // 3. Connected OAuth token
+    useStore.getState().credentials.updateCredentials('tidal', {
+      accessToken: 'valid-token',
+      expiresAt: Date.now() + 10000000,
+      isConnected: true,
+    });
+    const { unmount: unmountConnected } = renderAt('/settings/tidal-connection');
+    expect(screen.getByText('Connected')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Disconnect' })).toBeTruthy();
+    unmountConnected();
+
+    // Reset store
+    useStore.getState().credentials.clearCredentials();
   });
 });
