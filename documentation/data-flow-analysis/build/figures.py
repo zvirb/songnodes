@@ -40,6 +40,10 @@ def build_all(F, D, OUT):
     for f in figs:
         if f["kind"] == "chart" and hasattr(charts, "recompute"):
             charts.recompute(F, f)                     # gate: every chart value recomputes from findings.json
+    keep = {f["file"] for f in figs if f.get("file")}
+    for old in OUT.glob("*.svg"):              # generated figures no longer in the registry (renamed or split into panels)
+        if old.name not in keep:
+            old.unlink()
     css = D["svg_css"] + "\n" + figure_css()
     for f in figs:   # copy that quotes code is entity-escaped (render.copy_safe); standalone files are XML, inline copies HTML
         if f.get("file"):

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1288 814" role="img" aria-labelledby="D10-t D10-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1753 964" role="img" aria-labelledby="D10-t D10-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
 :root, [data-theme="dark"] {
   --bg: #222222;
   --surface-1: #2d2d2d;
@@ -445,6 +445,7 @@
   --drawer-w: 300px;
   --rail-w: 248px;
   --content-max: 1400px;
+  --print-wide-h: 150mm;
   --print-wide-w: 273mm;
   --prose-max: 68ch;
   --z-base: 0;
@@ -789,429 +790,430 @@
 .sn-chart-frame__axis-title { fill: var(--chart-axis); font-family: var(--font-body); font-size: 0.6875rem; }</style>
 <title id="D10-t">Storage backbone before and after</title>
 <desc id="D10-d">Left: the 48 built stores grouped by project, with the cross-project hops listed. Right: the proposed backbone tree; new folders and files are dashed brand cards.</desc>
-<rect class="sn-diagram__bg" x="0" y="0" width="1288" height="814"/>
-<text class="sn-diagram__t body-strong" x="24.0" y="39.3">Before: Built stores by project</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="24.0" y="65.2">musicLibrary</text>
+<rect class="sn-diagram__bg" x="0" y="0" width="1753" height="964"/>
+<text class="sn-diagram__t title-s" x="24.0" y="42.4">Before: Built stores by project</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="24.0" y="74.5">musicLibrary</text>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-store-artifact-db" tabindex="0" aria-label="Set Builder artifact database, collection sets &#x28;ml-store-artifact-db): artifact-db, ops, owner Markus via the page &#x28;only-you-write rule)">
 <title>Set Builder artifact database, collection sets &#x28;ml-store-artifact-db): artifact-db, ops, owner Markus via the page &#x28;only-you-write rule)</title>
-<rect class="sn-diagram__box" x="24.0" y="73.8" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="25.5" y="75.3" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="38.0" y="94.1">Set Builder artifact…</text>
+<rect class="sn-diagram__box" x="24.0" y="85.0" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="25.5" y="86.5" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="38.0" y="109.3">Set Builder…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-store-artifact-files" tabindex="0" aria-label="Set Builder published files &#x28;ml-store-artifact-files): artifact-files, ops, owner weekly agent &#x28;library.json), supervised rebuild &#x28;app.js)">
 <title>Set Builder published files &#x28;ml-store-artifact-files): artifact-files, ops, owner weekly agent &#x28;library.json), supervised rebuild &#x28;app.js)</title>
-<rect class="sn-diagram__box" x="24.0" y="107.0" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="25.5" y="108.5" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="38.0" y="127.3">Set Builder publishe…</text>
+<rect class="sn-diagram__box" x="24.0" y="123.8" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="25.5" y="125.3" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="38.0" y="148.1">Set Builder…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-store-config" tabindex="0" aria-label="config &#x28;ml-store-config): file, ops, owner Markus &#x28;hand-edited; weekly agent must not edit thresholds)">
 <title>config &#x28;ml-store-config): file, ops, owner Markus &#x28;hand-edited; weekly agent must not edit thresholds)</title>
-<rect class="sn-diagram__box" x="24.0" y="140.2" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="25.5" y="141.7" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="38.0" y="160.5">config</text>
+<rect class="sn-diagram__box" x="24.0" y="162.6" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="25.5" y="164.1" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="38.0" y="186.9">config</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-store-data" tabindex="0" aria-label="data &#x28;ml-store-data): folder, ops, owner fetch_metabrainz.*, ref_mb scripts and compose, MB investigation agents">
 <title>data &#x28;ml-store-data): folder, ops, owner fetch_metabrainz.*, ref_mb scripts and compose, MB investigation agents</title>
-<rect class="sn-diagram__box" x="24.0" y="173.4" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="25.5" y="174.9" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="38.0" y="193.7">data</text>
+<rect class="sn-diagram__box" x="24.0" y="201.4" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="25.5" y="202.9" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="38.0" y="225.7">data</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-store-inbox" tabindex="0" aria-label="inbox &#x28;ml-store-inbox): folder, ops, owner scrape, ingest, resolve, sync-tidal, weekly agent &#x28;artifact_sets.json), beatport agent &#x28;resolved/sync_result), Markus &#x28;manual_adds.csv)">
 <title>inbox &#x28;ml-store-inbox): folder, ops, owner scrape, ingest, resolve, sync-tidal, weekly agent &#x28;artifact_sets.json), beatport agent &#x28;resolved/sync_result), Markus &#x28;manual_adds.csv)</title>
-<rect class="sn-diagram__box" x="24.0" y="206.6" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="25.5" y="208.1" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="38.0" y="226.9">inbox</text>
+<rect class="sn-diagram__box" x="24.0" y="240.2" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="25.5" y="241.7" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="38.0" y="264.5">inbox</text>
 </g>
 <g class="sn-diagram__node sn-dg-c2 sn-diagram__node--production" data-node="ml-store-ledger" tabindex="0" aria-label="DJ library ledger &#x28;ml-store-ledger): file, library, owner run_weekly ingest/process/confirm">
 <title>DJ library ledger &#x28;ml-store-ledger): file, library, owner run_weekly ingest/process/confirm</title>
-<rect class="sn-diagram__box" x="24.0" y="239.8" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="25.5" y="241.3" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="38.0" y="260.1">DJ library ledger</text>
+<rect class="sn-diagram__box" x="24.0" y="279.0" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="25.5" y="280.5" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="38.0" y="303.3">DJ library ledger</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-store-outputs" tabindex="0" aria-label="outputs &#x28;ml-store-outputs): folder, ops, owner process, build_db, calibrate">
 <title>outputs &#x28;ml-store-outputs): folder, ops, owner process, build_db, calibrate</title>
-<rect class="sn-diagram__box" x="24.0" y="273.0" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="25.5" y="274.5" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="38.0" y="293.3">outputs</text>
+<rect class="sn-diagram__box" x="24.0" y="317.8" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="25.5" y="319.3" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="38.0" y="342.1">outputs</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-store-overrides" tabindex="0" aria-label="overrides &#x28;ml-store-overrides): folder, ops, owner Markus">
 <title>overrides &#x28;ml-store-overrides): folder, ops, owner Markus</title>
-<rect class="sn-diagram__box" x="24.0" y="306.2" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="25.5" y="307.7" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="38.0" y="326.5">overrides</text>
+<rect class="sn-diagram__box" x="24.0" y="356.6" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="25.5" y="358.1" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="38.0" y="380.9">overrides</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-store-plan" tabindex="0" aria-label="plan &#x28;ml-store-plan): folder, ops, owner prompt builders and launchers">
 <title>plan &#x28;ml-store-plan): folder, ops, owner prompt builders and launchers</title>
-<rect class="sn-diagram__box" x="24.0" y="339.4" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="25.5" y="340.9" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="38.0" y="359.7">plan</text>
+<rect class="sn-diagram__box" x="24.0" y="395.4" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="25.5" y="396.9" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="38.0" y="419.7">plan</text>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="ml-store-ref-mb" tabindex="0" aria-label="ref_mb Postgres &#x28;ml-store-ref-mb): postgres, ingest, owner ref_mb load scripts">
 <title>ref_mb Postgres &#x28;ml-store-ref-mb): postgres, ingest, owner ref_mb load scripts</title>
-<rect class="sn-diagram__box" x="24.0" y="372.6" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="25.5" y="374.1" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="38.0" y="392.9">ref_mb Postgres</text>
+<rect class="sn-diagram__box" x="24.0" y="434.2" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="25.5" y="435.7" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="38.0" y="458.5">ref_mb Postgres</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-store-secrets" tabindex="0" aria-label="secrets &#x28;ml-store-secrets): folder, ops, owner tidal_cli, sync-tidal, sync-sets; Markus">
 <title>secrets &#x28;ml-store-secrets): folder, ops, owner tidal_cli, sync-tidal, sync-sets; Markus</title>
-<rect class="sn-diagram__box" x="24.0" y="405.8" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="25.5" y="407.3" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="38.0" y="426.1">secrets</text>
+<rect class="sn-diagram__box" x="24.0" y="473.0" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="25.5" y="474.5" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="38.0" y="497.3">secrets</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-store-sqlite" tabindex="0" aria-label="dj_library.sqlite &#x28;ml-store-sqlite): sqlite, ops, owner build_db">
 <title>dj_library.sqlite &#x28;ml-store-sqlite): sqlite, ops, owner build_db</title>
-<rect class="sn-diagram__box" x="24.0" y="439.0" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="25.5" y="440.5" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="38.0" y="459.3">dj_library.sqlite</text>
+<rect class="sn-diagram__box" x="24.0" y="511.8" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="25.5" y="513.3" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="38.0" y="536.1">dj_library.sqlite</text>
 </g>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="196.0" y="65.2">songnodes</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="196.0" y="74.5">songnodes</text>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-store-postgres" tabindex="0" aria-label="songnodes Postgres 18 &#x28;sn-be-store-postgres): postgres, ops, owner rest-api, worker, unified-scraper, graph-api">
 <title>songnodes Postgres 18 &#x28;sn-be-store-postgres): postgres, ops, owner rest-api, worker, unified-scraper, graph-api</title>
-<rect class="sn-diagram__box" x="196.0" y="73.8" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="197.5" y="75.3" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="210.0" y="94.1">songnodes Postgre…</text>
+<rect class="sn-diagram__box" x="196.0" y="85.0" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="197.5" y="86.5" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="210.0" y="109.3">songnodes…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-tbl-bronze" tabindex="0" aria-label="bronze_scraped_playlists +2 &#x28;sn-be-tbl-bronze): postgres, ops, owner unified-scraper persistence pipeline; rest-api import-tracklist">
 <title>bronze_scraped_playlists +2 &#x28;sn-be-tbl-bronze): postgres, ops, owner unified-scraper persistence pipeline; rest-api import-tracklist</title>
-<rect class="sn-diagram__box" x="196.0" y="107.0" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="197.5" y="108.5" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="210.0" y="127.3">bronze_scraped_pla…</text>
+<rect class="sn-diagram__box" x="196.0" y="123.8" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="197.5" y="125.3" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="210.0" y="148.1">bronze_scrape…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-tbl-bronze-api-enrichments" tabindex="0" aria-label="bronze_api_enrichments &#x28;sn-be-tbl-bronze-api-enrichments): postgres, ops, owner none">
 <title>bronze_api_enrichments &#x28;sn-be-tbl-bronze-api-enrichments): postgres, ops, owner none</title>
-<rect class="sn-diagram__box" x="196.0" y="140.2" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="197.5" y="141.7" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="210.0" y="160.5">bronze_api_enrichm…</text>
+<rect class="sn-diagram__box" x="196.0" y="162.6" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="197.5" y="164.1" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="210.0" y="186.9">bronze_api_en…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-tbl-gold-analytics" tabindex="0" aria-label="gold_track_analytics +2 &#x28;sn-be-tbl-gold-analytics): postgres, ops, owner data-transformer and gold_layer_processor &#x28;not deployed)">
 <title>gold_track_analytics +2 &#x28;sn-be-tbl-gold-analytics): postgres, ops, owner data-transformer and gold_layer_processor &#x28;not deployed)</title>
-<rect class="sn-diagram__box" x="196.0" y="173.4" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="197.5" y="174.9" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="210.0" y="193.7">gold_track_analytic…</text>
+<rect class="sn-diagram__box" x="196.0" y="201.4" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="197.5" y="202.9" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="210.0" y="225.7">gold_track_an…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c3 sn-diagram__node--production" data-node="sn-be-tbl-gold-track-graph" tabindex="0" aria-label="gold_track_graph &#x28;sn-be-tbl-gold-track-graph): postgres, graph, owner created at init; refreshed only by restore_and_promote.sh and remove_same_artist_edges.sql">
 <title>gold_track_graph &#x28;sn-be-tbl-gold-track-graph): postgres, graph, owner created at init; refreshed only by restore_and_promote.sh and remove_same_artist_edges.sql</title>
-<rect class="sn-diagram__box" x="196.0" y="206.6" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="197.5" y="208.1" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="210.0" y="226.9">gold_track_graph</text>
+<rect class="sn-diagram__box" x="196.0" y="240.2" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="197.5" y="241.7" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="210.0" y="264.5">gold_track_gra…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="sn-be-tbl-ingestion-jobs" tabindex="0" aria-label="ingestion_jobs &#x28;sn-be-tbl-ingestion-jobs): postgres, ingest, owner rest-api &#x28;enqueue, retry), worker &#x28;schedule, claim, settle), start-dev.sh &#x28;transition_scoring seed)">
 <title>ingestion_jobs &#x28;sn-be-tbl-ingestion-jobs): postgres, ingest, owner rest-api &#x28;enqueue, retry), worker &#x28;schedule, claim, settle), start-dev.sh &#x28;&#116;ransition_scoring seed)</title>
-<rect class="sn-diagram__box" x="196.0" y="239.8" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="197.5" y="241.3" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="210.0" y="260.1">ingestion_jobs</text>
+<rect class="sn-diagram__box" x="196.0" y="279.0" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="197.5" y="280.5" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="210.0" y="303.3">ingestion_jobs</text>
 </g>
 <g class="sn-diagram__node sn-dg-c2 sn-diagram__node--production" data-node="sn-be-tbl-library" tabindex="0" aria-label="library schema &#x28;sn-be-tbl-library): postgres, library, owner worker library_ingest; rest-api sets routes">
 <title>library schema &#x28;sn-be-tbl-library): postgres, library, owner worker library_ingest; rest-api sets routes</title>
-<rect class="sn-diagram__box" x="196.0" y="273.0" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="197.5" y="274.5" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="210.0" y="293.3">library schema</text>
+<rect class="sn-diagram__box" x="196.0" y="317.8" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="197.5" y="319.3" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="210.0" y="342.1">library schema</text>
 </g>
 <g class="sn-diagram__node sn-dg-c7 sn-diagram__node--production" data-node="sn-be-tbl-oauth" tabindex="0" aria-label="user_oauth_tokens + api_keys &#x28;sn-be-tbl-oauth): postgres, services, owner rest-api music_auth and api_keys routers">
 <title>user_oauth_tokens + api_keys &#x28;sn-be-tbl-oauth): postgres, services, owner rest-api music_auth and api_keys routers</title>
-<rect class="sn-diagram__box" x="196.0" y="306.2" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="197.5" y="307.7" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="210.0" y="326.5">user_oauth_tokens…</text>
+<rect class="sn-diagram__box" x="196.0" y="356.6" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="197.5" y="358.1" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="210.0" y="380.9">user_oauth_to…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-tbl-outbox" tabindex="0" aria-label="outbox_events +2 &#x28;sn-be-tbl-outbox): postgres, ops, owner every catalog write in the same transaction">
 <title>outbox_events +2 &#x28;sn-be-tbl-outbox): postgres, ops, owner every catalog write in the same transaction</title>
-<rect class="sn-diagram__box" x="196.0" y="339.4" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="197.5" y="340.9" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="210.0" y="359.7">outbox_events +2</text>
+<rect class="sn-diagram__box" x="196.0" y="395.4" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="197.5" y="396.9" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="210.0" y="419.7">outbox_events…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-tbl-projection-tracks" tabindex="0" aria-label="projection_tracks &#x28;sn-be-tbl-projection-tracks): postgres, ops, owner worker projection_consume / rebuild">
 <title>projection_tracks &#x28;sn-be-tbl-projection-tracks): postgres, ops, owner worker projection_consume / rebuild</title>
-<rect class="sn-diagram__box" x="196.0" y="372.6" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="197.5" y="374.1" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="210.0" y="392.9">projection_tracks</text>
+<rect class="sn-diagram__box" x="196.0" y="434.2" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="197.5" y="435.7" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="210.0" y="458.5">projection_trac…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-tbl-silver" tabindex="0" aria-label="silver_enriched_tracks +6 &#x28;sn-be-tbl-silver): postgres, ops, owner worker datalayer &#x28;ingest, evidence, identity); also scraper persistence pipeline and rest-api catalog writes">
 <title>silver_enriched_tracks +6 &#x28;sn-be-tbl-silver): postgres, ops, owner worker datalayer &#x28;ingest, evidence, identity); also scraper persistence pipeline and rest-api catalog writes</title>
-<rect class="sn-diagram__box" x="196.0" y="405.8" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="197.5" y="407.3" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="210.0" y="426.1">silver_enriched_trac…</text>
+<rect class="sn-diagram__box" x="196.0" y="473.0" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="197.5" y="474.5" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="210.0" y="497.3">silver_enriche…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-tbl-target-tracks" tabindex="0" aria-label="target_tracks &#x28;sn-be-tbl-target-tracks): postgres, ops, owner rest-api target_tracks router; library ingest auto-promotion; scrape_targets">
 <title>target_tracks &#x28;sn-be-tbl-target-tracks): postgres, ops, owner rest-api target_tracks router; library ingest auto-promotion; scrape_targets</title>
-<rect class="sn-diagram__box" x="196.0" y="439.0" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="197.5" y="440.5" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="210.0" y="459.3">target_tracks</text>
+<rect class="sn-diagram__box" x="196.0" y="511.8" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="197.5" y="513.3" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="210.0" y="536.1">target_tracks</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-tbl-web-call-log" tabindex="0" aria-label="web_call_log &#x28;sn-be-tbl-web-call-log): postgres, ops, owner common/providers/web_call_log.py">
 <title>web_call_log &#x28;sn-be-tbl-web-call-log): postgres, ops, owner common/providers/web_call_log.py</title>
-<rect class="sn-diagram__box" x="196.0" y="472.2" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="197.5" y="473.7" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="210.0" y="492.5">web_call_log</text>
+<rect class="sn-diagram__box" x="196.0" y="550.6" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="197.5" y="552.1" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="210.0" y="574.9">web_call_log</text>
 </g>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="368.0" y="65.2">songnodes &#x28;cont.)</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="368.0" y="74.5">songnodes &#x28;cont.)</text>
 <g class="sn-diagram__node sn-dg-c7 sn-diagram__node--queued" data-node="sn-be-q-store-cloudflare-tunnel" tabindex="0" aria-label="Cloudflare tunnel song.aiwfe.com &#x28;sn-be-q-store-cloudflare-tunnel): external-api, services, owner operator">
 <title>Cloudflare tunnel song.aiwfe.com &#x28;sn-be-q-store-cloudflare-tunnel): external-api, services, owner operator</title>
-<rect class="sn-diagram__box" x="368.0" y="73.8" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="369.5" y="75.3" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="382.0" y="94.1">Cloudflare tunnel…</text>
+<rect class="sn-diagram__box" x="368.0" y="85.0" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="369.5" y="86.5" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="382.0" y="109.3">Cloudflare…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c3 sn-diagram__node--production" data-node="sn-be-store-memgraph" tabindex="0" aria-label="Memgraph &#x28;sn-be-store-memgraph): external-api, graph, owner graph_projection consumer when enabled">
 <title>Memgraph &#x28;sn-be-store-memgraph): external-api, graph, owner graph_projection consumer when enabled</title>
-<rect class="sn-diagram__box" x="368.0" y="107.0" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="369.5" y="108.5" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="382.0" y="127.3">Memgraph</text>
+<rect class="sn-diagram__box" x="368.0" y="123.8" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="369.5" y="125.3" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="382.0" y="148.1">Memgraph</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-store-rabbitmq" tabindex="0" aria-label="RabbitMQ 4.3 &#x28;sn-be-store-rabbitmq): rabbitmq, ops, owner Celery beat in worker">
 <title>RabbitMQ 4.3 &#x28;sn-be-store-rabbitmq): rabbitmq, ops, owner Celery beat in worker</title>
-<rect class="sn-diagram__box" x="368.0" y="140.2" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="369.5" y="141.7" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="382.0" y="160.5">RabbitMQ 4.3</text>
+<rect class="sn-diagram__box" x="368.0" y="162.6" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="369.5" y="164.1" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="382.0" y="186.9">RabbitMQ 4.3</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-store-redis" tabindex="0" aria-label="Redis 8.10 &#x28;sn-be-store-redis): redis, ops, owner rest-api &#x28;OAuth state), graph-api &#x28;batch status), unified-scraper spiders &#x28;quota, dedupe)">
 <title>Redis 8.10 &#x28;sn-be-store-redis): redis, ops, owner rest-api &#x28;OAuth state), graph-api &#x28;batch status), unified-scraper spiders &#x28;quota, dedupe)</title>
-<rect class="sn-diagram__box" x="368.0" y="173.4" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="369.5" y="174.9" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="382.0" y="193.7">Redis 8.10</text>
+<rect class="sn-diagram__box" x="368.0" y="201.4" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="369.5" y="202.9" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="382.0" y="225.7">Redis 8.10</text>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="sn-be-store-refmb" tabindex="0" aria-label="ref_mb MusicBrainz mirror &#x28;sn-be-store-refmb): postgres, ingest, owner external &#x28;musicLibrary fetch_metabrainz)">
 <title>ref_mb MusicBrainz mirror &#x28;sn-be-store-refmb): postgres, ingest, owner external &#x28;musicLibrary fetch_metabrainz)</title>
-<rect class="sn-diagram__box" x="368.0" y="206.6" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="369.5" y="208.1" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="382.0" y="226.9">ref_mb MusicBrainz…</text>
+<rect class="sn-diagram__box" x="368.0" y="240.2" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="369.5" y="241.7" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="382.0" y="264.5">ref_mb…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="sn-be-store-scraper-progress" tabindex="0" aria-label="unified scraper in-memory progress &#x28;sn-be-store-scraper-progress): memory, ingest, owner unified-scraper">
 <title>unified scraper in-memory progress &#x28;sn-be-store-scraper-progress): memory, ingest, owner unified-scraper</title>
-<rect class="sn-diagram__box" x="368.0" y="239.8" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="369.5" y="241.3" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="382.0" y="260.1">unified scraper…</text>
+<rect class="sn-diagram__box" x="368.0" y="279.0" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="369.5" y="280.5" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="382.0" y="303.3">unified scrape…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-tbl-musicdb-legacy" tabindex="0" aria-label="musicdb.* legacy schema &#x28;sn-be-tbl-musicdb-legacy): postgres, ops, owner graph-api user-setlists, audio-analysis queue path, root &#x53;QL scripts">
 <title>musicdb.* legacy schema &#x28;sn-be-tbl-musicdb-legacy): postgres, ops, owner graph-api user-setlists, audio-analysis queue path, root &#x53;QL scripts</title>
-<rect class="sn-diagram__box" x="368.0" y="273.0" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="369.5" y="274.5" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="382.0" y="293.3">musicdb.* legacy…</text>
+<rect class="sn-diagram__box" x="368.0" y="317.8" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="369.5" y="319.3" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="382.0" y="342.1">musicdb.*…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-tbl-song-adjacency" tabindex="0" aria-label="song_adjacency &#x28;sn-be-tbl-song-adjacency): postgres, ops, owner scraper persistence pipeline">
 <title>song_adjacency &#x28;sn-be-tbl-song-adjacency): postgres, ops, owner scraper persistence pipeline</title>
-<rect class="sn-diagram__box" x="368.0" y="306.2" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="369.5" y="307.7" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="382.0" y="326.5">song_adjacency</text>
+<rect class="sn-diagram__box" x="368.0" y="356.6" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="369.5" y="358.1" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="382.0" y="380.9">song_adjacency</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-fe-store-browser-ls" tabindex="0" aria-label="per-device localStorage keys &#x28;sn-fe-store-browser-ls): localStorage, ops, owner see signals sn-fe-ls-*">
 <title>per-device localStorage keys &#x28;sn-fe-store-browser-ls): localStorage, ops, owner see signals sn-fe-ls-*</title>
-<rect class="sn-diagram__box" x="368.0" y="339.4" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="369.5" y="340.9" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="382.0" y="359.7">per-device…</text>
+<rect class="sn-diagram__box" x="368.0" y="395.4" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="369.5" y="396.9" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="382.0" y="419.7">per-device…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c2 sn-diagram__node--production" data-node="sn-fe-store-library-cache" tabindex="0" aria-label="loadLibrary promise cache &#x28;sn-fe-store-library-cache): memory, library, owner loadLibrary">
 <title>loadLibrary promise cache &#x28;sn-fe-store-library-cache): memory, library, owner loadLibrary</title>
-<rect class="sn-diagram__box" x="368.0" y="372.6" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="369.5" y="374.1" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="382.0" y="392.9">loadLibrary promise…</text>
+<rect class="sn-diagram__box" x="368.0" y="434.2" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="369.5" y="435.7" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="382.0" y="458.5">loadLibrary…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-fe-store-nginx" tabindex="0" aria-label="frontend nginx &#x28;sn-fe-store-nginx): proxy, ops, owner frontend/Dockerfile">
 <title>frontend nginx &#x28;sn-fe-store-nginx): proxy, ops, owner frontend/Dockerfile</title>
-<rect class="sn-diagram__box" x="368.0" y="405.8" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="369.5" y="407.3" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="382.0" y="426.1">frontend nginx</text>
+<rect class="sn-diagram__box" x="368.0" y="473.0" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="369.5" y="474.5" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="382.0" y="497.3">frontend nginx</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-fe-store-unified-tracks" tabindex="0" aria-label="useUnifiedTracksStore &#x28;sn-fe-store-unified-tracks): memory, ops, owner hooks/useUnifiedTracks.ts refresh&#x28;)">
 <title>useUnifiedTracksStore &#x28;sn-fe-store-unified-tracks): memory, ops, owner hooks/useUnifiedTracks.ts refresh&#x28;)</title>
-<rect class="sn-diagram__box" x="368.0" y="439.0" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="369.5" y="440.5" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="382.0" y="459.3">useUnifiedTracksSt…</text>
+<rect class="sn-diagram__box" x="368.0" y="511.8" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="369.5" y="513.3" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="382.0" y="536.1">useUnifiedTra…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-fe-store-zustand" tabindex="0" aria-label="useStore &#x28;sn-fe-store-zustand): localStorage, ops, owner frontend store slices &#x28;graph, credentials, pathfinding, search)">
 <title>useStore &#x28;sn-fe-store-zustand): localStorage, ops, owner frontend store slices &#x28;graph, credentials, pathfinding, search)</title>
-<rect class="sn-diagram__box" x="368.0" y="472.2" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="369.5" y="473.7" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="382.0" y="492.5">useStore</text>
+<rect class="sn-diagram__box" x="368.0" y="550.6" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="369.5" y="552.1" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="382.0" y="574.9">useStore</text>
 </g>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="540.0" y="65.2">external</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="540.0" y="74.5">external</text>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="ext-3rrr" tabindex="0" aria-label="3RRR episode pages &#x28;ext-3rrr): external-api, ingest, owner third party">
 <title>3RRR episode pages &#x28;ext-3rrr): external-api, ingest, owner third party</title>
-<rect class="sn-diagram__box" x="540.0" y="73.8" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="541.5" y="75.3" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="554.0" y="94.1">3RRR episode pages</text>
+<rect class="sn-diagram__box" x="540.0" y="85.0" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="541.5" y="86.5" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="554.0" y="109.3">3RRR episode…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="ext-abc-plays" tabindex="0" aria-label="&#x41;BC plays &#x41;PI &#x28;ext-abc-plays): external-api, ingest, owner third party">
 <title>&#x41;BC plays &#x41;PI &#x28;ext-abc-plays): external-api, ingest, owner third party</title>
-<rect class="sn-diagram__box" x="540.0" y="107.0" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="541.5" y="108.5" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="554.0" y="127.3">&#x41;BC plays &#x41;PI</text>
+<rect class="sn-diagram__box" x="540.0" y="123.8" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="541.5" y="125.3" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="554.0" y="148.1">&#x41;BC plays &#x41;PI</text>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="ext-aria" tabindex="0" aria-label="&#x41;RIA Club Chart &#x28;ext-aria): external-api, ingest, owner third party">
 <title>&#x41;RIA Club Chart &#x28;ext-aria): external-api, ingest, owner third party</title>
-<rect class="sn-diagram__box" x="540.0" y="140.2" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="541.5" y="141.7" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="554.0" y="160.5">&#x41;RIA Club Chart</text>
+<rect class="sn-diagram__box" x="540.0" y="162.6" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="541.5" y="164.1" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="554.0" y="186.9">&#x41;RIA Club Chart</text>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="ext-balance-wp" tabindex="0" aria-label="Balance Selections WordPress &#x41;PI &#x28;ext-balance-wp): external-api, ingest, owner third party">
 <title>Balance Selections WordPress &#x41;PI &#x28;ext-balance-wp): external-api, ingest, owner third party</title>
-<rect class="sn-diagram__box" x="540.0" y="173.4" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="541.5" y="174.9" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="554.0" y="193.7">Balance Selections…</text>
+<rect class="sn-diagram__box" x="540.0" y="201.4" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="541.5" y="202.9" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="554.0" y="225.7">Balance…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="ext-deezer" tabindex="0" aria-label="Deezer &#x41;PI &#x28;ext-deezer): external-api, ingest, owner third party">
 <title>Deezer &#x41;PI &#x28;ext-deezer): external-api, ingest, owner third party</title>
-<rect class="sn-diagram__box" x="540.0" y="206.6" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="541.5" y="208.1" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="554.0" y="226.9">Deezer &#x41;PI</text>
+<rect class="sn-diagram__box" x="540.0" y="240.2" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="541.5" y="241.7" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="554.0" y="264.5">Deezer &#x41;PI</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ext-jules" tabindex="0" aria-label="Jules sessions &#x28;ext-jules): external-api, ops, owner third party">
 <title>Jules sessions &#x28;ext-jules): external-api, ops, owner third party</title>
-<rect class="sn-diagram__box" x="540.0" y="239.8" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="541.5" y="241.3" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="554.0" y="260.1">Jules sessions</text>
+<rect class="sn-diagram__box" x="540.0" y="279.0" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="541.5" y="280.5" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="554.0" y="303.3">Jules sessions</text>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="ext-metabrainz" tabindex="0" aria-label="MetaBrainz dumps &#x28;ext-metabrainz): external-api, ingest, owner third party">
 <title>MetaBrainz dumps &#x28;ext-metabrainz): external-api, ingest, owner third party</title>
-<rect class="sn-diagram__box" x="540.0" y="273.0" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="541.5" y="274.5" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="554.0" y="293.3">MetaBrainz dumps</text>
+<rect class="sn-diagram__box" x="540.0" y="317.8" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="541.5" y="319.3" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="554.0" y="342.1">MetaBrainz…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="ext-pbs-airnet" tabindex="0" aria-label="&#x50;BS airnet &#x41;PI &#x28;ext-pbs-airnet): external-api, ingest, owner third party">
 <title>&#x50;BS airnet &#x41;PI &#x28;ext-pbs-airnet): external-api, ingest, owner third party</title>
-<rect class="sn-diagram__box" x="540.0" y="306.2" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="541.5" y="307.7" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="554.0" y="326.5">&#x50;BS airnet &#x41;PI</text>
+<rect class="sn-diagram__box" x="540.0" y="356.6" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="541.5" y="358.1" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="554.0" y="380.9">&#x50;BS airnet &#x41;PI</text>
 </g>
 <g class="sn-diagram__node sn-dg-c4 sn-diagram__node--production" data-node="ext-rekordbox" tabindex="0" aria-label="Rekordbox +1 &#x28;ext-rekordbox): external-api, sets, owner third party">
 <title>Rekordbox +1 &#x28;ext-rekordbox): external-api, sets, owner third party</title>
-<rect class="sn-diagram__box" x="540.0" y="339.4" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="541.5" y="340.9" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="554.0" y="359.7">Rekordbox +1</text>
+<rect class="sn-diagram__box" x="540.0" y="395.4" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="541.5" y="396.9" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="554.0" y="419.7">Rekordbox +1</text>
 </g>
 <g class="sn-diagram__node sn-dg-c7 sn-diagram__node--production" data-node="ext-tidal" tabindex="0" aria-label="&#x54;IDAL developer &#x41;PI &#x28;ext-tidal): external-api, services, owner third party">
 <title>&#x54;IDAL developer &#x41;PI &#x28;ext-tidal): external-api, services, owner third party</title>
-<rect class="sn-diagram__box" x="540.0" y="372.6" width="164.0" height="30.2"/>
-<rect class="sn-diagram__stripe" x="541.5" y="374.1" width="5" height="27.2"/>
-<text class="sn-diagram__t body-s" x="554.0" y="392.9">&#x54;IDAL developer &#x41;PI</text>
+<rect class="sn-diagram__box" x="540.0" y="434.2" width="164.0" height="35.8"/>
+<rect class="sn-diagram__stripe" x="541.5" y="435.7" width="5" height="32.8"/>
+<text class="sn-diagram__t body-l" x="554.0" y="458.5">&#x54;IDAL develop…</text>
 </g>
-<text class="sn-diagram__t sn-diagram__t--2 body-s" x="24.0" y="524.7">8 cross-project hops today, each its own file or endpoint: flows 30, 35, 50, 62, 65, 67, 85, 86.</text>
-<text class="sn-diagram__t body-strong" x="744.0" y="39.3">After: proposed backbone</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="24.0" y="612.7">8 cross-project hops today, each its own file or endpoint: flows 30, 35, 50, 62,</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="24.0" y="636.5">65, 67, 85, 86.</text>
+<text class="sn-diagram__t title-s" x="744.0" y="42.4">After: proposed backbone</text>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="backbone-0" tabindex="0" aria-label="songnodes/">
 <title>songnodes/</title>
-<rect class="sn-diagram__box" x="744.0" y="53.0" width="520.0" height="32.2"/>
-<rect class="sn-diagram__stripe" x="745.5" y="54.5" width="5" height="29.2"/>
-<text class="sn-diagram__t body-s" x="758.0" y="73.3">songnodes/</text>
+<rect class="sn-diagram__box" x="744.0" y="57.2" width="520.0" height="37.8"/>
+<rect class="sn-diagram__stripe" x="745.5" y="58.7" width="5" height="34.8"/>
+<text class="sn-diagram__t body-l" x="758.0" y="81.5">songnodes/</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="backbone-1" tabindex="0" aria-label="contracts/ – single source of every cross-project schema &#x28;exists; extend)">
 <title>contracts/ – single source of every cross-project schema &#x28;exists; extend)</title>
-<rect class="sn-diagram__box" x="762.0" y="90.2" width="502.0" height="32.2"/>
-<rect class="sn-diagram__stripe" x="763.5" y="91.7" width="5" height="29.2"/>
-<text class="sn-diagram__t body-s" x="776.0" y="110.5">contracts/ – single source of every cross-project schema &#x28;exists; extend)</text>
+<rect class="sn-diagram__box" x="762.0" y="100.0" width="502.0" height="37.8"/>
+<rect class="sn-diagram__stripe" x="763.5" y="101.5" width="5" height="34.8"/>
+<text class="sn-diagram__t body-l" x="776.0" y="124.3">contracts/ – single source of every cross-project sche…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--proposed" data-node="backbone-2" tabindex="0" aria-label="library.set.saved.v2.json – new">
 <title>library.set.saved.v2.json – new</title>
-<rect class="sn-diagram__box" x="780.0" y="127.4" width="484.0" height="32.2"/>
-<rect class="sn-diagram__stripe" x="781.5" y="128.9" width="5" height="29.2"/>
-<text class="sn-diagram__t body-s" x="794.0" y="147.7">library.set.saved.v2.json &#x28;new)</text>
+<rect class="sn-diagram__box" x="780.0" y="142.8" width="484.0" height="37.8"/>
+<rect class="sn-diagram__stripe" x="781.5" y="144.3" width="5" height="34.8"/>
+<text class="sn-diagram__t body-l" x="794.0" y="167.1">library.set.saved.v2.json &#x28;new)</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="backbone-3" tabindex="0" aria-label="library_ingest.openapi.yaml – exists">
 <title>library_ingest.openapi.yaml – exists</title>
-<rect class="sn-diagram__box" x="780.0" y="164.6" width="484.0" height="32.2"/>
-<rect class="sn-diagram__stripe" x="781.5" y="166.1" width="5" height="29.2"/>
-<text class="sn-diagram__t body-s" x="794.0" y="184.9">library_ingest.openapi.yaml – exists</text>
+<rect class="sn-diagram__box" x="780.0" y="185.6" width="484.0" height="37.8"/>
+<rect class="sn-diagram__stripe" x="781.5" y="187.1" width="5" height="34.8"/>
+<text class="sn-diagram__t body-l" x="794.0" y="209.9">library_ingest.openapi.yaml – exists</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--proposed" data-node="backbone-4" tabindex="0" aria-label="transitions.v1.json – new">
 <title>&#116;ransitions.v1.json – new</title>
-<rect class="sn-diagram__box" x="780.0" y="201.8" width="484.0" height="32.2"/>
-<rect class="sn-diagram__stripe" x="781.5" y="203.3" width="5" height="29.2"/>
-<text class="sn-diagram__t body-s" x="794.0" y="222.1">&#116;ransitions.v1.json &#x28;new)</text>
+<rect class="sn-diagram__box" x="780.0" y="228.4" width="484.0" height="37.8"/>
+<rect class="sn-diagram__stripe" x="781.5" y="229.9" width="5" height="34.8"/>
+<text class="sn-diagram__t body-l" x="794.0" y="252.7">&#116;ransitions.v1.json &#x28;new)</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--proposed" data-node="backbone-5" tabindex="0" aria-label="setlists.v1.json – new">
 <title>setlists.v1.json – new</title>
-<rect class="sn-diagram__box" x="780.0" y="239.0" width="484.0" height="32.2"/>
-<rect class="sn-diagram__stripe" x="781.5" y="240.5" width="5" height="29.2"/>
-<text class="sn-diagram__t body-s" x="794.0" y="259.3">setlists.v1.json &#x28;new)</text>
+<rect class="sn-diagram__box" x="780.0" y="271.2" width="484.0" height="37.8"/>
+<rect class="sn-diagram__stripe" x="781.5" y="272.7" width="5" height="34.8"/>
+<text class="sn-diagram__t body-l" x="794.0" y="295.5">setlists.v1.json &#x28;new)</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="backbone-6" tabindex="0" aria-label="Postgres &#x28;compose volume) – owner: songnodes services only">
 <title>Postgres &#x28;compose volume) – owner: songnodes services only</title>
-<rect class="sn-diagram__box" x="762.0" y="276.2" width="502.0" height="32.2"/>
-<rect class="sn-diagram__stripe" x="763.5" y="277.7" width="5" height="29.2"/>
-<text class="sn-diagram__t body-s" x="776.0" y="296.5">Postgres &#x28;compose volume) – owner: songnodes services only</text>
+<rect class="sn-diagram__box" x="762.0" y="314.0" width="502.0" height="37.8"/>
+<rect class="sn-diagram__stripe" x="763.5" y="315.5" width="5" height="34.8"/>
+<text class="sn-diagram__t body-l" x="776.0" y="338.3">Postgres &#x28;compose volume) – owner: songnodes…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="backbone-7" tabindex="0" aria-label="bronze_* -&gt; silver_* -&gt; &#x28;gold_* decided in &#x44;FA gap) -&gt; projection_*">
 <title>bronze_* -&gt; silver_* -&gt; &#x28;gold_* decided in &#x44;FA gap) -&gt; projection_*</title>
-<rect class="sn-diagram__box" x="780.0" y="313.4" width="484.0" height="32.2"/>
-<rect class="sn-diagram__stripe" x="781.5" y="314.9" width="5" height="29.2"/>
-<text class="sn-diagram__t body-s" x="794.0" y="333.7">bronze_* -&gt; silver_* -&gt; &#x28;gold_* decided in &#x44;FA gap) -&gt; projection_*</text>
+<rect class="sn-diagram__box" x="780.0" y="356.8" width="484.0" height="37.8"/>
+<rect class="sn-diagram__stripe" x="781.5" y="358.3" width="5" height="34.8"/>
+<text class="sn-diagram__t body-l" x="794.0" y="381.1">bronze_* -&gt; silver_* -&gt; &#x28;gold_* decided in &#x44;FA gap) -&gt;…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="backbone-8" tabindex="0" aria-label="musicLibrary/">
 <title>musicLibrary/</title>
-<rect class="sn-diagram__box" x="744.0" y="350.6" width="520.0" height="32.2"/>
-<rect class="sn-diagram__stripe" x="745.5" y="352.1" width="5" height="29.2"/>
-<text class="sn-diagram__t body-s" x="758.0" y="370.9">musicLibrary/</text>
+<rect class="sn-diagram__box" x="744.0" y="399.6" width="520.0" height="37.8"/>
+<rect class="sn-diagram__stripe" x="745.5" y="401.1" width="5" height="34.8"/>
+<text class="sn-diagram__t body-l" x="758.0" y="423.9">musicLibrary/</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="backbone-9" tabindex="0" aria-label="ledger/ – owner: process step &#x28;append-only)">
 <title>ledger/ – owner: process step &#x28;append-only)</title>
-<rect class="sn-diagram__box" x="762.0" y="387.8" width="502.0" height="32.2"/>
-<rect class="sn-diagram__stripe" x="763.5" y="389.3" width="5" height="29.2"/>
-<text class="sn-diagram__t body-s" x="776.0" y="408.1">ledger/ – owner: process step &#x28;append-only)</text>
+<rect class="sn-diagram__box" x="762.0" y="442.4" width="502.0" height="37.8"/>
+<rect class="sn-diagram__stripe" x="763.5" y="443.9" width="5" height="34.8"/>
+<text class="sn-diagram__t body-l" x="776.0" y="466.7">ledger/ – owner: process step &#x28;append-only)</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="backbone-10" tabindex="0" aria-label="db/dj_library.sqlite – rebuilt each run from ledger">
 <title>db/dj_library.sqlite – rebuilt each run from ledger</title>
-<rect class="sn-diagram__box" x="762.0" y="425.0" width="502.0" height="32.2"/>
-<rect class="sn-diagram__stripe" x="763.5" y="426.5" width="5" height="29.2"/>
-<text class="sn-diagram__t body-s" x="776.0" y="445.3">db/dj_library.sqlite – rebuilt each run from ledger</text>
+<rect class="sn-diagram__box" x="762.0" y="485.2" width="502.0" height="37.8"/>
+<rect class="sn-diagram__stripe" x="763.5" y="486.7" width="5" height="34.8"/>
+<text class="sn-diagram__t body-l" x="776.0" y="509.5">db/dj_library.sqlite – rebuilt each run from ledger</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="backbone-11" tabindex="0" aria-label="inbox/ – inputs written by people or other systems">
 <title>inbox/ – inputs written by people or other systems</title>
-<rect class="sn-diagram__box" x="762.0" y="462.2" width="502.0" height="32.2"/>
-<rect class="sn-diagram__stripe" x="763.5" y="463.7" width="5" height="29.2"/>
-<text class="sn-diagram__t body-s" x="776.0" y="482.5">inbox/ – inputs written by people or other systems</text>
+<rect class="sn-diagram__box" x="762.0" y="528.0" width="502.0" height="37.8"/>
+<rect class="sn-diagram__stripe" x="763.5" y="529.5" width="5" height="34.8"/>
+<text class="sn-diagram__t body-l" x="776.0" y="552.3">inbox/ – inputs written by people or other systems</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="backbone-12" tabindex="0" aria-label="outputs/&lt;date&gt;/ – run outputs, read by people">
 <title>outputs/&lt;date&gt;/ – run outputs, read by people</title>
-<rect class="sn-diagram__box" x="762.0" y="499.4" width="502.0" height="32.2"/>
-<rect class="sn-diagram__stripe" x="763.5" y="500.9" width="5" height="29.2"/>
-<text class="sn-diagram__t body-s" x="776.0" y="519.7">outputs/&lt;date&gt;/ – run outputs, read by people</text>
+<rect class="sn-diagram__box" x="762.0" y="570.8" width="502.0" height="37.8"/>
+<rect class="sn-diagram__stripe" x="763.5" y="572.3" width="5" height="34.8"/>
+<text class="sn-diagram__t body-l" x="776.0" y="595.1">outputs/&lt;date&gt;/ – run outputs, read by people</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--proposed" data-node="backbone-13" tabindex="0" aria-label="exchange/ – the only files the other project reads or writes">
 <title>exchange/ – the only files the other project reads or writes</title>
-<rect class="sn-diagram__box" x="762.0" y="536.6" width="502.0" height="32.2"/>
-<rect class="sn-diagram__stripe" x="763.5" y="538.1" width="5" height="29.2"/>
-<text class="sn-diagram__t body-s" x="776.0" y="556.9">exchange/ &#x28;new) – the only files the other project reads or writes</text>
+<rect class="sn-diagram__box" x="762.0" y="613.6" width="502.0" height="37.8"/>
+<rect class="sn-diagram__stripe" x="763.5" y="615.1" width="5" height="34.8"/>
+<text class="sn-diagram__t body-l" x="776.0" y="637.9">exchange/ &#x28;new) – the only files the other project reads…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="backbone-14" tabindex="0" aria-label="library.json – musicLibrary -&gt; songnodes &#x28;also &#x50;OST /api/v1/library/ingest)">
 <title>library.json – musicLibrary -&gt; songnodes &#x28;also &#x50;OST /api/v1/library/ingest)</title>
-<rect class="sn-diagram__box" x="780.0" y="573.8" width="484.0" height="32.2"/>
-<rect class="sn-diagram__stripe" x="781.5" y="575.3" width="5" height="29.2"/>
-<text class="sn-diagram__t body-s" x="794.0" y="594.1">library.json – musicLibrary -&gt; songnodes &#x28;also &#x50;OST…</text>
+<rect class="sn-diagram__box" x="780.0" y="656.4" width="484.0" height="37.8"/>
+<rect class="sn-diagram__stripe" x="781.5" y="657.9" width="5" height="34.8"/>
+<text class="sn-diagram__t body-l" x="794.0" y="680.7">library.json – musicLibrary -&gt; songnodes &#x28;also &#x50;OST…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="backbone-15" tabindex="0" aria-label="saved-sets.json – both ways, saved-set/2">
 <title>saved-sets.json – both ways, saved-set/2</title>
-<rect class="sn-diagram__box" x="780.0" y="611.0" width="484.0" height="32.2"/>
-<rect class="sn-diagram__stripe" x="781.5" y="612.5" width="5" height="29.2"/>
-<text class="sn-diagram__t body-s" x="794.0" y="631.3">saved-sets.json – both ways, saved-set/2</text>
+<rect class="sn-diagram__box" x="780.0" y="699.2" width="484.0" height="37.8"/>
+<rect class="sn-diagram__stripe" x="781.5" y="700.7" width="5" height="34.8"/>
+<text class="sn-diagram__t body-l" x="794.0" y="723.5">saved-sets.json – both ways, saved-set/2</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="backbone-16" tabindex="0" aria-label="transitions.json – songnodes -&gt; musicLibrary, transitions/1">
 <title>&#116;ransitions.json – songnodes -&gt; musicLibrary, &#116;ransitions/1</title>
-<rect class="sn-diagram__box" x="780.0" y="648.2" width="484.0" height="32.2"/>
-<rect class="sn-diagram__stripe" x="781.5" y="649.7" width="5" height="29.2"/>
-<text class="sn-diagram__t body-s" x="794.0" y="668.5">&#116;ransitions.json – songnodes -&gt; musicLibrary, &#116;ransitions/1</text>
+<rect class="sn-diagram__box" x="780.0" y="742.0" width="484.0" height="37.8"/>
+<rect class="sn-diagram__stripe" x="781.5" y="743.5" width="5" height="34.8"/>
+<text class="sn-diagram__t body-l" x="794.0" y="766.3">&#116;ransitions.json – songnodes -&gt; musicLibrary,…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="backbone-17" tabindex="0" aria-label="setlists/*.json – tracklists for songnodes import &#x28;moved from the root)">
 <title>setlists/*.json – tracklists for songnodes import &#x28;moved from the root)</title>
-<rect class="sn-diagram__box" x="780.0" y="685.4" width="484.0" height="32.2"/>
-<rect class="sn-diagram__stripe" x="781.5" y="686.9" width="5" height="29.2"/>
-<text class="sn-diagram__t body-s" x="794.0" y="705.7">setlists/*.json – tracklists for songnodes import &#x28;moved from the root)</text>
+<rect class="sn-diagram__box" x="780.0" y="784.8" width="484.0" height="37.8"/>
+<rect class="sn-diagram__stripe" x="781.5" y="786.3" width="5" height="34.8"/>
+<text class="sn-diagram__t body-l" x="794.0" y="809.1">setlists/*.json – tracklists for songnodes import &#x28;mov…</text>
 </g>
 <g class="sn-diagram__legend" aria-label="Legend">
-<text class="sn-diagram__t body-strong" x="24.0" y="753.9">Key</text>
-<rect class="sn-diagram__swatch sn-dg-c1" x="24.0" y="772.0" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="54.0" y="780.8">ingest</text>
-<rect class="sn-diagram__swatch sn-dg-c2" x="108.0" y="772.0" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="138.0" y="780.8">library</text>
-<rect class="sn-diagram__swatch sn-dg-c3" x="193.3" y="772.0" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="223.3" y="780.8">graph</text>
-<rect class="sn-diagram__swatch sn-dg-c4" x="275.7" y="772.0" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="305.7" y="780.8">sets</text>
-<rect class="sn-diagram__swatch sn-dg-c7" x="348.1" y="772.0" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="378.1" y="780.8">services</text>
-<rect class="sn-diagram__swatch sn-dg-c8" x="445.9" y="772.0" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="475.9" y="780.8">ops and design</text>
-<rect class="sn-diagram__legend-box sn-diagram__node--production" x="584.2" y="769.0" width="22" height="16"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="614.2" y="780.8">Production &#x28;solid outline)</text>
-<rect class="sn-diagram__legend-box sn-diagram__node--queued" x="779.6" y="769.0" width="22" height="16"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="809.6" y="780.8">Queued &#x28;dashed)</text>
-<rect class="sn-diagram__legend-box sn-diagram__node--proposed" x="930.1" y="769.0" width="22" height="16"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="960.1" y="780.8">Proposed &#x28;brand, dashed)</text>
+<text class="sn-diagram__t title-s" x="24.0" y="862.0">Key</text>
+<rect class="sn-diagram__swatch sn-dg-c1" x="24.0" y="884.7" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="54.0" y="895.1">ingest</text>
+<rect class="sn-diagram__swatch sn-dg-c2" x="123.0" y="884.7" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="153.0" y="895.1">library</text>
+<rect class="sn-diagram__swatch sn-dg-c3" x="223.8" y="884.7" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="253.8" y="895.1">graph</text>
+<rect class="sn-diagram__swatch sn-dg-c4" x="320.5" y="884.7" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="350.5" y="895.1">sets</text>
+<rect class="sn-diagram__swatch sn-dg-c7" x="403.1" y="884.7" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="433.1" y="895.1">services</text>
+<rect class="sn-diagram__swatch sn-dg-c8" x="521.7" y="884.7" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="551.7" y="895.1">ops and design</text>
+<rect class="sn-diagram__legend-box sn-diagram__node--production" x="697.6" y="881.7" width="22" height="16"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="727.6" y="895.1">Production &#x28;solid outline)</text>
+<rect class="sn-diagram__legend-box sn-diagram__node--queued" x="954.5" y="881.7" width="22" height="16"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="984.5" y="895.1">Queued &#x28;dashed)</text>
+<rect class="sn-diagram__legend-box sn-diagram__node--proposed" x="1147.7" y="881.7" width="22" height="16"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="1177.7" y="895.1">Proposed &#x28;brand, dashed)</text>
 </g>
 </svg>

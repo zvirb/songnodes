@@ -20,9 +20,9 @@ import subprocess
 from functools import lru_cache
 
 PRINT_W = {"wide": 1032.0, "portrait": 703.0}
-ASPECT = {"wide": 0.66, "portrait": 1.3}
+ASPECT = {"wide": 0.55, "portrait": 1.3}   # wide: design-system tokens print-wide-h / print-wide-w (150 mm / 273 mm)
 MIN_PX = 9.5
-SIZES = {"title-s": 18, "body-strong": 15, "body": 15, "body-s": 13, "data": 13, "data-strong": 13,
+SIZES = {"title-s": 18, "body-l": 17, "body-strong": 15, "body": 15, "body-s": 13, "data": 13, "data-strong": 13,
          "caption": 12, "label": 12, "data-s": 11}
 # tier A floor 12 (caption), tier B floor 15 (body)
 TIERS = {
@@ -30,13 +30,21 @@ TIERS = {
           "floor": 12},
     "B": {"name": "body-strong", "text": "body", "meta": "body", "num": "body-strong", "head": "body-strong",
           "floor": 15},
+    # tiers C and D (design-system classes body-l 17 and title-s 18) for figures that must stay legible on a
+    # 140 mm landscape drawing (print-wide-h); the generator escalates A -> D until min_font_units <= floor
+    "C": {"name": "title-s", "text": "body-l", "meta": "body-l", "num": "title-s", "head": "title-s",
+          "floor": 17},
+    "D": {"name": "title-s", "text": "title-s", "meta": "title-s", "num": "title-s", "head": "title-s",
+          "floor": 18},
 }
+TIER_ORDER = ("A", "B", "C", "D")
+CUR = {"tier": None}     # set by build() while it retries a fixed-tier renderer with a larger tier
 FONT_DIR = "/usr/share/fonts/opentype/inter/"
 FONT_FILES = {"regular": FONT_DIR + "Inter-Regular.otf", "semibold": FONT_DIR + "Inter-SemiBold.otf",
               "bold": FONT_DIR + "Inter-Bold.otf",
               "mono": "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
               "monobold": "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf"}
-CLASS_FONT = {"title-s": "bold", "body-strong": "semibold", "body": "regular", "body-s": "regular",
+CLASS_FONT = {"title-s": "bold", "body-l": "regular", "body-strong": "semibold", "body": "regular", "body-s": "regular",
               "caption": "regular", "label": "semibold", "data": "mono", "data-strong": "monobold", "data-s": "mono"}
 X_MARK = "✕"   # status-bad glyph (written as a character reference in the SVG)
 LOCK_PATH = "M2 6h8v5H2z M4 6V4a2 2 0 0 1 4 0v2"   # Lucide-style padlock, 12x12 box
@@ -695,7 +703,7 @@ def place_badges(edge_pts, labels, node_rects, obstacles, cls):
 
 
 def graph_figure(ctx, fid, nodes, edges, *, clusters, legend, key_entries=None, orient="wide",
-                 badge_kind=None, nodesep=0.3, ranksep=0.6, minw=140, maxw=200, tiers=("A", "B"),
+                 badge_kind=None, nodesep=0.3, ranksep=0.6, minw=140, maxw=200, tiers=TIER_ORDER,
                  title="", desc="", key_title="Numbered labels", key_cols=2):
     """Generic layered figure. nodes: dicts with id, raw, c, state, title, cluster; edges: key, from, to, c, state,
     title, badge(text or None). clusters: [(key, heading)]. Returns (svg, checks, method)."""
@@ -827,7 +835,7 @@ LINE_PROPOSED = ("proposed", "Proposed link (brand dashed)")
 def d1(ctx):
     F = ctx.F
     loop = F.get("loop", [])
-    T = TIERS["A"]
+    T = TIERS[CUR["tier"] or "A"]
     cw, gapx, gapy = 330, 70, 90
     W0 = 3 * cw + 2 * gapx + 2 * 40
     cards = []
@@ -1446,7 +1454,7 @@ def simple_edge(key, a, b, pts, c, state="built", title="", badge=None):
 
 
 def pick_tier(width_needed_fn, height_fn, orient="wide"):
-    for t in ("A", "B"):
+    for t in TIER_ORDER:
         T = TIERS[t]
         W, H = width_needed_fn(T), height_fn(T)
         W2, H2, minu = fit_canvas(W, H, orient)
@@ -1469,7 +1477,7 @@ def d5_overview(ctx):
     F = ctx.F
     loop = F.get("loop", [])
     ps = F.get("personas", [])
-    T = TIERS["A"]
+    T = TIERS[CUR["tier"] or "A"]
     M, hdrw, colw = 24, 210, 172
     W = M * 2 + hdrw + 6 * colw
     body, rects, labels = [], {}, []
@@ -1559,8 +1567,8 @@ def _nonempty(v):
     return v not in (None, "", "None", "none", "null")
 
 
-def d5_persona(ctx, p):
-    steps = sorted(p.get("steps", []), key=lambda s_: s_["n"])
+def d5_persona(ctx, p, panel="", only=None):
+    steps = sorted([s_ for s_ in p.get("steps", []) if only is None or s_["n"] in only], key=lambda s_: s_["n"])
     lanes = sorted({_lane(s_["page"]) for s_ in steps}, key=LANE_ORDER.index)
     M, gap = 24, 22
     hdrw = max(110, max(tw(w_, TIERS["B"]["head"]) for ln in lanes for w_ in ln.split()) + 26)
@@ -1595,7 +1603,7 @@ def d5_persona(ctx, p):
         return specs, ch, fh, laneh, W, H
     chosen = None
     profiles = [(2, 2, 4, 3, 2, 3), (2, 1, 4, 2, 2, 2), (1, 1, 3, 2, 1, 2), (1, 1, 3, 1, 1, 2)]
-    for t in ("A", "B"):
+    for t in TIER_ORDER:
         T = TIERS[t]
         for cw in (220, 200, 180, 160, 150, 140, 130, 124):
             for prof in profiles:
@@ -1609,11 +1617,11 @@ def d5_persona(ctx, p):
         if chosen:
             break
     if not chosen:
-        T, cw, prof = TIERS["B"], 124, profiles[-1]
+        T, cw, prof = TIERS["D"], 124, profiles[-1]
         specs, ch, fh, laneh, W, H = build(T, cw, prof)
         chosen = (T, cw, specs, ch, fh, laneh, W, H, prof)
     T, cw, specs, ch, fh, laneh, W, H, prof = chosen
-    fid = f"D5-{p['id']}"
+    fid = f"D5-{p['id']}{panel}"
     body, rects, eps, labels = [], {}, [], []
     ly = {ln: M + k * laneh for k, ln in enumerate(lanes)}
     for k, ln in enumerate(lanes):
@@ -1671,7 +1679,7 @@ def d5_persona(ctx, p):
     W, H, minu = fit_canvas(W, H, "wide")
     s_, _, _ = legend_svg(leg, M, y, W - 2 * M, T, fid)
     body.append(s_)
-    svg = svg_root(fid, W, H, f'Swimlane: {p["id"]} {p["name"]}',
+    svg = svg_root(fid, W, H, f'Swimlane: {p["id"]} {p["name"]}' + (f' (steps {steps[0]["n"]}–{steps[-1]["n"]})' if panel else ""),
                    f'{len(steps)} numbered steps of {p["name"]} left to right across {len(lanes)} system lanes; each card '
                    "shows its trigger, page, action, data written and hand-off, with dashed fallback cards below.",
                    "\n".join(body))
@@ -1681,18 +1689,31 @@ def d5_persona(ctx, p):
              s_.get("fallback") if _nonempty(s_.get("fallback")) else "–"] for s_ in steps]
     slug = re.sub(r"[^a-z0-9]+", "-", p["name"].lower()).strip("-")
     nfb = sum(1 for s_ in steps if _nonempty(s_.get("fallback")))
-    return fig(fid, f'Swimlane – {p["id"]} {p["name"]}',
+    return fig(fid, f'Swimlane – {p["id"]} {p["name"]}' + (f', steps {steps[0]["n"]}–{steps[-1]["n"]}' if panel else ""),
                f'{p["name"]}: {len(steps)} steps across {len(lanes)} lane{"s" if len(lanes) > 1 else ""}; '
                f'{nfb} step{"s" if nfb != 1 else ""} name a fallback.', "steps", len(steps), p.get("state", "built"),
                "personas[].steps[] (n, page, action, writes, trigger, handoff, fallback); pages[].domain",
                f"hand-placed swimlane (lanes = systems, columns = steps, card width {cw}); orthogonal arrows in the "
                "column gaps; 0 crossings by construction", svg,
                {"columns": ["Step", "Page", "Lane", "Trigger", "Action", "Writes", "Hand-off", "Fallback"], "rows": rows},
-               hand_checks(rects, eps, labels, W, H, minu, T), f'd5-{p["id"].lower()}-{slug}.svg')
+               hand_checks(rects, eps, labels, W, H, minu, T), f'd5-{p["id"].lower()}{panel}-{slug}.svg')
 
 
 def d5(ctx):
-    return [d5_overview(ctx)] + [d5_persona(ctx, p) for p in ctx.F.get("personas", [])]
+    """One swimlane per persona; a persona whose lane cannot keep text at the print floor even at tier D is split
+    into panels of consecutive steps (D5-P2a, D5-P2b …), never shrunk."""
+    out = [d5_overview(ctx)]
+    for p in ctx.F.get("personas", []):
+        f = d5_persona(ctx, p)
+        ck = f.get("checks") or {}
+        ns = sorted(s_["n"] for s_ in p.get("steps", []))
+        if ck.get("min_font_units", 0) <= ck.get("font_floor_used", 99) + 1e-6 or len(ns) < 4:
+            out.append(f)
+            continue
+        half = (len(ns) + 1) // 2
+        for k, part in enumerate((ns[:half], ns[half:])):
+            out.append(d5_persona(ctx, p, panel="abcd"[k], only=set(part)))
+    return out
 
 
 # ---------------------------------------------------------------- D6 sequences
@@ -1778,7 +1799,7 @@ def d6(ctx):
         S = SEQ[fid]
         protos = [x for x in S["protocols"] if x in P]
         lifel = S["lifelines"]
-        T = TIERS["A"]
+        T = TIERS[CUR["tier"] or "A"]
         M, top = 24, 24
         colw = min(200.0, (1290 - 2 * M) / len(lifel))
         W = 2 * M + len(lifel) * colw
@@ -1969,7 +1990,7 @@ def d7(ctx):
 def d10(ctx):
     F = ctx.F
     bb = F.get("backbone", {})
-    T = TIERS["A"]
+    T = TIERS[CUR["tier"] or "A"]
     M = 24
     PW, PW2 = 680, 520
     body, rects, labels = [], {}, []
@@ -2067,7 +2088,7 @@ def d11(ctx):
     waves = F.get("roadmap", [])
     tasks = {t["id"]: t for t in F.get("tasks", [])}
     gaps = {g["id"]: g for g in F.get("gaps", [])}
-    T = TIERS["A"]
+    T = TIERS[CUR["tier"] or "A"]
     M, colw, cw, corridor = 24, 242, 208, 30
     W = 2 * M + 30 + len(waves) * colw
     body, rects, eps, labels = [], {}, [], []
@@ -2216,6 +2237,13 @@ def build(F, only=None):
     for key, fn in BUILDERS:
         if only and key not in only:
             continue
-        r = fn(ctx)
+        r = None
+        for t in TIER_ORDER:
+            CUR["tier"] = t
+            r = fn(ctx)
+            rs = r if isinstance(r, list) else [r]
+            if all((f.get("checks") or {}).get("min_font_units", 0) <= (f.get("checks") or {}).get("font_floor_used", 99) + 1e-6 for f in rs):
+                break
+        CUR["tier"] = None
         figs.extend(r if isinstance(r, list) else [r])
     return sorted(figs, key=lambda f: f["id"])

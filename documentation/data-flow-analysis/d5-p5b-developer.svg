@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1607 1041" role="img" aria-labelledby="D5-P5-t D5-P5-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1119 534" role="img" aria-labelledby="D5-P5b-t D5-P5b-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
 :root, [data-theme="dark"] {
   --bg: #222222;
   --surface-1: #2d2d2d;
@@ -445,6 +445,7 @@
   --drawer-w: 300px;
   --rail-w: 248px;
   --content-max: 1400px;
+  --print-wide-h: 150mm;
   --print-wide-w: 273mm;
   --prose-max: 68ch;
   --z-base: 0;
@@ -787,209 +788,88 @@
 .sn-chart-frame__base { stroke: var(--line-strong); stroke-width: 1; shape-rendering: crispEdges; }
 .sn-chart-frame__tick { fill: var(--chart-axis); font-family: var(--font-data); font-size: 0.6875rem; font-variant-numeric: tabular-nums; }
 .sn-chart-frame__axis-title { fill: var(--chart-axis); font-family: var(--font-body); font-size: 0.6875rem; }</style>
-<title id="D5-P5-t">Swimlane: P5 Developer</title>
-<desc id="D5-P5-d">8 numbered steps of Developer left to right across 3 system lanes; each card shows its trigger, page, action, data written and hand-off, with dashed fallback cards below.</desc>
-<rect class="sn-diagram__bg" x="0" y="0" width="1607" height="1041"/>
-<rect class="sn-diagram__lane" x="24.0" y="24.0" width="1558.6" height="307.0"/>
+<title id="D5-P5b-t">Swimlane: P5 Developer &#x28;steps 5–8)</title>
+<desc id="D5-P5b-d">4 numbered steps of Developer left to right across 2 system lanes; each card shows its trigger, page, action, data written and hand-off, with dashed fallback cards below.</desc>
+<rect class="sn-diagram__bg" x="0" y="0" width="1119" height="534"/>
+<rect class="sn-diagram__lane" x="24.0" y="24.0" width="1070.6" height="209.0"/>
 <text class="sn-diagram__t sn-diagram__t--2 body-strong" x="34.0" y="49.3">musicLibrary</text>
 <text class="sn-diagram__t sn-diagram__t--2 body-strong" x="34.0" y="70.3">artifact</text>
-<rect class="sn-diagram__lane sn-diagram__lane--alt" x="24.0" y="331.0" width="1558.6" height="307.0"/>
-<text class="sn-diagram__t sn-diagram__t--2 body-strong" x="34.0" y="356.3">songnodes</text>
-<text class="sn-diagram__t sn-diagram__t--2 body-strong" x="34.0" y="377.3">frontend</text>
-<rect class="sn-diagram__lane" x="24.0" y="638.0" width="1558.6" height="307.0"/>
-<text class="sn-diagram__t sn-diagram__t--2 body-strong" x="34.0" y="663.3">songnodes</text>
-<text class="sn-diagram__t sn-diagram__t--2 body-strong" x="34.0" y="684.3">backend</text>
-<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-cli-scope-guard-g1" data-step="1" tabindex="0" aria-label="P5 step 1 on scope_guard: branch &lt;code&gt;-&lt;slug&gt;, edit owned paths only, run scope_guard.py. Trigger: work-package brief. Writes: git branch. Fallback: two attempts then draft PR.">
-<title>P5 step 1 on scope_guard: branch &lt;code&gt;-&lt;slug&gt;, edit owned paths only, run scope_guard.py. Trigger: work-package brief. Writes: git branch. Fallback: two attempts then draft PR.</title>
-<rect class="sn-diagram__box" x="148.6" y="648.0" width="160.0" height="203.0"/>
-<rect class="sn-diagram__stripe" x="150.1" y="649.5" width="5" height="200.0"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="162.6" y="670.3">▶ work-packag…</text>
-<text class="sn-diagram__t body-strong" x="162.6" y="691.3">1 · scope_guard</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="162.6" y="712.3">ops · cli</text>
-<text class="sn-diagram__t body" x="162.6" y="733.3">branch</text>
-<text class="sn-diagram__t body" x="162.6" y="754.3">&lt;code&gt;-&lt;slug&gt;,</text>
-<text class="sn-diagram__t body" x="162.6" y="775.3">edit owned path…</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="162.6" y="796.3">writes: git branch</text>
-</g>
-<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--fallback" data-from="sn-be-cli-scope-guard-g1" data-to="sn-be-cli-scope-guard-g1" data-edge="P5-s1&gt;fb" tabindex="0" aria-label="Fallback branch of step 1">
-<title>Fallback branch of step 1</title>
-<path class="sn-diagram__line" d="M228.6 851.0 L228.6 879.0"/>
-<path class="sn-diagram__head" d="M228.6 879.0 L224.8 872.0 L232.5 872.0 Z"/>
-</g>
-<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--fallback" data-node="sn-be-cli-scope-guard-g1" data-fallback="1" tabindex="0" aria-label="Fallback for step 1: two attempts then draft PR">
-<title>Fallback for step 1: two attempts then draft PR</title>
-<rect class="sn-diagram__box" x="148.6" y="879.0" width="160.0" height="56.0"/>
-<rect class="sn-diagram__stripe" x="150.1" y="880.5" width="5" height="53.0"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="162.6" y="901.3">If it fails: two</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="162.6" y="922.3">attempts then…</text>
-</g>
-<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-svc-rest-api" data-step="2" tabindex="0" aria-label="P5 step 2 on &#x52;EST &#x41;PI: add a router module with register&#x28;app) or a migration in the owned number range. Trigger: feature need. Writes: new file. Fallback: list follow-ups in the PR.">
-<title>P5 step 2 on &#x52;EST &#x41;PI: add a router module with register&#x28;app) or a migration in the owned number range. Trigger: feature need. Writes: new file. Fallback: list follow-ups in the PR.</title>
-<rect class="sn-diagram__box" x="330.6" y="648.0" width="160.0" height="203.0"/>
-<rect class="sn-diagram__stripe" x="332.1" y="649.5" width="5" height="200.0"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="344.6" y="670.3">▶ feature need</text>
-<text class="sn-diagram__t body-strong" x="344.6" y="691.3">2 · &#x52;EST &#x41;PI</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="344.6" y="712.3">ops · service</text>
-<text class="sn-diagram__t body" x="344.6" y="733.3">add a router</text>
-<text class="sn-diagram__t body" x="344.6" y="754.3">module with</text>
-<text class="sn-diagram__t body" x="344.6" y="775.3">register&#x28;app) or…</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="344.6" y="796.3">writes: new file</text>
-</g>
-<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--fallback" data-from="sn-be-svc-rest-api" data-to="sn-be-svc-rest-api" data-edge="P5-s2&gt;fb" tabindex="0" aria-label="Fallback branch of step 2">
-<title>Fallback branch of step 2</title>
-<path class="sn-diagram__line" d="M410.6 851.0 L410.6 879.0"/>
-<path class="sn-diagram__head" d="M410.6 879.0 L406.8 872.0 L414.5 872.0 Z"/>
-</g>
-<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--fallback" data-node="sn-be-svc-rest-api" data-fallback="2" tabindex="0" aria-label="Fallback for step 2: list follow-ups in the PR">
-<title>Fallback for step 2: list follow-ups in the PR</title>
-<rect class="sn-diagram__box" x="330.6" y="879.0" width="160.0" height="56.0"/>
-<rect class="sn-diagram__stripe" x="332.1" y="880.5" width="5" height="53.0"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="344.6" y="901.3">If it fails: list</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="344.6" y="922.3">follow-ups in th…</text>
-</g>
-<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-cli-start-dev" data-step="3" tabindex="0" aria-label="P5 step 3 on start-dev: add the migration to start-dev.sh and rebuild the stack. Trigger: new migration. Writes: compose stack. Fallback: migration silently missing if not added.">
-<title>P5 step 3 on start-dev: add the migration to start-dev.sh and rebuild the stack. Trigger: new migration. Writes: compose stack. Fallback: migration silently missing if not added.</title>
-<rect class="sn-diagram__box" x="512.6" y="648.0" width="160.0" height="203.0"/>
-<rect class="sn-diagram__stripe" x="514.1" y="649.5" width="5" height="200.0"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="526.6" y="670.3">▶ new migration</text>
-<text class="sn-diagram__t body-strong" x="526.6" y="691.3">3 · start-dev</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="526.6" y="712.3">ops · cli</text>
-<text class="sn-diagram__t body" x="526.6" y="733.3">add the migration</text>
-<text class="sn-diagram__t body" x="526.6" y="754.3">to start-dev.sh</text>
-<text class="sn-diagram__t body" x="526.6" y="775.3">and rebuild the…</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="526.6" y="796.3">writes: compose</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="526.6" y="817.3">stack</text>
-</g>
-<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--fallback" data-from="sn-be-cli-start-dev" data-to="sn-be-cli-start-dev" data-edge="P5-s3&gt;fb" tabindex="0" aria-label="Fallback branch of step 3">
-<title>Fallback branch of step 3</title>
-<path class="sn-diagram__line" d="M592.6 851.0 L592.6 879.0"/>
-<path class="sn-diagram__head" d="M592.6 879.0 L588.8 872.0 L596.5 872.0 Z"/>
-</g>
-<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--fallback" data-node="sn-be-cli-start-dev" data-fallback="3" tabindex="0" aria-label="Fallback for step 3: migration silently missing if not added">
-<title>Fallback for step 3: migration silently missing if not added</title>
-<rect class="sn-diagram__box" x="512.6" y="879.0" width="160.0" height="56.0"/>
-<rect class="sn-diagram__stripe" x="514.1" y="880.5" width="5" height="53.0"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="526.6" y="901.3">If it fails: migration</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="526.6" y="922.3">silently missing i…</text>
-</g>
-<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-cli-e2e-docker" data-step="4" tabindex="0" aria-label="P5 step 4 on e2e-docker: run E2E and pytest; update own &#x53;TATUS.md slot. Trigger: before PR. Writes: &#x53;TATUS.md slot. Hands off PR with checks run via git. Fallback: report out-of-scope failures.">
-<title>P5 step 4 on e2e-docker: run E2E and pytest; update own &#x53;TATUS.md slot. Trigger: before PR. Writes: &#x53;TATUS.md slot. Hands off PR with checks run via git. Fallback: report out-of-scope failures.</title>
-<rect class="sn-diagram__box" x="694.6" y="648.0" width="160.0" height="203.0"/>
-<rect class="sn-diagram__stripe" x="696.1" y="649.5" width="5" height="200.0"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="708.6" y="670.3">▶ before PR</text>
-<text class="sn-diagram__t body-strong" x="708.6" y="691.3">4 · e2e-docker</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="708.6" y="712.3">ops · cli</text>
-<text class="sn-diagram__t body" x="708.6" y="733.3">run E2E and</text>
-<text class="sn-diagram__t body" x="708.6" y="754.3">pytest; update</text>
-<text class="sn-diagram__t body" x="708.6" y="775.3">own &#x53;TATUS.m…</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="708.6" y="796.3">writes:</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="708.6" y="817.3">&#x53;TATUS.md slot</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="708.6" y="838.3">→ hands off: PR…</text>
-</g>
-<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--fallback" data-from="sn-be-cli-e2e-docker" data-to="sn-be-cli-e2e-docker" data-edge="P5-s4&gt;fb" tabindex="0" aria-label="Fallback branch of step 4">
-<title>Fallback branch of step 4</title>
-<path class="sn-diagram__line" d="M774.6 851.0 L774.6 879.0"/>
-<path class="sn-diagram__head" d="M774.6 879.0 L770.8 872.0 L778.5 872.0 Z"/>
-</g>
-<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--fallback" data-node="sn-be-cli-e2e-docker" data-fallback="4" tabindex="0" aria-label="Fallback for step 4: report out-of-scope failures">
-<title>Fallback for step 4: report out-of-scope failures</title>
-<rect class="sn-diagram__box" x="694.6" y="879.0" width="160.0" height="56.0"/>
-<rect class="sn-diagram__stripe" x="696.1" y="880.5" width="5" height="53.0"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="708.6" y="901.3">If it fails: report</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="708.6" y="922.3">out-of-scope…</text>
-</g>
+<rect class="sn-diagram__lane sn-diagram__lane--alt" x="24.0" y="233.0" width="1070.6" height="209.0"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-strong" x="34.0" y="258.3">songnodes</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-strong" x="34.0" y="279.3">frontend</text>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--nonfinal" data-node="sn-fe-ds-reference" data-step="5" tabindex="0" aria-label="P5 step 5 on Design system reference · SongNodes: look up tokens and components. Trigger: open file. Writes: sn-density.">
 <title>P5 step 5 on Design system reference · SongNodes: look up tokens and components. Trigger: open file. Writes: sn-density.</title>
-<rect class="sn-diagram__box" x="876.6" y="341.0" width="160.0" height="203.0"/>
-<rect class="sn-diagram__stripe" x="878.1" y="342.5" width="5" height="200.0"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="890.6" y="363.3">▶ open file</text>
-<text class="sn-diagram__t body-strong" x="890.6" y="384.3">5 · Design syste…</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="890.6" y="405.3">design · html</text>
-<text class="sn-diagram__t body" x="890.6" y="426.3">look up tokens</text>
-<text class="sn-diagram__t body" x="890.6" y="447.3">and components</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="890.6" y="468.3">writes: sn-density</text>
+<rect class="sn-diagram__box" x="148.6" y="243.0" width="220.0" height="189.0"/>
+<rect class="sn-diagram__stripe" x="150.1" y="244.5" width="5" height="186.0"/>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="162.6" y="262.2">▶ open file</text>
+<text class="sn-diagram__t body-strong" x="162.6" y="282.1">5 · Design system</text>
+<text class="sn-diagram__t body-strong" x="162.6" y="303.1">reference · SongNodes</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="162.6" y="321.0">design · html</text>
+<text class="sn-diagram__t body-s" x="162.6" y="338.9">look up tokens and</text>
+<text class="sn-diagram__t body-s" x="162.6" y="357.1">components</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="162.6" y="374.2">writes: sn-density</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--nonfinal" data-node="sn-fe-ds-violations-fixture" data-step="6" tabindex="0" aria-label="P5 step 6 on Violations fixture: lint regression. Trigger: validate.py. Writes: –.">
 <title>P5 step 6 on Violations fixture: lint regression. Trigger: validate.py. Writes: –.</title>
-<rect class="sn-diagram__box" x="1058.6" y="341.0" width="160.0" height="203.0"/>
-<rect class="sn-diagram__stripe" x="1060.1" y="342.5" width="5" height="200.0"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1072.6" y="363.3">▶ validate.py</text>
-<text class="sn-diagram__t body-strong" x="1072.6" y="384.3">6 · Violations…</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1072.6" y="405.3">design · html</text>
-<text class="sn-diagram__t body" x="1072.6" y="426.3">lint regression</text>
+<rect class="sn-diagram__box" x="390.6" y="243.0" width="220.0" height="189.0"/>
+<rect class="sn-diagram__stripe" x="392.1" y="244.5" width="5" height="186.0"/>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="404.6" y="262.2">▶ validate.py</text>
+<text class="sn-diagram__t body-strong" x="404.6" y="282.1">6 · Violations fixture</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="404.6" y="300.0">design · html</text>
+<text class="sn-diagram__t body-s" x="404.6" y="317.9">lint regression</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--nonfinal" data-node="sn-fe-work-queue-tracker" data-step="7" tabindex="0" aria-label="P5 step 7 on SongNodes Work Queue: copy job prompt. Trigger: artifact page. Writes: artifact db tasks.note. Hands off prompt text via clipboard.">
 <title>P5 step 7 on SongNodes Work Queue: copy job prompt. Trigger: artifact page. Writes: artifact db tasks.note. Hands off prompt text via clipboard.</title>
-<rect class="sn-diagram__box" x="1240.6" y="341.0" width="160.0" height="203.0"/>
-<rect class="sn-diagram__stripe" x="1242.1" y="342.5" width="5" height="200.0"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1254.6" y="363.3">▶ artifact page</text>
-<text class="sn-diagram__t body-strong" x="1254.6" y="384.3">7 · SongNodes…</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1254.6" y="405.3">ops · artifact</text>
-<text class="sn-diagram__t body" x="1254.6" y="426.3">copy job prompt</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1254.6" y="447.3">writes: artifact db</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1254.6" y="468.3">tasks.note</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1254.6" y="489.3">→ hands off:…</text>
+<rect class="sn-diagram__box" x="632.6" y="243.0" width="220.0" height="189.0"/>
+<rect class="sn-diagram__stripe" x="634.1" y="244.5" width="5" height="186.0"/>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="646.6" y="262.2">▶ artifact page</text>
+<text class="sn-diagram__t body-strong" x="646.6" y="282.1">7 · SongNodes Work</text>
+<text class="sn-diagram__t body-strong" x="646.6" y="303.1">Queue</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="646.6" y="321.0">ops · artifact</text>
+<text class="sn-diagram__t body-s" x="646.6" y="338.9">copy job prompt</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="646.6" y="356.0">writes: artifact db tasks.note</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="646.6" y="372.8">→ hands off: prompt text via</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="646.6" y="389.6">clipboard</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--nonfinal" data-node="ml-page-artifact-app-entry" data-step="8" tabindex="0" aria-label="P5 step 8 on Naarm Set Builder: node build.mjs &lt;fe&gt; &lt;out&gt; &lt;tools&gt;. Trigger: songnodes Library or Set builder pages change. Writes: artifact/build/app.js, assets/*. Hands off app.js &#x49;IFE via Artifact publish.">
 <title>P5 step 8 on Naarm Set Builder: node build.mjs &lt;fe&gt; &lt;out&gt; &lt;tools&gt;. Trigger: songnodes Library or Set builder pages change. Writes: artifact/build/app.js, assets/*. Hands off app.js &#x49;IFE via Artifact publish.</title>
-<rect class="sn-diagram__box" x="1422.6" y="34.0" width="160.0" height="203.0"/>
-<rect class="sn-diagram__stripe" x="1424.1" y="35.5" width="5" height="200.0"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1436.6" y="56.3">▶ songnodes…</text>
-<text class="sn-diagram__t body-strong" x="1436.6" y="77.3">8 · Naarm Set…</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1436.6" y="98.3">ops · html</text>
-<text class="sn-diagram__t body" x="1436.6" y="119.3">node build.mjs</text>
-<text class="sn-diagram__t body" x="1436.6" y="140.3">&lt;fe&gt; &lt;out&gt;</text>
-<text class="sn-diagram__t body" x="1436.6" y="161.3">&lt;tools&gt;</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1436.6" y="182.3">writes:</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1436.6" y="203.3">artifact/build/ap…</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1436.6" y="224.3">→ hands off:…</text>
-</g>
-<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="sn-be-cli-scope-guard-g1" data-to="sn-be-svc-rest-api" data-edge="P5-1&gt;2" tabindex="0" aria-label="Step 1 → step 2, triggered by: feature need">
-<title>Step 1 → step 2, triggered by: feature need</title>
-<path class="sn-diagram__line" d="M308.6 676.0 L330.6 676.0"/>
-<path class="sn-diagram__head" d="M330.6 676.0 L323.6 672.1 L323.6 679.9 Z"/>
-</g>
-<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="sn-be-svc-rest-api" data-to="sn-be-cli-start-dev" data-edge="P5-2&gt;3" tabindex="0" aria-label="Step 2 → step 3, triggered by: new migration">
-<title>Step 2 → step 3, triggered by: new migration</title>
-<path class="sn-diagram__line" d="M490.6 676.0 L512.6 676.0"/>
-<path class="sn-diagram__head" d="M512.6 676.0 L505.6 672.1 L505.6 679.9 Z"/>
-</g>
-<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="sn-be-cli-start-dev" data-to="sn-be-cli-e2e-docker" data-edge="P5-3&gt;4" tabindex="0" aria-label="Step 3 → step 4, triggered by: before PR">
-<title>Step 3 → step 4, triggered by: before PR</title>
-<path class="sn-diagram__line" d="M672.6 676.0 L694.6 676.0"/>
-<path class="sn-diagram__head" d="M694.6 676.0 L687.6 672.1 L687.6 679.9 Z"/>
-</g>
-<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="sn-be-cli-e2e-docker" data-to="sn-fe-ds-reference" data-edge="P5-4&gt;5" tabindex="0" aria-label="Step 4 → step 5, triggered by: open file">
-<title>Step 4 → step 5, triggered by: open file</title>
-<path class="sn-diagram__line" d="M854.6 676.0 L865.6 676.0 L865.6 369.0 L876.6 369.0"/>
-<path class="sn-diagram__head" d="M876.6 369.0 L869.6 365.1 L869.6 372.9 Z"/>
+<rect class="sn-diagram__box" x="874.6" y="34.0" width="220.0" height="189.0"/>
+<rect class="sn-diagram__stripe" x="876.1" y="35.5" width="5" height="186.0"/>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="888.6" y="53.2">▶ songnodes Library or Set</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="888.6" y="70.0">builder pages change</text>
+<text class="sn-diagram__t body-strong" x="888.6" y="89.9">8 · Naarm Set Builder</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="888.6" y="107.8">ops · html</text>
+<text class="sn-diagram__t body-s" x="888.6" y="125.7">node build.mjs &lt;fe&gt; &lt;out&gt;</text>
+<text class="sn-diagram__t body-s" x="888.6" y="143.9">&lt;tools&gt;</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="888.6" y="161.0">writes: artifact/build/app.js,</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="888.6" y="177.8">assets/*</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="888.6" y="194.6">→ hands off: app.js &#x49;IFE via</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="888.6" y="211.4">Artifact publish</text>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="sn-fe-ds-reference" data-to="sn-fe-ds-violations-fixture" data-edge="P5-5&gt;6" tabindex="0" aria-label="Step 5 → step 6, triggered by: validate.py">
 <title>Step 5 → step 6, triggered by: validate.py</title>
-<path class="sn-diagram__line" d="M1036.6 369.0 L1058.6 369.0"/>
-<path class="sn-diagram__head" d="M1058.6 369.0 L1051.6 365.1 L1051.6 372.9 Z"/>
+<path class="sn-diagram__line" d="M368.6 271.0 L390.6 271.0"/>
+<path class="sn-diagram__head" d="M390.6 271.0 L383.6 267.1 L383.6 274.9 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="sn-fe-ds-violations-fixture" data-to="sn-fe-work-queue-tracker" data-edge="P5-6&gt;7" tabindex="0" aria-label="Step 6 → step 7, triggered by: artifact page">
 <title>Step 6 → step 7, triggered by: artifact page</title>
-<path class="sn-diagram__line" d="M1218.6 369.0 L1240.6 369.0"/>
-<path class="sn-diagram__head" d="M1240.6 369.0 L1233.6 365.1 L1233.6 372.9 Z"/>
+<path class="sn-diagram__line" d="M610.6 271.0 L632.6 271.0"/>
+<path class="sn-diagram__head" d="M632.6 271.0 L625.6 267.1 L625.6 274.9 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="sn-fe-work-queue-tracker" data-to="ml-page-artifact-app-entry" data-edge="P5-7&gt;8" tabindex="0" aria-label="Step 7 → step 8, triggered by: songnodes Library or Set builder pages change">
 <title>Step 7 → step 8, triggered by: songnodes Library or Set builder pages change</title>
-<path class="sn-diagram__line" d="M1400.6 369.0 L1411.6 369.0 L1411.6 62.0 L1422.6 62.0"/>
-<path class="sn-diagram__head" d="M1422.6 62.0 L1415.6 58.1 L1415.6 65.8 Z"/>
+<path class="sn-diagram__line" d="M852.6 271.0 L863.6 271.0 L863.6 62.0 L874.6 62.0"/>
+<path class="sn-diagram__head" d="M874.6 62.0 L867.6 58.1 L867.6 65.8 Z"/>
 </g>
 <g class="sn-diagram__legend" aria-label="Legend">
-<text class="sn-diagram__t body-strong" x="24.0" y="976.3">Key</text>
-<rect class="sn-diagram__swatch sn-dg-c8" x="24.0" y="996.5" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="54.0" y="1006.3">ops and design</text>
-<rect class="sn-diagram__legend-box sn-diagram__node--production" x="184.9" y="993.5" width="22" height="16"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="214.9" y="1006.3">Production &#x28;solid outline)</text>
-<rect class="sn-diagram__legend-box sn-diagram__node--nonfinal" x="417.2" y="993.5" width="22" height="16"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="447.2" y="1006.3">Non-final &#x28;dotted outline)</text>
-<g class="sn-diagram__edge--built"><path class="sn-diagram__line" d="M650.6 1001.5 L672.6 1001.5"/></g>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="680.6" y="1006.3">Next step &#x28;▶ marks the trigger at the arrow head)</text>
-<g class="sn-diagram__edge--fallback"><path class="sn-diagram__line" d="M1064.3 1001.5 L1086.3 1001.5"/></g>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1094.3" y="1006.3">Fallback branch &#x28;dashed card: if it fails)</text>
+<text class="sn-diagram__t body-strong" x="24.0" y="473.3">Key</text>
+<rect class="sn-diagram__swatch sn-dg-c8" x="24.0" y="491.4" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="54.0" y="500.2">ops and design</text>
+<rect class="sn-diagram__legend-box sn-diagram__node--nonfinal" x="162.3" y="488.4" width="22" height="16"/>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="192.3" y="500.2">Non-final &#x28;dotted outline)</text>
+<g class="sn-diagram__edge--built"><path class="sn-diagram__line" d="M358.6 496.4 L380.6 496.4"/></g>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="388.6" y="500.2">Next step &#x28;▶ marks the trigger at the arrow head)</text>
+<g class="sn-diagram__edge--fallback"><path class="sn-diagram__line" d="M699.2 496.4 L721.2 496.4"/></g>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="729.2" y="500.2">Fallback branch &#x28;dashed card: if it fails)</text>
 </g>
 </svg>

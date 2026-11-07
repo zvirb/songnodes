@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1607 902" role="img" aria-labelledby="D5-P3-t D5-P3-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1607 776" role="img" aria-labelledby="D5-P3-t D5-P3-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
 :root, [data-theme="dark"] {
   --bg: #222222;
   --surface-1: #2d2d2d;
@@ -445,6 +445,7 @@
   --drawer-w: 300px;
   --rail-w: 248px;
   --content-max: 1400px;
+  --print-wide-h: 150mm;
   --print-wide-w: 273mm;
   --prose-max: 68ch;
   --z-base: 0;
@@ -789,151 +790,138 @@
 .sn-chart-frame__axis-title { fill: var(--chart-axis); font-family: var(--font-body); font-size: 0.6875rem; }</style>
 <title id="D5-P3-t">Swimlane: P3 Library curator</title>
 <desc id="D5-P3-d">8 numbered steps of Library curator left to right across 2 system lanes; each card shows its trigger, page, action, data written and hand-off, with dashed fallback cards below.</desc>
-<rect class="sn-diagram__bg" x="0" y="0" width="1607" height="902"/>
-<rect class="sn-diagram__lane" x="24.0" y="24.0" width="1558.6" height="391.0"/>
+<rect class="sn-diagram__bg" x="0" y="0" width="1607" height="776"/>
+<rect class="sn-diagram__lane" x="24.0" y="24.0" width="1558.6" height="328.0"/>
 <text class="sn-diagram__t sn-diagram__t--2 body-strong" x="34.0" y="49.3">songnodes</text>
 <text class="sn-diagram__t sn-diagram__t--2 body-strong" x="34.0" y="70.3">frontend</text>
-<rect class="sn-diagram__lane sn-diagram__lane--alt" x="24.0" y="415.0" width="1558.6" height="391.0"/>
-<text class="sn-diagram__t sn-diagram__t--2 body-strong" x="34.0" y="440.3">musicLibrary</text>
-<text class="sn-diagram__t sn-diagram__t--2 body-strong" x="34.0" y="461.3">pipeline</text>
+<rect class="sn-diagram__lane sn-diagram__lane--alt" x="24.0" y="352.0" width="1558.6" height="328.0"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-strong" x="34.0" y="377.3">musicLibrary</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-strong" x="34.0" y="398.3">pipeline</text>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-agent-weekly-run" data-step="1" tabindex="0" aria-label="P3 step 1 on Weekly run playbook: read summary. Trigger: scheduled task message. Writes: –.">
 <title>P3 step 1 on Weekly run playbook: read summary. Trigger: scheduled task message. Writes: –.</title>
-<rect class="sn-diagram__box" x="148.6" y="425.0" width="160.0" height="266.0"/>
-<rect class="sn-diagram__stripe" x="150.1" y="426.5" width="5" height="263.0"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="162.6" y="447.3">▶ scheduled task</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="162.6" y="468.3">message</text>
-<text class="sn-diagram__t body-strong" x="162.6" y="489.3">1 · Weekly run</text>
-<text class="sn-diagram__t body-strong" x="162.6" y="510.3">playbook</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="162.6" y="531.3">ops · cli</text>
-<text class="sn-diagram__t body" x="162.6" y="552.3">read summary</text>
+<rect class="sn-diagram__box" x="148.6" y="362.0" width="160.0" height="224.0"/>
+<rect class="sn-diagram__stripe" x="150.1" y="363.5" width="5" height="221.0"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="162.6" y="384.3">▶ scheduled task</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="162.6" y="405.3">message</text>
+<text class="sn-diagram__t body-strong" x="162.6" y="426.3">1 · Weekly run…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="162.6" y="447.3">ops · cli</text>
+<text class="sn-diagram__t body" x="162.6" y="468.3">read summary</text>
 </g>
 <g class="sn-diagram__node sn-dg-c2 sn-diagram__node--production" data-node="ml-cli-process" data-step="2" tabindex="0" aria-label="P3 step 2 on run_weekly process: review_queue.csv to overrides &#x43;SV &#x28;manual copy). Trigger: weekly. Writes: overrides/energy_overrides.csv. Hands off energy_overrides.csv rows via file. Fallback: none; rows ignored if not copied.">
 <title>P3 step 2 on run_weekly process: review_queue.csv to overrides &#x43;SV &#x28;manual copy). Trigger: weekly. Writes: overrides/energy_overrides.csv. Hands off energy_overrides.csv rows via file. Fallback: none; rows ignored if not copied.</title>
-<rect class="sn-diagram__box" x="330.6" y="425.0" width="160.0" height="266.0"/>
-<rect class="sn-diagram__stripe" x="332.1" y="426.5" width="5" height="263.0"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="344.6" y="447.3">▶ weekly</text>
-<text class="sn-diagram__t body-strong" x="344.6" y="468.3">2 · run_weekly</text>
-<text class="sn-diagram__t body-strong" x="344.6" y="489.3">process</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="344.6" y="510.3">library · cli</text>
-<text class="sn-diagram__t body" x="344.6" y="531.3">review_queue.csv</text>
-<text class="sn-diagram__t body" x="344.6" y="552.3">to overrides &#x43;SV</text>
-<text class="sn-diagram__t body" x="344.6" y="573.3">&#x28;manual copy)</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="344.6" y="594.3">writes:</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="344.6" y="615.3">overrides/energy_</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="344.6" y="636.3">overrides.csv</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="344.6" y="657.3">→ hands off:</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="344.6" y="678.3">energy_override…</text>
+<rect class="sn-diagram__box" x="330.6" y="362.0" width="160.0" height="224.0"/>
+<rect class="sn-diagram__stripe" x="332.1" y="363.5" width="5" height="221.0"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="344.6" y="384.3">▶ weekly</text>
+<text class="sn-diagram__t body-strong" x="344.6" y="405.3">2 · run_weekly…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="344.6" y="426.3">library · cli</text>
+<text class="sn-diagram__t body" x="344.6" y="447.3">review_queue.csv</text>
+<text class="sn-diagram__t body" x="344.6" y="468.3">to overrides &#x43;SV</text>
+<text class="sn-diagram__t body" x="344.6" y="489.3">&#x28;manual copy)</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="344.6" y="510.3">writes:</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="344.6" y="531.3">overrides/energ…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="344.6" y="552.3">→ hands off:</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="344.6" y="573.3">energy_override…</text>
 </g>
 <g class="sn-diagram__edge sn-dg-c2 sn-diagram__edge--fallback" data-from="ml-cli-process" data-to="ml-cli-process" data-edge="P3-s2&gt;fb" tabindex="0" aria-label="Fallback branch of step 2">
 <title>Fallback branch of step 2</title>
-<path class="sn-diagram__line" d="M410.6 691.0 L410.6 719.0"/>
-<path class="sn-diagram__head" d="M410.6 719.0 L406.8 712.0 L414.5 712.0 Z"/>
+<path class="sn-diagram__line" d="M410.6 586.0 L410.6 614.0"/>
+<path class="sn-diagram__head" d="M410.6 614.0 L406.8 607.0 L414.5 607.0 Z"/>
 </g>
 <g class="sn-diagram__node sn-dg-c2 sn-diagram__node--fallback" data-node="ml-cli-process" data-fallback="2" tabindex="0" aria-label="Fallback for step 2: none; rows ignored if not copied">
 <title>Fallback for step 2: none; rows ignored if not copied</title>
-<rect class="sn-diagram__box" x="330.6" y="719.0" width="160.0" height="77.0"/>
-<rect class="sn-diagram__stripe" x="332.1" y="720.5" width="5" height="74.0"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="344.6" y="741.3">If it fails: none;</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="344.6" y="762.3">rows ignored if</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="344.6" y="783.3">not copied</text>
+<rect class="sn-diagram__box" x="330.6" y="614.0" width="160.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="332.1" y="615.5" width="5" height="53.0"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="344.6" y="636.3">If it fails: none;</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="344.6" y="657.3">rows ignored if…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="ml-cli-scrape" data-step="3" tabindex="0" aria-label="P3 step 3 on run_weekly scrape: manual adds. Trigger: heard a track. Writes: inbox/manual_adds.csv.">
 <title>P3 step 3 on run_weekly scrape: manual adds. Trigger: heard a track. Writes: inbox/manual_adds.csv.</title>
-<rect class="sn-diagram__box" x="512.6" y="425.0" width="160.0" height="266.0"/>
-<rect class="sn-diagram__stripe" x="514.1" y="426.5" width="5" height="263.0"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="526.6" y="447.3">▶ heard a track</text>
-<text class="sn-diagram__t body-strong" x="526.6" y="468.3">3 · run_weekly</text>
-<text class="sn-diagram__t body-strong" x="526.6" y="489.3">scrape</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="526.6" y="510.3">ingest · cli</text>
-<text class="sn-diagram__t body" x="526.6" y="531.3">manual adds</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="526.6" y="552.3">writes:</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="526.6" y="573.3">inbox/manual_add</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="526.6" y="594.3">s.csv</text>
+<rect class="sn-diagram__box" x="512.6" y="362.0" width="160.0" height="224.0"/>
+<rect class="sn-diagram__stripe" x="514.1" y="363.5" width="5" height="221.0"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="526.6" y="384.3">▶ heard a track</text>
+<text class="sn-diagram__t body-strong" x="526.6" y="405.3">3 · run_weekly…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="526.6" y="426.3">ingest · cli</text>
+<text class="sn-diagram__t body" x="526.6" y="447.3">manual adds</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="526.6" y="468.3">writes:</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="526.6" y="489.3">inbox/manual_a…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c2 sn-diagram__node--production" data-node="ml-cli-calibrate" data-step="4" tabindex="0" aria-label="P3 step 4 on calibrate: fit rules. Trigger: ad hoc. Writes: outputs/calibration_suggestions.json.">
 <title>P3 step 4 on calibrate: fit rules. Trigger: ad hoc. Writes: outputs/calibration_suggestions.json.</title>
-<rect class="sn-diagram__box" x="694.6" y="425.0" width="160.0" height="266.0"/>
-<rect class="sn-diagram__stripe" x="696.1" y="426.5" width="5" height="263.0"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="708.6" y="447.3">▶ ad hoc</text>
-<text class="sn-diagram__t body-strong" x="708.6" y="468.3">4 · calibrate</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="708.6" y="489.3">library · cli</text>
-<text class="sn-diagram__t body" x="708.6" y="510.3">fit rules</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="708.6" y="531.3">writes:</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="708.6" y="552.3">outputs/calibratio</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="708.6" y="573.3">n_suggestions.js…</text>
+<rect class="sn-diagram__box" x="694.6" y="362.0" width="160.0" height="224.0"/>
+<rect class="sn-diagram__stripe" x="696.1" y="363.5" width="5" height="221.0"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="708.6" y="384.3">▶ ad hoc</text>
+<text class="sn-diagram__t body-strong" x="708.6" y="405.3">4 · calibrate</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="708.6" y="426.3">library · cli</text>
+<text class="sn-diagram__t body" x="708.6" y="447.3">fit rules</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="708.6" y="468.3">writes:</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="708.6" y="489.3">outputs/calibrati…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c2 sn-diagram__node--production" data-node="sn-fe-library" data-step="5" tabindex="0" aria-label="P3 step 5 on Melbourne crate: Import library export. Trigger: Import dialog FileDrop .json. Writes: &#x50;OST /api/v1/library/ingest; job polled. Fallback: Retry on dead job.">
 <title>P3 step 5 on Melbourne crate: Import library export. Trigger: Import dialog FileDrop .json. Writes: &#x50;OST /api/v1/library/ingest; job polled. Fallback: Retry on dead job.</title>
-<rect class="sn-diagram__box" x="876.6" y="34.0" width="160.0" height="266.0"/>
-<rect class="sn-diagram__stripe" x="878.1" y="35.5" width="5" height="263.0"/>
+<rect class="sn-diagram__box" x="876.6" y="34.0" width="160.0" height="224.0"/>
+<rect class="sn-diagram__stripe" x="878.1" y="35.5" width="5" height="221.0"/>
 <text class="sn-diagram__t sn-diagram__t--2 body" x="890.6" y="56.3">▶ Import dialog</text>
 <text class="sn-diagram__t sn-diagram__t--2 body" x="890.6" y="77.3">FileDrop .json</text>
-<text class="sn-diagram__t body-strong" x="890.6" y="98.3">5 · Melbourne</text>
-<text class="sn-diagram__t body-strong" x="890.6" y="119.3">crate</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="890.6" y="140.3">library · route</text>
-<text class="sn-diagram__t body" x="890.6" y="161.3">Import library</text>
-<text class="sn-diagram__t body" x="890.6" y="182.3">export</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="890.6" y="203.3">writes: &#x50;OST</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="890.6" y="224.3">/api/v1/library/ing</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="890.6" y="245.3">est; job polled</text>
+<text class="sn-diagram__t body-strong" x="890.6" y="98.3">5 · Melbourne…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="890.6" y="119.3">library · route</text>
+<text class="sn-diagram__t body" x="890.6" y="140.3">Import library</text>
+<text class="sn-diagram__t body" x="890.6" y="161.3">export</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="890.6" y="182.3">writes: &#x50;OST</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="890.6" y="203.3">/api/v1/library/in…</text>
 </g>
 <g class="sn-diagram__edge sn-dg-c2 sn-diagram__edge--fallback" data-from="sn-fe-library" data-to="sn-fe-library" data-edge="P3-s5&gt;fb" tabindex="0" aria-label="Fallback branch of step 5">
 <title>Fallback branch of step 5</title>
-<path class="sn-diagram__line" d="M956.6 300.0 L956.6 328.0"/>
-<path class="sn-diagram__head" d="M956.6 328.0 L952.8 321.0 L960.5 321.0 Z"/>
+<path class="sn-diagram__line" d="M956.6 258.0 L956.6 286.0"/>
+<path class="sn-diagram__head" d="M956.6 286.0 L952.8 279.0 L960.5 279.0 Z"/>
 </g>
 <g class="sn-diagram__node sn-dg-c2 sn-diagram__node--fallback" data-node="sn-fe-library" data-fallback="5" tabindex="0" aria-label="Fallback for step 5: Retry on dead job">
 <title>Fallback for step 5: Retry on dead job</title>
-<rect class="sn-diagram__box" x="876.6" y="328.0" width="160.0" height="77.0"/>
-<rect class="sn-diagram__stripe" x="878.1" y="329.5" width="5" height="74.0"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="890.6" y="350.3">If it fails: Retry on</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="890.6" y="371.3">dead job</text>
+<rect class="sn-diagram__box" x="876.6" y="286.0" width="160.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="878.1" y="287.5" width="5" height="53.0"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="890.6" y="308.3">If it fails: Retry on</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="890.6" y="329.3">dead job</text>
 </g>
 <g class="sn-diagram__node sn-dg-c2 sn-diagram__node--production" data-node="sn-fe-library" data-step="6" tabindex="0" aria-label="P3 step 6 on Melbourne crate: review rev=true rows. Trigger: Banner Review link. Writes: sn-filters-library.">
 <title>P3 step 6 on Melbourne crate: review rev=true rows. Trigger: Banner Review link. Writes: sn-filters-library.</title>
-<rect class="sn-diagram__box" x="1058.6" y="34.0" width="160.0" height="266.0"/>
-<rect class="sn-diagram__stripe" x="1060.1" y="35.5" width="5" height="263.0"/>
+<rect class="sn-diagram__box" x="1058.6" y="34.0" width="160.0" height="224.0"/>
+<rect class="sn-diagram__stripe" x="1060.1" y="35.5" width="5" height="221.0"/>
 <text class="sn-diagram__t sn-diagram__t--2 body" x="1072.6" y="56.3">▶ Banner Review</text>
 <text class="sn-diagram__t sn-diagram__t--2 body" x="1072.6" y="77.3">link</text>
-<text class="sn-diagram__t body-strong" x="1072.6" y="98.3">6 · Melbourne</text>
-<text class="sn-diagram__t body-strong" x="1072.6" y="119.3">crate</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1072.6" y="140.3">library · route</text>
-<text class="sn-diagram__t body" x="1072.6" y="161.3">review rev=true</text>
-<text class="sn-diagram__t body" x="1072.6" y="182.3">rows</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1072.6" y="203.3">writes:</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1072.6" y="224.3">sn-filters-library</text>
+<text class="sn-diagram__t body-strong" x="1072.6" y="98.3">6 · Melbourne…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1072.6" y="119.3">library · route</text>
+<text class="sn-diagram__t body" x="1072.6" y="140.3">review rev=true</text>
+<text class="sn-diagram__t body" x="1072.6" y="161.3">rows</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1072.6" y="182.3">writes:</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1072.6" y="203.3">sn-filters-library</text>
 </g>
 <g class="sn-diagram__node sn-dg-c2 sn-diagram__node--production" data-node="sn-fe-library" data-step="7" tabindex="0" aria-label="P3 step 7 on Melbourne crate: mark target. Trigger: TargetActionButton. Writes: &#x50;OST /api/v1/target-tracks; sn-target-tracks-v1. Fallback: pendingSync=true kept locally.">
 <title>P3 step 7 on Melbourne crate: mark target. Trigger: TargetActionButton. Writes: &#x50;OST /api/v1/target-tracks; sn-target-tracks-v1. Fallback: pendingSync=true kept locally.</title>
-<rect class="sn-diagram__box" x="1240.6" y="34.0" width="160.0" height="266.0"/>
-<rect class="sn-diagram__stripe" x="1242.1" y="35.5" width="5" height="263.0"/>
+<rect class="sn-diagram__box" x="1240.6" y="34.0" width="160.0" height="224.0"/>
+<rect class="sn-diagram__stripe" x="1242.1" y="35.5" width="5" height="221.0"/>
 <text class="sn-diagram__t sn-diagram__t--2 body" x="1254.6" y="56.3">▶</text>
 <text class="sn-diagram__t sn-diagram__t--2 body" x="1254.6" y="77.3">TargetActionBut…</text>
-<text class="sn-diagram__t body-strong" x="1254.6" y="98.3">7 · Melbourne</text>
-<text class="sn-diagram__t body-strong" x="1254.6" y="119.3">crate</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1254.6" y="140.3">library · route</text>
-<text class="sn-diagram__t body" x="1254.6" y="161.3">mark target</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1254.6" y="182.3">writes: &#x50;OST</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1254.6" y="203.3">/api/v1/target-trac</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1254.6" y="224.3">ks;…</text>
+<text class="sn-diagram__t body-strong" x="1254.6" y="98.3">7 · Melbourne…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1254.6" y="119.3">library · route</text>
+<text class="sn-diagram__t body" x="1254.6" y="140.3">mark target</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1254.6" y="161.3">writes: &#x50;OST</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1254.6" y="182.3">/api/v1/target-tr…</text>
 </g>
 <g class="sn-diagram__edge sn-dg-c2 sn-diagram__edge--fallback" data-from="sn-fe-library" data-to="sn-fe-library" data-edge="P3-s7&gt;fb" tabindex="0" aria-label="Fallback branch of step 7">
 <title>Fallback branch of step 7</title>
-<path class="sn-diagram__line" d="M1320.6 300.0 L1320.6 328.0"/>
-<path class="sn-diagram__head" d="M1320.6 328.0 L1316.8 321.0 L1324.5 321.0 Z"/>
+<path class="sn-diagram__line" d="M1320.6 258.0 L1320.6 286.0"/>
+<path class="sn-diagram__head" d="M1320.6 286.0 L1316.8 279.0 L1324.5 279.0 Z"/>
 </g>
 <g class="sn-diagram__node sn-dg-c2 sn-diagram__node--fallback" data-node="sn-fe-library" data-fallback="7" tabindex="0" aria-label="Fallback for step 7: pendingSync=true kept locally">
 <title>Fallback for step 7: pendingSync=true kept locally</title>
-<rect class="sn-diagram__box" x="1240.6" y="328.0" width="160.0" height="77.0"/>
-<rect class="sn-diagram__stripe" x="1242.1" y="329.5" width="5" height="74.0"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1254.6" y="350.3">If it fails:</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1254.6" y="371.3">pendingSync=tru</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1254.6" y="392.3">e kept locally</text>
+<rect class="sn-diagram__box" x="1240.6" y="286.0" width="160.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="1242.1" y="287.5" width="5" height="53.0"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1254.6" y="308.3">If it fails:</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1254.6" y="329.3">pendingSync=tr…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="sn-fe-sources-targets" data-step="8" tabindex="0" aria-label="P3 step 8 on Target tracks: edit priorities and search. Trigger: NavDrawer Sources. Writes: &#x50;UT/&#x50;OST /api/v1/target-tracks. Hands off target_tracks rows via /api/v1/target-tracks -&gt; scrape jobs. Fallback: toast error.">
 <title>P3 step 8 on Target tracks: edit priorities and search. Trigger: NavDrawer Sources. Writes: &#x50;UT/&#x50;OST /api/v1/target-tracks. Hands off target_tracks rows via /api/v1/target-tracks -&gt; scrape jobs. Fallback: toast error.</title>
-<rect class="sn-diagram__box" x="1422.6" y="34.0" width="160.0" height="266.0"/>
-<rect class="sn-diagram__stripe" x="1424.1" y="35.5" width="5" height="263.0"/>
+<rect class="sn-diagram__box" x="1422.6" y="34.0" width="160.0" height="224.0"/>
+<rect class="sn-diagram__stripe" x="1424.1" y="35.5" width="5" height="221.0"/>
 <text class="sn-diagram__t sn-diagram__t--2 body" x="1436.6" y="56.3">▶ NavDrawer</text>
 <text class="sn-diagram__t sn-diagram__t--2 body" x="1436.6" y="77.3">Sources</text>
 <text class="sn-diagram__t body-strong" x="1436.6" y="98.3">8 · Target tracks</text>
@@ -941,41 +929,40 @@
 <text class="sn-diagram__t body" x="1436.6" y="140.3">edit priorities and</text>
 <text class="sn-diagram__t body" x="1436.6" y="161.3">search</text>
 <text class="sn-diagram__t sn-diagram__t--2 body" x="1436.6" y="182.3">writes: &#x50;UT/&#x50;OST</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1436.6" y="203.3">/api/v1/target-trac</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1436.6" y="224.3">ks</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1436.6" y="245.3">→ hands off:</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1436.6" y="266.3">target_tracks ro…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1436.6" y="203.3">/api/v1/target-tr…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1436.6" y="224.3">→ hands off:</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1436.6" y="245.3">target_tracks ro…</text>
 </g>
 <g class="sn-diagram__edge sn-dg-c1 sn-diagram__edge--fallback" data-from="sn-fe-sources-targets" data-to="sn-fe-sources-targets" data-edge="P3-s8&gt;fb" tabindex="0" aria-label="Fallback branch of step 8">
 <title>Fallback branch of step 8</title>
-<path class="sn-diagram__line" d="M1502.6 300.0 L1502.6 328.0"/>
-<path class="sn-diagram__head" d="M1502.6 328.0 L1498.8 321.0 L1506.5 321.0 Z"/>
+<path class="sn-diagram__line" d="M1502.6 258.0 L1502.6 286.0"/>
+<path class="sn-diagram__head" d="M1502.6 286.0 L1498.8 279.0 L1506.5 279.0 Z"/>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--fallback" data-node="sn-fe-sources-targets" data-fallback="8" tabindex="0" aria-label="Fallback for step 8: toast error">
 <title>Fallback for step 8: toast error</title>
-<rect class="sn-diagram__box" x="1422.6" y="328.0" width="160.0" height="77.0"/>
-<rect class="sn-diagram__stripe" x="1424.1" y="329.5" width="5" height="74.0"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1436.6" y="350.3">If it fails: toast</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1436.6" y="371.3">error</text>
+<rect class="sn-diagram__box" x="1422.6" y="286.0" width="160.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="1424.1" y="287.5" width="5" height="53.0"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1436.6" y="308.3">If it fails: toast</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1436.6" y="329.3">error</text>
 </g>
 <g class="sn-diagram__edge sn-dg-c2 sn-diagram__edge--built" data-from="ml-agent-weekly-run" data-to="ml-cli-process" data-edge="P3-1&gt;2" tabindex="0" aria-label="Step 1 → step 2, triggered by: weekly">
 <title>Step 1 → step 2, triggered by: weekly</title>
-<path class="sn-diagram__line" d="M308.6 453.0 L330.6 453.0"/>
-<path class="sn-diagram__head" d="M330.6 453.0 L323.6 449.1 L323.6 456.9 Z"/>
+<path class="sn-diagram__line" d="M308.6 390.0 L330.6 390.0"/>
+<path class="sn-diagram__head" d="M330.6 390.0 L323.6 386.1 L323.6 393.9 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c1 sn-diagram__edge--built" data-from="ml-cli-process" data-to="ml-cli-scrape" data-edge="P3-2&gt;3" tabindex="0" aria-label="Step 2 → step 3, triggered by: heard a track">
 <title>Step 2 → step 3, triggered by: heard a track</title>
-<path class="sn-diagram__line" d="M490.6 453.0 L512.6 453.0"/>
-<path class="sn-diagram__head" d="M512.6 453.0 L505.6 449.1 L505.6 456.9 Z"/>
+<path class="sn-diagram__line" d="M490.6 390.0 L512.6 390.0"/>
+<path class="sn-diagram__head" d="M512.6 390.0 L505.6 386.1 L505.6 393.9 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c2 sn-diagram__edge--built" data-from="ml-cli-scrape" data-to="ml-cli-calibrate" data-edge="P3-3&gt;4" tabindex="0" aria-label="Step 3 → step 4, triggered by: ad hoc">
 <title>Step 3 → step 4, triggered by: ad hoc</title>
-<path class="sn-diagram__line" d="M672.6 453.0 L694.6 453.0"/>
-<path class="sn-diagram__head" d="M694.6 453.0 L687.6 449.1 L687.6 456.9 Z"/>
+<path class="sn-diagram__line" d="M672.6 390.0 L694.6 390.0"/>
+<path class="sn-diagram__head" d="M694.6 390.0 L687.6 386.1 L687.6 393.9 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c2 sn-diagram__edge--built" data-from="ml-cli-calibrate" data-to="sn-fe-library" data-edge="P3-4&gt;5" tabindex="0" aria-label="Step 4 → step 5, triggered by: Import dialog FileDrop .json">
 <title>Step 4 → step 5, triggered by: Import dialog FileDrop .json</title>
-<path class="sn-diagram__line" d="M854.6 453.0 L865.6 453.0 L865.6 62.0 L876.6 62.0"/>
+<path class="sn-diagram__line" d="M854.6 390.0 L865.6 390.0 L865.6 62.0 L876.6 62.0"/>
 <path class="sn-diagram__head" d="M876.6 62.0 L869.6 58.1 L869.6 65.8 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c2 sn-diagram__edge--built" data-from="sn-fe-library" data-to="sn-fe-library" data-edge="P3-5&gt;6" tabindex="0" aria-label="Step 5 → step 6, triggered by: Banner Review link">
@@ -994,18 +981,18 @@
 <path class="sn-diagram__head" d="M1422.6 62.0 L1415.6 58.1 L1415.6 65.8 Z"/>
 </g>
 <g class="sn-diagram__legend" aria-label="Legend">
-<text class="sn-diagram__t body-strong" x="24.0" y="837.3">Key</text>
-<rect class="sn-diagram__swatch sn-dg-c1" x="24.0" y="857.5" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="54.0" y="867.3">ingest</text>
-<rect class="sn-diagram__swatch sn-dg-c2" x="117.0" y="857.5" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="147.0" y="867.3">library</text>
-<rect class="sn-diagram__swatch sn-dg-c8" x="211.6" y="857.5" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="241.6" y="867.3">ops and design</text>
-<rect class="sn-diagram__legend-box sn-diagram__node--production" x="372.5" y="854.5" width="22" height="16"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="402.5" y="867.3">Production &#x28;solid outline)</text>
-<g class="sn-diagram__edge--built"><path class="sn-diagram__line" d="M604.8 862.5 L626.8 862.5"/></g>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="634.8" y="867.3">Next step &#x28;▶ marks the trigger at the arrow head)</text>
-<g class="sn-diagram__edge--fallback"><path class="sn-diagram__line" d="M1018.5 862.5 L1040.5 862.5"/></g>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1048.5" y="867.3">Fallback branch &#x28;dashed card: if it fails)</text>
+<text class="sn-diagram__t body-strong" x="24.0" y="711.3">Key</text>
+<rect class="sn-diagram__swatch sn-dg-c1" x="24.0" y="731.5" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="54.0" y="741.3">ingest</text>
+<rect class="sn-diagram__swatch sn-dg-c2" x="117.0" y="731.5" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="147.0" y="741.3">library</text>
+<rect class="sn-diagram__swatch sn-dg-c8" x="211.6" y="731.5" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="241.6" y="741.3">ops and design</text>
+<rect class="sn-diagram__legend-box sn-diagram__node--production" x="372.5" y="728.5" width="22" height="16"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="402.5" y="741.3">Production &#x28;solid outline)</text>
+<g class="sn-diagram__edge--built"><path class="sn-diagram__line" d="M604.8 736.5 L626.8 736.5"/></g>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="634.8" y="741.3">Next step &#x28;▶ marks the trigger at the arrow head)</text>
+<g class="sn-diagram__edge--fallback"><path class="sn-diagram__line" d="M1018.5 736.5 L1040.5 736.5"/></g>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1048.5" y="741.3">Fallback branch &#x28;dashed card: if it fails)</text>
 </g>
 </svg>

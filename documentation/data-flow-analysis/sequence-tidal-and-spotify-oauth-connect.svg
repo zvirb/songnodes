@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1248 795" role="img" aria-labelledby="D6c-t D6c-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1587 873" role="img" aria-labelledby="D6c-t D6c-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
 :root, [data-theme="dark"] {
   --bg: #222222;
   --surface-1: #2d2d2d;
@@ -445,6 +445,7 @@
   --drawer-w: 300px;
   --rail-w: 248px;
   --content-max: 1400px;
+  --print-wide-h: 150mm;
   --print-wide-w: 273mm;
   --prose-max: 68ch;
   --z-base: 0;
@@ -789,150 +790,151 @@
 .sn-chart-frame__axis-title { fill: var(--chart-axis); font-family: var(--font-body); font-size: 0.6875rem; }</style>
 <title id="D6c-t">Sequence: &#x54;IDAL and Spotify OAuth connect</title>
 <desc id="D6c-d">&#x55;ML sequence with 6 lifelines and 15 numbered messages, top to bottom; dashed arrows are returns, red dashed arrows are gaps, grey boxes are notes.</desc>
-<rect class="sn-diagram__bg" x="0" y="0" width="1248" height="795"/>
-<path class="sn-diagram__lifeline" d="M124.0 75.8 L124.0 702.8"/>
-<path class="sn-diagram__lifeline" d="M324.0 75.8 L324.0 702.8"/>
-<path class="sn-diagram__lifeline" d="M524.0 75.8 L524.0 702.8"/>
-<path class="sn-diagram__lifeline" d="M724.0 75.8 L724.0 702.8"/>
-<path class="sn-diagram__lifeline" d="M924.0 75.8 L924.0 702.8"/>
-<path class="sn-diagram__lifeline" d="M1124.0 75.8 L1124.0 702.8"/>
+<rect class="sn-diagram__bg" x="0" y="0" width="1587" height="873"/>
+<path class="sn-diagram__lifeline" d="M124.0 80.0 L124.0 777.0"/>
+<path class="sn-diagram__lifeline" d="M324.0 80.0 L324.0 777.0"/>
+<path class="sn-diagram__lifeline" d="M524.0 80.0 L524.0 777.0"/>
+<path class="sn-diagram__lifeline" d="M724.0 80.0 L724.0 777.0"/>
+<path class="sn-diagram__lifeline" d="M924.0 80.0 L924.0 777.0"/>
+<path class="sn-diagram__lifeline" d="M1124.0 80.0 L1124.0 777.0"/>
 <g class="sn-diagram__node sn-dg-c7 sn-diagram__node--production" data-node="sn-fe-settings" tabindex="0" aria-label="Settings page &#x28;sn-fe-settings), services">
 <title>Settings page &#x28;sn-fe-settings), services</title>
-<rect class="sn-diagram__box" x="32.0" y="24.0" width="184.0" height="51.8"/>
-<rect class="sn-diagram__stripe" x="33.5" y="25.5" width="5" height="48.8"/>
+<rect class="sn-diagram__box" x="32.0" y="24.0" width="184.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="33.5" y="25.5" width="5" height="53.0"/>
 <text class="sn-diagram__t body-strong" x="46.0" y="46.3">Settings page</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="46.0" y="64.2">services · route</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="46.0" y="67.3">services · route</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-svc-rest-api" tabindex="0" aria-label="&#x52;EST &#x41;PI &#x28;sn-be-svc-rest-api), ops">
 <title>&#x52;EST &#x41;PI &#x28;sn-be-svc-rest-api), ops</title>
-<rect class="sn-diagram__box" x="232.0" y="24.0" width="184.0" height="51.8"/>
-<rect class="sn-diagram__stripe" x="233.5" y="25.5" width="5" height="48.8"/>
+<rect class="sn-diagram__box" x="232.0" y="24.0" width="184.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="233.5" y="25.5" width="5" height="53.0"/>
 <text class="sn-diagram__t body-strong" x="246.0" y="46.3">&#x52;EST &#x41;PI</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="246.0" y="64.2">ops · service</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="246.0" y="67.3">ops · service</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-store-redis" tabindex="0" aria-label="Redis &#x28;sn-be-store-redis), ops">
 <title>Redis &#x28;sn-be-store-redis), ops</title>
-<rect class="sn-diagram__box" x="432.0" y="24.0" width="184.0" height="51.8"/>
-<rect class="sn-diagram__stripe" x="433.5" y="25.5" width="5" height="48.8"/>
+<rect class="sn-diagram__box" x="432.0" y="24.0" width="184.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="433.5" y="25.5" width="5" height="53.0"/>
 <text class="sn-diagram__t body-strong" x="446.0" y="46.3">Redis</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="446.0" y="64.2">ops · redis</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="446.0" y="67.3">ops · redis</text>
 </g>
 <g class="sn-diagram__node sn-dg-c7 sn-diagram__node--production" data-node="ext-tidal" tabindex="0" aria-label="Provider &#x28;&#x54;IDAL) &#x28;ext-tidal), services">
 <title>Provider &#x28;&#x54;IDAL) &#x28;ext-tidal), services</title>
-<rect class="sn-diagram__box" x="632.0" y="24.0" width="184.0" height="51.8"/>
-<rect class="sn-diagram__stripe" x="633.5" y="25.5" width="5" height="48.8"/>
+<rect class="sn-diagram__box" x="632.0" y="24.0" width="184.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="633.5" y="25.5" width="5" height="53.0"/>
 <text class="sn-diagram__t body-strong" x="646.0" y="46.3">Provider &#x28;&#x54;IDAL)</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="646.0" y="64.2">services · api</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="646.0" y="67.3">services · api</text>
 </g>
 <g class="sn-diagram__node sn-dg-c7 sn-diagram__node--production" data-node="sn-fe-oauth-callback" tabindex="0" aria-label="Sign-in return &#x28;sn-fe-oauth-callback), services">
 <title>Sign-in return &#x28;sn-fe-oauth-callback), services</title>
-<rect class="sn-diagram__box" x="832.0" y="24.0" width="184.0" height="51.8"/>
-<rect class="sn-diagram__stripe" x="833.5" y="25.5" width="5" height="48.8"/>
+<rect class="sn-diagram__box" x="832.0" y="24.0" width="184.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="833.5" y="25.5" width="5" height="53.0"/>
 <text class="sn-diagram__t body-strong" x="846.0" y="46.3">Sign-in return</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="846.0" y="64.2">services · route</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="846.0" y="67.3">services · route</text>
 </g>
 <g class="sn-diagram__node sn-dg-c7 sn-diagram__node--production" data-node="sn-be-tbl-oauth" tabindex="0" aria-label="user_oauth_tokens &#x28;sn-be-tbl-oauth), services">
 <title>user_oauth_tokens &#x28;sn-be-tbl-oauth), services</title>
-<rect class="sn-diagram__box" x="1032.0" y="24.0" width="184.0" height="51.8"/>
-<rect class="sn-diagram__stripe" x="1033.5" y="25.5" width="5" height="48.8"/>
+<rect class="sn-diagram__box" x="1032.0" y="24.0" width="184.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="1033.5" y="25.5" width="5" height="53.0"/>
 <text class="sn-diagram__t body-strong" x="1046.0" y="46.3">user_oauth_tokens</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="1046.0" y="64.2">services · postgres</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1046.0" y="67.3">services · postgres</text>
 </g>
 <g class="sn-diagram__edge sn-diagram__edge--neutral" data-from="sn-fe-settings" data-to="sn-fe-settings" data-edge="D6c-m1" tabindex="0" aria-label="1  random 32-byte state into sessionStorage"><title>1  random 32-byte state into sessionStorage</title>
-<path class="sn-diagram__line" d="M124.0 95.8 L154.0 95.8 L154.0 117.8 L128.0 117.8"/>
-<path class="sn-diagram__head" d="M128.0 117.8 L135.0 114.0 L135.0 121.6 Z"/>
-<text class="sn-diagram__t body-s" x="162.0" y="105.1">1 random 32-byte state into sessionStorage</text>
+<path class="sn-diagram__line" d="M124.0 100.0 L154.0 100.0 L154.0 122.0 L128.0 122.0"/>
+<path class="sn-diagram__head" d="M128.0 122.0 L135.0 118.2 L135.0 125.8 Z"/>
+<text class="sn-diagram__t body" x="162.0" y="111.3">1 random 32-byte state into sessionStorage</text>
 </g>
 <g class="sn-diagram__edge sn-diagram__edge--neutral" data-from="sn-fe-settings" data-to="sn-be-svc-rest-api" data-edge="D6c-m2" tabindex="0" aria-label="2  &#x54;IDAL: &#x50;OST tidal/oauth/init &#x28;Spotify: navigate to authorize)"><title>2  &#x54;IDAL: &#x50;OST tidal/oauth/init &#x28;Spotify: navigate to authorize)</title>
-<path class="sn-diagram__line" d="M124.0 173.2 L324.0 173.2"/>
-<path class="sn-diagram__head" d="M324.0 173.2 L317.0 169.4 L317.0 177.1 Z"/>
-<text class="sn-diagram__t body-s" x="132.0" y="144.1">2 &#x54;IDAL: &#x50;OST tidal/oauth/init &#x28;Spotify: navigate to</text>
-<text class="sn-diagram__t body-s" x="132.0" y="162.3">authorize)</text>
+<path class="sn-diagram__line" d="M124.0 183.0 L324.0 183.0"/>
+<path class="sn-diagram__head" d="M324.0 183.0 L317.0 179.2 L317.0 186.8 Z"/>
+<text class="sn-diagram__t body" x="132.0" y="150.3">2 &#x54;IDAL: &#x50;OST tidal/oauth/init &#x28;Spotify: navigate</text>
+<text class="sn-diagram__t body" x="132.0" y="171.3">to authorize)</text>
 </g>
 <g class="sn-diagram__edge sn-diagram__edge--neutral" data-from="sn-be-svc-rest-api" data-to="sn-be-store-redis" data-edge="D6c-m3" tabindex="0" aria-label="3  &#x53;ETEX oauth:{svc}:{state} &#x50;KCE verifier, &#x54;TL 600 s"><title>3  &#x53;ETEX oauth:{svc}:{state} &#x50;KCE verifier, &#x54;TL 600 s</title>
-<path class="sn-diagram__line" d="M324.0 206.4 L524.0 206.4"/>
-<path class="sn-diagram__head" d="M524.0 206.4 L517.0 202.6 L517.0 210.2 Z"/>
-<text class="sn-diagram__t body-s" x="332.0" y="195.5">3 &#x53;ETEX oauth:{svc}:{state} &#x50;KCE verifier, &#x54;TL 600 s</text>
+<path class="sn-diagram__line" d="M324.0 240.0 L524.0 240.0"/>
+<path class="sn-diagram__head" d="M524.0 240.0 L517.0 236.2 L517.0 243.8 Z"/>
+<text class="sn-diagram__t body" x="332.0" y="207.3">3 &#x53;ETEX oauth:{svc}:{state} &#x50;KCE verifier, &#x54;TL</text>
+<text class="sn-diagram__t body" x="332.0" y="228.3">600 s</text>
 </g>
 <g class="sn-diagram__edge sn-diagram__edge--return" data-from="sn-be-svc-rest-api" data-to="sn-fe-settings" data-edge="D6c-m4" tabindex="0" aria-label="4  authorise &#x55;RL; page navigates &#x28;same window)"><title>4  authorise &#x55;RL; page navigates &#x28;same window)</title>
-<path class="sn-diagram__line" d="M324.0 239.6 L124.0 239.6"/>
-<path class="sn-diagram__head" d="M124.0 239.6 L131.0 235.8 L131.0 243.5 Z"/>
-<text class="sn-diagram__t body-s" x="132.0" y="228.7">4 authorise &#x55;RL; page navigates &#x28;same window)</text>
+<path class="sn-diagram__line" d="M324.0 276.0 L124.0 276.0"/>
+<path class="sn-diagram__head" d="M124.0 276.0 L131.0 272.1 L131.0 279.9 Z"/>
+<text class="sn-diagram__t body" x="132.0" y="264.3">4 authorise &#x55;RL; page navigates &#x28;same window)</text>
 </g>
 <g class="sn-diagram__edge sn-diagram__edge--neutral" data-from="sn-fe-settings" data-to="ext-tidal" data-edge="D6c-m5" tabindex="0" aria-label="5  user signs in at the provider"><title>5  user signs in at the provider</title>
-<path class="sn-diagram__line" d="M124.0 272.8 L724.0 272.8"/>
-<path class="sn-diagram__head" d="M724.0 272.8 L717.0 268.9 L717.0 276.7 Z"/>
-<text class="sn-diagram__t body-s" x="132.0" y="261.9">5 user signs in at the provider</text>
+<path class="sn-diagram__line" d="M124.0 312.0 L724.0 312.0"/>
+<path class="sn-diagram__head" d="M724.0 312.0 L717.0 308.1 L717.0 315.9 Z"/>
+<text class="sn-diagram__t body" x="132.0" y="300.3">5 user signs in at the provider</text>
 </g>
 <g class="sn-diagram__edge sn-diagram__edge--return" data-from="ext-tidal" data-to="sn-fe-oauth-callback" data-edge="D6c-m6" tabindex="0" aria-label="6  redirect with code and state"><title>6  redirect with code and state</title>
-<path class="sn-diagram__line" d="M724.0 306.0 L924.0 306.0"/>
-<path class="sn-diagram__head" d="M924.0 306.0 L917.0 302.1 L917.0 309.9 Z"/>
-<text class="sn-diagram__t body-s" x="732.0" y="295.1">6 redirect with code and state</text>
+<path class="sn-diagram__line" d="M724.0 348.0 L924.0 348.0"/>
+<path class="sn-diagram__head" d="M924.0 348.0 L917.0 344.1 L917.0 351.9 Z"/>
+<text class="sn-diagram__t body" x="732.0" y="336.3">6 redirect with code and state</text>
 </g>
 <g class="sn-diagram__edge sn-diagram__edge--neutral" data-from="sn-fe-oauth-callback" data-to="sn-fe-oauth-callback" data-edge="D6c-m7" tabindex="0" aria-label="7  validate state"><title>7  validate state</title>
-<path class="sn-diagram__line" d="M924.0 319.0 L954.0 319.0 L954.0 341.0 L928.0 341.0"/>
-<path class="sn-diagram__head" d="M928.0 341.0 L935.0 337.1 L935.0 344.9 Z"/>
-<text class="sn-diagram__t body-s" x="962.0" y="328.3">7 validate state</text>
+<path class="sn-diagram__line" d="M924.0 361.0 L954.0 361.0 L954.0 383.0 L928.0 383.0"/>
+<path class="sn-diagram__head" d="M928.0 383.0 L935.0 379.1 L935.0 386.9 Z"/>
+<text class="sn-diagram__t body" x="962.0" y="372.3">7 validate state</text>
 </g>
 <g class="sn-diagram__edge sn-diagram__edge--neutral" data-from="sn-fe-oauth-callback" data-to="sn-be-svc-rest-api" data-edge="D6c-m8" tabindex="0" aria-label="8  &#x47;ET backend callback"><title>8  &#x47;ET backend callback</title>
-<path class="sn-diagram__line" d="M924.0 378.2 L324.0 378.2"/>
-<path class="sn-diagram__head" d="M324.0 378.2 L331.0 374.3 L331.0 382.1 Z"/>
-<text class="sn-diagram__t body-s" x="332.0" y="367.3">8 &#x47;ET backend callback</text>
+<path class="sn-diagram__line" d="M924.0 423.0 L324.0 423.0"/>
+<path class="sn-diagram__head" d="M324.0 423.0 L331.0 419.1 L331.0 426.9 Z"/>
+<text class="sn-diagram__t body" x="332.0" y="411.3">8 &#x47;ET backend callback</text>
 </g>
 <g class="sn-diagram__edge sn-diagram__edge--neutral" data-from="sn-be-svc-rest-api" data-to="sn-be-store-redis" data-edge="D6c-m9" tabindex="0" aria-label="9  read and delete state &#x28;single use)"><title>9  read and delete state &#x28;single use)</title>
-<path class="sn-diagram__line" d="M324.0 411.4 L524.0 411.4"/>
-<path class="sn-diagram__head" d="M524.0 411.4 L517.0 407.5 L517.0 415.2 Z"/>
-<text class="sn-diagram__t body-s" x="332.0" y="400.5">9 read and delete state &#x28;single use)</text>
+<path class="sn-diagram__line" d="M324.0 459.0 L524.0 459.0"/>
+<path class="sn-diagram__head" d="M524.0 459.0 L517.0 455.1 L517.0 462.9 Z"/>
+<text class="sn-diagram__t body" x="332.0" y="447.3">9 read and delete state &#x28;single use)</text>
 </g>
 <g class="sn-diagram__edge sn-diagram__edge--neutral" data-from="sn-be-svc-rest-api" data-to="ext-tidal" data-edge="D6c-m10" tabindex="0" aria-label="10  exchange code + verifier"><title>10  exchange code + verifier</title>
-<path class="sn-diagram__line" d="M324.0 444.6 L724.0 444.6"/>
-<path class="sn-diagram__head" d="M724.0 444.6 L717.0 440.7 L717.0 448.4 Z"/>
-<text class="sn-diagram__t body-s" x="332.0" y="433.7">10 exchange code + verifier</text>
+<path class="sn-diagram__line" d="M324.0 495.0 L724.0 495.0"/>
+<path class="sn-diagram__head" d="M724.0 495.0 L717.0 491.1 L717.0 498.9 Z"/>
+<text class="sn-diagram__t body" x="332.0" y="483.3">10 exchange code + verifier</text>
 </g>
 <g class="sn-diagram__edge sn-diagram__edge--return" data-from="sn-be-svc-rest-api" data-to="sn-fe-oauth-callback" data-edge="D6c-m11" tabindex="0" aria-label="11  tokens"><title>11  tokens</title>
-<path class="sn-diagram__line" d="M324.0 477.8 L924.0 477.8"/>
-<path class="sn-diagram__head" d="M924.0 477.8 L917.0 473.9 L917.0 481.6 Z"/>
-<text class="sn-diagram__t body-s" x="332.0" y="466.9">11 tokens</text>
+<path class="sn-diagram__line" d="M324.0 531.0 L924.0 531.0"/>
+<path class="sn-diagram__head" d="M924.0 531.0 L917.0 527.1 L917.0 534.9 Z"/>
+<text class="sn-diagram__t body" x="332.0" y="519.3">11 tokens</text>
 </g>
 <g class="sn-diagram__edge sn-diagram__edge--gap" data-from="sn-fe-oauth-callback" data-to="sn-fe-oauth-callback" data-edge="D6c-m12" tabindex="0" aria-label="12  &#x2715; sessionStorage &lt;service&gt;_oauth_tokens &#x28;gap: no reader)"><title>12  &#x2715; sessionStorage &lt;service&gt;_oauth_tokens &#x28;gap: no reader)</title>
-<path class="sn-diagram__line" d="M924.0 490.8 L954.0 490.8 L954.0 545.4 L928.0 545.4"/>
-<path class="sn-diagram__head" d="M928.0 545.4 L935.0 541.5 L935.0 549.2 Z"/>
-<text class="sn-diagram__t body-s" x="962.0" y="500.1">12 &#x2715; sessionStorage</text>
-<text class="sn-diagram__t body-s" x="962.0" y="518.3">&lt;service&gt;_oauth_tokens &#x28;gap: no</text>
-<text class="sn-diagram__t body-s" x="962.0" y="536.5">reader)</text>
+<path class="sn-diagram__line" d="M924.0 544.0 L954.0 544.0 L954.0 607.0 L928.0 607.0"/>
+<path class="sn-diagram__head" d="M928.0 607.0 L935.0 603.1 L935.0 610.9 Z"/>
+<text class="sn-diagram__t body" x="962.0" y="555.3">12 &#x2715; sessionStorage</text>
+<text class="sn-diagram__t body" x="962.0" y="576.3">&lt;service&gt;_oauth_tokens &#x28;gap: no</text>
+<text class="sn-diagram__t body" x="962.0" y="597.3">reader)</text>
 </g>
 <g class="sn-diagram__edge sn-diagram__edge--neutral" data-from="sn-fe-oauth-callback" data-to="sn-be-svc-rest-api" data-edge="D6c-m13" tabindex="0" aria-label="13  &#x50;OST store-token"><title>13  &#x50;OST store-token</title>
-<path class="sn-diagram__line" d="M924.0 582.6 L324.0 582.6"/>
-<path class="sn-diagram__head" d="M324.0 582.6 L331.0 578.8 L331.0 586.5 Z"/>
-<text class="sn-diagram__t body-s" x="332.0" y="571.7">13 &#x50;OST store-token</text>
+<path class="sn-diagram__line" d="M924.0 647.0 L324.0 647.0"/>
+<path class="sn-diagram__head" d="M324.0 647.0 L331.0 643.1 L331.0 650.9 Z"/>
+<text class="sn-diagram__t body" x="332.0" y="635.3">13 &#x50;OST store-token</text>
 </g>
 <g class="sn-diagram__edge sn-diagram__edge--neutral" data-from="sn-be-svc-rest-api" data-to="sn-be-tbl-oauth" data-edge="D6c-m14" tabindex="0" aria-label="14  upsert &#x28;service, user_id = default_user)"><title>14  upsert &#x28;service, user_id = default_user)</title>
-<path class="sn-diagram__line" d="M324.0 615.8 L1124.0 615.8"/>
-<path class="sn-diagram__head" d="M1124.0 615.8 L1117.0 612.0 L1117.0 619.7 Z"/>
-<text class="sn-diagram__t body-s" x="332.0" y="604.9">14 upsert &#x28;service, user_id = default_user)</text>
+<path class="sn-diagram__line" d="M324.0 683.0 L1124.0 683.0"/>
+<path class="sn-diagram__head" d="M1124.0 683.0 L1117.0 679.1 L1117.0 686.9 Z"/>
+<text class="sn-diagram__t body" x="332.0" y="671.3">14 upsert &#x28;service, user_id = default_user)</text>
 </g>
 <g class="sn-diagram__edge sn-diagram__edge--return" data-from="sn-fe-oauth-callback" data-to="sn-fe-settings" data-edge="D6c-m15" tabindex="0" aria-label="15  postMessage to opener, or redirect to / after 1500 ms"><title>15  postMessage to opener, or redirect to / after 1500 ms</title>
-<path class="sn-diagram__line" d="M924.0 649.0 L124.0 649.0"/>
-<path class="sn-diagram__head" d="M124.0 649.0 L131.0 645.2 L131.0 652.9 Z"/>
-<text class="sn-diagram__t body-s" x="132.0" y="638.1">15 postMessage to opener, or redirect to / after 1500 ms</text>
+<path class="sn-diagram__line" d="M924.0 719.0 L124.0 719.0"/>
+<path class="sn-diagram__head" d="M124.0 719.0 L131.0 715.1 L131.0 722.9 Z"/>
+<text class="sn-diagram__t body" x="132.0" y="707.3">15 postMessage to opener, or redirect to / after 1500 ms</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--note" data-node="sn-fe-settings" data-note="16" tabindex="0" aria-label="Note: refresh: useTokenRefresh checks every 60 s, refreshes 5 min before expiry under navigator.locks">
 <title>Note: refresh: useTokenRefresh checks every 60 s, refreshes 5 min before expiry under navigator.locks</title>
-<rect class="sn-diagram__box" x="30.0" y="658.0" width="788.0" height="30.8"/>
-<rect class="sn-diagram__stripe" x="31.5" y="659.5" width="5" height="27.8"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="44.0" y="677.2">Note: refresh: useTokenRefresh checks every 60 s, refreshes 5 min before expiry under navigator.locks</text>
+<rect class="sn-diagram__box" x="30.0" y="728.0" width="788.0" height="35.0"/>
+<rect class="sn-diagram__stripe" x="31.5" y="729.5" width="5" height="32.0"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="44.0" y="750.3">Note: refresh: useTokenRefresh checks every 60 s, refreshes 5 min before expiry under navigator.locks</text>
 </g>
 <g class="sn-diagram__legend" aria-label="Legend">
-<text class="sn-diagram__t body-strong" x="24.0" y="734.1">Key</text>
-<rect class="sn-diagram__swatch sn-dg-c7" x="24.0" y="752.2" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="54.0" y="761.0">services</text>
-<rect class="sn-diagram__swatch sn-dg-c8" x="121.8" y="752.2" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="151.8" y="761.0">ops and design</text>
-<g class="sn-diagram__edge--neutral"><path class="sn-diagram__line" d="M260.1 757.2 L282.1 757.2"/></g>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="290.1" y="761.0">Call &#x28;solid)</text>
-<g class="sn-diagram__edge--return"><path class="sn-diagram__line" d="M370.6 757.2 L392.6 757.2"/></g>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="400.6" y="761.0">Return &#x28;dashed)</text>
-<g class="sn-diagram__edge--gap"><path class="sn-diagram__line" d="M513.5 757.2 L535.5 757.2"/></g>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="543.5" y="761.0">Gap &#x28;red dashed, &#x2715;)</text>
+<text class="sn-diagram__t body-strong" x="24.0" y="808.3">Key</text>
+<rect class="sn-diagram__swatch sn-dg-c7" x="24.0" y="828.5" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="54.0" y="838.3">services</text>
+<rect class="sn-diagram__swatch sn-dg-c8" x="134.2" y="828.5" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="164.2" y="838.3">ops and design</text>
+<g class="sn-diagram__edge--neutral"><path class="sn-diagram__line" d="M295.1 833.5 L317.1 833.5"/></g>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="325.1" y="838.3">Call &#x28;solid)</text>
+<g class="sn-diagram__edge--return"><path class="sn-diagram__line" d="M421.3 833.5 L443.3 833.5"/></g>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="451.3" y="838.3">Return &#x28;dashed)</text>
+<g class="sn-diagram__edge--gap"><path class="sn-diagram__line" d="M587.9 833.5 L609.9 833.5"/></g>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="617.9" y="838.3">Gap &#x28;red dashed, &#x2715;)</text>
 </g>
 </svg>

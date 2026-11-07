@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 945 624" role="img" aria-labelledby="D2g-t D2g-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1103 527" role="img" aria-labelledby="D2g-t D2g-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
 :root, [data-theme="dark"] {
   --bg: #222222;
   --surface-1: #2d2d2d;
@@ -445,6 +445,7 @@
   --drawer-w: 300px;
   --rail-w: 248px;
   --content-max: 1400px;
+  --print-wide-h: 150mm;
   --print-wide-w: 273mm;
   --prose-max: 68ch;
   --z-base: 0;
@@ -789,196 +790,196 @@
 .sn-chart-frame__axis-title { fill: var(--chart-axis); font-family: var(--font-body); font-size: 0.6875rem; }</style>
 <title id="D2g-t">System architecture: ops and design flows &#x28;Built)</title>
 <desc id="D2g-d">Pages, services and stores grouped by domain stage, with every ops, design flow drawn as an arrow carrying its flow number &#x28;F78 to F87 in the flow table). 16 nodes, 9 flows.</desc>
-<rect class="sn-diagram__bg" x="0" y="0" width="945" height="624"/>
+<rect class="sn-diagram__bg" x="0" y="0" width="1103" height="527"/>
 <g class="sn-diagram__groups"></g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="ml-plan-jules" data-to="ext-jules" data-edge="F78" tabindex="0" aria-label="Flow 78 &#x28;F78): Jules launchers and prompt builders → Jules sessions – work-package sessions [ops, Built]">
 <title>Flow 78 &#x28;F78): Jules launchers and prompt builders → Jules sessions – work-package sessions [ops, Built]</title>
-<path class="sn-diagram__line" d="M298.2 401.0 L343.9 401.0"/>
-<path class="sn-diagram__head" d="M343.9 401.0 L336.9 397.1 L336.9 404.9 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="306.9" y="389.9" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="321.1" y="405.2" text-anchor="middle">78</text></g>
+<path class="sn-diagram__line" d="M272.0 124.1 L272.0 166.8"/>
+<path class="sn-diagram__head" d="M272.0 166.8 L268.1 159.8 L275.9 159.8 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="257.9" y="134.3" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="272.0" y="149.6" text-anchor="middle">78</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="sn-be-svc-rest-api" data-to="sn-be-svc-unified-scraper" data-edge="F80" tabindex="0" aria-label="Flow 80 &#x28;F80): &#x52;EST &#x41;PI → Unified scraper – live scrape progress poll [ops, Built]">
 <title>Flow 80 &#x28;F80): &#x52;EST &#x41;PI → Unified scraper – live scrape progress poll [ops, Built]</title>
-<path class="sn-diagram__line" d="M597.9 374.7 L597.9 327.0 L713.9 327.0"/>
-<path class="sn-diagram__head" d="M713.9 327.0 L706.9 323.1 L706.9 330.9 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="641.8" y="315.9" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="655.9" y="331.2" text-anchor="middle">80</text></g>
+<path class="sn-diagram__line" d="M201.9 283.0 L110.0 283.0 L110.0 351.8"/>
+<path class="sn-diagram__head" d="M110.0 351.8 L106.2 344.8 L113.8 344.8 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="141.8" y="271.9" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="155.9" y="287.2" text-anchor="middle">80</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="sn-be-svc-rest-api" data-to="sn-be-tbl-ingestion-jobs" data-edge="F81" tabindex="0" aria-label="Flow 81 &#x28;F81): &#x52;EST &#x41;PI → ingestion_jobs – scrape/library_ingest job enqueue &#x28;idempotency key) [ops, Built]">
 <title>Flow 81 &#x28;F81): &#x52;EST &#x41;PI → ingestion_jobs – scrape/library_ingest job enqueue &#x28;idempotency key) [ops, Built]</title>
-<path class="sn-diagram__line" d="M667.9 401.0 L713.6 401.0"/>
-<path class="sn-diagram__head" d="M713.6 401.0 L706.6 397.1 L706.6 404.9 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="676.6" y="389.9" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="690.8" y="405.2" text-anchor="middle">81</text></g>
+<path class="sn-diagram__line" d="M272.0 309.2 L272.0 351.9"/>
+<path class="sn-diagram__head" d="M272.0 351.9 L268.1 344.9 L275.9 344.9 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="257.9" y="319.4" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="272.0" y="334.7" text-anchor="middle">81</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="sn-be-svc-rest-api" data-to="sn-fe-pipeline" data-edge="F82" tabindex="0" aria-label="Flow 82 &#x28;F82): &#x52;EST &#x41;PI → Telemetry – jobs, outbox status, stages &#x28;polled) [ops, Built]">
 <title>Flow 82 &#x28;F82): &#x52;EST &#x41;PI → Telemetry – jobs, outbox status, stages &#x28;polled) [ops, Built]</title>
-<path class="sn-diagram__line" d="M597.9 427.3 L597.9 475.0 L713.9 475.0"/>
-<path class="sn-diagram__head" d="M713.9 475.0 L706.9 471.1 L706.9 478.9 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="641.8" y="463.9" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="655.9" y="479.2" text-anchor="middle">82</text></g>
+<path class="sn-diagram__line" d="M342.1 283.0 L434.0 283.0 L434.0 351.8"/>
+<path class="sn-diagram__head" d="M434.0 351.8 L430.1 344.8 L437.9 344.8 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="373.9" y="271.9" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="388.1" y="287.2" text-anchor="middle">82</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="sn-be-svc-worker" data-to="sn-be-store-rabbitmq" data-edge="F83" tabindex="0" aria-label="Flow 83 &#x28;F83): Worker → RabbitMQ 4.3 – Celery beat ticks [ops, Built]">
 <title>Flow 83 &#x28;F83): Worker → RabbitMQ 4.3 – Celery beat ticks [ops, Built]</title>
-<path class="sn-diagram__line" d="M281.0 66.0 L326.6 66.0"/>
-<path class="sn-diagram__head" d="M326.6 66.0 L319.6 62.1 L319.6 69.8 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="289.7" y="54.9" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="303.8" y="70.2" text-anchor="middle">83</text></g>
+<path class="sn-diagram__line" d="M1009.0 113.2 L1009.0 155.9"/>
+<path class="sn-diagram__head" d="M1009.0 155.9 L1005.1 148.9 L1012.9 148.9 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="994.9" y="123.5" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="1009.0" y="138.7" text-anchor="middle">83</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="sn-fe-home" data-to="sn-fe-sets" data-edge="F84" tabindex="0" aria-label="Flow 84 &#x28;F84): Home → Set builder – LauncherCard links to every module via &#x4d;ODULE_ROUTES [ops, Built]">
 <title>Flow 84 &#x28;F84): Home → Set builder – LauncherCard links to every module via &#x4d;ODULE_ROUTES [ops, Built]</title>
-<path class="sn-diagram__line" d="M667.9 247.0 L713.6 247.0"/>
-<path class="sn-diagram__head" d="M713.6 247.0 L706.6 243.2 L706.6 250.8 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="676.6" y="235.9" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="690.8" y="251.2" text-anchor="middle">84</text></g>
+<path class="sn-diagram__line" d="M612.0 309.2 L612.0 351.9"/>
+<path class="sn-diagram__head" d="M612.0 351.9 L608.1 344.9 L615.9 344.9 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="597.9" y="319.4" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="612.0" y="334.7" text-anchor="middle">84</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="sn-fe-work-queue-tracker" data-to="ml-store-artifact-db" data-edge="F85" tabindex="0" aria-label="Flow 85 &#x28;F85): SongNodes Work Queue → Set Builder artifact database, collection sets – window.claude db collections meta, tasks &#x28;seeded from seed.json) [ops, Built]">
 <title>Flow 85 &#x28;F85): SongNodes Work Queue → Set Builder artifact database, collection sets – window.claude db collections meta, tasks &#x28;seeded from seed.json) [ops, Built]</title>
-<path class="sn-diagram__line" d="M262.9 157.0 L308.6 157.0"/>
-<path class="sn-diagram__head" d="M308.6 157.0 L301.6 153.2 L301.6 160.8 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="271.6" y="145.9" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="285.8" y="161.2" text-anchor="middle">85</text></g>
+<path class="sn-diagram__line" d="M815.0 113.2 L815.0 155.6"/>
+<path class="sn-diagram__head" d="M815.0 155.6 L811.1 148.6 L818.9 148.6 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="800.9" y="123.3" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="815.0" y="138.6" text-anchor="middle">85</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="sn-fe-library" data-to="ml-page-set-builder" data-edge="F86" tabindex="0" aria-label="Flow 86 &#x28;F86): Melbourne crate → Naarm Set Builder – compiled pages via build.mjs [design, Built]">
 <title>Flow 86 &#x28;F86): Melbourne crate → Naarm Set Builder – compiled pages via build.mjs [design, Built]</title>
-<path class="sn-diagram__line" d="M275.1 247.0 L320.8 247.0"/>
-<path class="sn-diagram__head" d="M320.8 247.0 L313.8 243.2 L313.8 250.8 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="283.8" y="235.9" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="298.0" y="251.2" text-anchor="middle">86</text></g>
+<path class="sn-diagram__line" d="M612.0 113.2 L612.0 155.9"/>
+<path class="sn-diagram__head" d="M612.0 155.9 L608.1 148.9 L615.9 148.9 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="597.9" y="123.5" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="612.0" y="138.7" text-anchor="middle">86</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="sn-fe-settings" data-to="sn-fe-index-html" data-edge="F87" tabindex="0" aria-label="Flow 87 &#x28;F87): Settings → SongNodes – display prefs read before first paint [design, Built]">
 <title>Flow 87 &#x28;F87): Settings → SongNodes – display prefs read before first paint [design, Built]</title>
-<path class="sn-diagram__line" d="M667.9 157.0 L713.6 157.0"/>
-<path class="sn-diagram__head" d="M713.6 157.0 L706.6 153.2 L706.6 160.8 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="676.6" y="145.9" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="690.8" y="161.2" text-anchor="middle">87</text></g>
+<path class="sn-diagram__line" d="M815.0 309.2 L815.0 351.9"/>
+<path class="sn-diagram__head" d="M815.0 351.9 L811.1 344.9 L818.9 344.9 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="800.9" y="319.4" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="815.0" y="334.7" text-anchor="middle">87</text></g>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ext-jules" tabindex="0" aria-label="Jules sessions &#x28;ext-jules) – ops, external-api, Production">
 <title>Jules sessions &#x28;ext-jules) – ops, external-api, Production</title>
-<rect class="sn-diagram__box" x="343.9" y="375.0" width="140.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="345.4" y="376.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="357.9" y="397.3">Jules sessions</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="357.9" y="415.2">ops · api</text>
+<rect class="sn-diagram__box" x="202.0" y="167.0" width="140.0" height="52.0"/>
+<rect class="sn-diagram__stripe" x="203.5" y="168.5" width="5" height="49.0"/>
+<text class="sn-diagram__t body-strong" x="216.0" y="189.3">Jules sessions</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="216.0" y="207.2">ops · api</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-page-set-builder" tabindex="0" aria-label="Naarm Set Builder &#x28;ml-page-set-builder) – design, artifact, Production">
 <title>Naarm Set Builder &#x28;ml-page-set-builder) – design, artifact, Production</title>
-<rect class="sn-diagram__box" x="320.9" y="221.0" width="160.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="322.4" y="222.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="334.9" y="243.3">Naarm Set Builder</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="334.9" y="261.2">design · artifact</text>
+<rect class="sn-diagram__box" x="532.0" y="156.0" width="160.0" height="52.0"/>
+<rect class="sn-diagram__stripe" x="533.5" y="157.5" width="5" height="49.0"/>
+<text class="sn-diagram__t body-strong" x="546.0" y="178.3">Naarm Set Builder</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="546.0" y="196.2">design · artifact</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--nonfinal" data-node="ml-plan-jules" tabindex="0" aria-label="Jules launchers and prompt builders &#x28;ml-plan-jules) – ops, cli, Non-final">
 <title>Jules launchers and prompt builders &#x28;ml-plan-jules) – ops, cli, Non-final</title>
-<rect class="sn-diagram__box" x="122.9" y="364.5" width="175.0" height="73.0"/>
-<rect class="sn-diagram__stripe" x="124.4" y="366.0" width="5" height="70.0"/>
-<text class="sn-diagram__t body-strong" x="136.9" y="386.8">Jules launchers and</text>
-<text class="sn-diagram__t body-strong" x="136.9" y="407.8">prompt builders</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="136.9" y="425.7">ops · cli</text>
+<rect class="sn-diagram__box" x="184.5" y="51.0" width="175.0" height="73.0"/>
+<rect class="sn-diagram__stripe" x="186.0" y="52.5" width="5" height="70.0"/>
+<text class="sn-diagram__t body-strong" x="198.5" y="73.3">Jules launchers and</text>
+<text class="sn-diagram__t body-strong" x="198.5" y="94.3">prompt builders</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="198.5" y="112.2">ops · cli</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-store-artifact-db" tabindex="0" aria-label="Set Builder artifact database, collection sets &#x28;ml-store-artifact-db) – ops, artifact-db, Production">
 <title>Set Builder artifact database, collection sets &#x28;ml-store-artifact-db) – ops, artifact-db, Production</title>
-<rect class="sn-diagram__box" x="308.9" y="120.5" width="191.0" height="73.0"/>
-<rect class="sn-diagram__stripe" x="310.4" y="122.0" width="5" height="70.0"/>
-<text class="sn-diagram__t body-strong" x="322.9" y="142.8">Set Builder artifact</text>
-<text class="sn-diagram__t body-strong" x="322.9" y="163.8">database, collection…</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="322.9" y="181.7">ops · artifact db</text>
+<rect class="sn-diagram__box" x="719.5" y="156.0" width="191.0" height="73.0"/>
+<rect class="sn-diagram__stripe" x="721.0" y="157.5" width="5" height="70.0"/>
+<text class="sn-diagram__t body-strong" x="733.5" y="178.3">Set Builder artifact</text>
+<text class="sn-diagram__t body-strong" x="733.5" y="199.3">database, collection…</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="733.5" y="217.2">ops · artifact db</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-store-rabbitmq" tabindex="0" aria-label="RabbitMQ 4.3 &#x28;sn-be-store-rabbitmq) – ops, rabbitmq, Production">
 <title>RabbitMQ 4.3 &#x28;sn-be-store-rabbitmq) – ops, rabbitmq, Production</title>
-<rect class="sn-diagram__box" x="326.9" y="40.0" width="140.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="328.4" y="41.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="340.9" y="62.3">RabbitMQ 4.3</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="340.9" y="80.2">ops · rabbitmq</text>
+<rect class="sn-diagram__box" x="939.0" y="156.0" width="140.0" height="52.0"/>
+<rect class="sn-diagram__stripe" x="940.5" y="157.5" width="5" height="49.0"/>
+<text class="sn-diagram__t body-strong" x="953.0" y="178.3">RabbitMQ 4.3</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="953.0" y="196.2">ops · rabbitmq</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-svc-rest-api" tabindex="0" aria-label="&#x52;EST &#x41;PI &#x28;sn-be-svc-rest-api) – ops, service-ui, Production">
 <title>&#x52;EST &#x41;PI &#x28;sn-be-svc-rest-api) – ops, service-ui, Production</title>
-<rect class="sn-diagram__box" x="527.9" y="375.0" width="140.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="529.4" y="376.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="541.9" y="397.3">&#x52;EST &#x41;PI</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="541.9" y="415.2">ops · service</text>
+<rect class="sn-diagram__box" x="202.0" y="257.0" width="140.0" height="52.0"/>
+<rect class="sn-diagram__stripe" x="203.5" y="258.5" width="5" height="49.0"/>
+<text class="sn-diagram__t body-strong" x="216.0" y="279.3">&#x52;EST &#x41;PI</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="216.0" y="297.2">ops · service</text>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="sn-be-svc-unified-scraper" tabindex="0" aria-label="Unified scraper &#x28;sn-be-svc-unified-scraper) – ingest, service-ui, Production">
 <title>Unified scraper &#x28;sn-be-svc-unified-scraper) – ingest, service-ui, Production</title>
-<rect class="sn-diagram__box" x="713.9" y="301.0" width="140.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="715.4" y="302.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="727.9" y="323.3">Unified scraper</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="727.9" y="341.2">ingest · service</text>
+<rect class="sn-diagram__box" x="40.0" y="352.0" width="140.0" height="52.0"/>
+<rect class="sn-diagram__stripe" x="41.5" y="353.5" width="5" height="49.0"/>
+<text class="sn-diagram__t body-strong" x="54.0" y="374.3">Unified scraper</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="54.0" y="392.2">ingest · service</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-svc-worker" tabindex="0" aria-label="Worker &#x28;sn-be-svc-worker) – ops, service-ui, Production">
 <title>Worker &#x28;sn-be-svc-worker) – ops, service-ui, Production</title>
-<rect class="sn-diagram__box" x="140.9" y="40.0" width="140.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="142.4" y="41.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="154.9" y="62.3">Worker</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="154.9" y="80.2">ops · service</text>
+<rect class="sn-diagram__box" x="939.0" y="61.0" width="140.0" height="52.0"/>
+<rect class="sn-diagram__stripe" x="940.5" y="62.5" width="5" height="49.0"/>
+<text class="sn-diagram__t body-strong" x="953.0" y="83.3">Worker</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="953.0" y="101.2">ops · service</text>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="sn-be-tbl-ingestion-jobs" tabindex="0" aria-label="ingestion_jobs &#x28;sn-be-tbl-ingestion-jobs) – ingest, postgres, Production">
 <title>ingestion_jobs &#x28;sn-be-tbl-ingestion-jobs) – ingest, postgres, Production</title>
-<rect class="sn-diagram__box" x="713.9" y="375.0" width="140.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="715.4" y="376.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="727.9" y="397.3">ingestion_jobs</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="727.9" y="415.2">ingest · postgres</text>
+<rect class="sn-diagram__box" x="202.0" y="352.0" width="140.0" height="52.0"/>
+<rect class="sn-diagram__stripe" x="203.5" y="353.5" width="5" height="49.0"/>
+<text class="sn-diagram__t body-strong" x="216.0" y="374.3">ingestion_jobs</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="216.0" y="392.2">ingest · postgres</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-fe-home" tabindex="0" aria-label="Home &#x28;sn-fe-home) – ops, route, Production">
 <title>Home &#x28;sn-fe-home) – ops, route, Production</title>
-<rect class="sn-diagram__box" x="527.9" y="221.0" width="140.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="529.4" y="222.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="541.9" y="243.3">Home</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="541.9" y="261.2">ops · route</text>
+<rect class="sn-diagram__box" x="542.0" y="257.0" width="140.0" height="52.0"/>
+<rect class="sn-diagram__stripe" x="543.5" y="258.5" width="5" height="49.0"/>
+<text class="sn-diagram__t body-strong" x="556.0" y="279.3">Home</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="556.0" y="297.2">ops · route</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-fe-index-html" tabindex="0" aria-label="SongNodes &#x28;sn-fe-index-html) – ops, static-html, Production">
 <title>SongNodes &#x28;sn-fe-index-html) – ops, static-html, Production</title>
-<rect class="sn-diagram__box" x="713.9" y="131.0" width="140.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="715.4" y="132.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="727.9" y="153.3">SongNodes</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="727.9" y="171.2">ops · html</text>
+<rect class="sn-diagram__box" x="745.0" y="352.0" width="140.0" height="52.0"/>
+<rect class="sn-diagram__stripe" x="746.5" y="353.5" width="5" height="49.0"/>
+<text class="sn-diagram__t body-strong" x="759.0" y="374.3">SongNodes</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="759.0" y="392.2">ops · html</text>
 </g>
 <g class="sn-diagram__node sn-dg-c2 sn-diagram__node--production" data-node="sn-fe-library" tabindex="0" aria-label="Melbourne crate &#x28;sn-fe-library) – library, route, Production">
 <title>Melbourne crate &#x28;sn-fe-library) – library, route, Production</title>
-<rect class="sn-diagram__box" x="126.9" y="221.0" width="148.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="128.4" y="222.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="140.9" y="243.3">Melbourne crate</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="140.9" y="261.2">library · route</text>
+<rect class="sn-diagram__box" x="538.0" y="61.0" width="148.0" height="52.0"/>
+<rect class="sn-diagram__stripe" x="539.5" y="62.5" width="5" height="49.0"/>
+<text class="sn-diagram__t body-strong" x="552.0" y="83.3">Melbourne crate</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="552.0" y="101.2">library · route</text>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="sn-fe-pipeline" tabindex="0" aria-label="Telemetry &#x28;sn-fe-pipeline) – ingest, route, Production">
 <title>Telemetry &#x28;sn-fe-pipeline) – ingest, route, Production</title>
-<rect class="sn-diagram__box" x="713.9" y="449.0" width="140.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="715.4" y="450.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="727.9" y="471.3">Telemetry</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="727.9" y="489.2">ingest · route</text>
+<rect class="sn-diagram__box" x="364.0" y="352.0" width="140.0" height="52.0"/>
+<rect class="sn-diagram__stripe" x="365.5" y="353.5" width="5" height="49.0"/>
+<text class="sn-diagram__t body-strong" x="378.0" y="374.3">Telemetry</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="378.0" y="392.2">ingest · route</text>
 </g>
 <g class="sn-diagram__node sn-dg-c4 sn-diagram__node--production" data-node="sn-fe-sets" tabindex="0" aria-label="Set builder &#x28;sn-fe-sets) – sets, route, Production">
 <title>Set builder &#x28;sn-fe-sets) – sets, route, Production</title>
-<rect class="sn-diagram__box" x="713.9" y="221.0" width="140.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="715.4" y="222.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="727.9" y="243.3">Set builder</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="727.9" y="261.2">sets · route</text>
+<rect class="sn-diagram__box" x="542.0" y="352.0" width="140.0" height="52.0"/>
+<rect class="sn-diagram__stripe" x="543.5" y="353.5" width="5" height="49.0"/>
+<text class="sn-diagram__t body-strong" x="556.0" y="374.3">Set builder</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="556.0" y="392.2">sets · route</text>
 </g>
 <g class="sn-diagram__node sn-dg-c7 sn-diagram__node--production" data-node="sn-fe-settings" tabindex="0" aria-label="Settings &#x28;sn-fe-settings) – services, route, Production">
 <title>Settings &#x28;sn-fe-settings) – services, route, Production</title>
-<rect class="sn-diagram__box" x="527.9" y="131.0" width="140.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="529.4" y="132.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="541.9" y="153.3">Settings</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="541.9" y="171.2">services · route</text>
+<rect class="sn-diagram__box" x="745.0" y="257.0" width="140.0" height="52.0"/>
+<rect class="sn-diagram__stripe" x="746.5" y="258.5" width="5" height="49.0"/>
+<text class="sn-diagram__t body-strong" x="759.0" y="279.3">Settings</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="759.0" y="297.2">services · route</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--nonfinal" data-node="sn-fe-work-queue-tracker" tabindex="0" aria-label="SongNodes Work Queue &#x28;sn-fe-work-queue-tracker) – ops, artifact, Non-final">
 <title>SongNodes Work Queue &#x28;sn-fe-work-queue-tracker) – ops, artifact, Non-final</title>
-<rect class="sn-diagram__box" x="106.9" y="120.5" width="156.0" height="73.0"/>
-<rect class="sn-diagram__stripe" x="108.4" y="122.0" width="5" height="70.0"/>
-<text class="sn-diagram__t body-strong" x="120.9" y="142.8">SongNodes Work</text>
-<text class="sn-diagram__t body-strong" x="120.9" y="163.8">Queue</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="120.9" y="181.7">ops · artifact</text>
+<rect class="sn-diagram__box" x="737.0" y="40.0" width="156.0" height="73.0"/>
+<rect class="sn-diagram__stripe" x="738.5" y="41.5" width="5" height="70.0"/>
+<text class="sn-diagram__t body-strong" x="751.0" y="62.3">SongNodes Work</text>
+<text class="sn-diagram__t body-strong" x="751.0" y="83.3">Queue</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="751.0" y="101.2">ops · artifact</text>
 </g>
 <g class="sn-diagram__legend" aria-label="Legend">
-<text class="sn-diagram__t body-strong" x="24.0" y="536.3">Key</text>
-<rect class="sn-diagram__swatch sn-dg-c1" x="24.0" y="554.4" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="54.0" y="563.2">ingest</text>
-<rect class="sn-diagram__swatch sn-dg-c2" x="108.0" y="554.4" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="138.0" y="563.2">library</text>
-<rect class="sn-diagram__swatch sn-dg-c4" x="193.3" y="554.4" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="223.3" y="563.2">sets</text>
-<rect class="sn-diagram__swatch sn-dg-c7" x="265.7" y="554.4" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="295.7" y="563.2">services</text>
-<rect class="sn-diagram__swatch sn-dg-c8" x="363.5" y="554.4" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="393.5" y="563.2">ops and design</text>
-<rect class="sn-diagram__legend-box sn-diagram__node--production" x="501.8" y="551.4" width="22" height="16"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="531.8" y="563.2">Production &#x28;solid outline)</text>
-<rect class="sn-diagram__legend-box sn-diagram__node--nonfinal" x="697.2" y="551.4" width="22" height="16"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="727.2" y="563.2">Non-final &#x28;dotted outline)</text>
-<g class="sn-diagram__edge--built"><path class="sn-diagram__line" d="M24.0 586.2 L46.0 586.2"/></g>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="54.0" y="590.0">Built flow &#x28;solid, domain colour)</text>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="258.1" y="578.2" width="22" height="16"/></g>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="288.1" y="590.0">Flow number = row in the flow table</text>
+<text class="sn-diagram__t body-strong" x="24.0" y="439.3">Key</text>
+<rect class="sn-diagram__swatch sn-dg-c1" x="24.0" y="457.4" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="54.0" y="466.2">ingest</text>
+<rect class="sn-diagram__swatch sn-dg-c2" x="108.0" y="457.4" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="138.0" y="466.2">library</text>
+<rect class="sn-diagram__swatch sn-dg-c4" x="193.3" y="457.4" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="223.3" y="466.2">sets</text>
+<rect class="sn-diagram__swatch sn-dg-c7" x="265.7" y="457.4" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="295.7" y="466.2">services</text>
+<rect class="sn-diagram__swatch sn-dg-c8" x="363.5" y="457.4" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="393.5" y="466.2">ops and design</text>
+<rect class="sn-diagram__legend-box sn-diagram__node--production" x="501.8" y="454.4" width="22" height="16"/>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="531.8" y="466.2">Production &#x28;solid outline)</text>
+<rect class="sn-diagram__legend-box sn-diagram__node--nonfinal" x="697.2" y="454.4" width="22" height="16"/>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="727.2" y="466.2">Non-final &#x28;dotted outline)</text>
+<g class="sn-diagram__edge--built"><path class="sn-diagram__line" d="M24.0 489.2 L46.0 489.2"/></g>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="54.0" y="493.0">Built flow &#x28;solid, domain colour)</text>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="258.1" y="481.2" width="22" height="16"/></g>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="288.1" y="493.0">Flow number = row in the flow table</text>
 </g>
 </svg>

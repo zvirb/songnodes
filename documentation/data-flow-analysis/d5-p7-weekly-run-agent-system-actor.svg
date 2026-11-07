@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 922 608" role="img" aria-labelledby="D5-P7-t D5-P7-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1106 608" role="img" aria-labelledby="D5-P7-t D5-P7-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
 :root, [data-theme="dark"] {
   --bg: #222222;
   --surface-1: #2d2d2d;
@@ -445,6 +445,7 @@
   --drawer-w: 300px;
   --rail-w: 248px;
   --content-max: 1400px;
+  --print-wide-h: 150mm;
   --print-wide-w: 273mm;
   --prose-max: 68ch;
   --z-base: 0;
@@ -789,7 +790,7 @@
 .sn-chart-frame__axis-title { fill: var(--chart-axis); font-family: var(--font-body); font-size: 0.6875rem; }</style>
 <title id="D5-P7-t">Swimlane: P7 Weekly-run agent &#x28;system actor)</title>
 <desc id="D5-P7-d">3 numbered steps of Weekly-run agent &#x28;system actor) left to right across 2 system lanes; each card shows its trigger, page, action, data written and hand-off, with dashed fallback cards below.</desc>
-<rect class="sn-diagram__bg" x="0" y="0" width="922" height="608"/>
+<rect class="sn-diagram__bg" x="0" y="0" width="1106" height="608"/>
 <rect class="sn-diagram__lane" x="24.0" y="24.0" width="828.6" height="232.8"/>
 <text class="sn-diagram__t sn-diagram__t--2 body-strong" x="34.0" y="49.3">musicLibrary</text>
 <text class="sn-diagram__t sn-diagram__t--2 body-strong" x="34.0" y="70.3">artifact</text>
@@ -874,7 +875,7 @@
 <text class="sn-diagram__t sn-diagram__t--2 caption" x="276.3" y="547.8">Production &#x28;solid outline)</text>
 <g class="sn-diagram__edge--built"><path class="sn-diagram__line" d="M441.7 544.0 L463.7 544.0"/></g>
 <text class="sn-diagram__t sn-diagram__t--2 caption" x="471.7" y="547.8">Next step &#x28;▶ marks the trigger at the arrow head)</text>
-<g class="sn-diagram__edge--fallback"><path class="sn-diagram__line" d="M24.0 570.8 L46.0 570.8"/></g>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="54.0" y="574.6">Fallback branch &#x28;dashed card: if it fails)</text>
+<g class="sn-diagram__edge--fallback"><path class="sn-diagram__line" d="M782.3 544.0 L804.3 544.0"/></g>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="812.3" y="547.8">Fallback branch &#x28;dashed card: if it fails)</text>
 </g>
 </svg>
