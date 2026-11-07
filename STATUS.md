@@ -2732,3 +2732,23 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
   - `npm run test:unit` (passed: 68 test files, 586 tests)
 - Next: merge PR and proceed to UX-T11 (Service rows tell the truth about OAuth).
 <!-- SLOT:UX-T09 END -->
+
+
+<!-- SLOT:UX-T02 BEGIN -->
+### UX-T02: Build the Track detail page (UX-02)
+- Completed: 2026-11-07 (branch ux-t02-track-detail-page off origin/main ebf44357).
+- Scope: Build the TrackDetailPage route (/tracks/:id and /track/:id) using the TrackDetailPage pattern (KeyValueGrid, KeyBadge with key name, BpmReadout, EnergyBar, SourceBadge, connected tracks table with HarmonicCompatibility, heard-on sources, raw data disclosure, Camelot compatible keys aside, identifiers with copy buttons, and listen/buy external links), and link TrackDetailsModal to it.
+- Changes:
+  - `frontend/src/features/trackDetail/TrackDetailPage.tsx` (new): Full track detail page.
+  - `frontend/src/features/trackDetail/route.tsx` (new): Registered routes for `/tracks/:id` and `/track/:id`.
+  - `frontend/src/features/trackDetail/TrackDetailPage.test.tsx` (new): Tests for track rendering, key/BPM/energy, transitions table, and not-found state.
+  - `frontend/src/components/TrackDetailsModal.tsx`: Added "Open full track page" link to `/tracks/:id`.
+- Checks run and passed:
+  - `npm run type-check` (passed: tsc --noEmit)
+  - `npm run lint` (passed: 0 errors)
+  - `npm run test:unit` (passed: 69 test files, 588 tests)
+  - `npm run build` (passed: vite build succeeded)
+  - `python scripts/check_feature_imports.py --check` (passed: Feature boundaries OK)
+  - `python scripts/check_design_system.py --check` (passed: 0 findings for trackDetail)
+- Next: Open PR for UX-T02 and proceed to UX-T04 (Buy list).
+<!-- SLOT:UX-T02 END -->
