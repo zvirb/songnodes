@@ -12,6 +12,7 @@ classes, use the design-system key-name helper and canonical card styling.
 - `frontend/src/features/musicLibrary/components/LibraryImportDialog.test.tsx`
 - `frontend/tests/e2e/all-pages.spec.ts`
 - `frontend/tests/e2e/libraryApi.ts`
+- `frontend/tests/e2e/visual.spec.ts`
 - `frontend/src/features/auth/route.tsx`
 - `frontend/src/features/auth/LoginPage.tsx`
 - `frontend/src/features/auth/LoginPage.test.tsx`
@@ -35,4 +36,6 @@ page audit and fresh-library test fixtures), CIC12 (login route), CIC13 (run-his
 route) and CIC14 (callback page semantics). Each has its own commit and status
 slot; the combined audit coverage needs more than ten files, while each package
 remains small. No unrelated paths may be edited.
+Receive CIC15's bounded screenshot capture to prevent SwiftShader wrapping on
+oversized pages; do not weaken image-difference tolerances.
 Review pipeline E2E output and its changed visual baselines separately.

@@ -3146,3 +3146,10 @@ One job: give standalone callback pages the required landmark and error-page hea
 Owned paths: frontend/src/components/OAuthCallback.tsx, STATUS.md CIC14 slot.
 Read AuthCallbackPage and ErrorState cards. Added canonical main identifier/focus target and native ErrorState markup with a sentence-case page h1. Callback/token handling is unchanged. Passed TypeScript, zero conformance findings, feature boundaries, whitespace and all 70 unit files / 604 tests. Next: canonical route audit (69 cases plus dynamic settings links).
 <!-- SLOT:CIC14 END -->
+
+<!-- SLOT:CIC15 BEGIN -->
+## CIC15 — started 2026-11-07
+One job: prevent full-page screenshot wrapping past SwiftShader's 8192-pixel limit.
+Owned paths: frontend/tests/e2e/visual.spec.ts, STATUS.md CIC15 slot; integration scope in CIC09 brief.
+Canonical run 42344661619 settings phone captures are 390x11078 and visibly wrap. Added viewport fallback for oversized pages; tolerances unchanged. Passed: Playwright discovers all 28 visual cases; full frontend lint passes with warnings and zero errors; whitespace check passes. Next: canonical CI and review valid regenerated captures in a separate baseline package.
+<!-- SLOT:CIC15 END -->
