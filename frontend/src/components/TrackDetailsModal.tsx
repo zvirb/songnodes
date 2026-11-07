@@ -213,14 +213,21 @@ export const TrackDetailsModal: React.FC<TrackDetailsModalProps> = ({
         </section>
       </div>
 
-      {!isCurrentlyPlaying && (
-        <div className="sn-side-sheet__foot">
+      <div className="sn-side-sheet__foot" style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+        <a
+          href={`/tracks/${track.id}`}
+          className="sn-btn sn-btn--quiet sn-btn--sm"
+          onClick={onClose}
+        >
+          Open full track page
+        </a>
+        {!isCurrentlyPlaying && (
           <button type="button" className="sn-btn sn-btn--primary" onClick={() => onSetAsCurrentlyPlaying(track)}>
             <Play size={16} strokeWidth={2} aria-hidden="true" />
             Set as now playing
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </aside>
   );
 };
