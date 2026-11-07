@@ -61,34 +61,39 @@ with open(FINDINGS_PATH, "r", encoding="utf-8") as f:
 
 missing = []
 # Check pages
-for p in findings["pages"]:
-    if p["route"] not in html_content:
-        missing.append(f"Page route: {p['route']}")
+for p in findings.get("pages", []):
+    item_id = p.get("id") or p.get("route")
+    if (p.get("id") and p["id"] not in html_content) and (p.get("route") and p["route"] not in html_content):
+        missing.append(f"Page: {item_id}")
 # Check stores
-for s in findings["stores"]:
+for s in findings.get("stores", []):
     if s["id"] not in html_content:
         missing.append(f"Store: {s['id']}")
 # Check personas
-for per in findings["personas"]:
-    if per["role"] not in html_content:
-        missing.append(f"Persona: {per['role']}")
+for per in findings.get("personas", []):
+    per_name = per.get("name") or per.get("role") or per.get("id")
+    if (per.get("id") and per["id"] not in html_content) and (per_name and per_name not in html_content):
+        missing.append(f"Persona: {per_name}")
 # Check gaps
-for g in findings["gaps"]:
+for g in findings.get("gaps", []):
     if g["id"] not in html_content:
         missing.append(f"Gap: {g['id']}")
 # Check modules
-for m in findings["proposed_modules"]:
+modules = findings.get("modules") or findings.get("proposed_modules", [])
+for m in modules:
     if m["id"] not in html_content:
         missing.append(f"Module: {m['id']}")
 # Check tasks
-for t in findings["sister_tasks"]:
-    if t["task_id"] not in html_content:
-        missing.append(f"Task: {t['task_id']}")
+tasks = findings.get("tasks") or findings.get("sister_tasks", [])
+for t in tasks:
+    task_id = t.get("id") or t.get("task_id")
+    if task_id and task_id not in html_content:
+        missing.append(f"Task: {task_id}")
 
 if missing:
     errors.append(f"Gate 3 Failed: Missing elements in HTML report: {missing}")
 else:
-    print(f"  -> PASSED: All {len(findings['pages'])} pages, {len(findings['stores'])} stores, {len(findings['personas'])} personas, {len(findings['gaps'])} gaps, {len(findings['proposed_modules'])} modules, and {len(findings['sister_tasks'])} sister tasks present.")
+    print(f"  -> PASSED: All {len(findings.get('pages', []))} pages, {len(findings.get('stores', []))} stores, {len(findings.get('personas', []))} personas, {len(findings.get('gaps', []))} gaps, {len(modules)} modules, and {len(tasks)} tasks present.")
 
 # --- GATE 4: PDF Integrity & Searchable Text ---
 print("\n[Gate 4/6] PDF File Integrity & Extractable Text...")

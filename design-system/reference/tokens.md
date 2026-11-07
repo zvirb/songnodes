@@ -175,6 +175,8 @@
 | size.drawer-w | `300px` | Navigation drawer width (max 86vw on phones). |
 | size.rail-w | `248px` | Filter rail width on desktop. |
 | size.content-max | `1400px` | Max content width; wider screens centre it. |
+| size.print-wide-h | `150mm` | Print only: tallest drawing a wide figure may have on an A4 landscape page (182 mm content height less about 30 mm for the title, caption and figure notes), so the figure and its notes stay on one page. |
+| size.print-wide-w | `273mm` | Print only: content width of an A4 landscape page (@page wide, 297 mm less 12 mm margins). Wide print blocks (sn-print-wide) take it, because Chromium keeps block widths from the portrait layout on a named landscape page. |
 | size.prose-max | `68ch` | Max line length for running text and help. |
 | zIndex.z-base | `0` | Page content. |
 | zIndex.z-sticky | `10` | Sticky table headers, sticky filter rail. |
