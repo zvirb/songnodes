@@ -3110,6 +3110,7 @@ Changed smoke test to assert Health heading, four named summary tiles, retained 
 One job: restore conformance for the newly merged frontend.
 Owned paths: frontend/src/components/ds/FreshnessStamp.tsx, frontend/src/features/trackDetail/TrackDetailPage.tsx, frontend/src/features/pipeline/RunsPage.tsx, plan/agents/CIC09_freshness_tip.md, STATUS.md CIC09 slot.
 Latest main also introduced duplicate key-name literals flagged as emoji, redundant card styling read as spacing, and an undefined run-history header class. Use SN.keyName, canonical sn-card styling and the defined header main class. Implemented all three scoped fixes. Passed: zero conformance findings, TypeScript, 13 component tests (track detail and pipeline), and whitespace check. No generated styles edited. Integrated final original-PR main at 6d74c06e. Full verification passed: TypeScript, 70 unit files / 603 tests, production build and zero conformance findings. Next: publish the conformance follow-up, inspect canonical CI (including changed pipeline visual baselines) and merge when green.
+Resumed 8 Nov 2026: rebased current main (already current). PR601 head5aa402ff passes all checks except E2E run42346214726; inspecting full all-page audit findings and canonical captures before a scoped repair. Authoritative local design system remains1.10.0.
 <!-- SLOT:CIC09 END -->
 
 <!-- SLOT:CIC10 BEGIN -->
@@ -3153,3 +3154,10 @@ One job: prevent full-page screenshot wrapping past SwiftShader's 8192-pixel lim
 Owned paths: frontend/tests/e2e/visual.spec.ts, STATUS.md CIC15 slot; integration scope in CIC09 brief.
 Canonical run 42344661619 settings phone captures are 390x11078 and visibly wrap. Added viewport fallback for oversized pages; tolerances unchanged. Passed: Playwright discovers all 28 visual cases; full frontend lint passes with warnings and zero errors; whitespace check passes. Next: canonical CI and review valid regenerated captures in a separate baseline package.
 <!-- SLOT:CIC15 END -->
+
+<!-- SLOT:CIC16 BEGIN -->
+## CIC16 — started 8 Nov 2026
+One job: provide the graph page's missing accessible h1.
+Owned paths: frontend/src/pages/GraphPage.tsx, STATUS.md CIC16 slot; integration scope in CIC09 brief.
+Added a screen-reader heading matching the existing page identity without changing graph layout. Next: TypeScript/conformance and canonical all-page audit.
+<!-- SLOT:CIC16 END -->
