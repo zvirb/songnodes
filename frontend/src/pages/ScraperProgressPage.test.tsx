@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { vi, describe, beforeEach, afterEach, it, expect } from 'vitest';
 import ScraperProgressPage from './ScraperProgressPage';
 import { showToast } from '../components/ds';
+import { api } from '../services/api';
 
 const telemetryState = vi.hoisted(() => ({ scrapeRuns: [] as any[] }));
 
@@ -45,7 +46,7 @@ vi.mock('../features/pipeline/ScrapeWindowCard', () => ({
 vi.mock('../services/api', () => ({
   api: {
     post: vi.fn(),
-    get: vi.fn().mockResolvedValue({ data: { total: 413, items: [] } }),
+    get: vi.fn().mockResolvedValue({ data: { count: 0 } }),
   },
 }));
 
@@ -79,6 +80,7 @@ describe('ScraperProgressPage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(api.get).mockResolvedValue({ data: { count: 0 } });
     telemetryState.scrapeRuns = [];
     fetchMock = vi.fn();
     global.fetch = fetchMock;
@@ -87,6 +89,22 @@ describe('ScraperProgressPage', () => {
   afterEach(() => {
     cleanup();
     global.fetch = originalFetch;
+  });
+
+  it.each([0, 27])('shows the actual review queue count %s', async (count) => {
+    vi.mocked(api.get).mockResolvedValue({ data: { count } });
+    render(<MemoryRouter><ScraperProgressPage /></MemoryRouter>);
+    const tile = screen.getByText('Review queue').closest('.sn-figure-tile')!;
+    await waitFor(() => expect(tile.querySelector('.sn-figure-tile__figure')?.textContent).toBe(String(count)));
+    expect(api.get).toHaveBeenCalledWith('/library/review-queue/count');
+  });
+
+  it('leaves the review queue count unknown when the response has no count', async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: {} });
+    render(<MemoryRouter><ScraperProgressPage /></MemoryRouter>);
+    const tile = screen.getByText('Review queue').closest('.sn-figure-tile')!;
+    await waitFor(() => expect(api.get).toHaveBeenCalled());
+    expect(tile.querySelector('.sn-figure-tile__figure')?.textContent).toBe('–');
   });
 
   it('renders the queue a scrape form', () => {

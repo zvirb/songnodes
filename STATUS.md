@@ -2937,3 +2937,10 @@ Consulted IMPLEMENTATION_PLAN WP1-WP5 and TRACK_METADATA_RETRIEVAL. Found SQL co
   - `python scripts/check_design_system.py --check` (passed: 0 findings for ScraperProgressPage)
 - Next: Open PR for UX-T03 and proceed to UX-T05 (One Set builder: retire artifact behind /sets).
 <!-- SLOT:UX-T03 END -->
+
+<!-- SLOT:CIC07 BEGIN -->
+## CIC07 — started 2026-11-07
+One job: replace the pipeline review-queue placeholder with the real count endpoint.
+Owned paths: frontend/src/pages/ScraperProgressPage.tsx and ScraperProgressPage.test.tsx, STATUS.md CIC07 slot.
+Changed to GET /library/review-queue/count and render only a non-negative integer count, including zero; missing response stays an en dash. Removed hardcoded 413. Passed TypeScript and 11 focused component tests. Follow-up: pipeline smoke expectations and reviewed Linux visual baselines remain separate packages.
+<!-- SLOT:CIC07 END -->

@@ -29,14 +29,14 @@ const ScraperProgressPage: React.FC = () => {
   usePageHeader({ lead: 'Pipeline', title: view === 'runs' ? 'Run history' : 'Health', current: 'pipeline' });
   const { telemetry, stages, workers, jobs, scrapeRuns, isLoading, error, lastUpdated, source: telemetrySource, refresh } = usePipelineTelemetry();
 
-  // Review queue size fetched from /api/v1/library/review-queue
+  // Read the count contract rather than assuming a paginated list response.
   const [reviewQueueTotal, setReviewQueueTotal] = useState<number | null>(null);
   useEffect(() => {
     if (typeof api?.get === 'function') {
-      api.get('/library/review-queue')
+      api.get('/library/review-queue/count')
         .then((res) => {
-          if (res?.data && typeof res.data.total === 'number') {
-            setReviewQueueTotal(res.data.total);
+          if (res?.data && Number.isInteger(res.data.count) && res.data.count >= 0) {
+            setReviewQueueTotal(res.data.count);
           }
         })
         .catch(() => {
@@ -377,7 +377,7 @@ const ScraperProgressPage: React.FC = () => {
         {/* Tile 3: Review queue */}
         <div className="sn-figure-tile" role="listitem">
           <span className="sn-figure-tile__figure">
-            {SN.format.count(reviewQueueTotal ?? 413)}
+            {reviewQueueTotal === null ? '–' : SN.format.count(reviewQueueTotal)}
           </span>
           <span className="sn-figure-tile__label">Review queue</span>
           <span className="sn-figure-tile__delta">Tracks needing curator review</span>
