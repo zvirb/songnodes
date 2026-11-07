@@ -3111,3 +3111,10 @@ One job: restore conformance for the newly merged frontend.
 Owned paths: frontend/src/components/ds/FreshnessStamp.tsx, frontend/src/features/trackDetail/TrackDetailPage.tsx, frontend/src/features/pipeline/RunsPage.tsx, plan/agents/CIC09_freshness_tip.md, STATUS.md CIC09 slot.
 Latest main also introduced duplicate key-name literals flagged as emoji, redundant card styling read as spacing, and an undefined run-history header class. Use SN.keyName, canonical sn-card styling and the defined header main class. Implemented all three scoped fixes. Passed: zero conformance findings, TypeScript, 13 component tests (track detail and pipeline), and whitespace check. No generated styles edited. Integrated final original-PR main at 6d74c06e. Full verification passed: TypeScript, 70 unit files / 603 tests, production build and zero conformance findings. Next: publish the conformance follow-up, inspect canonical CI (including changed pipeline visual baselines) and merge when green.
 <!-- SLOT:CIC09 END -->
+
+<!-- SLOT:CIC10 BEGIN -->
+## CIC10 — started 2026-11-07
+One job: fix the upload regression test's missing assertion, rejected by CI lint.
+Owned paths: frontend/src/features/musicLibrary/components/LibraryImportDialog.test.tsx, STATUS.md CIC10 slot; integration ownership declared in CIC09 brief.
+Changed the awaited error lookup into an explicit assertion. Passed: all six component tests and targeted oxlint (warnings only, zero errors) from the frontend configuration root. Initial lint command from repository root hit the nested config restriction; corrected invocation passed. This repair does not depend on design-system version. CIC09 source alignment and all-page certification await the original 1.7.0 updated today; local 1.10.0 is divergent and must not be treated as authority.
+<!-- SLOT:CIC10 END -->
