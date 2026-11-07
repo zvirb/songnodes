@@ -2683,6 +2683,23 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
 - Next: merge PR and proceed to next conformance package.
 <!-- SLOT:DS29 END -->
 
+<!-- SLOT:DUO2 BEGIN -->
+### DUO2: Frontend Login Page and Auth Context
+- Start: 2026-11-06 (branch duo2-frontend-auth off origin/main).
+- Scope: Implement SongNodes design-system compliant Login Page and Authentication Context:
+  1. AuthContext (`frontend/src/features/auth/AuthContext.tsx`): React context provider `AuthProvider` and `useAuth()` hook managing session state (`user`, `isAuthenticated`, `isLoading`), initial session verification via `/api/v1/auth/me` (with Cloudflare Access header support), login initiating Duo MFA via `/api/v1/auth/login` and redirecting to `duo_auth_url`, and logout via `/api/v1/auth/logout`.
+  2. LoginPage (`frontend/src/features/auth/LoginPage.tsx`): Design-system compliant login view using `<Title>`, `<Card>`, `<Button>`, and `<TextField>` components, displaying error banner upon failure and authenticated state upon active session.
+  3. Route (`frontend/src/features/auth/route.tsx`): Route registration for `/login` matching G2 route discovery pattern.
+  4. Unit Tests (`frontend/src/features/auth/LoginPage.test.tsx`): Comprehensive Vitest test coverage for form rendering, input validation, submission, error handling, session check, and Duo redirect.
+- Checks run:
+  - scripts/check_design_system.py --check (passed)
+  - python design-system/source/agentconf/validate.py (passed: 1691 rules, fixture 20/20, INDEX 61 lines)
+  - cd frontend && npm run type-check (passed)
+  - cd frontend && npm run lint (passed, 0 errors)
+  - cd frontend && npm run test:unit (passed, 69 test files, 593 tests)
+- Next: open PR against main and review deployment with Duo tunnel backend.
+<!-- SLOT:DUO2 END -->
+  
 <!-- SLOT:UX-T07 BEGIN -->
 ### UX-T07: Rule: one primary when the empty state carries it (UX-07)
 - Start: 2026-11-07 (branch ux-t07-one-primary-empty-state off origin/main 7429821c).
