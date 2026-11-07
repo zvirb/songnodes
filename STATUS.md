@@ -2695,3 +2695,22 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
   - `npm run test:unit` (passed: 68 test files, 586 tests)
 - Next: Open PR for UX-T07, address SetBuilderPage / PathfinderPage in their respective feature packages (or follow-up), and proceed to UX-T08.
 <!-- SLOT:UX-T07 END -->
+
+<!-- SLOT:UX-T08 BEGIN -->
+### UX-T08: Linter: Unknown values and Title Case labels (UX-08)
+- Completed: 2026-11-07 (branch ux-t08-linter-unknown-titlecase off origin/main 7429821c).
+- Scope: Extend `linters/check.py` rule DATA-NULL to catch 'Unknown' (and 'Unknown …') in visible copy, add WRT-CASE for button/tab labels of two or more capitalised words, and register atomic rule WRT-116 in `design-system/rules/rules.yaml`.
+- Changes:
+  - `design-system/linters/check.py`: Updated `DATA-NULL` to match `Unknown` and `Unknown …` (`r'>\s*(?:N/A|null|undefined|NaN|Unknown(?:\s+[^<>]*)?)\s*<'`). Added `WRT-CASE` to `CHECKS` to detect Title Case labels in buttons and tabs of two or more capitalised words while allowing proper nouns (Spotify, Beatport, TIDAL, etc.) and sentence-case labels.
+  - `design-system/rules/rules.yaml`: Registered atomic rule `WRT-116` requiring button and tab labels to use sentence case and not Title Case.
+- Checks run and passed:
+  - `python design-system/linters/check.py fixtures/violations.html --json` (20/20 findings, matching expected checks)
+  - Custom test verifying detection of 'Unknown Date', 'Unknown algorithm', 'Unknown error', 'Run Search', 'Setlist Parameters' while allowing sentence case and proper nouns ('Connect Beatport', 'Copy prompt')
+  - `bash scripts/sync-design-system.sh --check` (in sync, design-system 1.9.1)
+  - `python scripts/check_design_system.py --check` (passed)
+  - `python scripts/check_feature_imports.py --check` (Feature boundaries OK)
+  - `npm run type-check` (passed: tsc --noEmit)
+  - `npm run lint` (passed: 0 errors)
+  - `npm run test:unit` (passed: 68 test files, 586 tests)
+- Next: merge PR and proceed to UX-T10 (Freshness on every data page).
+<!-- SLOT:UX-T08 END -->

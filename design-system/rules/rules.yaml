@@ -17147,3 +17147,14 @@
   status: active
   replaced_by: null
   history_ref: null
+- id: WRT-116
+  statement: Button and tab labels shall use sentence case and shall not use Title Case.
+  scope:
+  - copy
+  - html
+  - component
+  check_type: lint
+  test: Pass if button and tab labels of two or more words avoid Title Case capitalisation.
+  status: active
+  replaced_by: null
+  history_ref: null
