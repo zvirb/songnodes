@@ -113,7 +113,7 @@ def main(frag_dir, synth_path, out_path):
     # queued: fragments' queued list + synthesis (open PRs etc.)
     qids = {q["id"] for q in F["queued"]}
     F["queued"] += [q for q in S.get("queued", []) if q["id"] not in qids]
-    for k in ("summary", "standing_rules", "modules", "backbone", "roadmap", "tasks", "assumptions", "meta", "handover", "colour_map", "domain_order", "diagrams", "loop"):
+    for k in ("summary", "standing_rules", "modules", "backbone", "roadmap", "tasks", "assumptions", "meta", "handover", "colour_map", "domain_order", "diagrams", "loop", "ux_proposals"):
         if k in S:
             F[k] = S[k]
     for coll, patches in S.get("patch", {}).items():

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1461 804" role="img" aria-labelledby="D8c-t D8c-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1098 545" role="img" aria-labelledby="D8c-t D8c-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
 :root, [data-theme="dark"] {
   --bg: #222222;
   --surface-1: #2d2d2d;
@@ -788,228 +788,148 @@
 .sn-chart-frame__base { stroke: var(--line-strong); stroke-width: 1; shape-rendering: crispEdges; }
 .sn-chart-frame__tick { fill: var(--chart-axis); font-family: var(--font-data); font-size: 0.6875rem; font-variant-numeric: tabular-nums; }
 .sn-chart-frame__axis-title { fill: var(--chart-axis); font-family: var(--font-body); font-size: 0.6875rem; }</style>
-<title id="D8c-t">Gap map: songnodes frontend</title>
-<desc id="D8c-d">8 gaps drawn as red dashed edges between the parts they affect, each badge numbered G1… and its contract listed below; proposed modules are dashed brand cards linked to the gaps they close.</desc>
-<rect class="sn-diagram__bg" x="0" y="0" width="1461" height="804"/>
+<title id="D8c-t">Gap map: songnodes backend: platform and operations</title>
+<desc id="D8c-d">5 gaps drawn as red dashed edges between the parts they affect, each badge numbered G1… and its contract listed below; proposed modules are dashed brand cards linked to the gaps they close.</desc>
+<rect class="sn-diagram__bg" x="0" y="0" width="1098" height="545"/>
 <g class="sn-diagram__groups"></g>
-<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--proposed" data-from="M1" data-to="sn-fe-sets" data-edge="M1&gt;sn-fe-gap-artifact-sets-tidal-flag" tabindex="0" aria-label="M1 Set exchange closes G24">
-<title>M1 Set exchange closes G24</title>
-<path class="sn-diagram__line" d="M339.8 68.0 L415.3 68.0"/>
-<path class="sn-diagram__head" d="M415.3 68.0 L408.3 64.2 L408.3 71.8 Z"/>
+<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--gap" data-from="sn-be-svc-rest-api" data-to="file:songnodes/compose.dev.yaml" data-edge="sn-be-gap-auth-token-flow" tabindex="0" aria-label="G14 Make &#x41;PI token usable by scripts and &#x54;IDAL routes – contract: X-&#x41;PI-Token header is the only admin credential; Authorization is reserved for provider tokens. &#x28;severity critical, effort S)">
+<title>G14 Make &#x41;PI token usable by scripts and &#x54;IDAL routes – contract: X-&#x41;PI-Token header is the only admin credential; Authorization is reserved for provider tokens. &#x28;severity critical, effort S)</title>
+<path class="sn-diagram__line" d="M208.5 101.1 L208.5 144.0"/>
+<path class="sn-diagram__head" d="M208.5 144.0 L204.7 137.0 L212.3 137.0 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="182.2" y="111.5" width="52.7" height="22.2"/><text class="sn-diagram__t data-strong" x="208.5" y="126.7" text-anchor="middle">&#x2715; G14</text></g>
 </g>
-<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--gap" data-from="sn-fe-sets" data-to="ml-cli-weekly" data-edge="sn-fe-gap-artifact-sets-tidal-flag" tabindex="0" aria-label="G24 artifact_sets.json lacks the tidal flag musicLibrary needs – contract: artifact_sets/v2: SavedSet[] + {tidal:boolean} &#x28;severity critical, effort M)">
-<title>G24 artifact_sets.json lacks the tidal flag musicLibrary needs – contract: artifact_sets/v2: SavedSet[] + {tidal:boolean} &#x28;severity critical, effort M)</title>
-<path class="sn-diagram__line" d="M555.8 68.0 L631.1 68.0"/>
-<path class="sn-diagram__head" d="M631.1 68.0 L624.1 64.2 L624.1 71.8 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="564.5" y="55.5" width="57.7" height="25.0"/><text class="sn-diagram__t body-strong" x="593.4" y="72.8" text-anchor="middle">&#x2715; G24</text></g>
+<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--gap" data-from="file:songnodes/scripts" data-to="contract:sn-be-gap-backups" data-edge="sn-be-gap-backups" tabindex="0" aria-label="G16 Working backup for the compose volume – contract: Backup file: backups/songnodes-&#x59;YYYMMDD.dump &#x28;pg custom format). &#x28;severity high, effort S)">
+<title>G16 Working backup for the compose volume – contract: Backup file: backups/songnodes-&#x59;YYYMMDD.dump &#x28;pg custom format). &#x28;severity high, effort S)</title>
+<path class="sn-diagram__line" d="M582.0 103.1 L582.0 145.8"/>
+<path class="sn-diagram__head" d="M582.0 145.8 L578.1 138.8 L585.9 138.8 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="555.7" y="113.4" width="52.7" height="22.2"/><text class="sn-diagram__t data-strong" x="582.0" y="128.6" text-anchor="middle">&#x2715; G16</text></g>
 </g>
-<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--gap" data-from="file:songnodes/frontend/src/components/LiveDataLoader.tsx" data-to="contract:sn-fe-gap-graph-ws" data-edge="sn-fe-gap-graph-ws" tabindex="0" aria-label="G27 Graph WebSocket has a server but no client – contract: graph-ws/v1 message {type: nodes|edges|delta, payload} &#x28;severity medium, effort S)">
-<title>G27 Graph WebSocket has a server but no client – contract: graph-ws/v1 message {type: nodes|edges|delta, payload} &#x28;severity medium, effort S)</title>
-<path class="sn-diagram__line" d="M1033.8 346.0 L1109.2 346.0"/>
-<path class="sn-diagram__head" d="M1109.2 346.0 L1102.2 342.1 L1102.2 349.9 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1043.2" y="333.5" width="56.6" height="25.0"/><text class="sn-diagram__t body-strong" x="1071.5" y="350.8" text-anchor="middle">&#x2715; G27</text></g>
+<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--gap" data-from="file:songnodes/frontend/src/components/&#x44;JInterface.tsx" data-to="contract:sn-be-gap-frontend-dead-routes" data-edge="sn-be-gap-frontend-dead-routes" tabindex="0" aria-label="G20 Frontend calls routes that do not exist – contract: Use existing target-tracks router. &#x28;severity medium, effort S)">
+<title>G20 Frontend calls routes that do not exist – contract: Use existing target-tracks router. &#x28;severity medium, effort S)</title>
+<path class="sn-diagram__line" d="M974.0 113.2 L974.0 155.8"/>
+<path class="sn-diagram__head" d="M974.0 155.8 L970.1 148.8 L977.9 148.8 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="947.7" y="123.4" width="52.7" height="22.2"/><text class="sn-diagram__t data-strong" x="974.0" y="138.7" text-anchor="middle">&#x2715; G20</text></g>
 </g>
-<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--gap" data-from="file:songnodes/frontend/src/features/musicLibrary/data.ts" data-to="file:songnodes/frontend/src/hooks/useDataLoader.ts" data-edge="sn-fe-gap-indexeddb-cache" tabindex="0" aria-label="G23 No IndexedDB last-good-data cache despite design-system rule – contract: sn-cache/v1 {key, data, fetchedAt &#x49;SO, apiVersion} &#x28;severity medium, effort S)">
-<title>G23 No IndexedDB last-good-data cache despite design-system rule – contract: sn-cache/v1 {key, data, fetchedAt &#x49;SO, apiVersion} &#x28;severity medium, effort S)</title>
-<path class="sn-diagram__line" d="M449.7 184.5 L525.2 184.5"/>
-<path class="sn-diagram__head" d="M525.2 184.5 L518.2 180.7 L518.2 188.3 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="458.7" y="172.0" width="57.5" height="25.0"/><text class="sn-diagram__t body-strong" x="487.4" y="189.3" text-anchor="middle">&#x2715; G23</text></g>
+<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--gap" data-from="sn-be-cli-migrate-py" data-to="sn-be-cli-start-dev" data-edge="sn-be-gap-migration-ledger" tabindex="0" aria-label="G17 Single migration runner with a ledger – contract: schema_migrations&#x28;version, checksum, applied_at). &#x28;severity medium, effort S)">
+<title>G17 Single migration runner with a ledger – contract: schema_migrations&#x28;version, checksum, applied_at). &#x28;severity medium, effort S)</title>
+<path class="sn-diagram__line" d="M776.0 111.2 L776.0 153.9"/>
+<path class="sn-diagram__head" d="M776.0 153.9 L772.1 146.9 L779.9 146.9 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="749.7" y="121.5" width="52.7" height="22.2"/><text class="sn-diagram__t data-strong" x="776.0" y="136.7" text-anchor="middle">&#x2715; G17</text></g>
 </g>
-<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--gap" data-from="file:songnodes/frontend/Dockerfile" data-to="file:songnodes/frontend/src/features/musicLibrary/components/LibraryImportDialog.tsx" data-edge="sn-fe-gap-ingest-body-limit" tabindex="0" aria-label="G28 Library ingest allows 50 MB but frontend nginx accepts 1 MB – contract: ingest upload limit = FileDrop maxMb = nginx client_max_body_size = rest-api request limit &#x28;severity medium, effort M)">
-<title>G28 Library ingest allows 50 MB but frontend nginx accepts 1 MB – contract: ingest upload limit = FileDrop maxMb = nginx client_max_body_size = rest-api request limit &#x28;severity medium, effort M)</title>
-<path class="sn-diagram__line" d="M1025.9 202.0 L1101.2 202.0"/>
-<path class="sn-diagram__head" d="M1101.2 202.0 L1094.2 198.2 L1094.2 205.8 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1034.7" y="189.5" width="57.6" height="25.0"/><text class="sn-diagram__t body-strong" x="1063.5" y="206.8" text-anchor="middle">&#x2715; G28</text></g>
+<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--gap" data-from="sn-be-svc-rest-api" data-to="contract:sn-be-gap-music-search" data-edge="sn-be-gap-music-search" tabindex="0" aria-label="G19 Music search has no deployed backend – contract: &#x47;ET /api/v1/music-search/{service}?q= -&gt; [{id, artist, title, isrc}]. &#x28;severity medium, effort S)">
+<title>G19 Music search has no deployed backend – contract: &#x47;ET /api/v1/music-search/{service}?q= -&gt; [{id, artist, title, isrc}]. &#x28;severity medium, effort S)</title>
+<path class="sn-diagram__line" d="M289.8 101.1 L289.8 146.0"/>
+<path class="sn-diagram__head" d="M289.8 146.0 L285.9 139.0 L293.7 139.0 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="263.5" y="112.5" width="52.7" height="22.2"/><text class="sn-diagram__t data-strong" x="289.8" y="127.7" text-anchor="middle">&#x2715; G19</text></g>
 </g>
-<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--gap" data-from="file:songnodes/frontend/src/features/musicLibrary/data.ts" data-to="sn-be-svc-rest-api" data-edge="sn-fe-gap-library-generated" tabindex="0" aria-label="G26 Library freshness stamp is always unknown – contract: library-meta/v1 = LibraryFile minus tracks &#x28;severity medium, effort S)">
-<title>G26 Library freshness stamp is always unknown – contract: library-meta/v1 = LibraryFile minus tracks &#x28;severity medium, effort S)</title>
-<path class="sn-diagram__line" d="M449.7 234.2 L554.9 234.2"/>
-<path class="sn-diagram__head" d="M554.9 234.2 L547.9 230.3 L547.9 238.0 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="473.5" y="221.7" width="57.6" height="25.0"/><text class="sn-diagram__t body-strong" x="502.3" y="239.0" text-anchor="middle">&#x2715; G26</text></g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--proposed" data-node="M3" tabindex="0" aria-label="M3 Transition feed &#x28;proposed module): Publishes `songnodes.transitions/1` &#x28;pairs of &#x49;SRCs with counts) beside library.json so both Set Builders can rank spares by proven pairings.">
+<title>M3 &#84;ransition feed &#x28;proposed module): Publishes `songnodes.&#116;ransitions/1` &#x28;pairs of &#x49;SRCs with counts) beside library.json so both Set Builders can rank spares by proven pairings.</title>
+<rect class="sn-diagram__box" x="165.5" y="253.0" width="165.0" height="52.0"/>
+<rect class="sn-diagram__stripe" x="167.0" y="254.5" width="5" height="49.0"/>
+<text class="sn-diagram__t body-strong" x="179.5" y="275.3">M3 &#84;ransition feed</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="179.5" y="293.2">proposed · export</text>
 </g>
-<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--gap" data-from="sn-fe-oauth-callback" data-to="sn-fe-settings" data-edge="sn-fe-gap-oauth-session-tokens" tabindex="0" aria-label="G21 OAuth tokens written to sessionStorage have no reader – contract: oauth-handoff/v1: {service, access_token, refresh_token, expires_at} consumed exactly once by the credentials slice &#x28;severity high, effort M)">
-<title>G21 OAuth tokens written to sessionStorage have no reader – contract: oauth-handoff/v1: {service, access_token, refresh_token, expires_at} consumed exactly once by the credentials slice &#x28;severity high, effort M)</title>
-<path class="sn-diagram__line" d="M473.7 451.0 L549.4 451.0"/>
-<path class="sn-diagram__head" d="M549.4 451.0 L542.4 447.1 L542.4 454.9 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="484.4" y="438.5" width="54.2" height="25.0"/><text class="sn-diagram__t body-strong" x="511.5" y="455.8" text-anchor="middle">&#x2715; G21</text></g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--proposed" data-node="M4" tabindex="0" aria-label="M4 Contract check &#x28;proposed module): Validates every cross-project file and request body against its schema in CI and in the weekly run, and fails with the field that broke.">
+<title>M4 Contract check &#x28;proposed module): Validates every cross-project file and request body against its schema in CI and in the weekly run, and fails with the field that broke.</title>
+<rect class="sn-diagram__box" x="498.0" y="253.0" width="168.0" height="52.0"/>
+<rect class="sn-diagram__stripe" x="499.5" y="254.5" width="5" height="49.0"/>
+<text class="sn-diagram__t body-strong" x="512.0" y="275.3">M4 Contract check</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="512.0" y="293.2">proposed · verify</text>
 </g>
-<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--gap" data-from="file:songnodes/frontend/src/components/&#x44;JInterface.tsx" data-to="contract:sn-fe-gap-scrapers-endpoints" data-edge="sn-fe-gap-scrapers-endpoints" tabindex="0" aria-label="G22 Graph page calls scraper endpoints that do not exist – contract: frontend-endpoint-manifest.json checked against rest-api /openapi.json in CI &#x28;severity medium, effort M)">
-<title>G22 Graph page calls scraper endpoints that do not exist – contract: frontend-endpoint-manifest.json checked against rest-api /openapi.json in CI &#x28;severity medium, effort M)</title>
-<path class="sn-diagram__line" d="M450.7 346.0 L526.3 346.0"/>
-<path class="sn-diagram__head" d="M526.3 346.0 L519.3 342.1 L519.3 349.9 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="459.8" y="333.5" width="57.3" height="25.0"/><text class="sn-diagram__t body-strong" x="488.5" y="350.8" text-anchor="middle">&#x2715; G22</text></g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--gap" data-node="contract:sn-be-gap-backups" tabindex="0" aria-label="G16 contract: Backup file: backups/songnodes-&#x59;YYYMMDD.dump &#x28;pg custom format).">
+<title>G16 contract: Backup file: backups/songnodes-&#x59;YYYMMDD.dump &#x28;pg custom format).</title>
+<rect class="sn-diagram__box" x="485.5" y="146.0" width="193.0" height="69.0"/>
+<rect class="sn-diagram__stripe" x="487.0" y="147.5" width="5" height="66.0"/>
+<text class="sn-diagram__t body-strong" x="499.5" y="168.3">missing contract</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="499.5" y="186.2">Backup file:</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="499.5" y="203.0">backups/songnodes-&#x59;YYY…</text>
 </g>
-<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--gap" data-from="file:songnodes/frontend/src/services/trackSyncAdapter.ts" data-to="file:songnodes/frontend/src/hooks/useUnifiedTracks.ts" data-edge="sn-fe-gap-target-pending-sync" tabindex="0" aria-label="G25 Pending target syncs are never retried and override the server – contract: sn-target-tracks-v2 {isTarget, priority, pendingSync, lastAttempt} &#x28;severity medium, effort S)">
-<title>G25 Pending target syncs are never retried and override the server – contract: sn-target-tracks-v2 {isTarget, priority, pendingSync, lastAttempt} &#x28;severity medium, effort S)</title>
-<path class="sn-diagram__line" d="M1026.7 451.0 L1102.2 451.0"/>
-<path class="sn-diagram__head" d="M1102.2 451.0 L1095.2 447.1 L1095.2 454.9 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1035.7" y="438.5" width="57.4" height="25.0"/><text class="sn-diagram__t body-strong" x="1064.4" y="455.8" text-anchor="middle">&#x2715; G25</text></g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--gap" data-node="contract:sn-be-gap-frontend-dead-routes" tabindex="0" aria-label="G20 contract: Use existing target-tracks router.">
+<title>G20 contract: Use existing target-tracks router.</title>
+<rect class="sn-diagram__box" x="886.0" y="156.0" width="176.0" height="69.0"/>
+<rect class="sn-diagram__stripe" x="887.5" y="157.5" width="5" height="66.0"/>
+<text class="sn-diagram__t body-strong" x="900.0" y="178.3">missing contract</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="900.0" y="196.2">Use existing target-tracks</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="900.0" y="213.0">router.</text>
 </g>
-<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--proposed" data-node="M1" tabindex="0" aria-label="M1 Set exchange &#x28;proposed module): Reads either saved-set shape and writes one versioned `songnodes.saved-set/2` document &#x28;name, shape, minutes, tracks[{isrc, tidal_id, ledger_id, tgt}], tidal) to musicLibrary inbox/artifact_sets.json, rejecting rows it cannot map.">
-<title>M1 Set exchange &#x28;proposed module): Reads either saved-set shape and writes one versioned `songnodes.saved-set/2` document &#x28;name, shape, minutes, tracks[{isrc, tidal_id, ledger_id, tgt}], tidal) to musicLibrary inbox/artifact_sets.json, rejecting rows it cannot map.</title>
-<rect class="sn-diagram__box" x="175.5" y="40.0" width="164.0" height="56.0"/>
-<rect class="sn-diagram__stripe" x="177.0" y="41.5" width="5" height="53.0"/>
-<text class="sn-diagram__t body-strong" x="189.5" y="62.3">M1 Set exchange</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="189.5" y="83.3">proposed · convert</text>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--gap" data-node="contract:sn-be-gap-music-search" tabindex="0" aria-label="G19 contract: &#x47;ET /api/v1/music-search/{service}?q= -&gt; [{id, artist, title, isrc}].">
+<title>G19 contract: &#x47;ET /api/v1/music-search/{service}?q= -&gt; [{id, artist, title, isrc}].</title>
+<rect class="sn-diagram__box" x="260.5" y="146.0" width="197.0" height="69.0"/>
+<rect class="sn-diagram__stripe" x="262.0" y="147.5" width="5" height="66.0"/>
+<text class="sn-diagram__t body-strong" x="274.5" y="168.3">missing contract</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="274.5" y="186.2">&#x47;ET</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="274.5" y="203.0">/api/v1/music-search/{servi…</text>
 </g>
-<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--proposed" data-node="M5" tabindex="0" aria-label="M5 Run monitor &#x28;proposed module): Compares each run&apos;s resolve yield, source counts and job failures with the last four runs and raises one Banner-shaped warning with a source link when a figure drops by half.">
-<title>M5 Run monitor &#x28;proposed module): Compares each run&apos;s resolve yield, source counts and job failures with the last four runs and raises one Banner-shaped warning with a source link when a figure drops by half.</title>
-<rect class="sn-diagram__box" x="993.5" y="40.0" width="144.0" height="56.0"/>
-<rect class="sn-diagram__stripe" x="995.0" y="41.5" width="5" height="53.0"/>
-<text class="sn-diagram__t body-strong" x="1007.5" y="62.3">M5 Run monitor</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1007.5" y="83.3">proposed · alert</text>
-</g>
-<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--gap" data-node="contract:sn-fe-gap-graph-ws" tabindex="0" aria-label="G27 contract: graph-ws/v1 message {type: nodes|edges|delta, payload}">
-<title>G27 contract: graph-ws/v1 message {type: nodes|edges|delta, payload}</title>
-<rect class="sn-diagram__box" x="1109.5" y="307.5" width="187.0" height="77.0"/>
-<rect class="sn-diagram__stripe" x="1111.0" y="309.0" width="5" height="74.0"/>
-<text class="sn-diagram__t body-strong" x="1123.5" y="329.8">missing contract</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1123.5" y="350.8">graph-ws/v1 message</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1123.5" y="371.8">{type:…</text>
-</g>
-<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--gap" data-node="contract:sn-fe-gap-scrapers-endpoints" tabindex="0" aria-label="G22 contract: frontend-endpoint-manifest.json checked against rest-api /openapi.json in CI">
-<title>G22 contract: frontend-endpoint-manifest.json checked against rest-api /openapi.json in CI</title>
-<rect class="sn-diagram__box" x="526.5" y="307.5" width="197.0" height="77.0"/>
-<rect class="sn-diagram__stripe" x="528.0" y="309.0" width="5" height="74.0"/>
-<text class="sn-diagram__t body-strong" x="540.5" y="329.8">missing contract</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="540.5" y="350.8">frontend-endpoint-man</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="540.5" y="371.8">ifest.json checked…</text>
-</g>
-<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="file:songnodes/frontend/Dockerfile" tabindex="0" aria-label="songnodes/frontend/Dockerfile &#x28;file named by the gap)">
-<title>songnodes/frontend/Dockerfile &#x28;file named by the gap)</title>
-<rect class="sn-diagram__box" x="829.5" y="163.5" width="196.0" height="77.0"/>
-<rect class="sn-diagram__stripe" x="831.0" y="165.0" width="5" height="74.0"/>
-<text class="sn-diagram__t body-strong" x="843.5" y="185.8">songnodes/frontend/D</text>
-<text class="sn-diagram__t body-strong" x="843.5" y="206.8">ockerfile</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="843.5" y="227.8">ops · file</text>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="file:songnodes/compose.dev.yaml" tabindex="0" aria-label="songnodes/compose.dev.yaml &#x28;file named by the gap)">
+<title>songnodes/compose.dev.yaml &#x28;file named by the gap)</title>
+<rect class="sn-diagram__box" x="40.0" y="144.0" width="198.0" height="73.0"/>
+<rect class="sn-diagram__stripe" x="41.5" y="145.5" width="5" height="70.0"/>
+<text class="sn-diagram__t body-strong" x="54.0" y="166.3">songnodes/compose.d</text>
+<text class="sn-diagram__t body-strong" x="54.0" y="187.3">ev.yaml</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="54.0" y="205.2">ops · file</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="file:songnodes/frontend/src/components/&#x44;JInterface.tsx" tabindex="0" aria-label="songnodes/frontend/src/components/&#x44;JInterface.tsx &#x28;file named by the gap)">
 <title>songnodes/frontend/src/components/&#x44;JInterface.tsx &#x28;file named by the gap)</title>
-<rect class="sn-diagram__box" x="251.5" y="307.5" width="199.0" height="77.0"/>
-<rect class="sn-diagram__stripe" x="253.0" y="309.0" width="5" height="74.0"/>
-<text class="sn-diagram__t body-strong" x="265.5" y="329.8">songnodes/frontend/sr</text>
-<text class="sn-diagram__t body-strong" x="265.5" y="350.8">c/components/&#x44;JInt…</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="265.5" y="371.8">ops · file</text>
+<rect class="sn-diagram__box" x="874.5" y="40.0" width="199.0" height="73.0"/>
+<rect class="sn-diagram__stripe" x="876.0" y="41.5" width="5" height="70.0"/>
+<text class="sn-diagram__t body-strong" x="888.5" y="62.3">songnodes/frontend/sr</text>
+<text class="sn-diagram__t body-strong" x="888.5" y="83.3">c/components/&#x44;JInt…</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="888.5" y="101.2">ops · file</text>
 </g>
-<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="file:songnodes/frontend/src/components/LiveDataLoader.tsx" tabindex="0" aria-label="songnodes/frontend/src/components/LiveDataLoader.tsx &#x28;file named by the gap)">
-<title>songnodes/frontend/src/components/LiveDataLoader.tsx &#x28;file named by the gap)</title>
-<rect class="sn-diagram__box" x="834.5" y="307.5" width="199.0" height="77.0"/>
-<rect class="sn-diagram__stripe" x="836.0" y="309.0" width="5" height="74.0"/>
-<text class="sn-diagram__t body-strong" x="848.5" y="329.8">songnodes/frontend/sr</text>
-<text class="sn-diagram__t body-strong" x="848.5" y="350.8">c/components/LiveD…</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="848.5" y="371.8">ops · file</text>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="file:songnodes/scripts" tabindex="0" aria-label="songnodes/scripts &#x28;file named by the gap)">
+<title>songnodes/scripts &#x28;file named by the gap)</title>
+<rect class="sn-diagram__box" x="499.0" y="51.0" width="166.0" height="52.0"/>
+<rect class="sn-diagram__stripe" x="500.5" y="52.5" width="5" height="49.0"/>
+<text class="sn-diagram__t body-strong" x="513.0" y="73.3">songnodes/scripts</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="513.0" y="91.2">ops · file</text>
 </g>
-<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="file:songnodes/frontend/src/features/musicLibrary/components/LibraryImportDialog.tsx" tabindex="0" aria-label="songnodes/frontend/src/features/musicLibrary/components/LibraryImportDialog.tsx &#x28;file named by the gap)">
-<title>songnodes/frontend/src/features/musicLibrary/components/LibraryImportDialog.tsx &#x28;file named by the gap)</title>
-<rect class="sn-diagram__box" x="1101.5" y="163.5" width="199.0" height="77.0"/>
-<rect class="sn-diagram__stripe" x="1103.0" y="165.0" width="5" height="74.0"/>
-<text class="sn-diagram__t body-strong" x="1115.5" y="185.8">songnodes/frontend/sr</text>
-<text class="sn-diagram__t body-strong" x="1115.5" y="206.8">c/features/musicLibr…</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1115.5" y="227.8">ops · file</text>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-cli-migrate-py" tabindex="0" aria-label="migrate.py &#x28;sn-be-cli-migrate-py) – ops, cli, Production">
+<title>migrate.py &#x28;sn-be-cli-migrate-py) – ops, cli, Production</title>
+<rect class="sn-diagram__box" x="706.0" y="59.0" width="140.0" height="52.0"/>
+<rect class="sn-diagram__stripe" x="707.5" y="60.5" width="5" height="49.0"/>
+<text class="sn-diagram__t body-strong" x="720.0" y="81.3">migrate.py</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="720.0" y="99.2">ops · cli</text>
 </g>
-<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="file:songnodes/frontend/src/features/musicLibrary/data.ts" tabindex="0" aria-label="songnodes/frontend/src/features/musicLibrary/data.ts &#x28;file named by the gap)">
-<title>songnodes/frontend/src/features/musicLibrary/data.ts &#x28;file named by the gap)</title>
-<rect class="sn-diagram__box" x="250.5" y="168.5" width="199.0" height="77.0"/>
-<rect class="sn-diagram__stripe" x="252.0" y="170.0" width="5" height="74.0"/>
-<text class="sn-diagram__t body-strong" x="264.5" y="190.8">songnodes/frontend/sr</text>
-<text class="sn-diagram__t body-strong" x="264.5" y="211.8">c/features/musicLibr…</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="264.5" y="232.8">ops · file</text>
-</g>
-<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="file:songnodes/frontend/src/hooks/useDataLoader.ts" tabindex="0" aria-label="songnodes/frontend/src/hooks/useDataLoader.ts &#x28;file named by the gap)">
-<title>songnodes/frontend/src/hooks/useDataLoader.ts &#x28;file named by the gap)</title>
-<rect class="sn-diagram__box" x="525.5" y="123.5" width="199.0" height="77.0"/>
-<rect class="sn-diagram__stripe" x="527.0" y="125.0" width="5" height="74.0"/>
-<text class="sn-diagram__t body-strong" x="539.5" y="145.8">songnodes/frontend/sr</text>
-<text class="sn-diagram__t body-strong" x="539.5" y="166.8">c/hooks/useDataLoa…</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="539.5" y="187.8">ops · file</text>
-</g>
-<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="file:songnodes/frontend/src/hooks/useUnifiedTracks.ts" tabindex="0" aria-label="songnodes/frontend/src/hooks/useUnifiedTracks.ts &#x28;file named by the gap)">
-<title>songnodes/frontend/src/hooks/useUnifiedTracks.ts &#x28;file named by the gap)</title>
-<rect class="sn-diagram__box" x="1102.5" y="412.5" width="199.0" height="77.0"/>
-<rect class="sn-diagram__stripe" x="1104.0" y="414.0" width="5" height="74.0"/>
-<text class="sn-diagram__t body-strong" x="1116.5" y="434.8">songnodes/frontend/sr</text>
-<text class="sn-diagram__t body-strong" x="1116.5" y="455.8">c/hooks/useUnifiedT…</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1116.5" y="476.8">ops · file</text>
-</g>
-<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="file:songnodes/frontend/src/services/trackSyncAdapter.ts" tabindex="0" aria-label="songnodes/frontend/src/services/trackSyncAdapter.ts &#x28;file named by the gap)">
-<title>songnodes/frontend/src/services/trackSyncAdapter.ts &#x28;file named by the gap)</title>
-<rect class="sn-diagram__box" x="827.5" y="412.5" width="199.0" height="77.0"/>
-<rect class="sn-diagram__stripe" x="829.0" y="414.0" width="5" height="74.0"/>
-<text class="sn-diagram__t body-strong" x="841.5" y="434.8">songnodes/frontend/sr</text>
-<text class="sn-diagram__t body-strong" x="841.5" y="455.8">c/services/trackSyn…</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="841.5" y="476.8">ops · file</text>
-</g>
-<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-cli-weekly" tabindex="0" aria-label="run_weekly weekly &#x28;ml-cli-weekly) – ops, cli, Production">
-<title>run_weekly weekly &#x28;ml-cli-weekly) – ops, cli, Production</title>
-<rect class="sn-diagram__box" x="631.5" y="40.0" width="168.0" height="56.0"/>
-<rect class="sn-diagram__stripe" x="633.0" y="41.5" width="5" height="53.0"/>
-<text class="sn-diagram__t body-strong" x="645.5" y="62.3">run_weekly weekly</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="645.5" y="83.3">ops · cli</text>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-cli-start-dev" tabindex="0" aria-label="start-dev &#x28;sn-be-cli-start-dev) – ops, cli, Production">
+<title>start-dev &#x28;sn-be-cli-start-dev) – ops, cli, Production</title>
+<rect class="sn-diagram__box" x="706.0" y="154.0" width="140.0" height="52.0"/>
+<rect class="sn-diagram__stripe" x="707.5" y="155.5" width="5" height="49.0"/>
+<text class="sn-diagram__t body-strong" x="720.0" y="176.3">start-dev</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="720.0" y="194.2">ops · cli</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-svc-rest-api" tabindex="0" aria-label="&#x52;EST &#x41;PI &#x28;sn-be-svc-rest-api) – ops, service-ui, Production">
 <title>&#x52;EST &#x41;PI &#x28;sn-be-svc-rest-api) – ops, service-ui, Production</title>
-<rect class="sn-diagram__box" x="555.0" y="223.0" width="140.0" height="56.0"/>
-<rect class="sn-diagram__stripe" x="556.5" y="224.5" width="5" height="53.0"/>
-<text class="sn-diagram__t body-strong" x="569.0" y="245.3">&#x52;EST &#x41;PI</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="569.0" y="266.3">ops · service</text>
-</g>
-<g class="sn-diagram__node sn-dg-c7 sn-diagram__node--production" data-node="sn-fe-oauth-callback" tabindex="0" aria-label="Service sign-in return &#x28;sn-fe-oauth-callback) – services, route, Production">
-<title>Service sign-in return &#x28;sn-fe-oauth-callback) – services, route, Production</title>
-<rect class="sn-diagram__box" x="285.5" y="423.0" width="188.0" height="56.0"/>
-<rect class="sn-diagram__stripe" x="287.0" y="424.5" width="5" height="53.0"/>
-<text class="sn-diagram__t body-strong" x="299.5" y="445.3">Service sign-in return</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="299.5" y="466.3">services · route</text>
-</g>
-<g class="sn-diagram__node sn-dg-c4 sn-diagram__node--production" data-node="sn-fe-sets" tabindex="0" aria-label="Set builder &#x28;sn-fe-sets) – sets, route, Production">
-<title>Set builder &#x28;sn-fe-sets) – sets, route, Production</title>
-<rect class="sn-diagram__box" x="415.5" y="40.0" width="140.0" height="56.0"/>
-<rect class="sn-diagram__stripe" x="417.0" y="41.5" width="5" height="53.0"/>
-<text class="sn-diagram__t body-strong" x="429.5" y="62.3">Set builder</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="429.5" y="83.3">sets · route</text>
-</g>
-<g class="sn-diagram__node sn-dg-c7 sn-diagram__node--production" data-node="sn-fe-settings" tabindex="0" aria-label="Settings &#x28;sn-fe-settings) – services, route, Production">
-<title>Settings &#x28;sn-fe-settings) – services, route, Production</title>
-<rect class="sn-diagram__box" x="549.5" y="423.0" width="140.0" height="56.0"/>
-<rect class="sn-diagram__stripe" x="551.0" y="424.5" width="5" height="53.0"/>
-<text class="sn-diagram__t body-strong" x="563.5" y="445.3">Settings</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="563.5" y="466.3">services · route</text>
+<rect class="sn-diagram__box" x="179.0" y="49.0" width="140.0" height="52.0"/>
+<rect class="sn-diagram__stripe" x="180.5" y="50.5" width="5" height="49.0"/>
+<text class="sn-diagram__t body-strong" x="193.0" y="71.3">&#x52;EST &#x41;PI</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="193.0" y="89.2">ops · service</text>
 </g>
 <g class="sn-diagram__key">
-<text class="sn-diagram__t body-strong" x="24.0" y="524.8">Gap contracts</text>
-<text class="sn-diagram__t body-strong" x="24.0" y="549.8">G21</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="67.6" y="549.8">oauth-handoff/v1: {service, access_token, refresh_token, expires_at} consumed exactly</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="67.6" y="570.8">once by the credentials slice &#x28;high)</text>
-<text class="sn-diagram__t body-strong" x="24.0" y="595.8">G22</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="67.6" y="595.8">frontend-endpoint-manifest.json checked against rest-api /openapi.json in CI &#x28;medium)</text>
-<text class="sn-diagram__t body-strong" x="24.0" y="620.8">G23</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="67.6" y="620.8">sn-cache/v1 {key, data, fetchedAt &#x49;SO, apiVersion} &#x28;medium)</text>
-<text class="sn-diagram__t body-strong" x="24.0" y="645.8">G24</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="67.6" y="645.8">artifact_sets/v2: SavedSet[] + {tidal:boolean} &#x28;critical)</text>
-<text class="sn-diagram__t body-strong" x="742.5" y="549.8">G25</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="786.0" y="549.8">sn-target-tracks-v2 {isTarget, priority, pendingSync, lastAttempt} &#x28;medium)</text>
-<text class="sn-diagram__t body-strong" x="742.5" y="574.8">G26</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="786.0" y="574.8">library-meta/v1 = LibraryFile minus tracks &#x28;medium)</text>
-<text class="sn-diagram__t body-strong" x="742.5" y="599.8">G27</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="786.0" y="599.8">graph-ws/v1 message {type: nodes|edges|delta, payload} &#x28;medium)</text>
-<text class="sn-diagram__t body-strong" x="742.5" y="624.8">G28</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="786.0" y="624.8">ingest upload limit = FileDrop maxMb = nginx client_max_body_size = rest-api request</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="786.0" y="645.8">limit &#x28;medium)</text>
+<text class="sn-diagram__t body-strong" x="24.0" y="340.3">Gap contracts</text>
+<text class="sn-diagram__t data-strong" x="24.0" y="363.3">G14</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-s" x="60.4" y="363.3">X-&#x41;PI-Token header is the only admin credential; Authorization is reserved</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-s" x="60.4" y="381.5">for provider tokens. &#x28;critical)</text>
+<text class="sn-diagram__t data-strong" x="24.0" y="403.7">G16</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-s" x="60.4" y="403.7">Backup file: backups/songnodes-&#x59;YYYMMDD.dump &#x28;pg custom format).</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-s" x="60.4" y="421.9">&#x28;high)</text>
+<text class="sn-diagram__t data-strong" x="24.0" y="444.1">G17</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-s" x="60.4" y="444.1">schema_migrations&#x28;version, checksum, applied_at). &#x28;medium)</text>
+<text class="sn-diagram__t data-strong" x="560.8" y="363.3">G19</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-s" x="597.2" y="363.3">&#x47;ET /api/v1/music-search/{service}?q= -&gt; [{id, artist, title, isrc}]. &#x28;medium)</text>
+<text class="sn-diagram__t data-strong" x="560.8" y="385.5">G20</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-s" x="597.2" y="385.5">Use existing target-tracks router. &#x28;medium)</text>
 </g>
 <g class="sn-diagram__legend" aria-label="Legend">
-<text class="sn-diagram__t body-strong" x="24.0" y="686.8">Key</text>
-<rect class="sn-diagram__swatch sn-dg-c4" x="24.0" y="707.0" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="54.0" y="716.8">sets</text>
-<rect class="sn-diagram__swatch sn-dg-c7" x="102.5" y="707.0" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="132.5" y="716.8">services</text>
-<rect class="sn-diagram__swatch sn-dg-c8" x="212.7" y="707.0" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="242.7" y="716.8">ops and design</text>
-<rect class="sn-diagram__legend-box sn-diagram__node--production" x="373.6" y="704.0" width="22" height="16"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="403.6" y="716.8">Production &#x28;solid outline)</text>
-<rect class="sn-diagram__legend-box sn-diagram__node--proposed" x="605.9" y="704.0" width="22" height="16"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="635.9" y="716.8">Proposed &#x28;brand, dashed)</text>
-<g class="sn-diagram__edge--gap"><path class="sn-diagram__line" d="M846.7 712.0 L868.7 712.0"/></g>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="876.7" y="716.8">Gap &#x28;red dashed, &#x2715;)</text>
-<g class="sn-diagram__edge--proposed"><path class="sn-diagram__line" d="M1042.6 712.0 L1064.6 712.0"/></g>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1072.6" y="716.8">Proposed link &#x28;brand dashed)</text>
+<text class="sn-diagram__t body-strong" x="24.0" y="484.3">Key</text>
+<rect class="sn-diagram__swatch sn-dg-c8" x="24.0" y="502.4" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="54.0" y="511.2">ops and design</text>
+<rect class="sn-diagram__legend-box sn-diagram__node--production" x="162.3" y="499.4" width="22" height="16"/>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="192.3" y="511.2">Production &#x28;solid outline)</text>
+<rect class="sn-diagram__legend-box sn-diagram__node--proposed" x="357.7" y="499.4" width="22" height="16"/>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="387.7" y="511.2">Proposed &#x28;brand, dashed)</text>
+<g class="sn-diagram__edge--gap"><path class="sn-diagram__line" d="M559.9 507.4 L581.9 507.4"/></g>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="589.9" y="511.2">Gap &#x28;red dashed, &#x2715;)</text>
+<g class="sn-diagram__edge--proposed"><path class="sn-diagram__line" d="M726.3 507.4 L748.3 507.4"/></g>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="756.3" y="511.2">Proposed link &#x28;brand dashed)</text>
 </g>
 </svg>

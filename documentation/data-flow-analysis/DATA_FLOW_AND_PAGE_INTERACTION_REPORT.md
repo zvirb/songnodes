@@ -1,6 +1,6 @@
 # SongNodes · Data flow report · 7 Nov 2026
 
-Built 7 Nov 2026, 11:07 AEDT by Claude (Opus 5.5) for Markus, session 01NvWNfTGjhUeGYwDZx2H948. songnodes `7429821` (docs/data-flow-investigation), musicLibrary snapshot 7 Nov 2026, `findings.json` sha256 `e469b41763f1`. Web report: `report/index.html`; PDF: `DATA_FLOW_AND_PAGE_INTERACTION_REPORT.pdf`. Every number below is computed from `findings.json`.
+Built 7 Nov 2026, 11:45 AEDT by Claude (Opus 5.5) for Markus, session 01NvWNfTGjhUeGYwDZx2H948. songnodes `7429821` (docs/data-flow-investigation), musicLibrary snapshot 7 Nov 2026, `findings.json` sha256 `9239a01d7141`. Web report: `report/index.html`; PDF: `DATA_FLOW_AND_PAGE_INTERACTION_REPORT.pdf`. Every number below is computed from `findings.json`.
 
 > Read as: one estate of two projects. songnodes (git, main @7429821) is the source of truth for SongNodes; E:\musicLibrary (no git) is read from a snapshot taken 7 Nov 2026 without its 58 GB data folder. Queued = open PRs #576–#580, musicLibrary plan/jules_payloads and unmerged briefs.
 
@@ -17,7 +17,7 @@ Built 7 Nov 2026, 11:07 AEDT by Claude (Opus 5.5) for Markus, session 01NvWNfTGj
 | 17 | Standing-rule violations |
 | 42 | Doc claims corrected or refuted |
 | 14 | Queued items |
-| 16 | Sister-project tasks |
+| 29 | Sister-project tasks |
 
 **What holds**
 
@@ -1136,9 +1136,6 @@ Objective: Check Beatport for tracks to buy, with Markus at the laptop. Device: 
 | sn-fe-debt-tracker-hex | low | S | Work-queue tracker uses its own hex palette | drift | plan/work-queue-2026-10-30/tracker.html defines --bg:#f6f5f9 etc. instead of design-system tokens, against CLAUDE.md §4. | built | songnodes/plan/work-queue-2026-10-30/tracker.html |
 | sn-fe-debt-unused-nginx | low | M | nginx/ and nginx-local-proxy.conf are not used by the Compose stack | drift | compose.dev.yaml builds the frontend with an inline default.conf; nginx/conf.d/frontend.conf proxies to api-gateway:8080 and websocket-api:8083, nginx-local-proxy.conf to host.docker.internal:8088 — none exist in compose.dev.yaml. Design-system docs (13-page-patterns, 16-platform) still cite nginx/nginx.conf for error pages and frame headers. | built | songnodes/nginx/conf.d/frontend.conf:63-86 |
 
-![D11: Roadmap timeline](roadmap-timeline.svg)
-
-**D11 Roadmap timeline.** 5 waves and 16 tasks; the security gate in W1 comes before any tunnel. *n = 16 · tasks · state queued · source roadmap[] (tasks, gate, depends); tasks[] (project, type, depends, gaps); meta.ml_snapshot (Today) · method hand-placed columns, dependency arrows routed through row corridors; 1 crossings*
 
 | Wave | Goal | Tasks | Gate | Depends on |
 |---|---|---|---|---|
@@ -1147,6 +1144,7 @@ Objective: Check Beatport for tracks to buy, with Markus at the laptop. Device: 
 | W3 | Make the data layers honest | SN-T05, SN-T06, SN-T07 | Layer model decided and documented | W2 |
 | W4 | Close the feedback loop | ML-T03, ML-T04, SN-T08, ML-T05 | Play history visible in calibrate.py output | W2 |
 | W5 | Observability and clean-up | SN-T09, ML-T06, DS-T01 | Run monitor raises a test warning | W3, W4 |
+| W6 | User experience: pages and design-system rules | UX-T01, UX-T02, UX-T03, UX-T04, UX-T05, UX-T06, UX-T07, UX-T08, UX-T09, UX-T10, UX-T11, UX-T12, SN-T10 | Each new page passes the design-system linter and the conformance screenshots beside the HomePage preview | W2, W4 |
 
 ## 8. Gaps, proposed modules and storage backbone
 
@@ -1154,7 +1152,26 @@ See `ARCHITECTURE_ENHANCEMENTS_AND_GAPS_REPORT.md` for the full gap analysis: 28
 
 
 
-## 9. Built and Projected
+## 9. User experience: proposed pages and design-system updates
+
+12 proposals, each a one-job package in wave W6 of the roadmap. The full plan with problem, proposal, pattern, personas, evidence and verification is `UX_RECOMMENDATIONS_PLAN.md`.
+
+| ID | Kind | Proposal | Module | Personas | Effort | Task |
+|---|---|---|---|---|---|---|
+| UX-01 | New page | Review queue | library | P3, P7 | L (Estimate) | UX-T01 |
+| UX-02 | New page | Track detail | library | P1, P2, P3 | M (Estimate) | UX-T02 |
+| UX-03 | New page | Pipeline health | pipeline | P4, P7 | L (Estimate) | UX-T03 |
+| UX-04 | New page | Buy list | library | P3, P8 | M (Estimate) | UX-T04 |
+| UX-05 | New page | One Set builder | sets | P2, P7 | M (Estimate) | UX-T05 |
+| UX-06 | New page | Work queue on the design system | design | P5 | S (Estimate) | UX-T06 |
+| UX-07 | Design system | One primary action when an empty state carries it | design | P2, P4 | S (Estimate) | UX-T07 |
+| UX-08 | Design system | Linter catches 'Unknown' and Title Case labels | design | P1, P2, P4 | S (Estimate) | UX-T08 |
+| UX-09 | Design system | Inline editable cell for DataTable | design | P3 | M (Estimate) | UX-T09 |
+| UX-10 | Design system | Freshness on every data page | design | P1, P2, P3 | M (Estimate) | UX-T10 |
+| UX-11 | Design system | Service rows tell the truth about OAuth | services | P2, P4 | S (Estimate) | UX-T11 |
+| UX-12 | Design system | Close Q-PRINT-1 and publish 1.10.0 | design | P2, P5 | S (Estimate) | UX-T12 |
+
+## 10. Built and Projected
 
 ![D9: Built to Projected change map](built-to-projected-change-map.svg)
 
@@ -1200,11 +1217,11 @@ See `ARCHITECTURE_ENHANCEMENTS_AND_GAPS_REPORT.md` for the full gap analysis: 28
 | PR-579 | DUO2: Frontend login page and auth context | github zvirb/songnodes#579 | Adds /login | sn-fe-login |
 | PR-580 | Sentinel: sanitise REST API main exception details | github zvirb/songnodes#580 | Sanitises errors, partly on unreachable routes | sn-be-svc-rest-api |
 
-## 10. Sister-project tasks
+## 11. Sister-project tasks
 
 ![C12: Sister tasks by project, type and status](c12-tasks.svg)
 
-**C12 Sister tasks by project, type and status.** 16 queued tasks over 3 projects; 10 are ready now and 6 wait on another task. *n = 16 · tasks · state queued · source tasks[] (project, type, depends) · method Tasks placed by type (rows, by count) and project (columns, by count). tasks[] has no status field: status is derived from depends (Ready when empty).*
+**C12 Sister tasks by project, type and status.** 29 queued tasks over 3 projects; 16 are ready now and 13 wait on another task. *n = 29 · tasks · state queued · source tasks[] (project, type, depends) · method Tasks placed by type (rows, by count) and project (columns, by count). tasks[] has no status field: status is derived from depends (Ready when empty).*
 
 | Task | Project | Package | Type | Owned paths | Depends on | Verification | Gaps |
 |---|---|---|---|---|---|---|---|
@@ -1224,8 +1241,21 @@ See `ARCHITECTURE_ENHANCEMENTS_AND_GAPS_REPORT.md` for the full gap analysis: 28
 | ML-T05 | musicLibrary | Move setlist files into exchange/ and import them | contract | exchange/setlists/ (new), pipeline/run_weekly.py | SN-T03 | JohnCourse and kiki appear as songnodes setlists | ml-gap-setlists-orphan |
 | ML-T06 | musicLibrary | Warn on resolve yield drops and retry rejected pending | observability | pipeline/run_weekly.py, pipeline/djlib/export.py | – | a run with half the usual yield writes a warning | ml-gap-written-never-read |
 | DS-T01 | design-system | Publish 1.10.0 to the design-system artifact | design-system | design-system artifact 7f37707d | – | artifact tokens.json version is 1.10.0 | – |
+| UX-T01 | songnodes | Build the Review queue page (UX-01) | ux-page | frontend/src/features/musicLibrary/ReviewQueuePage.tsx (new), frontend/src/features/musicLibrary/route.tsx, services/rest_api/routers/library_overrides.py (new) | UX-T09, SN-T03 | see UX-01 | ml-gap-written-never-read |
+| UX-T02 | songnodes | Build the Track detail page (UX-02) | ux-page | frontend/src/features/trackDetail/ (new), frontend/src/components/TrackDetailsModal.tsx | SN-T08 | see UX-02 | ml-gap-transitions-not-used |
+| UX-T03 | songnodes | Pipeline health page and run history (UX-03) | ux-page | frontend/src/pages/ScraperProgressPage.tsx, frontend/src/features/pipeline/RunsPage.tsx (new), frontend/src/features/pipeline/RunMonitor.tsx (new, M5) | ML-T06 | see UX-03 | sn-be-gap-backups |
+| UX-T04 | songnodes | Build the Buy list page (UX-04) | ux-page | frontend/src/features/musicLibrary/BuyListPage.tsx (new), frontend/src/features/musicLibrary/route.tsx | UX-T09, ML-T04 | see UX-04 | ml-gap-rekordbox-feedback |
+| UX-T05 | musicLibrary | Retire the artifact Set Builder behind /sets (UX-05) | ux-page | artifact/index.html, artifact/build/index.html, README.md | ML-T02 | see UX-05 | ml-gap-saved-set-shape |
+| UX-T06 | songnodes | Rebuild the work-queue tracker on the design system (UX-06) | ux-page | plan/work-queue-2026-10-30/tracker.html | – | see UX-06 | – |
+| UX-T07 | design-system | Rule: one primary when the empty state carries it (UX-07) | design-system | design-system/06-interaction-accessibility.md, design-system/rules/rules.yaml, scripts/check_design_system.py, design-system/17-governance.md | – | see UX-07 | – |
+| UX-T08 | design-system | Linter: Unknown values and Title Case labels (UX-08) | design-system | design-system/linters/check.py, design-system/rules/rules.yaml | – | see UX-08 | – |
+| UX-T09 | design-system | DataTable editable cell (UX-09) | design-system | design-system/components/DataTable/README.md, design-system/components/DataTable/preview.html, design-system/source/css/30-data.css, design-system/source/bundle.src.js, design-system/17-governance.md | – | see UX-09 | – |
+| UX-T10 | design-system | Freshness stamp required on data pages (UX-10) | design-system | design-system/13-page-patterns.md, design-system/rules/rules.yaml, scripts/check_design_system.py | – | see UX-10 | sn-fe-gap-library-generated |
+| UX-T11 | design-system | ServiceStatus state from a usable token (UX-11) | design-system | design-system/components/ServiceStatus/README.md, design-system/components/AuthCallbackPage/README.md, design-system/components/SettingsPage/README.md | SN-T09 | see UX-11 | sn-fe-gap-oauth-session-tokens |
+| UX-T12 | design-system | Close Q-PRINT-1 and publish 1.10.0 (UX-12) | design-system | design-system/source/css/61-pages-b.css, design-system/15-print-export.md, design-system/17-governance.md, design-system artifact 7f37707d | DS-T01 | see UX-12 | – |
+| SN-T10 | songnodes | IndexedDB last-good-data cache per 16 platform | fix | frontend/src/hooks/useDataLoader.ts, frontend/src/lib/lastGood.ts (new) | – | with the API down, /library shows the last data with a stale stamp instead of an error | sn-fe-gap-indexeddb-cache |
 
-## 11. Verification register
+## 12. Verification register
 
 ![C11: Verification outcome by area](c11-verification-outcome.svg)
 
@@ -1315,7 +1345,7 @@ See `ARCHITECTURE_ENHANCEMENTS_AND_GAPS_REPORT.md` for the full gap analysis: 28
 | BL-B11 | PDF 1,775 KB, vector, searchable | PR #581 description | confirmed | – | 1,817,715 bytes in the branch. |
 | BL-B12 | Rebuild pipeline passes in 3.2 s | STATUS.md SLOT:ARCH1 @1f296c3 | not-reproducible | – | Not re-run: its build scripts are kept in the branch but superseded by build.py; timing is the author's figure. |
 
-## 12. Methods, assumptions and open decisions
+## 13. Methods, assumptions and open decisions
 
 | Item | Value |
 |---|---|
@@ -1446,7 +1476,7 @@ See `ARCHITECTURE_ENHANCEMENTS_AND_GAPS_REPORT.md` for the full gap analysis: 28
 - Open decision: keep a gold layer or document silver-plus-projection as the model (SN-T06).
 - Open decision: which Set Builder is primary once both read the same saved-set shape.
 
-## 13. Handover
+## 14. Handover
 
 | Item | Value |
 |---|---|
@@ -1465,8 +1495,8 @@ See `ARCHITECTURE_ENHANCEMENTS_AND_GAPS_REPORT.md` for the full gap analysis: 28
 | 1 linter | pass | 0 findings from design-system/linters/check.py |
 | 2 tokens | pass | 0 literal colours, sizes, spacing or radii outside design-system definitions |
 | 3 parity | pass | 0 items missing from a figure or table in web, sheet or PDF; 0 flows undrawn |
-| 4 diagrams | fail | 52 SVGs checked; 1 with overflow, collision or text under 9.5 px; 0 edges through nodes; crossings {'D1': 0, 'D2a': 1, 'D2b': 4, 'D2c': 5, 'D2d': 0, 'D2e': 0, 'D2f': 0, 'D2g': 0, 'D3a': 3, 'D3b': 24, 'D3c': 0, 'D3d': 19, 'D3e': 0, 'D3f': 0, 'D4a': 1, 'D4b': 3, 'D4c': 0, 'D5': 0, 'D5-P1': 0, 'D5-P2': 0, 'D5-P3': 0, 'D5-P4': 0, 'D5-P5a': 0, 'D5-P5b': 0, 'D5-P6': 0, 'D5-P7': 0, 'D5-P8': 0, 'D6a': 0, 'D6b': 0, 'D6c': 0, 'D7a': 0, 'D7b': 0, 'D7c': 0, 'D8a': 0, 'D8b': 0, 'D8c': 0, 'D9': 0, 'D10': 0, 'D11': 1, 'D12': 0} |
-| 5 pdf | fail | 287 pages; 0 portrait elements wider than the page; pages over 40% empty (pages before an orientation change exempt): [(183, 0.83), (190, 0.74), (191, 0.41), (208, 0.96), (227, 0.43), (228, 0.44), (230, 0.48), (232, 0.46), (234, 0.5), (235, 0.41), (240, 0.5), (241, 0.46), (244, 0.52), (258, 0.51)] |
+| 4 diagrams | fail | 53 SVGs checked; 1 with overflow, collision or text under 9.5 px; 0 edges through nodes; crossings {'D1': 0, 'D2a': 1, 'D2b': 4, 'D2c': 5, 'D2d': 0, 'D2e': 0, 'D2f': 0, 'D2g': 0, 'D3a': 3, 'D3b': 24, 'D3c': 0, 'D3d': 19, 'D3e': 0, 'D3f': 0, 'D4a': 1, 'D4b': 3, 'D4c': 0, 'D5': 0, 'D5-P1': 0, 'D5-P2': 0, 'D5-P3': 0, 'D5-P4': 0, 'D5-P5a': 0, 'D5-P5b': 0, 'D5-P6': 0, 'D5-P7': 0, 'D5-P8': 0, 'D6a': 0, 'D6b': 0, 'D6c': 0, 'D7a': 0, 'D7b': 0, 'D7c': 0, 'D8a': 0, 'D8b': 0, 'D8c': 0, 'D9': 0, 'D10': 0, 'D11a': 1, 'D11b': 0, 'D12': 0} |
+| 5 pdf | fail | 298 pages; 0 portrait elements wider than the page; pages over 40% empty (pages before an orientation change exempt): [(183, 0.83), (190, 0.74), (191, 0.41), (272, 0.63)] |
 | 6 colour | pass | 0 module-colour uses in figures; design-system contrast report passes; greyscale shots for QA in build/evidence |
 | 7 conformance | pass | 18 screenshots (report and reference, 3 widths × themes) for QA |
 | 8 offline | pass | 0 console errors, 0 unresolved anchors, 0 network requests with the network blocked |

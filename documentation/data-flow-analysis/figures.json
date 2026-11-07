@@ -945,29 +945,53 @@
  {
   "id": "D8b",
   "kind": "diagram",
-  "title": "Gap map – songnodes backend",
-  "caption": "11 songnodes backend gaps, 1 of them critical; dashed brand cards are the modules that close them.",
+  "title": "Gap map – songnodes backend: data layers and scraping",
+  "caption": "6 songnodes backend: data layers and scraping gaps, 0 of them critical; dashed brand cards are the modules that close them.",
   "unit": "gaps",
-  "n": 11,
+  "n": 6,
   "state": "built",
   "source": "gaps[] (title, contract, affects, severity, effort); modules[]; tasks[] (gaps, title)",
-  "method": "graphviz dot layered layout (LR, order given, components packed 3 across, ungrouped; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 18 units; 0 crossings, 0 edges through nodes; gap endpoints = first two affected paths matched to pages by path prefix",
+  "method": "graphviz dot layered layout (LR, order given, components packed 3 across; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes; gap endpoints = first two affected paths matched to pages by path prefix",
   "wide": true,
   "checks": {
    "crossings": 0,
    "edges_through_nodes": 0,
    "label_collisions": 0,
-   "min_font_units": 18.36,
-   "font_floor_used": 18,
+   "min_font_units": 11.18,
+   "font_floor_used": 12,
    "viewbox": [
-    1994,
-    976
+    1215,
+    668
    ]
   },
   "file": "enhanced-architecture-connections-and-gaps-b.svg"
  },
  {
   "id": "D8c",
+  "kind": "diagram",
+  "title": "Gap map – songnodes backend: platform and operations",
+  "caption": "5 songnodes backend: platform and operations gaps, 1 of them critical; dashed brand cards are the modules that close them.",
+  "unit": "gaps",
+  "n": 5,
+  "state": "built",
+  "source": "gaps[] (title, contract, affects, severity, effort); modules[]; tasks[] (gaps, title)",
+  "method": "graphviz dot layered layout (TB, order given, components packed 4 across; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes; gap endpoints = first two affected paths matched to pages by path prefix",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 10.1,
+   "font_floor_used": 12,
+   "viewbox": [
+    1098,
+    545
+   ]
+  },
+  "file": "enhanced-architecture-connections-and-gaps-c.svg"
+ },
+ {
+  "id": "D8d",
   "kind": "diagram",
   "title": "Gap map – songnodes frontend",
   "caption": "8 songnodes frontend gaps, 1 of them critical; dashed brand cards are the modules that close them.",
@@ -988,7 +1012,7 @@
     804
    ]
   },
-  "file": "enhanced-architecture-connections-and-gaps-c.svg"
+  "file": "enhanced-architecture-connections-and-gaps-d.svg"
  },
  {
   "id": "D9",
@@ -1050,9 +1074,9 @@
   "file": "storage-backbone-before-after.svg"
  },
  {
-  "id": "D11",
+  "id": "D11a",
   "kind": "diagram",
-  "title": "Roadmap timeline",
+  "title": "Roadmap timeline (waves W1 to W5)",
   "caption": "5 waves and 16 tasks; the security gate in W1 comes before any tunnel.",
   "unit": "tasks",
   "n": 16,
@@ -1071,7 +1095,31 @@
     865
    ]
   },
-  "file": "roadmap-timeline.svg"
+  "file": "roadmap-timeline-a.svg"
+ },
+ {
+  "id": "D11b",
+  "kind": "diagram",
+  "title": "Roadmap timeline (wave W6)",
+  "caption": "W6 alone: 13 one-job packages for the proposed pages and design-system updates, after waves W2, W4.",
+  "unit": "tasks",
+  "n": 13,
+  "state": "queued",
+  "source": "roadmap[] (tasks, gate, depends); tasks[] (project, type, depends, gaps); meta.ml_snapshot (Today)",
+  "method": "hand-placed columns, dependency arrows routed through row corridors; 0 crossings",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 12.87,
+   "font_floor_used": 15,
+   "viewbox": [
+    1398,
+    769
+   ]
+  },
+  "file": "roadmap-timeline-b.svg"
  },
  {
   "id": "D12",
@@ -1254,9 +1302,9 @@
   "id": "C12",
   "kind": "chart",
   "title": "Sister tasks by project, type and status",
-  "caption": "16 queued tasks over 3 projects; 10 are ready now and 6 wait on another task.",
+  "caption": "29 queued tasks over 3 projects; 16 are ready now and 13 wait on another task.",
   "unit": "tasks",
-  "n": 16,
+  "n": 29,
   "state": "queued",
   "source": "tasks[] (project, type, depends)",
   "method": "Tasks placed by type (rows, by count) and project (columns, by count). tasks[] has no status field: status is derived from depends (Ready when empty).",
