@@ -8833,6 +8833,16 @@
   status: active
   replaced_by: null
   history_ref: null
+- id: INT-001
+  statement: While a page's EmptyState displays the primary action, the PageHeader primary action shall not be rendered.
+  scope:
+  - page
+  - component
+  check_type: dom
+  test: Page contains at most one primary button (.sn-btn--primary) and PageHeader primary is not rendered while EmptyState displays the primary action.
+  status: active
+  replaced_by: null
+  history_ref: null
 - id: LAY-001
   statement: Page content shall be centred and capped at `content-max` (1400px).
   scope:
@@ -17134,6 +17144,17 @@
   - component
   check_type: dom
   test: Count of spare suggestions per slot equals 3.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: WRT-116
+  statement: Button and tab labels shall use sentence case and shall not use Title Case.
+  scope:
+  - copy
+  - html
+  - component
+  check_type: lint
+  test: Pass if button and tab labels of two or more words avoid Title Case capitalisation.
   status: active
   replaced_by: null
   history_ref: null

@@ -1,0 +1,5105 @@
+{
+ "agent": "ml",
+ "scope": "musicLibrary project (pipeline, config, ledger, inbox, outputs, overrides, db, agent playbooks, artifact, ref_mb, plan, docs, tests, root JSON, data manifest) and its contracts with songnodes musicLibrary feature, library ingest/sets API, import scripts and ref_mb settings",
+ "pages": [
+  {
+   "id": "ml-page-set-builder",
+   "repo": "musicLibrary",
+   "path": "artifact/build/index.html",
+   "title": "Naarm Set Builder (design-system build)",
+   "tagline": "Library and set builder for the Melbourne club crate",
+   "description": "Published artifact (claude.ai/artifact/GcqZTGjk6obdpjWaU7WFRq). Four-line shell loading app.js, an IIFE build of songnodes LibraryPage and SetBuilderPage on a hash router (#/library, #/sets) with artifact-data.ts swapped in for ./data. Reads library.json beside the page; mirrors saved sets to the artifact db collection `sets` and to localStorage.",
+   "module": "artifact",
+   "kind": "artifact",
+   "route": "#/library, #/sets",
+   "dom": [
+    "AppShell header",
+    "CrateFilterRail",
+    "library table",
+    "Set controls",
+    "Energy wave",
+    "Running order",
+    "Saved sets list",
+    "Send to TIDAL on the weekly run checkbox"
+   ],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "weekly_run.md step 8 republishes exactly this shell plus library.json",
+    "app/README.md names it the published page",
+    "live data: fetch('library.json') plus window.claude.use('db') sets collection (M3 runtime confirmed)",
+    "renders 413 tracks over http (M3)"
+   ],
+   "evidence": [
+    "musicLibrary/agent/weekly_run.md:8",
+    "musicLibrary/artifact/app/README.md",
+    "musicLibrary/artifact/app/main.tsx",
+    "musicLibrary/artifact/app/artifact-data.ts:16",
+    "musicLibrary/artifact/app/artifact-data.ts:55-72",
+    "musicLibrary/artifact/build/index.html"
+   ],
+   "state": "built",
+   "size_bytes": 134,
+   "links_out": [
+    {
+     "to": "https://tidal.com/browse/track/<id>",
+     "new_tab": true,
+     "evidence": [
+      "musicLibrary/artifact/build/app.js (target:`_blank`, rel noopener noreferrer, sn-link--ext)"
+     ]
+    },
+    {
+     "to": "https://www.deezer.com/track/<id>",
+     "new_tab": true,
+     "evidence": [
+      "musicLibrary/artifact/build/app.js"
+     ]
+    },
+    {
+     "to": "Beatport URL or beatport.com/search/tracks?q=",
+     "new_tab": true,
+     "evidence": [
+      "musicLibrary/artifact/build/app.js",
+      "musicLibrary/pipeline/build_db.py:208"
+     ]
+    },
+    {
+     "to": "#/library",
+     "new_tab": false,
+     "evidence": [
+      "musicLibrary/artifact/app/main.tsx:96-99"
+     ]
+    },
+    {
+     "to": "#/sets",
+     "new_tab": false,
+     "evidence": [
+      "musicLibrary/artifact/app/main.tsx:98"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "ml-page-set-builder-legacy",
+   "repo": "musicLibrary",
+   "path": "artifact/index.html",
+   "title": "Naarm Set Builder (original hand-written page)",
+   "tagline": "Booth-console library and set builder",
+   "description": "Original vanilla-JS artifact with its own fonts (Big Shoulders Display, Barlow) and colour tokens. Uses window.claude.use('db') and use('user'), DB.collection('sets').onSnapshot, localStorage keys nsb:view, nsb:filters, nsb:draft. Fetches library.json next to itself, which does not exist in artifact/ (404 in M3).",
+   "module": "artifact",
+   "kind": "artifact",
+   "route": null,
+   "dom": [
+    "header.top brand",
+    "nav.views Library/Set builder",
+    "filter rail",
+    "crate table",
+    "wave chart",
+    "saved sets list"
+   ],
+   "classification": "non-final",
+   "subtype": "superseded-prototype",
+   "signals": [
+    "README: design system supersedes this artifact's own fonts and colours",
+    "weekly_run.md: live page must be the four-line build shell, else stop",
+    "no library.json beside it: 'Library file missing' in M3 runtime",
+    "48 hex colours, 181 px values, 25 font-size declarations, 0 sn- classes (M1 count)"
+   ],
+   "evidence": [
+    "musicLibrary/artifact/index.html:231",
+    "musicLibrary/artifact/index.html:535-541",
+    "musicLibrary/artifact/index.html:583",
+    "musicLibrary/README.md",
+    "musicLibrary/agent/weekly_run.md:8"
+   ],
+   "state": "built",
+   "size_bytes": 42185,
+   "links_out": [
+    {
+     "to": "t.tidal (TIDAL track)",
+     "new_tab": true,
+     "evidence": [
+      "musicLibrary/artifact/index.html a target=_blank rel=noopener TIDAL"
+     ]
+    },
+    {
+     "to": "t.dz (Deezer track)",
+     "new_tab": true,
+     "evidence": [
+      "musicLibrary/artifact/index.html"
+     ]
+    },
+    {
+     "to": "t.bp (Beatport)",
+     "new_tab": true,
+     "evidence": [
+      "musicLibrary/artifact/index.html"
+     ]
+    },
+    {
+     "to": "#library / #set (in-page view switch)",
+     "new_tab": false,
+     "evidence": [
+      "musicLibrary/artifact/index.html:591"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "ml-page-artifact-app-entry",
+   "repo": "musicLibrary",
+   "path": "artifact/app/index.html",
+   "title": "Naarm Set Builder (Vite entry)",
+   "tagline": "Build entry for the artifact bundle",
+   "description": "Vite dev entry that loads main.tsx; only used by build.mjs to produce artifact/build/app.js from songnodes frontend sources.",
+   "module": "artifact",
+   "kind": "static-html",
+   "route": null,
+   "dom": [
+    "div#root"
+   ],
+   "classification": "non-final",
+   "subtype": "dev-tool",
+   "signals": [
+    "only referenced as Vite root by build.mjs",
+    "not published (weekly_run publishes build/index.html)"
+   ],
+   "evidence": [
+    "musicLibrary/artifact/app/build.mjs:145-156",
+    "musicLibrary/artifact/app/index.html"
+   ],
+   "state": "built",
+   "size_bytes": 179,
+   "links_out": []
+  },
+  {
+   "id": "ml-cli-weekly",
+   "repo": "musicLibrary",
+   "path": "pipeline/run_weekly.py weekly",
+   "title": "run_weekly weekly",
+   "tagline": "Full weekly chain: scrape, ingest, resolve, process, sync-tidal, db, sync-sets",
+   "description": "Full weekly chain: scrape, ingest, resolve, process, sync-tidal, db, sync-sets",
+   "module": "pipeline",
+   "kind": "cli",
+   "route": null,
+   "dom": [
+    "stdout report"
+   ],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "argparse choice in run_weekly.py",
+    "called by weekly_run.md scheduled playbook or cmd_weekly"
+   ],
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:625-632",
+    "musicLibrary/pipeline/run_weekly.py:644"
+   ],
+   "state": "built",
+   "size_bytes": 32519,
+   "links_out": []
+  },
+  {
+   "id": "ml-cli-scrape",
+   "repo": "musicLibrary",
+   "path": "pipeline/run_weekly.py scrape",
+   "title": "run_weekly scrape",
+   "tagline": "Scrape enabled sources plus unprocessed manual_adds rows into inbox/raw_<date>.json",
+   "description": "Scrape enabled sources plus unprocessed manual_adds rows into inbox/raw_<date>.json",
+   "module": "pipeline",
+   "kind": "cli",
+   "route": null,
+   "dom": [
+    "stdout report"
+   ],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "argparse choice in run_weekly.py",
+    "called by weekly_run.md scheduled playbook or cmd_weekly"
+   ],
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:370-399",
+    "musicLibrary/pipeline/run_weekly.py:644"
+   ],
+   "state": "built",
+   "size_bytes": 32519,
+   "links_out": []
+  },
+  {
+   "id": "ml-cli-ingest",
+   "repo": "musicLibrary",
+   "path": "pipeline/run_weekly.py ingest",
+   "title": "run_weekly ingest",
+   "tagline": "Attach appearances to known tracks",
+   "description": "Attach appearances to known tracks; queue unknown songs in ledger.pending and inbox/to_resolve_<date>.json",
+   "module": "pipeline",
+   "kind": "cli",
+   "route": null,
+   "dom": [
+    "stdout report"
+   ],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "argparse choice in run_weekly.py",
+    "called by weekly_run.md scheduled playbook or cmd_weekly"
+   ],
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:52-67",
+    "musicLibrary/pipeline/run_weekly.py:644"
+   ],
+   "state": "built",
+   "size_bytes": 32519,
+   "links_out": []
+  },
+  {
+   "id": "ml-cli-resolve",
+   "repo": "musicLibrary",
+   "path": "pipeline/run_weekly.py resolve",
+   "title": "run_weekly resolve",
+   "tagline": "Resumable TIDAL plus Deezer lookup into inbox/resolved_<date>.json, flushed every 20 songs",
+   "description": "Resumable TIDAL plus Deezer lookup into inbox/resolved_<date>.json, flushed every 20 songs",
+   "module": "pipeline",
+   "kind": "cli",
+   "route": null,
+   "dom": [
+    "stdout report"
+   ],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "argparse choice in run_weekly.py",
+    "called by weekly_run.md scheduled playbook or cmd_weekly"
+   ],
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:414-463",
+    "musicLibrary/pipeline/run_weekly.py:644"
+   ],
+   "state": "built",
+   "size_bytes": 32519,
+   "links_out": []
+  },
+  {
+   "id": "ml-cli-process",
+   "repo": "musicLibrary",
+   "path": "pipeline/run_weekly.py process",
+   "title": "run_weekly process",
+   "tagline": "Gates, energy, overrides, rotation lifecycle, crate caps",
+   "description": "Gates, energy, overrides, rotation lifecycle, crate caps; writes ledger, crates, sync plan, buy list, review queue, rejected, report, Rekordbox XML",
+   "module": "pipeline",
+   "kind": "cli",
+   "route": null,
+   "dom": [
+    "stdout report"
+   ],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "argparse choice in run_weekly.py",
+    "called by weekly_run.md scheduled playbook or cmd_weekly"
+   ],
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:185-314",
+    "musicLibrary/pipeline/run_weekly.py:644"
+   ],
+   "state": "built",
+   "size_bytes": 32519,
+   "links_out": []
+  },
+  {
+   "id": "ml-cli-sync-tidal",
+   "repo": "musicLibrary",
+   "path": "pipeline/run_weekly.py sync-tidal",
+   "title": "run_weekly sync-tidal",
+   "tagline": "Reconcile every crate playlist on TIDAL with the ledger, then confirm",
+   "description": "Reconcile every crate playlist on TIDAL with the ledger, then confirm",
+   "module": "pipeline",
+   "kind": "cli",
+   "route": null,
+   "dom": [
+    "stdout report"
+   ],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "argparse choice in run_weekly.py",
+    "called by weekly_run.md scheduled playbook or cmd_weekly"
+   ],
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:467-521",
+    "musicLibrary/pipeline/run_weekly.py:644"
+   ],
+   "state": "built",
+   "size_bytes": 32519,
+   "links_out": []
+  },
+  {
+   "id": "ml-cli-confirm",
+   "repo": "musicLibrary",
+   "path": "pipeline/run_weekly.py confirm",
+   "title": "run_weekly confirm",
+   "tagline": "Apply inbox/sync_result_<date>.json to platform_sync_state",
+   "description": "Apply inbox/sync_result_<date>.json to platform_sync_state",
+   "module": "pipeline",
+   "kind": "cli",
+   "route": null,
+   "dom": [
+    "stdout report"
+   ],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "argparse choice in run_weekly.py",
+    "called from cmd_sync_tidal / beatport_sync.md"
+   ],
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:339-366",
+    "musicLibrary/pipeline/run_weekly.py:644"
+   ],
+   "state": "built",
+   "size_bytes": 32519,
+   "links_out": []
+  },
+  {
+   "id": "ml-cli-db",
+   "repo": "musicLibrary",
+   "path": "pipeline/run_weekly.py db",
+   "title": "run_weekly db",
+   "tagline": "Rebuild db/dj_library.sqlite and outputs/artifact/library.json, then sync-songnodes",
+   "description": "Rebuild db/dj_library.sqlite and outputs/artifact/library.json, then sync-songnodes",
+   "module": "pipeline",
+   "kind": "cli",
+   "route": null,
+   "dom": [
+    "stdout report"
+   ],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "argparse choice in run_weekly.py",
+    "called by weekly_run.md scheduled playbook or cmd_weekly"
+   ],
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:619-622",
+    "musicLibrary/pipeline/run_weekly.py:644"
+   ],
+   "state": "built",
+   "size_bytes": 32519,
+   "links_out": []
+  },
+  {
+   "id": "ml-cli-sync-sets",
+   "repo": "musicLibrary",
+   "path": "pipeline/run_weekly.py sync-sets",
+   "title": "run_weekly sync-sets",
+   "tagline": "Push saved sets with tidal=true to TIDAL playlists 'SET · <name>', replaced in full",
+   "description": "Push saved sets with tidal=true to TIDAL playlists 'SET · <name>', replaced in full",
+   "module": "pipeline",
+   "kind": "cli",
+   "route": null,
+   "dom": [
+    "stdout report"
+   ],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "argparse choice in run_weekly.py",
+    "called by weekly_run.md scheduled playbook or cmd_weekly"
+   ],
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:524-564",
+    "musicLibrary/pipeline/run_weekly.py:644"
+   ],
+   "state": "built",
+   "size_bytes": 32519,
+   "links_out": []
+  },
+  {
+   "id": "ml-cli-sync-songnodes",
+   "repo": "musicLibrary",
+   "path": "pipeline/run_weekly.py sync-songnodes",
+   "title": "run_weekly sync-songnodes",
+   "tagline": "POST library.json to songnodes /api/v1/library/ingest",
+   "description": "POST library.json to songnodes /api/v1/library/ingest; POST songnodes.setlists.v1 files to /api/v1/tracks/import-tracklist",
+   "module": "pipeline",
+   "kind": "cli",
+   "route": null,
+   "dom": [
+    "stdout report"
+   ],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "argparse choice in run_weekly.py",
+    "called from cmd_db on every weekly run"
+   ],
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:567-616",
+    "musicLibrary/pipeline/run_weekly.py:644"
+   ],
+   "state": "built",
+   "size_bytes": 32519,
+   "links_out": []
+  },
+  {
+   "id": "ml-cli-status",
+   "repo": "musicLibrary",
+   "path": "pipeline/run_weekly.py status",
+   "title": "run_weekly status",
+   "tagline": "Print crate counts",
+   "description": "Print crate counts",
+   "module": "pipeline",
+   "kind": "cli",
+   "route": null,
+   "dom": [
+    "stdout report"
+   ],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "argparse choice in run_weekly.py",
+    "README step table"
+   ],
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:635-639",
+    "musicLibrary/pipeline/run_weekly.py:644"
+   ],
+   "state": "built",
+   "size_bytes": 32519,
+   "links_out": []
+  },
+  {
+   "id": "ml-cli-build-db",
+   "repo": "musicLibrary",
+   "path": "pipeline/build_db.py",
+   "title": "build_db",
+   "tagline": "Ledger to SQLite and library.json",
+   "description": "Full rebuild of db/dj_library.sqlite in a temp dir, copied over, row-count and integrity checked; then exports outputs/artifact/library.json.",
+   "module": "pipeline",
+   "kind": "cli",
+   "route": null,
+   "dom": [
+    "stdout"
+   ],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "imported by cmd_db",
+    "README database section"
+   ],
+   "evidence": [
+    "musicLibrary/pipeline/build_db.py:109-187",
+    "musicLibrary/pipeline/build_db.py:190-229",
+    "musicLibrary/pipeline/run_weekly.py:619-622"
+   ],
+   "state": "built",
+   "size_bytes": 13928,
+   "links_out": []
+  },
+  {
+   "id": "ml-cli-calibrate",
+   "repo": "musicLibrary",
+   "path": "pipeline/calibrate.py",
+   "title": "calibrate",
+   "tagline": "Fit rules to Markus's own decisions",
+   "description": "Suggestions only: energy bias from overrides, duration floors from kept tracks, rotation timings from overrides/rekordbox_collection.xml. Writes outputs/calibration_suggestions.json.",
+   "module": "pipeline",
+   "kind": "cli",
+   "route": null,
+   "dom": [
+    "stdout JSON"
+   ],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "README lever 3",
+    "weekly_run.md rules: calibration suggestions go to Markus",
+    "never run yet: no outputs/calibration_suggestions.json, 0 overrides, no rekordbox_collection.xml"
+   ],
+   "evidence": [
+    "musicLibrary/pipeline/calibrate.py:22",
+    "musicLibrary/pipeline/calibrate.py:55",
+    "musicLibrary/pipeline/calibrate.py:85-86"
+   ],
+   "state": "built",
+   "size_bytes": 4409,
+   "links_out": []
+  },
+  {
+   "id": "ml-cli-tidal",
+   "repo": "musicLibrary",
+   "path": "pipeline/tidal_cli.py",
+   "title": "tidal_cli",
+   "tagline": "TIDAL login and checks",
+   "description": "check, login-start, login-finish, login, me against the songnodes TIDAL developer app (redirect 127.0.0.1:3006/oauth/callback).",
+   "module": "pipeline",
+   "kind": "cli",
+   "route": null,
+   "dom": [
+    "stdout"
+   ],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "README one-off setup",
+    "secrets/ folder absent in this copy, so never verified here"
+   ],
+   "evidence": [
+    "musicLibrary/pipeline/tidal_cli.py:18-41",
+    "musicLibrary/pipeline/djlib/tidal.py:87-114"
+   ],
+   "state": "built",
+   "size_bytes": 2166,
+   "links_out": []
+  },
+  {
+   "id": "ml-cli-test-pipeline",
+   "repo": "musicLibrary",
+   "path": "pipeline/test_pipeline.py",
+   "title": "test_pipeline",
+   "tagline": "Offline self-test",
+   "description": "Asserts camelot, classifier, gates, rotation and norm_key behaviour; step 1 of the weekly run.",
+   "module": "pipeline",
+   "kind": "cli",
+   "route": null,
+   "dom": [
+    "stdout"
+   ],
+   "classification": "non-final",
+   "subtype": "test-harness",
+   "signals": [
+    "named test_",
+    "weekly_run.md step 1 stop-on-fail gate"
+   ],
+   "evidence": [
+    "musicLibrary/pipeline/test_pipeline.py",
+    "musicLibrary/agent/weekly_run.md:1"
+   ],
+   "state": "built",
+   "size_bytes": 4525,
+   "links_out": []
+  },
+  {
+   "id": "ml-cli-fetch-metabrainz",
+   "repo": "musicLibrary",
+   "path": "pipeline/fetch_metabrainz.py",
+   "title": "fetch_metabrainz (py and sh)",
+   "tagline": "Resumable MetaBrainz dump downloader",
+   "description": "Serial, size-checked downloader for MusicBrainz PG, JSON and canonical dumps into data/metabrainz/.",
+   "module": "ref_mb",
+   "kind": "cli",
+   "route": null,
+   "dom": [
+    "stdout"
+   ],
+   "classification": "non-final",
+   "subtype": "dev-tool",
+   "signals": [
+    "one-off acquisition per decisions/2026-10-25",
+    "index/musicLibrary_versions.csv marks data PARTIAL",
+    "not called by the weekly run"
+   ],
+   "evidence": [
+    "musicLibrary/pipeline/fetch_metabrainz.py:5-8",
+    "musicLibrary/pipeline/fetch_metabrainz.sh",
+    "musicLibrary/index/musicLibrary_versions.csv",
+    "musicLibrary/decisions/2026-10-25-metabrainz-integration-baseline.md"
+   ],
+   "state": "built",
+   "size_bytes": 5097,
+   "links_out": []
+  },
+  {
+   "id": "ml-svc-ref-mb",
+   "repo": "musicLibrary",
+   "path": "ref_mb/compose.yaml",
+   "title": "ref-mb Postgres",
+   "tagline": "Read-only MusicBrainz reference DB",
+   "description": "Postgres 16 container on 127.0.0.1:55433 with data bind-mounted at E:\\musicLibrary\\data\\ref_mb_pgdata; ref_mb_reader read-only role used by songnodes MB_LOCAL_*.",
+   "module": "ref_mb",
+   "kind": "service-ui",
+   "route": null,
+   "dom": [],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "songnodes refmb/settings.py defaults to port 55433, user ref_mb_reader",
+    "postmaster.pid dated 2026-11-06 in _data_manifest.txt (running)"
+   ],
+   "evidence": [
+    "musicLibrary/ref_mb/compose.yaml",
+    "musicLibrary/ref_mb/sql/07_roles.sql",
+    "songnodes/services/common/refmb/settings.py:24-28",
+    "musicLibrary/_data_manifest.txt"
+   ],
+   "state": "built",
+   "size_bytes": 2179,
+   "links_out": []
+  },
+  {
+   "id": "ml-cli-ref-mb-load",
+   "repo": "musicLibrary",
+   "path": "ref_mb/scripts/load_ref_mb.ps1",
+   "title": "ref_mb load and maintenance scripts",
+   "tagline": "Load, post-load, vacuum, recovery chains",
+   "description": "PowerShell chains that load the dumps into ref-mb, rebuild indexes and vacuum; logs under ref_mb/logs.",
+   "module": "ref_mb",
+   "kind": "cli",
+   "route": null,
+   "dom": [],
+   "classification": "non-final",
+   "subtype": "dev-tool",
+   "signals": [
+    "manual supervised runbook docs/mb/load_runbook.md",
+    "not called by any scheduled playbook"
+   ],
+   "evidence": [
+    "musicLibrary/ref_mb/scripts",
+    "musicLibrary/docs/mb/load_runbook.md"
+   ],
+   "state": "built",
+   "size_bytes": 2968,
+   "links_out": []
+  },
+  {
+   "id": "ml-cli-ref-mb-eval",
+   "repo": "musicLibrary",
+   "path": "ref_mb/scripts/run_eval.ps1",
+   "title": "ref_mb accuracy evaluation",
+   "tagline": "Three-tier resolver accuracy and latency test",
+   "description": "Loads eval/items.tsv into sn_eval, runs 20_eval.sql, exports truth/cand/enrich CSVs and metrics.json.",
+   "module": "ref_mb",
+   "kind": "cli",
+   "route": null,
+   "dom": [],
+   "classification": "non-final",
+   "subtype": "test-harness",
+   "signals": [
+    "writes only eval/ outputs and logs",
+    "docs/mb/accuracy_test.md describes it as a test"
+   ],
+   "evidence": [
+    "musicLibrary/ref_mb/scripts/run_eval.ps1",
+    "musicLibrary/ref_mb/eval/metrics.json"
+   ],
+   "state": "built",
+   "size_bytes": 1327,
+   "links_out": []
+  },
+  {
+   "id": "ml-agent-weekly-run",
+   "repo": "musicLibrary",
+   "path": "agent/weekly_run.md",
+   "title": "Weekly run playbook",
+   "tagline": "Sunday 7:37am scheduled task instructions",
+   "description": "Scheduled-task actor drives the CLI steps through device_bash, exports the artifact sets collection with ArtifactData to inbox/artifact_sets.json, republishes the artifact with the new library.json, and reports to Markus.",
+   "module": "agent",
+   "kind": "cli",
+   "route": null,
+   "dom": [],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "README weekly flow names it",
+    "contains live artifact URL and the publish procedure"
+   ],
+   "evidence": [
+    "musicLibrary/agent/weekly_run.md"
+   ],
+   "state": "built",
+   "size_bytes": 5567,
+   "links_out": []
+  },
+  {
+   "id": "ml-agent-beatport-sync",
+   "repo": "musicLibrary",
+   "path": "agent/beatport_sync.md",
+   "title": "Beatport sync playbook",
+   "tagline": "Supervised Chrome-assisted Beatport playlist sync",
+   "description": "Reads sync_plan.json, buy_list.csv and ledger beatport_check; edits Beatport playlists in Markus's Chrome; writes resolved_<date>.json beatport_versions and sync_result_<date>.json, then confirm.",
+   "module": "agent",
+   "kind": "cli",
+   "route": null,
+   "dom": [],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "README: ask Claude to run the Beatport sync",
+    "weekly_run.md forbids Beatport in unattended run"
+   ],
+   "evidence": [
+    "musicLibrary/agent/beatport_sync.md"
+   ],
+   "state": "built",
+   "size_bytes": 1744,
+   "links_out": []
+  },
+  {
+   "id": "ml-plan-jules",
+   "repo": "musicLibrary",
+   "path": "plan/launch_jules.py",
+   "title": "Jules launchers and prompt builders",
+   "tagline": "songnodes work-package tooling",
+   "description": "build_*prompts.py generate agent briefs; launch_jules.py posts sessions with JULES_API_KEY from the shell; jules_sessions.json records them.",
+   "module": "plan",
+   "kind": "cli",
+   "route": null,
+   "dom": [],
+   "classification": "non-final",
+   "subtype": "dev-tool",
+   "signals": [
+    "scheduled_run_prompt.md: E:\\musicLibrary\\plan is retired for Jules work",
+    "targets songnodes repo, not this pipeline"
+   ],
+   "evidence": [
+    "musicLibrary/plan/launch_jules.py:18",
+    "musicLibrary/plan/launch_jules.py:133",
+    "musicLibrary/plan/scheduled_run_prompt.md"
+   ],
+   "state": "built",
+   "size_bytes": 14261,
+   "links_out": []
+  },
+  {
+   "id": "ml-plan-scheduled-run-prompt",
+   "repo": "musicLibrary",
+   "path": "plan/scheduled_run_prompt.md",
+   "title": "songNodes weekend progress run prompt",
+   "tagline": "Prompt text for a songnodes scheduled task",
+   "description": "Paste-in prompt for a songnodes scheduled task; not executed from this folder.",
+   "module": "plan",
+   "kind": "cli",
+   "route": null,
+   "dom": [],
+   "classification": "non-final",
+   "subtype": "doc-reference",
+   "signals": [
+    "'Paste everything below the line into the task's prompt'",
+    "operates on E:\\songNodes"
+   ],
+   "evidence": [
+    "musicLibrary/plan/scheduled_run_prompt.md"
+   ],
+   "state": "built",
+   "size_bytes": 3548,
+   "links_out": []
+  },
+  {
+   "id": "ml-tests-reports",
+   "repo": "musicLibrary",
+   "path": "tests/reports/junit.xml",
+   "title": "songnodes pytest report",
+   "tagline": "Stray songnodes test output",
+   "description": "junit.xml and pytest.log from songnodes tests.rest_api run on Tuf-Boi 2026-10-28; no musicLibrary tests.",
+   "module": "tests",
+   "kind": "static-html",
+   "route": null,
+   "dom": [],
+   "classification": "non-final",
+   "subtype": "doc-reference",
+   "signals": [
+    "test names are songnodes tests.rest_api.*",
+    "no musicLibrary code imports or writes tests/"
+   ],
+   "evidence": [
+    "musicLibrary/tests/reports/junit.xml"
+   ],
+   "state": "built",
+   "size_bytes": 1734,
+   "links_out": []
+  }
+ ],
+ "signals": [
+  {
+   "id": "ml-sig-sources-config",
+   "type": "file-read",
+   "name": "config/sources.json",
+   "direction": "read",
+   "from": "ml-store-config",
+   "to": "ml-cli-scrape",
+   "format": "json",
+   "schema": "{_comment, sources:[{id, kind airnet|rrr_html|abc_plays|aria_html|wp_tracklist|manual, enabled, energy_prior, pillar_hint, club_only, programs, episodes_per_program, station, weekdays, start_hour_local, hours, max_play_seconds, url, api, search}]}",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:45-48",
+    "musicLibrary/pipeline/djlib/scrapers.py:174-197"
+   ],
+   "methods": [
+    "M1",
+    "M2",
+    "M3"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-rules-config",
+   "type": "file-read",
+   "name": "config/rules.json",
+   "direction": "read",
+   "from": "ml-store-config",
+   "to": "ml-cli-process",
+   "format": "json",
+   "schema": "gates, genre_map, pillar_short, energy{bpm_bands,weights,review_spread,cue_adjust}, tiers, stars_by_score, rotation{promote_*, high_*, std_archive_*, high_crate_cap, std_crate_cap(unused)}, heritage_artists, generic_genres, exclude_genres, bpm_range",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:45-48",
+    "musicLibrary/pipeline/djlib/classify.py:6-16",
+    "musicLibrary/pipeline/djlib/ledger.py:120-123"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-ext-pbs",
+   "type": "fetch",
+   "name": "https://airnet.org.au/rest/stations/3pbs/programs/<slug>/episodes and <episodeRestUrl>/playlists",
+   "direction": "read",
+   "from": "ext-pbs-airnet",
+   "to": "ml-cli-scrape",
+   "format": "json",
+   "schema": "episode{start, episodeRestUrl}; playlist item{type:'track', artist, title|track}",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/scrapers.py:45-63"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-ext-rrr",
+   "type": "fetch",
+   "name": "https://www.rrr.org.au/explore/programs/<slug>[/episodes/<id>-<slug>]",
+   "direction": "read",
+   "from": "ext-3rrr",
+   "to": "ml-cli-scrape",
+   "format": "html",
+   "schema": "li.audio-summary__track with __track-title and __track-artist",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/scrapers.py:128-155"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-ext-abc",
+   "type": "fetch",
+   "name": "https://music.abcradio.net.au/api/v1/plays/search.json?station&from&to&limit=100",
+   "direction": "read",
+   "from": "ext-abc-plays",
+   "to": "ml-cli-scrape",
+   "format": "json",
+   "schema": "items[].recording{title, artists[{name,type}], duration}",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/scrapers.py:82-104"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-ext-aria",
+   "type": "fetch",
+   "name": "ARIA Club Chart page (sources.json url)",
+   "direction": "read",
+   "from": "ext-aria",
+   "to": "ml-cli-scrape",
+   "format": "html",
+   "schema": "c-chart-item__rank/__title/__artist and 'weeks in'",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/scrapers.py:108-124"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-ext-balance",
+   "type": "fetch",
+   "name": "Balance Selections WordPress REST posts (sources.json api)",
+   "direction": "read",
+   "from": "ext-balance-wp",
+   "to": "ml-cli-scrape",
+   "format": "json",
+   "schema": "posts[]{content.rendered numbered 'Artist – Title', title.rendered, date, link}",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/scrapers.py:159-171"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-manual-adds",
+   "type": "file-write",
+   "name": "inbox/manual_adds.csv",
+   "direction": "both",
+   "from": "ml-persona-curator",
+   "to": "ml-cli-scrape",
+   "format": "csv",
+   "schema": "artist,title,mix,source_id,show,date,url,processed (processed stamped with run date by scrape)",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:378-394",
+    "musicLibrary/inbox/manual_adds.csv"
+   ],
+   "methods": [
+    "M1",
+    "M3"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-raw",
+   "type": "file-write",
+   "name": "inbox/raw_<date>.json",
+   "direction": "both",
+   "from": "ml-cli-scrape",
+   "to": "ml-cli-ingest",
+   "format": "json",
+   "schema": "[{artist,title,remix_info,source_id,show,broadcast_date,url,[chart_rank,chart_weeks,saves]}]",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:395",
+    "musicLibrary/pipeline/run_weekly.py:54",
+    "musicLibrary/inbox/raw_2026-11-03.json"
+   ],
+   "methods": [
+    "M1",
+    "M2",
+    "M3"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-scrape-log",
+   "type": "file-write",
+   "name": "outputs/<date>/scrape_log.txt",
+   "direction": "write",
+   "from": "ml-cli-scrape",
+   "to": "ml-agent-weekly-run",
+   "format": "text",
+   "schema": "'<source_id>: N rows' and FAILED lines",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:396-398",
+    "musicLibrary/agent/weekly_run.md:9"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-to-resolve",
+   "type": "file-write",
+   "name": "inbox/to_resolve_<date>.json",
+   "direction": "both",
+   "from": "ml-cli-ingest",
+   "to": "ml-cli-resolve",
+   "format": "json",
+   "schema": "[{norm_key,artist,title,remix_info}]",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:62-64",
+    "musicLibrary/pipeline/run_weekly.py:416"
+   ],
+   "methods": [
+    "M1",
+    "M2",
+    "M3"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-resolved",
+   "type": "file-write",
+   "name": "inbox/resolved_<date>.json",
+   "direction": "both",
+   "from": "ml-cli-resolve",
+   "to": "ml-cli-process",
+   "format": "json",
+   "schema": "{norm_key:{tidal_versions[{platform,id,url,title,mix_name,duration_seconds,bpm,key,isrc,artist,popularity}], deezer_versions[{platform,id,url,title,mix_name,duration_seconds,isrc,artist,(+bpm,isrc,release_date,label on longest)}], genre, deezer_genres?, beatport_versions? (written by beatport_sync agent)}}",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:417-462",
+    "musicLibrary/pipeline/run_weekly.py:190-207",
+    "musicLibrary/agent/beatport_sync.md:5"
+   ],
+   "methods": [
+    "M1",
+    "M2",
+    "M3"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-ext-tidal-catalogue",
+   "type": "fetch",
+   "name": "https://openapi.tidal.com/v2 /searchResults, /tracks, /tracks/{id}/relationships/genres (client credentials)",
+   "direction": "read",
+   "from": "ext-tidal",
+   "to": "ml-cli-resolve",
+   "format": "json:api",
+   "schema": "Tracks_Attributes{title,version,duration ISO8601,bpm,key,keyScale,isrc,popularity}; M3 data: 0 of 1007 returned versions carry bpm or key",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/tidal.py:207-234",
+    "musicLibrary/docs/tidal-oas.json"
+   ],
+   "methods": [
+    "M1",
+    "M3"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-ext-deezer",
+   "type": "fetch",
+   "name": "https://api.deezer.com /search, /track/{id}, /album/{id}",
+   "direction": "read",
+   "from": "ext-deezer",
+   "to": "ml-cli-resolve",
+   "format": "json",
+   "schema": "search data[]{id,title,title_short,title_version,duration,isrc,artist.name,link}; track{bpm,isrc,release_date,album.id}; album{genres.data[].name,label}",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/deezer.py:7-50"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-ext-tidal-token",
+   "type": "fetch",
+   "name": "https://auth.tidal.com/v1/oauth2/token and https://login.tidal.com/authorize (PKCE, redirect http://127.0.0.1:3006/oauth/callback)",
+   "direction": "both",
+   "from": "ml-cli-tidal",
+   "to": "ext-tidal",
+   "format": "form",
+   "schema": "grant_type client_credentials|authorization_code|refresh_token, client_secret in body",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/tidal.py:62-114",
+    "musicLibrary/pipeline/djlib/tidal.py:152-164"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-secrets-tidal-app",
+   "type": "file-read",
+   "name": "secrets/tidal_app.json",
+   "direction": "read",
+   "from": "ml-store-secrets",
+   "to": "ml-cli-resolve",
+   "format": "json",
+   "schema": "{client_id, client_secret, redirect_uri?, scopes?} copied from songnodes .env TIDAL_CLIENT_ID/SECRET",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/tidal.py:52-56",
+    "musicLibrary/pipeline/run_weekly.py:420"
+   ],
+   "methods": [
+    "M1"
+   ],
+   "verified": false,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-secrets-tidal-token",
+   "type": "file-write",
+   "name": "secrets/tidal_user_token.json and tidal_pkce_pending.json",
+   "direction": "both",
+   "from": "ml-cli-tidal",
+   "to": "ml-cli-sync-tidal",
+   "format": "json",
+   "schema": "token{access_token, refresh_token, expires_in, scope, obtained_at}; pending{verifier,state,created,redirect}",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/tidal.py:57-58",
+    "musicLibrary/pipeline/djlib/tidal.py:92-93",
+    "musicLibrary/pipeline/djlib/tidal.py:148-164",
+    "musicLibrary/pipeline/run_weekly.py:471"
+   ],
+   "methods": [
+    "M1"
+   ],
+   "verified": false,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-tidal-playlists-map",
+   "type": "file-write",
+   "name": "secrets/tidal_playlists.json",
+   "direction": "both",
+   "from": "ml-cli-sync-tidal",
+   "to": "ml-cli-sync-sets",
+   "format": "json",
+   "schema": "{<crate name>: <playlist id>, 'set:<set id>': <playlist id>}",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:476-496",
+    "musicLibrary/pipeline/run_weekly.py:536-552"
+   ],
+   "methods": [
+    "M1"
+   ],
+   "verified": false,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-ext-tidal-playlists",
+   "type": "fetch",
+   "name": "openapi.tidal.com/v2 POST /playlists, GET/POST/DELETE /playlists/{id}/relationships/items (user token, Idempotency-Key uuid5)",
+   "direction": "write",
+   "from": "ml-cli-sync-tidal",
+   "to": "ext-tidal",
+   "format": "json:api",
+   "schema": "playlists UNLISTED; items {id,type:'tracks'}; onDuplicates SKIP; DELETE needs meta.itemId",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/tidal.py:237-272"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-ledger",
+   "type": "file-write",
+   "name": "ledger/dj_library_ledger.json",
+   "direction": "both",
+   "from": "ml-cli-process",
+   "to": "ml-cli-build-db",
+   "format": "json",
+   "schema": "{schema_version:1, updated, tracks{track_id:{track_id,norm_key,artist,title,mix_version,remixer,duration_seconds,bpm,camelot_key,camelot_boost_plus2/minus5,genre,label,release_year,isrc,genre_pillar,pillar_method,wave_energy_tier,energy_score_1_to_10,energy_methods,energy_auto?,energy_override?,star_rating_1_to_5,color_code,functional_tags,sources_detected,appearances[],chart{},saves,rotation_status,rotation_since,rotation_history[],rotation_locked?,repromoted?,first_seen,added,platform_sync_state,synced_platforms,beatport,tidal,deezer,beatport_search_url,local_path}}, pending{}, rejected{}, beatport_check{}}",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/ledger.py:45-70",
+    "musicLibrary/pipeline/run_weekly.py:61-65",
+    "musicLibrary/pipeline/run_weekly.py:313",
+    "musicLibrary/pipeline/run_weekly.py:365",
+    "musicLibrary/pipeline/build_db.py:110"
+   ],
+   "methods": [
+    "M1",
+    "M2",
+    "M3"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-ledger-history",
+   "type": "file-write",
+   "name": "ledger/history/ledger_before_<date>.json",
+   "direction": "write",
+   "from": "ml-cli-process",
+   "to": "ml-persona-developer",
+   "format": "json",
+   "schema": "copy of the ledger file as it was before process saved",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/ledger.py:67-69",
+    "musicLibrary/pipeline/run_weekly.py:313"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-overrides",
+   "type": "file-read",
+   "name": "overrides/energy_overrides.csv",
+   "direction": "read",
+   "from": "ml-persona-curator",
+   "to": "ml-cli-process",
+   "format": "csv",
+   "schema": "track_id,artist,title,energy_score,genre_pillar,rotation_status,tags(;),local_path,note — header only today",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:152-182",
+    "musicLibrary/overrides/energy_overrides.csv"
+   ],
+   "methods": [
+    "M1",
+    "M3"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-sync-plan",
+   "type": "file-write",
+   "name": "outputs/<date>/sync_plan.json",
+   "direction": "write",
+   "from": "ml-cli-process",
+   "to": "ml-agent-beatport-sync",
+   "format": "json",
+   "schema": "{playlists[], actions[{op add|remove, playlist, track_id, artist, title, mix_version, duration_seconds, beatport_id, beatport_url, tidal_id, platforms[]}], run_date}",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/export.py:308-332",
+    "musicLibrary/pipeline/run_weekly.py:290-294",
+    "musicLibrary/agent/beatport_sync.md:1"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-crates-csv",
+   "type": "file-write",
+   "name": "outputs/crates/<crate>.csv",
+   "direction": "write",
+   "from": "ml-cli-process",
+   "to": "ml-persona-curator",
+   "format": "csv",
+   "schema": "artist,title,mix_version,bpm,camelot_key,camelot_boost_plus2,camelot_boost_minus5,energy_score_1_to_10,star_rating_1_to_5,color_code,functional_tags,sources_detected,rotation_since,platform_sync_state,beatport_url,tidal_url; emptied crates truncated to 0 bytes",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/export.py:285-305"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-buy-list",
+   "type": "file-write",
+   "name": "outputs/<date>/buy_list.csv",
+   "direction": "write",
+   "from": "ml-cli-process",
+   "to": "ml-agent-beatport-sync",
+   "format": "csv",
+   "schema": "artist,title,mix_version,label,sources,energy,platform_sync_state,beatport_url (High Rotation without local_path)",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/export.py:335-346",
+    "musicLibrary/agent/beatport_sync.md:1"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-review-queue",
+   "type": "file-write",
+   "name": "outputs/<date>/review_queue.csv",
+   "direction": "write",
+   "from": "ml-cli-process",
+   "to": "ml-persona-curator",
+   "format": "csv",
+   "schema": "track_id,artist,title,mix_version,bpm,genre,energy_score,bpm_method,source_method,crate,energy_score_override (blank, copied by hand to overrides)",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:298-304"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-rejected-csv",
+   "type": "file-write",
+   "name": "outputs/<date>/rejected.csv",
+   "direction": "write",
+   "from": "ml-cli-process",
+   "to": "ml-persona-curator",
+   "format": "csv",
+   "schema": "artist,title,reason,versions_seen",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:305-308"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-weekly-report",
+   "type": "file-write",
+   "name": "outputs/<date>/weekly_report.md",
+   "direction": "both",
+   "from": "ml-cli-process",
+   "to": "ml-cli-build-db",
+   "format": "markdown",
+   "schema": "headline lines parsed by regex in build_db.parse_report into runs",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:310-312",
+    "musicLibrary/pipeline/build_db.py:85-90",
+    "musicLibrary/pipeline/build_db.py:170-174"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-rekordbox-xml",
+   "type": "file-write",
+   "name": "outputs/rekordbox_musicLibrary.xml",
+   "direction": "write",
+   "from": "ml-cli-process",
+   "to": "ext-rekordbox",
+   "format": "xml",
+   "schema": "DJ_PLAYLISTS 1.0.0; COLLECTION TRACK(TrackID,Name,Artist,Genre,Label,TotalTime,AverageBpm,Tonality,Rating,Colour,Comments,Grouping,Location file://localhost); PLAYLISTS musicLibrary/<crate> nodes; only tracks with local_path (0 today)",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/export.py:356-385"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-rekordbox-collection",
+   "type": "file-read",
+   "name": "overrides/rekordbox_collection.xml",
+   "direction": "read",
+   "from": "ext-rekordbox",
+   "to": "ml-cli-calibrate",
+   "format": "xml",
+   "schema": "TRACK DateAdded, LastPlayed|DateModified, PlayCount",
+   "evidence": [
+    "musicLibrary/pipeline/calibrate.py:55-81"
+   ],
+   "methods": [
+    "M1"
+   ],
+   "verified": false,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-calibration",
+   "type": "file-write",
+   "name": "outputs/calibration_suggestions.json",
+   "direction": "write",
+   "from": "ml-cli-calibrate",
+   "to": "ml-persona-curator",
+   "format": "json",
+   "schema": "{generated, energy{overrides_available, band_shift_by_pillar, suggested_energy_prior_by_source, mean_abs_error_auto}, duration_floor_seconds{pillar:{p10,median,n}}, rotation{...}}",
+   "evidence": [
+    "musicLibrary/pipeline/calibrate.py:24",
+    "musicLibrary/pipeline/calibrate.py:85-86"
+   ],
+   "methods": [
+    "M1"
+   ],
+   "verified": false,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-sync-result",
+   "type": "file-write",
+   "name": "inbox/sync_result_<date>.json",
+   "direction": "both",
+   "from": "ml-cli-sync-tidal",
+   "to": "ml-cli-confirm",
+   "format": "json",
+   "schema": "[{track_id, platforms{tidal|beatport:true}, tidal_id?, tidal_url?, tidal_duration_seconds?, tidal_short_only?}]",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:518",
+    "musicLibrary/pipeline/run_weekly.py:341",
+    "musicLibrary/agent/beatport_sync.md:6"
+   ],
+   "methods": [
+    "M1",
+    "M3"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-alert",
+   "type": "file-write",
+   "name": "outputs/<date>/ALERT_tidal.txt, ALERT_tidal_sets.txt",
+   "direction": "write",
+   "from": "ml-cli-sync-tidal",
+   "to": "ml-agent-weekly-run",
+   "format": "text",
+   "schema": "TidalError message",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:514-515",
+    "musicLibrary/pipeline/run_weekly.py:563-564",
+    "musicLibrary/agent/weekly_run.md:9"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-artifact-sets-export",
+   "type": "file-write",
+   "name": "inbox/artifact_sets.json",
+   "direction": "both",
+   "from": "ml-agent-weekly-run",
+   "to": "ml-cli-build-db",
+   "format": "json",
+   "schema": "ArtifactData rows [{id, data:{name, shape, minutes, mix, pool, tidal, seed, tracks[{id,tgt,a,t,m,e,k,bpm,tidal(url),move}], updated, created}}] or a plain list; today '[]'",
+   "evidence": [
+    "musicLibrary/agent/weekly_run.md:5",
+    "musicLibrary/pipeline/build_db.py:93-106",
+    "musicLibrary/pipeline/build_db.py:162-168",
+    "musicLibrary/pipeline/run_weekly.py:529"
+   ],
+   "methods": [
+    "M1",
+    "M2",
+    "M3"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-sqlite",
+   "type": "sql",
+   "name": "db/dj_library.sqlite",
+   "direction": "write",
+   "from": "ml-cli-build-db",
+   "to": "ml-persona-curator",
+   "format": "sqlite",
+   "schema": "tables meta, sources, tracks, track_tags, appearances, chart_positions, rotation_history, pending, rejected, beatport_check, sets, set_tracks, runs; views v_crates, v_source_yield, v_review_queue, v_buy_list",
+   "evidence": [
+    "musicLibrary/pipeline/build_db.py:22-73",
+    "musicLibrary/pipeline/build_db.py:179-186"
+   ],
+   "methods": [
+    "M1",
+    "M3"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-library-json",
+   "type": "file-write",
+   "name": "outputs/artifact/library.json",
+   "direction": "write",
+   "from": "ml-cli-build-db",
+   "to": "ml-page-set-builder",
+   "format": "json",
+   "schema": "{generated UTC, ledger_updated, counts{tracks,pending,rejected,beatport_check}, sources[{id,prior,club,on}], runs[{date,added,rejected,promoted,demoted,archived,review_queue}] (last 26), tracks[{id,a,t,m,d,bpm,k,e,p,rot 1|2|3,tags,src,first,last,g,lbl,sync,tidal,dz,bp,chart{rank,weeks,peak}|null,rev,ovr,local}]} excluding 04_Pruned_Archive",
+   "evidence": [
+    "musicLibrary/pipeline/build_db.py:190-229"
+   ],
+   "methods": [
+    "M1",
+    "M2",
+    "M3"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-library-json-copy",
+   "type": "file-write",
+   "name": "artifact/build/library.json",
+   "direction": "both",
+   "from": "ml-agent-weekly-run",
+   "to": "ml-page-set-builder",
+   "format": "json",
+   "schema": "byte-identical copy of outputs/artifact/library.json (M3 compare: equal)",
+   "evidence": [
+    "musicLibrary/agent/weekly_run.md:8"
+   ],
+   "methods": [
+    "M1",
+    "M3"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-artifact-fetch-library",
+   "type": "fetch",
+   "name": "library.json (relative, cache no-cache)",
+   "direction": "read",
+   "from": "ml-store-artifact-files",
+   "to": "ml-page-set-builder",
+   "format": "json",
+   "schema": "LibraryFile",
+   "evidence": [
+    "musicLibrary/artifact/app/artifact-data.ts:14-23",
+    "musicLibrary/artifact/index.html:583"
+   ],
+   "methods": [
+    "M1",
+    "M3"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-artifact-db-sets",
+   "type": "postMessage",
+   "name": "window.claude.use('db') collection 'sets' (get, doc.set, doc.delete; legacy page also onSnapshot and use('user').can('data.write'))",
+   "direction": "both",
+   "from": "ml-page-set-builder",
+   "to": "ml-store-artifact-db",
+   "format": "json",
+   "schema": "doc id = set id; body = SavedSet without id",
+   "evidence": [
+    "musicLibrary/artifact/app/artifact-data.ts:25-72",
+    "musicLibrary/artifact/index.html:535-570"
+   ],
+   "methods": [
+    "M1",
+    "M3"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-artifactdata-list",
+   "type": "cli",
+   "name": "ArtifactData list collection 'sets' limit 1000 (weekly agent)",
+   "direction": "read",
+   "from": "ml-store-artifact-db",
+   "to": "ml-agent-weekly-run",
+   "format": "json",
+   "schema": "[{id, data}]",
+   "evidence": [
+    "musicLibrary/agent/weekly_run.md:5"
+   ],
+   "methods": [
+    "M1"
+   ],
+   "verified": false,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-artifact-publish",
+   "type": "cli",
+   "name": "Artifact publish url=GcqZTGjk6obdpjWaU7WFRq file_path=weekly_publish/index.html files{library.json}",
+   "direction": "write",
+   "from": "ml-agent-weekly-run",
+   "to": "ml-store-artifact-files",
+   "format": "html+json",
+   "schema": "carry-forward app.js, assets, capabilities",
+   "evidence": [
+    "musicLibrary/agent/weekly_run.md:8"
+   ],
+   "methods": [
+    "M1"
+   ],
+   "verified": false,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-ls-sets",
+   "type": "localStorage",
+   "name": "sn-music-library-sets",
+   "direction": "both",
+   "from": "ml-page-set-builder",
+   "to": "ml-page-set-builder",
+   "format": "json",
+   "schema": "SavedSet[] cache of the shared store",
+   "evidence": [
+    "musicLibrary/artifact/app/artifact-data.ts:11",
+    "musicLibrary/artifact/app/artifact-data.ts:30-33",
+    "songnodes/frontend/src/features/musicLibrary/data.ts:138"
+   ],
+   "methods": [
+    "M1",
+    "M3"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-ls-draft",
+   "type": "localStorage",
+   "name": "sn-set-draft",
+   "direction": "both",
+   "from": "ml-page-set-builder",
+   "to": "ml-page-set-builder",
+   "format": "json",
+   "schema": "Draft (sanitiseDraft)",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/storage.ts:24"
+   ],
+   "methods": [
+    "M1",
+    "M3"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-ls-filters",
+   "type": "localStorage",
+   "name": "sn-filters-library",
+   "direction": "both",
+   "from": "ml-page-set-builder",
+   "to": "ml-page-set-builder",
+   "format": "json",
+   "schema": "library filters and sort",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/storage.ts:22"
+   ],
+   "methods": [
+    "M1",
+    "M3"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-ls-density",
+   "type": "localStorage",
+   "name": "sn-density",
+   "direction": "both",
+   "from": "ml-page-set-builder",
+   "to": "ml-page-set-builder",
+   "format": "string",
+   "schema": "SN.prefs density (design system)",
+   "evidence": [
+    "musicLibrary/artifact/app/main.tsx:90"
+   ],
+   "methods": [
+    "M3"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-ls-banner",
+   "type": "localStorage",
+   "name": "sn-banner-keyed-<page>",
+   "direction": "both",
+   "from": "ml-page-set-builder",
+   "to": "ml-page-set-builder",
+   "format": "json",
+   "schema": "dismissed banner count",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/storage.ts:30"
+   ],
+   "methods": [
+    "M1"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-ls-legacy",
+   "type": "localStorage",
+   "name": "nsb:view, nsb:filters, nsb:draft",
+   "direction": "both",
+   "from": "ml-page-set-builder-legacy",
+   "to": "ml-page-set-builder-legacy",
+   "format": "json",
+   "schema": "view name, filters, SET draft",
+   "evidence": [
+    "musicLibrary/artifact/index.html:231"
+   ],
+   "methods": [
+    "M1"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-clipboard-legacy",
+   "type": "clipboard",
+   "name": "navigator.clipboard.writeText tracklist",
+   "direction": "write",
+   "from": "ml-page-set-builder-legacy",
+   "to": "ext-clipboard",
+   "format": "text",
+   "schema": "'NN. Artist – Title (Mix)  [E bpm key]'",
+   "evidence": [
+    "musicLibrary/artifact/index.html:525-530"
+   ],
+   "methods": [
+    "M1"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-sn-ingest",
+   "type": "http-endpoint",
+   "name": "POST http://127.0.0.1:8082/api/v1/library/ingest (Idempotency-Key import-<md5>)",
+   "direction": "write",
+   "from": "ml-cli-sync-songnodes",
+   "to": "sn-be-library-ingest",
+   "format": "json",
+   "schema": "library.json body; job library_ingest maps short keys a/t/m/... via _from_export into library.tracks plus library.track_xref(source_system, source_id=h:/bp: id -> canonical uuid)",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:574-597",
+    "songnodes/services/rest_api/routers/library_ingest.py:10-18",
+    "songnodes/services/library/importer/import_library.py",
+    "songnodes/scripts/import-music-library.sh:45"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-sn-import-tracklist",
+   "type": "http-endpoint",
+   "name": "POST /api/v1/tracks/import-tracklist with songnodes.setlists.v1 documents",
+   "direction": "write",
+   "from": "ml-cli-sync-songnodes",
+   "to": "sn-be-catalog-writes",
+   "format": "json",
+   "schema": "sent {schema:'songnodes.setlists.v1', setlists[{dj,event,date,venue,genre,source_url,tracks[{position,artist,title,mix,label}]}]}; endpoint expects TracklistImportRequest{tracks[], dj_artist?, name?}",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:599-616",
+    "songnodes/services/rest_api/routers/catalog_writes.py:123",
+    "songnodes/services/rest_api/main.py:96-100"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-setlists-files",
+   "type": "file-read",
+   "name": "JohnCourse.json, kiki.json (root), JohnCourse.json.bak",
+   "direction": "read",
+   "from": "ml-persona-developer",
+   "to": "ml-cli-sync-songnodes",
+   "format": "json",
+   "schema": "songnodes.setlists.v1: 29 and 5 DJ setlists from 1001tracklists/MixesDB; .bak is invalid JSON",
+   "evidence": [
+    "musicLibrary/JohnCourse.json",
+    "musicLibrary/kiki.json",
+    "musicLibrary/pipeline/run_weekly.py:600"
+   ],
+   "methods": [
+    "M1",
+    "M3"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-sn-import-script",
+   "type": "cli",
+   "name": "songnodes scripts/import-music-library.sh (MUSIC_LIBRARY_DIR default ../musicLibrary)",
+   "direction": "read",
+   "from": "sn-scripts",
+   "to": "ml-store-outputs",
+   "format": "json",
+   "schema": "reads outputs/artifact/library.json; requires a tracks array",
+   "evidence": [
+    "songnodes/scripts/import-music-library.sh:13-46"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-sn-frontend-library",
+   "type": "http-endpoint",
+   "name": "GET /api/v1/library/search?limit=5000 (songnodes /library, /sets)",
+   "direction": "read",
+   "from": "sn-be-library-search",
+   "to": "sn-fe-musicLibrary",
+   "format": "json",
+   "schema": "LibraryTrack with id = canonical uuid; bp NULL; generated null; runs/sources empty",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/data.ts:108-136",
+    "songnodes/services/rest_api/routers/library_search.py"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-sn-sets-api",
+   "type": "http-endpoint",
+   "name": "GET/PUT/DELETE /api/v1/library/sets[/id], GET /api/v1/library/sets/export",
+   "direction": "both",
+   "from": "sn-fe-musicLibrary",
+   "to": "sn-store-library-sets",
+   "format": "json",
+   "schema": "PUT body {name, description, tracks[{track_id uuid}]}; export {sets[{name,description,tracks[{track_id}]}]}",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/data.ts:193-283",
+    "songnodes/services/rest_api/routers/library_ingest.py:21-48",
+    "songnodes/sql/migrations/101_library_schema_up.sql:68-82"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-sn-export-sets-download",
+   "type": "file-write",
+   "name": "artifact_sets.json download from songnodes /sets (Export sets for the weekly run)",
+   "direction": "write",
+   "from": "sn-fe-musicLibrary",
+   "to": "ml-sig-artifact-sets-export",
+   "format": "json",
+   "schema": "SavedSet[] with numeric string ids, track ids are songnodes uuids, no tidal flag",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/SetBuilderPage.tsx:223-225",
+    "songnodes/frontend/src/features/musicLibrary/SetBuilderPage.tsx:651-652"
+   ],
+   "methods": [
+    "M1"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-sn-tidal-send",
+   "type": "http-endpoint",
+   "name": "POST /api/v1/tidal/sets/send (songnodes Send to TIDAL dialog)",
+   "direction": "write",
+   "from": "sn-fe-musicLibrary",
+   "to": "ext-tidal",
+   "format": "json",
+   "schema": "creates a TIDAL playlist from a set in play order, songnodes user token",
+   "evidence": [
+    "songnodes/frontend/src/features/setBuilder/sendToTidal.ts:44",
+    "songnodes/services/rest_api/routers/tidal_playlists.py:318"
+   ],
+   "methods": [
+    "M1"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-refmb-read",
+   "type": "sql",
+   "name": "postgres://ref_mb_reader@host.docker.internal:55433/ref_mb (MB_LOCAL_*)",
+   "direction": "read",
+   "from": "ml-svc-ref-mb",
+   "to": "sn-be-refmb",
+   "format": "sql",
+   "schema": "ref_mb schema (MusicBrainz core subset + canonical_* + load_manifest), read-only role",
+   "evidence": [
+    "songnodes/services/common/refmb/settings.py:21-34",
+    "musicLibrary/ref_mb/sql/07_roles.sql",
+    "musicLibrary/ref_mb/sql/02_custom_tables.sql"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-ext-metabrainz",
+   "type": "fetch",
+   "name": "https://data.metabrainz.org/pub/musicbrainz (dumps 20261024-102842, 20261024-001001, 20261017-080003)",
+   "direction": "read",
+   "from": "ext-metabrainz",
+   "to": "ml-cli-fetch-metabrainz",
+   "format": "tar.zst/tar.bz2",
+   "schema": "dump archives with SHA256SUMS",
+   "evidence": [
+    "musicLibrary/pipeline/fetch_metabrainz.py:6-8"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-ext-beatport",
+   "type": "fetch",
+   "name": "https://www.beatport.com/search/tracks?q=… via Claude in Chrome (supervised)",
+   "direction": "both",
+   "from": "ml-agent-beatport-sync",
+   "to": "ext-beatport",
+   "format": "html",
+   "schema": "playlist named exactly as crate",
+   "evidence": [
+    "musicLibrary/agent/beatport_sync.md:3-4"
+   ],
+   "methods": [
+    "M1"
+   ],
+   "verified": false,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-ext-jules",
+   "type": "fetch",
+   "name": "POST https://jules.googleapis.com/v1alpha/sessions (X-Goog-Api-Key from JULES_API_KEY env)",
+   "direction": "write",
+   "from": "ml-plan-jules",
+   "to": "ext-jules",
+   "format": "json",
+   "schema": "session payloads plan/jules_payloads/*.json; results plan/jules_sessions.json",
+   "evidence": [
+    "musicLibrary/plan/launch_jules.py:10",
+    "musicLibrary/plan/launch_jules.py:133"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "ml-sig-env-songnodes-api",
+   "type": "env",
+   "name": "SONGNODES_API_URL (run_weekly) vs SONGNODES_API (import script)",
+   "direction": "read",
+   "from": "ml-store-env",
+   "to": "ml-cli-sync-songnodes",
+   "format": "string",
+   "schema": "default http://127.0.0.1:8082",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:574",
+    "songnodes/scripts/import-music-library.sh:16"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  }
+ ],
+ "stores": [
+  {
+   "id": "ml-store-config",
+   "repo": "musicLibrary",
+   "name": "config",
+   "kind": "file",
+   "location": "config/rules.json, config/sources.json",
+   "owner": "Markus (hand-edited; weekly agent must not edit thresholds)",
+   "readers": [
+    "ml-cli-scrape",
+    "ml-cli-ingest",
+    "ml-cli-process",
+    "ml-cli-build-db",
+    "ml-cli-test-pipeline"
+   ],
+   "concurrency": "none; read-only at run time",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:45-48",
+    "musicLibrary/agent/weekly_run.md:Rules"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-store-inbox",
+   "repo": "musicLibrary",
+   "name": "inbox",
+   "kind": "folder",
+   "location": "inbox/",
+   "owner": "scrape, ingest, resolve, sync-tidal, weekly agent (artifact_sets.json), beatport agent (resolved/sync_result), Markus (manual_adds.csv)",
+   "readers": [
+    "ml-cli-ingest",
+    "ml-cli-resolve",
+    "ml-cli-process",
+    "ml-cli-confirm",
+    "ml-cli-build-db",
+    "ml-cli-sync-sets",
+    "ml-cli-sync-songnodes"
+   ],
+   "concurrency": "date-keyed files, whole-file overwrite (dump_json); resolved_<date> is incremental (load, skip done keys, flush every 20). No lock between the Beatport agent and the weekly run writing the same resolved_/sync_result_<date> file.",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:39-42",
+    "musicLibrary/pipeline/run_weekly.py:417-462",
+    "musicLibrary/agent/beatport_sync.md:5-6"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-store-ledger",
+   "repo": "musicLibrary",
+   "name": "DJ library ledger",
+   "kind": "file",
+   "location": "ledger/dj_library_ledger.json (+ ledger/history/)",
+   "owner": "run_weekly ingest/process/confirm",
+   "readers": [
+    "ml-cli-build-db",
+    "ml-cli-calibrate",
+    "ml-cli-sync-tidal",
+    "ml-cli-sync-sets",
+    "ml-cli-status",
+    "ml-agent-beatport-sync"
+   ],
+   "concurrency": "single mutable JSON document (not append-only): write to .tmp then os.replace (atomic); process copies the old file to history/ledger_before_<date>.json first (overwritten if process re-runs the same date). No run lock; two runs would last-writer-win.",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/ledger.py:62-70"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-store-outputs",
+   "repo": "musicLibrary",
+   "name": "outputs",
+   "kind": "folder",
+   "location": "outputs/<date>/, outputs/crates/, outputs/artifact/library.json, outputs/rekordbox_musicLibrary.xml",
+   "owner": "process, build_db, calibrate",
+   "readers": [
+    "ml-cli-build-db",
+    "ml-agent-weekly-run",
+    "ml-agent-beatport-sync",
+    "sn-scripts",
+    "ml-persona-curator"
+   ],
+   "concurrency": "overwrite per run; deletes avoided on the synced drive (empty crates truncated)",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/export.py:288-290"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-store-overrides",
+   "repo": "musicLibrary",
+   "name": "overrides",
+   "kind": "folder",
+   "location": "overrides/energy_overrides.csv, overrides/rekordbox_collection.xml (absent)",
+   "owner": "Markus",
+   "readers": [
+    "ml-cli-process",
+    "ml-cli-calibrate"
+   ],
+   "concurrency": "re-applied every process run; header only today",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:152-182"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-store-sqlite",
+   "repo": "musicLibrary",
+   "name": "dj_library.sqlite",
+   "kind": "sqlite",
+   "location": "db/dj_library.sqlite",
+   "owner": "build_db",
+   "readers": [
+    "ml-persona-curator (DB Browser)"
+   ],
+   "concurrency": "full rebuild in a temp dir then shutil.copyfile over the target (copy, not atomic rename); row count and integrity_check afterwards; journal_mode DELETE. Current: 413 tracks, 0 sets, 4 runs, v_review_queue 413.",
+   "evidence": [
+    "musicLibrary/pipeline/build_db.py:113-186"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-store-secrets",
+   "repo": "musicLibrary",
+   "name": "secrets",
+   "kind": "folder",
+   "location": "secrets/ (tidal_app.json, tidal_user_token.json, tidal_pkce_pending.json, tidal_playlists.json); ref_mb/secrets/*.txt",
+   "owner": "tidal_cli, sync-tidal, sync-sets; Markus",
+   "readers": [
+    "ml-cli-resolve",
+    "ml-cli-sync-tidal",
+    "ml-cli-sync-sets",
+    "ml-svc-ref-mb"
+   ],
+   "concurrency": "plain files, rewritten on refresh; pending cleared by writing {} (deletes blocked on synced drive). musicLibrary/secrets/ absent from this copy.",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/tidal.py:112-113",
+    "musicLibrary/ref_mb/compose.yaml",
+    "musicLibrary/ref_mb/.gitignore"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-store-artifact-db",
+   "repo": "musicLibrary",
+   "name": "Set Builder artifact database, collection sets",
+   "kind": "artifact-db",
+   "location": "claude.ai artifact GcqZTGjk6obdpjWaU7WFRq",
+   "owner": "Markus via the page (only-you-write rule)",
+   "readers": [
+    "ml-page-set-builder",
+    "ml-agent-weekly-run"
+   ],
+   "concurrency": "page writes queued one document at a time; init merges shared-wins-by-id with local-only uploads; weekly agent read-only",
+   "evidence": [
+    "musicLibrary/artifact/app/artifact-data.ts:38-72",
+    "musicLibrary/agent/weekly_run.md:5",
+    "musicLibrary/artifact/app/README.md"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-store-artifact-files",
+   "repo": "musicLibrary",
+   "name": "Set Builder published files",
+   "kind": "artifact-files",
+   "location": "claude.ai artifact GcqZTGjk6obdpjWaU7WFRq: index.html, app.js, assets/*, library.json",
+   "owner": "weekly agent (library.json), supervised rebuild (app.js)",
+   "readers": [
+    "ml-page-set-builder"
+   ],
+   "concurrency": "publish refused unless read first; agent stops if live shell differs",
+   "evidence": [
+    "musicLibrary/agent/weekly_run.md:8"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-store-ref-mb",
+   "repo": "musicLibrary",
+   "name": "ref_mb Postgres",
+   "kind": "postgres",
+   "location": "127.0.0.1:55433, data E:\\musicLibrary\\data\\ref_mb_pgdata",
+   "owner": "ref_mb load scripts",
+   "readers": [
+    "sn-be-refmb",
+    "ml-cli-ref-mb-eval"
+   ],
+   "concurrency": "read-only role default_transaction_read_only=on; stop with -t 600",
+   "evidence": [
+    "musicLibrary/ref_mb/compose.yaml",
+    "musicLibrary/ref_mb/sql/07_roles.sql"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-store-data",
+   "repo": "musicLibrary",
+   "name": "data (58 GB, not copied)",
+   "kind": "folder",
+   "location": "data/: metabrainz/ (canonical, json, postgres dumps, logs), metabrainz_scratch/ (inventory, slice, sql benches, tools, a MusicBrainz server git checkout mbs/, PROGRESS.md), ref_mb_pgdata/pgdata (Postgres cluster, postmaster.pid 2026-11-06)",
+   "owner": "fetch_metabrainz.*, ref_mb scripts and compose, MB investigation agents",
+   "readers": [
+    "ml-svc-ref-mb"
+   ],
+   "concurrency": "Postgres owns pgdata; downloads resumable by size",
+   "evidence": [
+    "musicLibrary/_data_manifest.txt"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-store-plan",
+   "repo": "musicLibrary",
+   "name": "plan",
+   "kind": "folder",
+   "location": "plan/",
+   "owner": "prompt builders and launchers",
+   "readers": [
+    "ext-jules"
+   ],
+   "concurrency": "none",
+   "evidence": [
+    "musicLibrary/plan/scheduled_run_prompt.md"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "sn-store-library-schema",
+   "repo": "songnodes",
+   "name": "songnodes library schema",
+   "kind": "postgres",
+   "location": "songnodes postgres library.tracks, track_xref, appearances, rotation_history, track_tags, sets, set_tracks, runs",
+   "owner": "library_ingest worker job; /api/v1/library/sets",
+   "readers": [
+    "sn-be-library-search",
+    "scripts/load-library-targets.sql"
+   ],
+   "concurrency": "job queue idempotency key import-<md5>; set_tracks PK(set_id, track_id)",
+   "evidence": [
+    "songnodes/sql/migrations/101_library_schema_up.sql:7-82",
+    "songnodes/services/library/ingest/handler.py:6-17"
+   ],
+   "state": "built"
+  }
+ ],
+ "edges": [
+  {
+   "from": "ext-pbs-airnet",
+   "to": "ml-cli-scrape",
+   "label": "PBS playlists",
+   "channel": "ml-sig-ext-pbs",
+   "domain": "ingest",
+   "state": "built"
+  },
+  {
+   "from": "ext-3rrr",
+   "to": "ml-cli-scrape",
+   "label": "3RRR episode tracks",
+   "channel": "ml-sig-ext-rrr",
+   "domain": "ingest",
+   "state": "built"
+  },
+  {
+   "from": "ext-abc-plays",
+   "to": "ml-cli-scrape",
+   "label": "triple j Doof plays",
+   "channel": "ml-sig-ext-abc",
+   "domain": "ingest",
+   "state": "built"
+  },
+  {
+   "from": "ext-aria",
+   "to": "ml-cli-scrape",
+   "label": "ARIA Club rank and weeks",
+   "channel": "ml-sig-ext-aria",
+   "domain": "ingest",
+   "state": "built"
+  },
+  {
+   "from": "ext-balance-wp",
+   "to": "ml-cli-scrape",
+   "label": "Balance tracklists",
+   "channel": "ml-sig-ext-balance",
+   "domain": "ingest",
+   "state": "built"
+  },
+  {
+   "from": "ml-store-inbox",
+   "to": "ml-cli-scrape",
+   "label": "manual adds",
+   "channel": "ml-sig-manual-adds",
+   "domain": "ingest",
+   "state": "built"
+  },
+  {
+   "from": "ml-cli-scrape",
+   "to": "ml-cli-ingest",
+   "label": "raw rows",
+   "channel": "ml-sig-raw",
+   "domain": "ingest",
+   "state": "built"
+  },
+  {
+   "from": "ml-cli-ingest",
+   "to": "ml-cli-resolve",
+   "label": "to_resolve list",
+   "channel": "ml-sig-to-resolve",
+   "domain": "ingest",
+   "state": "built"
+  },
+  {
+   "from": "ext-tidal",
+   "to": "ml-cli-resolve",
+   "label": "TIDAL versions",
+   "channel": "ml-sig-ext-tidal-catalogue",
+   "domain": "ingest",
+   "state": "built"
+  },
+  {
+   "from": "ext-deezer",
+   "to": "ml-cli-resolve",
+   "label": "Deezer versions, BPM, ISRC, genre, label",
+   "channel": "ml-sig-ext-deezer",
+   "domain": "ingest",
+   "state": "built"
+  },
+  {
+   "from": "ml-cli-resolve",
+   "to": "ml-cli-process",
+   "label": "resolved versions",
+   "channel": "ml-sig-resolved",
+   "domain": "library",
+   "state": "built"
+  },
+  {
+   "from": "ml-store-overrides",
+   "to": "ml-cli-process",
+   "label": "hand corrections",
+   "channel": "ml-sig-overrides",
+   "domain": "library",
+   "state": "built"
+  },
+  {
+   "from": "ml-cli-process",
+   "to": "ml-store-ledger",
+   "label": "tracks, pending, rejected, rotation",
+   "channel": "ml-sig-ledger",
+   "domain": "library",
+   "state": "built"
+  },
+  {
+   "from": "ml-cli-process",
+   "to": "ml-agent-beatport-sync",
+   "label": "sync plan and buy list",
+   "channel": "ml-sig-sync-plan",
+   "domain": "library",
+   "state": "built"
+  },
+  {
+   "from": "ml-cli-process",
+   "to": "ext-rekordbox",
+   "label": "Rekordbox XML",
+   "channel": "ml-sig-rekordbox-xml",
+   "domain": "library",
+   "state": "built"
+  },
+  {
+   "from": "ml-store-ledger",
+   "to": "ml-cli-sync-tidal",
+   "label": "crates",
+   "channel": "ml-sig-ledger",
+   "domain": "library",
+   "state": "built"
+  },
+  {
+   "from": "ml-cli-sync-tidal",
+   "to": "ext-tidal",
+   "label": "crate playlists",
+   "channel": "ml-sig-ext-tidal-playlists",
+   "domain": "library",
+   "state": "built"
+  },
+  {
+   "from": "ml-cli-sync-tidal",
+   "to": "ml-cli-confirm",
+   "label": "sync result",
+   "channel": "ml-sig-sync-result",
+   "domain": "library",
+   "state": "built"
+  },
+  {
+   "from": "ml-agent-beatport-sync",
+   "to": "ml-cli-confirm",
+   "label": "Beatport sync result",
+   "channel": "ml-sig-sync-result",
+   "domain": "library",
+   "state": "built"
+  },
+  {
+   "from": "ml-store-artifact-db",
+   "to": "ml-agent-weekly-run",
+   "label": "saved sets rows",
+   "channel": "ml-sig-artifactdata-list",
+   "domain": "sets",
+   "state": "built"
+  },
+  {
+   "from": "ml-agent-weekly-run",
+   "to": "ml-cli-build-db",
+   "label": "artifact_sets.json",
+   "channel": "ml-sig-artifact-sets-export",
+   "domain": "sets",
+   "state": "built"
+  },
+  {
+   "from": "ml-store-ledger",
+   "to": "ml-cli-build-db",
+   "label": "full ledger",
+   "channel": "ml-sig-ledger",
+   "domain": "library",
+   "state": "built"
+  },
+  {
+   "from": "ml-cli-build-db",
+   "to": "ml-store-sqlite",
+   "label": "SQLite rebuild",
+   "channel": "ml-sig-sqlite",
+   "domain": "library",
+   "state": "built"
+  },
+  {
+   "from": "ml-cli-build-db",
+   "to": "ml-store-outputs",
+   "label": "library.json",
+   "channel": "ml-sig-library-json",
+   "domain": "library",
+   "state": "built"
+  },
+  {
+   "from": "ml-agent-weekly-run",
+   "to": "ml-store-artifact-files",
+   "label": "republish library.json",
+   "channel": "ml-sig-artifact-publish",
+   "domain": "library",
+   "state": "built"
+  },
+  {
+   "from": "ml-store-artifact-files",
+   "to": "ml-page-set-builder",
+   "label": "LibraryFile",
+   "channel": "ml-sig-artifact-fetch-library",
+   "domain": "library",
+   "state": "built"
+  },
+  {
+   "from": "ml-page-set-builder",
+   "to": "ml-store-artifact-db",
+   "label": "SavedSet documents",
+   "channel": "ml-sig-artifact-db-sets",
+   "domain": "sets",
+   "state": "built"
+  },
+  {
+   "from": "ml-cli-build-db",
+   "to": "ml-cli-sync-sets",
+   "label": "sets marked tidal",
+   "channel": "ml-sig-artifact-sets-export",
+   "domain": "sets",
+   "state": "built"
+  },
+  {
+   "from": "ml-cli-sync-sets",
+   "to": "ext-tidal",
+   "label": "SET · <name> playlists",
+   "channel": "ml-sig-ext-tidal-playlists",
+   "domain": "sets",
+   "state": "built"
+  },
+  {
+   "from": "ml-cli-sync-songnodes",
+   "to": "sn-be-library-ingest",
+   "label": "library.json bulk ingest",
+   "channel": "ml-sig-sn-ingest",
+   "domain": "library",
+   "state": "built"
+  },
+  {
+   "from": "sn-scripts",
+   "to": "sn-be-library-ingest",
+   "label": "library.json via import-music-library.sh",
+   "channel": "ml-sig-sn-import-script",
+   "domain": "library",
+   "state": "built"
+  },
+  {
+   "from": "ml-cli-sync-songnodes",
+   "to": "sn-be-catalog-writes",
+   "label": "setlists.v1 (shape mismatch)",
+   "channel": "ml-sig-sn-import-tracklist",
+   "domain": "graph",
+   "state": "built"
+  },
+  {
+   "from": "sn-be-library-search",
+   "to": "sn-fe-musicLibrary",
+   "label": "library tracks (uuid ids)",
+   "channel": "ml-sig-sn-frontend-library",
+   "domain": "library",
+   "state": "built"
+  },
+  {
+   "from": "sn-fe-musicLibrary",
+   "to": "sn-store-library-schema",
+   "label": "saved sets",
+   "channel": "ml-sig-sn-sets-api",
+   "domain": "sets",
+   "state": "built"
+  },
+  {
+   "from": "sn-fe-musicLibrary",
+   "to": "ml-store-inbox",
+   "label": "artifact_sets.json download (manual copy)",
+   "channel": "ml-sig-sn-export-sets-download",
+   "domain": "sets",
+   "state": "built"
+  },
+  {
+   "from": "ext-metabrainz",
+   "to": "ml-store-data",
+   "label": "MusicBrainz dumps",
+   "channel": "ml-sig-ext-metabrainz",
+   "domain": "ingest",
+   "state": "built"
+  },
+  {
+   "from": "ml-svc-ref-mb",
+   "to": "sn-be-refmb",
+   "label": "MusicBrainz reference lookups",
+   "channel": "ml-sig-refmb-read",
+   "domain": "services",
+   "state": "built"
+  },
+  {
+   "from": "songnodes/frontend/src/features/musicLibrary",
+   "to": "ml-page-set-builder",
+   "label": "compiled pages via build.mjs",
+   "channel": "ml-sig-artifact-fetch-library",
+   "domain": "design",
+   "state": "built"
+  },
+  {
+   "from": "ml-plan-jules",
+   "to": "ext-jules",
+   "label": "work-package sessions",
+   "channel": "ml-sig-ext-jules",
+   "domain": "ops",
+   "state": "built"
+  }
+ ],
+ "personas": [
+  {
+   "id": "ml-persona-curator",
+   "name": "Library curator (Markus, weekly review)",
+   "objective": "Keep the crates right: check the report, review queue, buy list, rejected list, and feed corrections back",
+   "entry": "ml-agent-weekly-run",
+   "routine": [
+    "read the weekly run message and outputs/<date>/weekly_report.md",
+    "open review_queue.csv, fill energy_score_override, copy rows into overrides/energy_overrides.csv",
+    "buy High Rotation tracks from buy_list.csv and put local_path into overrides",
+    "add heard tracks to inbox/manual_adds.csv",
+    "occasionally run calibrate.py and copy agreed values into config/rules.json",
+    "browse db/dj_library.sqlite in DB Browser"
+   ],
+   "handoffs": [
+    {
+     "to": "ml-cli-process",
+     "shape": "energy_overrides.csv rows",
+     "via": "file"
+    },
+    {
+     "to": "ml-cli-scrape",
+     "shape": "manual_adds.csv rows",
+     "via": "file"
+    }
+   ],
+   "failure_modes": [
+    "review queue lists all 413 tracks because no track has a BPM, so it cannot be worked through",
+    "0 overrides, 0 local_path, no rekordbox_collection.xml: none of the three levers has been used, so calibrate has nothing to fit",
+    "review_queue.csv override column is not read by any code; rows must be copied by hand into a CSV with different columns"
+   ],
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:298-304",
+    "musicLibrary/pipeline/run_weekly.py:152-182",
+    "musicLibrary/README.md",
+    "musicLibrary/outputs/2026-11-03/weekly_report.md"
+   ],
+   "state": "built",
+   "device": "laptop tuf-boi (E:\\musicLibrary, Excel/DB Browser) and phone for the run message",
+   "steps": [
+    {
+     "n": 1,
+     "page": "ml-agent-weekly-run",
+     "action": "read summary",
+     "writes": null,
+     "trigger": "scheduled task message",
+     "handoff": null,
+     "fallback": null
+    },
+    {
+     "n": 2,
+     "page": "ml-cli-process",
+     "action": "review_queue.csv to overrides CSV (manual copy)",
+     "writes": "overrides/energy_overrides.csv",
+     "trigger": "weekly",
+     "handoff": {
+      "shape": "energy_overrides.csv rows",
+      "via": "file"
+     },
+     "fallback": "none; rows ignored if not copied"
+    },
+    {
+     "n": 3,
+     "page": "ml-cli-scrape",
+     "action": "manual adds",
+     "writes": "inbox/manual_adds.csv",
+     "trigger": "heard a track",
+     "handoff": null,
+     "fallback": null
+    },
+    {
+     "n": 4,
+     "page": "ml-cli-calibrate",
+     "action": "fit rules",
+     "writes": "outputs/calibration_suggestions.json",
+     "trigger": "ad hoc",
+     "handoff": null,
+     "fallback": null
+    }
+   ]
+  },
+  {
+   "id": "ml-persona-set-planner",
+   "name": "DJ set planner",
+   "objective": "Build a wave-shaped set from the crate and get it onto TIDAL",
+   "entry": "ml-page-set-builder",
+   "routine": [
+    "open the Set Builder artifact, filter Library, add tracks",
+    "switch to Set builder, choose shape and minutes, Build set",
+    "Save set, tick Send to TIDAL on the weekly run",
+    "wait for the next weekly run to create 'SET · <name>'"
+   ],
+   "handoffs": [
+    {
+     "to": "ml-agent-weekly-run",
+     "shape": "SavedSet {name,shape,minutes,mix,pool,tidal,seed,tracks[{id,tgt,...,move}],updated,created}",
+     "via": "artifact db collection sets"
+    },
+    {
+     "to": "sn-fe-musicLibrary",
+     "shape": "none (no shared store; only a manual artifact_sets.json download in the other direction)",
+     "via": "none"
+    }
+   ],
+   "failure_modes": [
+    "up to a week of latency before a set reaches TIDAL",
+    "Camelot moves and BPM gaps are inert: M3 render says none of the 413 tracks has a key and BPM",
+    "a set edited while the db capability is unavailable is overwritten by the shared copy on next load (shared wins by id)",
+    "songnodes /sets has its own Send to TIDAL that creates playlists directly, so the same set can end up as two TIDAL playlists"
+   ],
+   "evidence": [
+    "musicLibrary/artifact/app/artifact-data.ts:38-72",
+    "musicLibrary/pipeline/run_weekly.py:524-564",
+    "songnodes/frontend/src/features/musicLibrary/SetBuilderPage.tsx:448"
+   ],
+   "state": "built",
+   "device": "browser on claude.ai (desktop or phone)",
+   "steps": [
+    {
+     "n": 1,
+     "page": "ml-page-set-builder",
+     "action": "filter and add to set",
+     "writes": "localStorage sn-filters-library, sn-set-draft",
+     "trigger": "user",
+     "handoff": null,
+     "fallback": null
+    },
+    {
+     "n": 2,
+     "page": "ml-page-set-builder",
+     "action": "Save set with tidal flag",
+     "writes": "artifact db sets/<id>, localStorage sn-music-library-sets",
+     "trigger": "user",
+     "handoff": {
+      "shape": "SavedSet {name,shape,minutes,mix,pool,tidal,seed,tracks[{id,tgt,...,move}],updated,created}",
+      "via": "artifact db collection sets"
+     },
+     "fallback": "no db capability: set kept in localStorage only and never reaches the weekly run"
+    },
+    {
+     "n": 3,
+     "page": "ml-agent-weekly-run",
+     "action": "export sets",
+     "writes": "inbox/artifact_sets.json",
+     "trigger": "schedule",
+     "handoff": null,
+     "fallback": null
+    },
+    {
+     "n": 4,
+     "page": "ml-cli-sync-sets",
+     "action": "push to TIDAL",
+     "writes": "TIDAL playlist, secrets/tidal_playlists.json",
+     "trigger": "schedule",
+     "handoff": null,
+     "fallback": "TIDAL not logged in: skipped with a message"
+    }
+   ]
+  },
+  {
+   "id": "ml-persona-weekly-agent",
+   "name": "Scheduled weekly-run agent (system actor)",
+   "objective": "Run the pipeline end to end on the laptop, refresh the artifact, report",
+   "entry": "ml-agent-weekly-run",
+   "routine": [
+    "test_pipeline",
+    "scrape and ingest",
+    "resolve in 160 s foreground chunks until done",
+    "process, sync-tidal",
+    "ArtifactData list sets to inbox/artifact_sets.json via device_commit_files with md5 check",
+    "db (also posts to songnodes)",
+    "sync-sets",
+    "copy library.json to artifact/build, stage, read artifact, publish",
+    "check scrape_log and ALERT files, SendUserMessage"
+   ],
+   "handoffs": [
+    {
+     "to": "ml-persona-curator",
+     "shape": "short report: headline numbers, top 15 High Rotation, review count, alerts, Beatport actions, sets pushed, artifact version",
+     "via": "SendUserMessage"
+    },
+    {
+     "to": "sn-be-library-ingest",
+     "shape": "library.json",
+     "via": "POST /api/v1/library/ingest inside cmd_db"
+    }
+   ],
+   "failure_modes": [
+    "playbook says Sunday 7:37am but runs are dated 24 Oct (Sat), 27 Oct (Tue), 31 Oct (Fri), 3 Nov (Tue)",
+    "resolution yield fell from 614/777 TIDAL hits (24 Oct) to 6/81 (3 Nov) with no alert",
+    "songnodes ingest failures are only printed as a 'note', never raised as an ALERT file"
+   ],
+   "evidence": [
+    "musicLibrary/agent/weekly_run.md",
+    "musicLibrary/outputs/2026-11-03/weekly_report.md",
+    "musicLibrary/pipeline/run_weekly.py:593-597"
+   ],
+   "state": "built",
+   "device": "cloud session driving laptop tuf-boi through device_bash",
+   "steps": [
+    {
+     "n": 1,
+     "page": "ml-cli-resolve",
+     "action": "chunked resume",
+     "writes": "inbox/resolved_<date>.json",
+     "trigger": "loop until 'resolved N songs ->'",
+     "handoff": null,
+     "fallback": "repeat chunks until 'resolved N songs ->'"
+    },
+    {
+     "n": 2,
+     "page": "ml-cli-build-db",
+     "action": "rebuild",
+     "writes": "db, library.json",
+     "trigger": "step 6",
+     "handoff": {
+      "shape": "short report: headline numbers, top 15 High Rotation, review count, alerts, Beatport actions, sets pushed, artifact version",
+      "via": "SendUserMessage"
+     },
+     "fallback": null
+    },
+    {
+     "n": 3,
+     "page": "ml-page-set-builder",
+     "action": "republish",
+     "writes": "artifact library.json",
+     "trigger": "step 8",
+     "handoff": null,
+     "fallback": "live shell differs: stop and report"
+    }
+   ]
+  },
+  {
+   "id": "ml-persona-beatport",
+   "name": "Beatport sync (assisted)",
+   "objective": "Mirror crate adds and removes on Beatport and find extended mixes for short-only songs",
+   "entry": "ml-agent-beatport-sync",
+   "routine": [
+    "read latest sync_plan.json, buy_list.csv, ledger beatport_check",
+    "in Markus's Chrome add and remove tracks per action, pause every 25",
+    "write resolved_<date>.json beatport_versions and sync_result_<date>.json",
+    "run process and confirm"
+   ],
+   "handoffs": [
+    {
+     "to": "ml-cli-process",
+     "shape": "{norm_key:{beatport_versions[{id,url,mix_name,duration_seconds,bpm,key,genre,label}]}}",
+     "via": "inbox/resolved_<date>.json"
+    }
+   ],
+   "failure_modes": [
+    "writing resolved_<date>.json and sync_result_<date>.json for a date the weekly run already used overwrites TIDAL resolve data and the TIDAL sync result",
+    "sync_plan only holds this run's diff, so skipped weeks are never caught up on Beatport (unlike TIDAL's full reconcile)",
+    "243 beatport_check songs waiting; no Beatport sync has run (0 tracks with beatport ids, no SYNCED_BOTH)"
+   ],
+   "evidence": [
+    "musicLibrary/agent/beatport_sync.md",
+    "musicLibrary/pipeline/run_weekly.py:196-197",
+    "musicLibrary/pipeline/djlib/export.py:308-319"
+   ],
+   "state": "built",
+   "device": "laptop tuf-boi Chrome with Markus present",
+   "steps": [
+    {
+     "n": 1,
+     "page": "ml-agent-beatport-sync",
+     "action": "playlist edits",
+     "writes": "Beatport playlists",
+     "trigger": "Markus asks",
+     "handoff": {
+      "shape": "{norm_key:{beatport_versions[{id,url,mix_name,duration_seconds,bpm,key,genre,label}]}}",
+      "via": "inbox/resolved_<date>.json"
+     },
+     "fallback": null
+    },
+    {
+     "n": 2,
+     "page": "ml-cli-process",
+     "action": "re-gate short-only songs",
+     "writes": "ledger",
+     "trigger": "after beatport_versions written",
+     "handoff": null,
+     "fallback": null
+    },
+    {
+     "n": 3,
+     "page": "ml-cli-confirm",
+     "action": "mark beatport synced",
+     "writes": "ledger platform_sync_state",
+     "trigger": "after sync_result",
+     "handoff": null,
+     "fallback": null
+    }
+   ]
+  },
+  {
+   "id": "ml-persona-developer",
+   "name": "Developer (Markus or a coding agent)",
+   "objective": "Change pipeline code, rebuild the artifact bundle from songnodes pages, maintain ref_mb",
+   "entry": "ml-cli-test-pipeline",
+   "routine": [
+    "edit pipeline/djlib, run test_pipeline.py",
+    "fix a scraper after a 0-row source and log in outputs/<date>/fixes.md",
+    "rebuild app.js with build.mjs from songnodes/frontend and publish",
+    "load and evaluate ref_mb"
+   ],
+   "handoffs": [
+    {
+     "to": "ml-page-set-builder",
+     "shape": "app.js IIFE",
+     "via": "Artifact publish"
+    }
+   ],
+   "failure_modes": [
+    "build.mjs against current songnodes main will not compile: SetBuilderPage imports readSavedSetsAsync and writeSavedSetsAsync, which artifact-data.ts does not export",
+    "copy patch strings no longer match songnodes wording",
+    "build pinned to design system 1.1.0 while songnodes is at 1.10.0"
+   ],
+   "evidence": [
+    "musicLibrary/artifact/app/build.mjs:121-141",
+    "songnodes/frontend/src/features/musicLibrary/SetBuilderPage.tsx:12",
+    "songnodes/design-system/tokens.json"
+   ],
+   "state": "built",
+   "device": "laptop tuf-boi (Git Bash / Linux VM shell)",
+   "steps": [
+    {
+     "n": 1,
+     "page": "ml-page-artifact-app-entry",
+     "action": "node build.mjs <fe> <out> <tools>",
+     "writes": "artifact/build/app.js, assets/*",
+     "trigger": "songnodes Library or Set builder pages change",
+     "handoff": {
+      "shape": "app.js IIFE",
+      "via": "Artifact publish"
+     },
+     "fallback": null
+    }
+   ]
+  }
+ ],
+ "protocols": [
+  {
+   "id": "ml-proto-resolve-resume",
+   "name": "Resumable resolve",
+   "participants": [
+    "ml-cli-resolve",
+    "ml-agent-weekly-run"
+   ],
+   "algorithm": "Load inbox/resolved_<date>.json if present; todo = to_resolve items whose norm_key is not yet a key; 4 worker threads; results merged in order and the whole file re-dumped every 20 songs and at the end. The agent loops 'timeout 160 ... resolve' until the final line appears.",
+   "conflict_resolution": "first result per norm_key wins; an empty result (both APIs failed or no match) is stored and never retried for that date",
+   "stale_fallback": "no TIDAL app secret: Deezer only",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:414-463",
+    "musicLibrary/agent/weekly_run.md:3"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-proto-ledger-save",
+   "name": "Ledger save and snapshot",
+   "participants": [
+    "ml-cli-ingest",
+    "ml-cli-process",
+    "ml-cli-confirm"
+   ],
+   "algorithm": "json.dump to <ledger>.tmp; process first copy2's the existing ledger to ledger/history/ledger_before_<date>.json; os.replace tmp over the ledger.",
+   "conflict_resolution": "last writer wins; no lock or version check",
+   "stale_fallback": "history snapshots for manual restore",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/ledger.py:62-70"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-proto-tidal-crate-reconcile",
+   "name": "TIDAL crate reconcile",
+   "participants": [
+    "ml-cli-sync-tidal",
+    "ext-tidal",
+    "ml-cli-confirm"
+   ],
+   "algorithm": "Desired = every active crate's tidal ids sorted by energy then BPM; playlists in tidal_playlists.json without 'set:' prefix and no longer a crate are emptied. For each: create if missing (Idempotency-Key uuid5('create:'+name)), list items, remove extras, add missing in chunks of 50 (onDuplicates SKIP, key uuid5(add:pid:date:name:n:i)). Then writes sync_result and runs confirm.",
+   "conflict_resolution": "ledger is the source of truth; TIDAL order is not enforced for crates",
+   "stale_fallback": "no user token: step skipped; TidalError: ALERT_tidal.txt and partial results",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:467-521",
+    "musicLibrary/pipeline/djlib/tidal.py:237-272"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-proto-sync-sets",
+   "name": "Saved set to TIDAL",
+   "participants": [
+    "ml-store-artifact-db",
+    "ml-agent-weekly-run",
+    "ml-cli-sync-sets",
+    "ext-tidal"
+   ],
+   "algorithm": "Weekly agent copies ArtifactData rows into inbox/artifact_sets.json; load_sets flattens {id,data}; sets with tidal truthy map track ids through the ledger (fallback tr.tidal_id); playlist key 'set:<id>'; if current item list != wanted ids, remove all then add all.",
+   "conflict_resolution": "page copy wins (full replace)",
+   "stale_fallback": "no token: skipped with message",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:524-564",
+    "musicLibrary/pipeline/build_db.py:93-106",
+    "musicLibrary/agent/weekly_run.md:5"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-proto-artifact-sets-mirror",
+   "name": "Artifact saved-set mirror",
+   "participants": [
+    "ml-page-set-builder",
+    "ml-store-artifact-db"
+   ],
+   "algorithm": "initSavedSets: mem = localStorage; race use('db') and collection.get against 4 s; mem = remote + local-only; upload local-only. writeSavedSets: localStorage at once; changed docs set() and missing ids delete() on a serial promise queue with errors swallowed.",
+   "conflict_resolution": "shared copy wins by id at load; local deletions made while the store was unreachable are never replayed",
+   "stale_fallback": "no db: localStorage only",
+   "evidence": [
+    "musicLibrary/artifact/app/artifact-data.ts:38-72"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-proto-songnodes-ingest",
+   "name": "library.json to songnodes",
+   "participants": [
+    "ml-cli-sync-songnodes",
+    "sn-scripts",
+    "sn-be-library-ingest"
+   ],
+   "algorithm": "POST body = file bytes, Idempotency-Key 'import-'+md5(file); enqueue library_ingest job; worker maps short keys, upserts tracks, writes library.track_xref(source_id -> canonical uuid), appearances, rotation_history, then queues projections and enrichment backfill. The songnodes script polls /api/v1/jobs/<id> and retries a dead job; run_weekly does not poll.",
+   "conflict_resolution": "same file never imports twice; a changed file is a new job",
+   "stale_fallback": "run_weekly prints a note on failure and carries on",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:567-597",
+    "songnodes/scripts/import-music-library.sh:29-70",
+    "songnodes/services/library/ingest/handler.py:6-17"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-proto-tidal-login",
+   "name": "TIDAL PKCE login through the songnodes app",
+   "participants": [
+    "ml-cli-tidal",
+    "ext-tidal",
+    "songnodes frontend :3006"
+   ],
+   "algorithm": "login-start stores verifier/state in tidal_pkce_pending.json and prints the authorize URL with redirect 127.0.0.1:3006/oauth/callback; the user copies the landing address; login-finish checks state and age (15 min) and exchanges the code with client_secret in the body.",
+   "conflict_resolution": "if songnodes is running, its /oauth/callback route (App.tsx) consumes the single-use code with its own verifier, so musicLibrary's exchange fails",
+   "stale_fallback": "refresh_token on expiry; else re-login",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/tidal.py:87-114",
+    "songnodes/frontend/src/App.tsx:33",
+    "songnodes/frontend/src/components/OAuthCallback.tsx:168"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-proto-device-transfer",
+   "name": "Cloud to laptop file transfer",
+   "participants": [
+    "ml-agent-weekly-run"
+   ],
+   "algorithm": "device_stage_files to bring files into the cloud workspace; device_commit_files with a unique staged name per run and md5 check both sides.",
+   "conflict_resolution": "unique filenames avoid stale cached copies",
+   "stale_fallback": "stop and report",
+   "evidence": [
+    "musicLibrary/agent/weekly_run.md:File transfer"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-proto-manual-adds",
+   "name": "Manual adds processed stamp",
+   "participants": [
+    "ml-persona-curator",
+    "ml-cli-scrape"
+   ],
+   "algorithm": "Rows without 'processed' are appended to the scrape rows, then the CSV is rewritten with processed=<run date> before raw_<date>.json is written.",
+   "conflict_resolution": "stamped rows are never re-read",
+   "stale_fallback": "none",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:378-395"
+   ],
+   "state": "built"
+  }
+ ],
+ "debt": [
+  {
+   "id": "ml-debt-no-bpm-key",
+   "title": "No track has a BPM or key, so two of the three energy methods and all Camelot logic are dead",
+   "severity": "critical",
+   "kind": "drift",
+   "detail": "TIDAL v2 returned 0 bpm/key across 1007 versions; Deezer BPM (38 versions) is only used as the cross-check 'other' and never copied onto the chosen TIDAL version. Result: ledger bpm=0/413, camelot_key=0/413, every track needs_review (v_review_queue 413), Set Builder warns that key and BPM moves are off (M3).",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:219-230",
+    "musicLibrary/pipeline/run_weekly.py:86-94",
+    "musicLibrary/pipeline/djlib/classify.py:77",
+    "musicLibrary/db/dj_library.sqlite"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-debt-pending-rejected-dup",
+   "title": "Rejected songs re-enter pending and stay there",
+   "severity": "high",
+   "kind": "orphaned-data",
+   "detail": "ingest_raw setdefaults a pending entry for any replayed key even when it is in rejected, but queues it for resolve only at 2+ appearances. 297 of 442 pending keys are also in rejected with resolve_attempts 0; counts and the pending table are inflated.",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/ledger.py:108-116"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-debt-resolve-yield-silent",
+   "title": "Resolve failures are silent",
+   "severity": "high",
+   "kind": "other",
+   "detail": "Exceptions are printed and an empty result is saved and never retried; TIDAL hits fell 614/777 -> 6/81 between 24 Oct and 3 Nov with no ALERT. resolve_log.txt exists only for 24 Oct and is empty.",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:439-453",
+    "musicLibrary/outputs/2026-10-24/resolve_log.txt"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-debt-idempotency-same-length",
+   "title": "sync-sets add uses an idempotency key that ignores content",
+   "severity": "medium",
+   "kind": "race",
+   "detail": "add_tracks key is uuid5(add:pid:<date>:<set id>:<len>:i). Re-running on the same date after editing a set to the same length reuses the key, so TIDAL may replay the earlier add. Remove-all-then-add also loses duplicates because adds use onDuplicates SKIP, so a set with a repeated track is rewritten every run.",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:555-559",
+    "musicLibrary/pipeline/djlib/tidal.py:257-262"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-debt-no-run-lock",
+   "title": "No run lock between weekly run, Beatport agent and hand runs",
+   "severity": "medium",
+   "kind": "race",
+   "detail": "Ledger, resolved_<date>.json and sync_result_<date>.json are whole-file rewrites; the Beatport playbook writes the same date-keyed files the weekly run owns.",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/ledger.py:62-70",
+    "musicLibrary/agent/beatport_sync.md:5-6"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-debt-history-overwrite",
+   "title": "Ledger snapshot is overwritten on a same-day re-run",
+   "severity": "low",
+   "kind": "other",
+   "detail": "ledger_before_<date>.json is copied on every process save, so a second process on the same date replaces the real pre-run snapshot with the first run's output.",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/ledger.py:67-69"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-debt-sqlite-copy",
+   "title": "SQLite swap is a copy, not an atomic rename",
+   "severity": "low",
+   "kind": "other",
+   "detail": "shutil.copyfile over db/dj_library.sqlite; an open DB Browser session can see a half-copied file. Docstring claims an atomic swap.",
+   "evidence": [
+    "musicLibrary/pipeline/build_db.py:6-8",
+    "musicLibrary/pipeline/build_db.py:179"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-debt-artifact-build-drift",
+   "title": "Artifact bundle cannot be rebuilt from songnodes main",
+   "severity": "high",
+   "kind": "drift",
+   "detail": "SetBuilderPage now imports readSavedSetsAsync and writeSavedSetsAsync and loads from /api/v1/library/search; artifact-data.ts exports neither, and the copy-patch text changed. Published app.js is the 24 Oct build on design system 1.1.0 (songnodes now 1.10.0).",
+   "evidence": [
+    "musicLibrary/artifact/app/artifact-data.ts:8-72",
+    "songnodes/frontend/src/features/musicLibrary/SetBuilderPage.tsx:12",
+    "songnodes/frontend/src/features/musicLibrary/SetBuilderPage.tsx:651",
+    "musicLibrary/artifact/app/build.mjs:121-140",
+    "songnodes/design-system/tokens.json"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-debt-legacy-page-ds",
+   "title": "Legacy artifact/index.html breaks the design system",
+   "severity": "low",
+   "kind": "drift",
+   "detail": "48 hex colours, 181 px values, own Google fonts and tokens, 0 sn- classes; README still calls it the page source. The published build (app.js) has 0 hex and uses songnodes tokens.",
+   "evidence": [
+    "musicLibrary/artifact/index.html",
+    "musicLibrary/README.md"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-debt-build-charset",
+   "title": "Build shell has no charset",
+   "severity": "low",
+   "kind": "other",
+   "detail": "artifact/build/index.html has no <meta charset>; rendered outside the claude.ai wrapper the middle dot and apostrophes become mojibake (M3: 'Â·'). Fine only while the platform wrapper adds a charset.",
+   "evidence": [
+    "musicLibrary/artifact/build/index.html"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-debt-unused-std-cap",
+   "title": "std_crate_cap is configured but never enforced",
+   "severity": "low",
+   "kind": "drift",
+   "detail": "rules.rotation.std_crate_cap=250 has no reader; only high_crate_cap is applied.",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:278-287",
+    "musicLibrary/config/rules.json"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-debt-songnodes-ingest-swallowed",
+   "title": "songnodes ingest and setlist posts swallow errors",
+   "severity": "medium",
+   "kind": "other",
+   "detail": "cmd_sync_songnodes prints a 'note' on ingest failure and 'except Exception: pass' on setlists; it never polls the job, unlike import-music-library.sh.",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:593-616"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-debt-secrets-plain",
+   "title": "TIDAL tokens and ref_mb passwords are plain files on a synced drive",
+   "severity": "medium",
+   "kind": "security",
+   "detail": "secrets/*.json and ref_mb/secrets/*.txt; ref_mb/.gitignore covers secrets but musicLibrary has no git; deletes are blocked on the synced drive so pending PKCE files are blanked, not removed.",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/tidal.py:112-113",
+    "musicLibrary/ref_mb/.gitignore"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-debt-schedule-drift",
+   "title": "Run cadence does not match the documented schedule",
+   "severity": "low",
+   "kind": "drift",
+   "detail": "Documented Sunday 7:37am; outputs exist for 24 Oct, 27 Oct, 31 Oct and 3 Nov (none on a Sunday), so the 8-day window overlaps and ARIA weeks are re-counted.",
+   "evidence": [
+    "musicLibrary/agent/weekly_run.md",
+    "musicLibrary/README.md"
+   ],
+   "state": "built"
+  }
+ ],
+ "gaps": [
+  {
+   "id": "ml-gap-sync-script-missing",
+   "title": "README contract names a songnodes script that no longer exists",
+   "detail": "README and .gitignore say scripts/sync-music-library.sh copies library.json to frontend/public/data/music-library.json. That script and folder are gone; songnodes now loads /api/v1/library/search fed by POST /api/v1/library/ingest (import-music-library.sh, and cmd_sync_songnodes inside cmd_db).",
+   "fix": "Update README 'In SongNodes' section to name scripts/import-music-library.sh and the run_weekly db step; drop the .gitignore lines for music-library.json in songnodes.",
+   "contract": "library.json v1 (build_db.export_artifact_json) -> POST /api/v1/library/ingest, Idempotency-Key import-<md5>",
+   "affects": [
+    "musicLibrary/README.md",
+    "songnodes/.gitignore"
+   ],
+   "evidence": [
+    "musicLibrary/README.md",
+    "songnodes/.gitignore:251-253",
+    "songnodes/scripts/import-music-library.sh"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-gap-saved-set-shape",
+   "title": "Saved-set shape is no longer shared between the two Set Builders",
+   "detail": "musicLibrary sets carry tidal, shape, minutes, mix, pool, seed and ledger track ids (h:/bp:). songnodes stores only name, description and uuid track ids server-side and has no tidal flag. A songnodes 'Export sets for the weekly run' file imports into sets/set_tracks with uuid ids that match no ledger track, and sync-sets skips every set (no tidal). /api/v1/library/sets/export returns {sets:[...]} without ids, which load_sets turns into a list of lists and crashes on.",
+   "fix": "Version the document: add schema 'naarm.saved-set.v2' {id, name, shape, minutes, mix, pool, seed, tidal, tracks[{ml_id, sn_id, tgt, move}]}; songnodes stores the extra fields in library.sets (jsonb) and maps uuid->source_id via library.track_xref on export; load_sets accepts {sets:[...]} and resolves ids via xref.",
+   "contract": "naarm.saved-set.v2",
+   "affects": [
+    "musicLibrary/pipeline/build_db.py",
+    "musicLibrary/pipeline/run_weekly.py",
+    "songnodes/frontend/src/features/musicLibrary/data.ts",
+    "songnodes/services/library/model/library_db.py"
+   ],
+   "evidence": [
+    "musicLibrary/pipeline/build_db.py:93-106",
+    "musicLibrary/pipeline/run_weekly.py:529-547",
+    "songnodes/frontend/src/features/musicLibrary/data.ts:140-161",
+    "songnodes/services/library/model/library_db.py:50-62"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-gap-setlists-orphan",
+   "title": "JohnCourse.json and kiki.json are written but never consumed",
+   "detail": "Both are songnodes.setlists.v1 DJ tracklists (29 and 5 sets) at the musicLibrary root. cmd_sync_songnodes globs only the parent folder and inbox/, so they are never found; if found, the body {schema, setlists} does not match TracklistImportRequest {tracks, dj_artist, name} and the 422 is swallowed. JohnCourse.json.bak is invalid JSON.",
+   "fix": "Move them to inbox/setlists/; post one request per setlist as {name: event, dj_artist: dj, tracks:[{artist,title,position,...}]}; log failures to outputs/<date>/ALERT_songnodes.txt.",
+   "contract": "songnodes.setlists.v1 -> TracklistImportRequest",
+   "affects": [
+    "musicLibrary/pipeline/run_weekly.py",
+    "musicLibrary root JSON"
+   ],
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:599-616",
+    "songnodes/services/rest_api/main.py:96-100",
+    "musicLibrary/JohnCourse.json",
+    "musicLibrary/kiki.json"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-gap-rekordbox-feedback",
+   "title": "Rekordbox play history and overrides do not feed back automatically",
+   "detail": "Play history reaches only calibrate.py, and only from a hand-dropped overrides/rekordbox_collection.xml (absent); calibrate writes suggestions only and has never run. local_path must be typed into overrides, so the XML export holds 0 tracks and the buy list never shrinks.",
+   "fix": "Parse rekordbox_collection.xml in process: match by Location/Artist+Title to set local_path and last_played, add a play appearance (source 'Rekordbox') so rotation sees real play; keep calibrate as the suggestion step.",
+   "contract": "rekordbox DJ_PLAYLISTS TRACK{Location, Artist, Name, PlayCount, LastPlayed, DateAdded} -> ledger local_path, appearances",
+   "affects": [
+    "musicLibrary/pipeline/run_weekly.py",
+    "musicLibrary/pipeline/calibrate.py"
+   ],
+   "evidence": [
+    "musicLibrary/pipeline/calibrate.py:55-83",
+    "musicLibrary/pipeline/djlib/export.py:356-358"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-gap-transitions-not-used",
+   "title": "songnodes proven transitions never inform musicLibrary set building",
+   "detail": "Direction musicLibrary -> songnodes exists (library.json ingest; load-library-targets.sql makes library tracks scrape targets). Nothing flows back: library.json and the artifact Set Builder have no transition data, and the songnodes /sets page does not call the graph either.",
+   "fix": "Add GET /api/v1/library/transitions?ids=… returning occurrence_count for library-track pairs; have build_db fetch it (optional) and add 'nx' (proven next track ids with counts) to library.json tracks; Set Builder ranks spares by it.",
+   "contract": "library.json tracks[].nx: [{id, n}]",
+   "affects": [
+    "songnodes graph-api",
+    "musicLibrary/pipeline/build_db.py",
+    "Set Builder pages"
+   ],
+   "evidence": [
+    "songnodes/scripts/load-library-targets.sql",
+    "musicLibrary/pipeline/build_db.py:190-229"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-gap-deezer-bpm-not-merged",
+   "title": "Second-source BPM and key are discarded",
+   "detail": "When the chosen version is TIDAL, Deezer's BPM is used only for the cross-check; ref_mb is not queried by the pipeline at all despite the 2026-10-25 decision to cut web calls with it.",
+   "fix": "In process, when v.bpm is null take the Deezer twin's bpm (fold to pillar range) and record bpm_source; add an optional ref_mb lookup by ISRC for key/label/release date.",
+   "contract": "ledger track bpm_source, key_source",
+   "affects": [
+    "musicLibrary/pipeline/run_weekly.py"
+   ],
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:226-230",
+    "musicLibrary/decisions/2026-10-25-metabrainz-integration-baseline.md"
+   ],
+   "state": "built",
+   "queued_by": "ml-queued-wp7-pipeline-client"
+  },
+  {
+   "id": "ml-gap-written-never-read",
+   "title": "Outputs with no reader",
+   "detail": "outputs/crates/*.csv, rejected.csv, ledger/history/*, db/dj_library.sqlite (only DB Browser), tests/reports/* (songnodes output) and the review_queue override column have no code reader; ledger beatport_check (243) is read only by the supervised Beatport playbook, which has never run.",
+   "fix": "Either delete the step or give it a consumer: have process read the newest review_queue.csv override column into energy_overrides; move tests/reports to songnodes.",
+   "contract": "review_queue.csv energy_score_override -> overrides",
+   "affects": [
+    "musicLibrary/outputs",
+    "musicLibrary/tests"
+   ],
+   "evidence": [
+    "musicLibrary/pipeline/djlib/export.py:285-305",
+    "musicLibrary/pipeline/run_weekly.py:298-308"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-gap-tidal-port",
+   "title": "TIDAL login collides with songnodes on 127.0.0.1:3006",
+   "detail": "Both use the same TIDAL app and redirect; songnodes' /oauth/callback route consumes the single-use code if the frontend is up. Two TIDAL send paths exist (sync-sets 'SET · name' and songnodes /api/v1/tidal/sets/send) with separate token stores and no shared playlist map.",
+   "fix": "Register a second redirect (http://127.0.0.1:3016/oauth/callback) on the TIDAL app for musicLibrary, or reuse songnodes' stored token through an endpoint; keep one playlist map keyed by set id.",
+   "contract": "TIDAL redirect per client; shared set->playlist map",
+   "affects": [
+    "musicLibrary/pipeline/djlib/tidal.py",
+    "songnodes music_auth / tidal_playlists"
+   ],
+   "evidence": [
+    "musicLibrary/pipeline/djlib/tidal.py:32",
+    "songnodes/frontend/src/App.tsx:33",
+    "songnodes/services/rest_api/routers/tidal_playlists.py:318"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "ml-gap-songnodes-field-loss",
+   "title": "songnodes drops pipeline fields on ingest",
+   "detail": "library_search returns bp NULL, generated null, empty sources and runs, ids as uuids; rev/ovr/local/sync come back only if mapped. The songnodes Library page therefore cannot show buy links or run history that the artifact shows.",
+   "fix": "Persist export extras (bp, sync, rev, ovr, local) from _from_export 'export' into evidence and select them in library_search; return generated and runs from library.runs.",
+   "contract": "LibraryTrack parity between library.json and /api/v1/library/search",
+   "affects": [
+    "songnodes/services/rest_api/routers/library_search.py"
+   ],
+   "evidence": [
+    "songnodes/services/rest_api/routers/library_search.py",
+    "songnodes/frontend/src/features/musicLibrary/data.ts:121-129"
+   ],
+   "state": "built"
+  }
+ ],
+ "method_notes": [
+  {
+   "item": "artifact localStorage keys",
+   "methods_used": [
+    "M1",
+    "M3"
+   ],
+   "agreement": "agree",
+   "note": "M1 found sn-music-library-sets, sn-set-draft, sn-filters-library, sn-banner-keyed-*; M3 also saw sn-density (written by SN.prefs, not in feature code). Legacy nsb:* keys found by M1 only, since the legacy page never reaches the draft write without library.json."
+  },
+  {
+   "item": "window.claude calls",
+   "methods_used": [
+    "M1",
+    "M3"
+   ],
+   "agreement": "agree",
+   "note": "Build: use('db') then collection('sets').get; legacy: use('db'), use('user'), user.can('data.write'), onSnapshot('sets'). Without a stub no calls and no errors."
+  },
+  {
+   "item": "library.json beside the legacy page",
+   "methods_used": [
+    "M1",
+    "M3"
+   ],
+   "agreement": "disagree",
+   "note": "Code fetches library.json relative to artifact/index.html (M1); file does not exist there, M3 got 404/CORS and 'Library file missing'. Confirms superseded status."
+  },
+  {
+   "item": "file:// render",
+   "methods_used": [
+    "M3"
+   ],
+   "agreement": "agree",
+   "note": "Both pages fail to load library.json from file:// (CORS, origin null); console errors only from that. Over http the build page renders 413 tracks with 0 console errors (stubbed claude) or one favicon 404."
+  },
+  {
+   "item": "songnodes sync contract",
+   "methods_used": [
+    "M1",
+    "M2"
+   ],
+   "agreement": "disagree",
+   "note": "README names scripts/sync-music-library.sh and frontend/public/data/music-library.json; neither exists. Code (M2: run_weekly.cmd_db -> cmd_sync_songnodes; songnodes import-music-library.sh) uses POST /api/v1/library/ingest."
+  },
+  {
+   "item": "artifact page source",
+   "methods_used": [
+    "M1",
+    "M2"
+   ],
+   "agreement": "disagree",
+   "note": "README says artifact/index.html is the page source; weekly_run.md and app/README say the published page is artifact/build/index.html built from songnodes pages."
+  },
+  {
+   "item": "BPM and key coverage",
+   "methods_used": [
+    "M1",
+    "M3"
+   ],
+   "agreement": "disagree",
+   "note": "Code and README describe a BPM-band method and Camelot moves; data (ledger, resolved files, SQLite) and the rendered page show 0 of 413 tracks with BPM or key."
+  },
+  {
+   "item": "sync-sets tidal_id fallback",
+   "methods_used": [
+    "M1"
+   ],
+   "agreement": "disagree",
+   "note": "sync-sets falls back to tr.tidal_id, but both page versions save tr.tidal (a URL), so the fallback never fires."
+  },
+  {
+   "item": "SQLite schema",
+   "methods_used": [
+    "M1",
+    "M3"
+   ],
+   "agreement": "agree",
+   "note": "SCHEMA string matches sqlite_master of db/dj_library.sqlite (13 tables, 4 views); counts recorded from the file."
+  },
+  {
+   "item": "ref_mb consumers",
+   "methods_used": [
+    "M1",
+    "M2"
+   ],
+   "agreement": "agree",
+   "note": "Only songnodes (refmb/settings.py, MB_LOCAL_* in compose.dev.yaml) reads ref_mb; no musicLibrary pipeline module does."
+  }
+ ],
+ "unverified": [
+  "musicLibrary/secrets/ is not in this copy: tidal_app.json, tidal_user_token.json, tidal_playlists.json contents and whether TIDAL login is live are inferred from sync_result files (403 tracks TIDAL_ONLY) and code only",
+  "Artifact db capability config and the 'only you write' rule are from app/README.md, not read from the live artifact",
+  "Whether TIDAL honours a reused Idempotency-Key by replaying the earlier response",
+  "Why TIDAL v2 returns no bpm/key (scope, country or catalogue coverage)",
+  "data/ contents beyond _data_manifest.txt (58 GB not copied); ref-mb running state inferred from postmaster.pid date",
+  "Scheduled task configuration itself (cron, device, folders) was not inspected, only agent/weekly_run.md",
+  "songnodes Send to TIDAL backend behaviour beyond the route signature"
+ ],
+ "queued": [
+  {
+   "id": "ml-queued-be1",
+   "source": "musicLibrary/plan/jules_payloads/BE1.json",
+   "title": "Real TIDAL and Spotify track search",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "no built counterpart checked",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/BE1.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-be2",
+   "source": "musicLibrary/plan/jules_payloads/BE2.json",
+   "title": "Python 3.12 upgrade audit",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "no built counterpart checked",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/BE2.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-fe1",
+   "source": "musicLibrary/plan/jules_payloads/FE1.json",
+   "title": "Unified track data bridge",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "no built counterpart checked",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/FE1.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-fe10",
+   "source": "musicLibrary/plan/jules_payloads/FE10.json",
+   "title": "AI setlist discovery and import page",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "payload kept as queued per brief; a counterpart already appears built: songnodes features/aiSetlists exists",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/FE10.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-fe11",
+   "source": "musicLibrary/plan/jules_payloads/FE11.json",
+   "title": "Navigation audit",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "no built counterpart checked",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/FE11.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-fe12",
+   "source": "musicLibrary/plan/jules_payloads/FE12.json",
+   "title": "Pipeline page on real job and outbox data",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "no built counterpart checked",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/FE12.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-fe2",
+   "source": "musicLibrary/plan/jules_payloads/FE2.json",
+   "title": "Target Tracks module",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "no built counterpart checked",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/FE2.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-fe3",
+   "source": "musicLibrary/plan/jules_payloads/FE3.json",
+   "title": "Route finder page",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "payload kept as queued per brief; a counterpart already appears built: songnodes features/pathfinder exists",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/FE3.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-fe4",
+   "source": "musicLibrary/plan/jules_payloads/FE4.json",
+   "title": "Set Builder: crate export formats and reordering",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "payload kept as queued per brief; a counterpart already appears built: songnodes features/setBuilder exporters.ts exists",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/FE4.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-fe5",
+   "source": "musicLibrary/plan/jules_payloads/FE5.json",
+   "title": "Key and mood Camelot module",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "payload kept as queued per brief; a counterpart already appears built: songnodes features/camelot exists",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/FE5.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-fe6",
+   "source": "musicLibrary/plan/jules_payloads/FE6.json",
+   "title": "Pipeline health page",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "no built counterpart checked",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/FE6.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-fe7",
+   "source": "musicLibrary/plan/jules_payloads/FE7.json",
+   "title": "Service settings",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "no built counterpart checked",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/FE7.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-fe8",
+   "source": "musicLibrary/plan/jules_payloads/FE8.json",
+   "title": "Graph explorer workspace",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "no built counterpart checked",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/FE8.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-fe9",
+   "source": "musicLibrary/plan/jules_payloads/FE9.json",
+   "title": "Add library tracks to Target Tracks",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "payload kept as queued per brief; a counterpart already appears built: songnodes features/musicLibrary/targetAction exists",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/FE9.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-few",
+   "source": "musicLibrary/plan/jules_payloads/FEW.json",
+   "title": "Route wiring and cleanup",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "no built counterpart checked",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/FEW.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-ref0",
+   "source": "musicLibrary/plan/jules_payloads/REF0.json",
+   "title": "ref_mb as a separate database",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "payload kept as queued per brief; a counterpart already appears built: songnodes services/common/refmb/settings.py exists",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/REF0.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-sec1",
+   "source": "musicLibrary/plan/jules_payloads/SEC1.json",
+   "title": "Remove eval and audit subprocess use",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "no built counterpart checked",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/SEC1.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-sec2",
+   "source": "musicLibrary/plan/jules_payloads/SEC2.json",
+   "title": "CORS allowlist",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "no built counterpart checked",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/SEC2.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-sec3",
+   "source": "musicLibrary/plan/jules_payloads/SEC3.json",
+   "title": "Dependency security updates",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "no built counterpart checked",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/SEC3.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-sec4",
+   "source": "musicLibrary/plan/jules_payloads/SEC4.json",
+   "title": "Secrets and dependency scanning in CI",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "no built counterpart checked",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/SEC4.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-sec5",
+   "source": "musicLibrary/plan/jules_payloads/SEC5.json",
+   "title": "Opt-in token auth for write and admin routes",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "no built counterpart checked",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/SEC5.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-sec6",
+   "source": "musicLibrary/plan/jules_payloads/SEC6.json",
+   "title": "Server-side AI provider proxy",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "no built counterpart checked",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/SEC6.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-wp0",
+   "source": "musicLibrary/plan/jules_payloads/WP0.json",
+   "title": "Contracts, DDL, fixtures",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "no built counterpart checked",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/WP0.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-wp2",
+   "source": "musicLibrary/plan/jules_payloads/WP2.json",
+   "title": "MusicBrainz reference ETL into ref_mb",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "no built counterpart checked",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/WP2.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-wp3",
+   "source": "musicLibrary/plan/jules_payloads/WP3.json",
+   "title": "Local MusicBrainz resolver",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "payload kept as queued per brief; a counterpart already appears built: songnodes services/reference_data/resolver exists",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/WP3.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-wp4",
+   "source": "musicLibrary/plan/jules_payloads/WP4.json",
+   "title": "Local MusicBrainz provider in enrichment",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "no built counterpart checked",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/WP4.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-wp5",
+   "source": "musicLibrary/plan/jules_payloads/WP5.json",
+   "title": "Library overlay model, importer, ingest job and saved-sets endpoints",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "payload kept as queued per brief; a counterpart already appears built: songnodes services/library/* and sql/migrations/101_library_schema_up.sql exist on main",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/WP5.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-wp6",
+   "source": "musicLibrary/plan/jules_payloads/WP6.json",
+   "title": "Ingest API and transactional outbox",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "no built counterpart checked",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/WP6.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-wp8",
+   "source": "musicLibrary/plan/jules_payloads/WP8.json",
+   "title": "Graph projection as outbox consumer",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "no built counterpart checked",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/WP8.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-wp9",
+   "source": "musicLibrary/plan/jules_payloads/WP9.json",
+   "title": "Server-side search and Library / Set builder pages on the API",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "payload kept as queued per brief; a counterpart already appears built: songnodes frontend data.ts loads /api/v1/library/search",
+   "evidence": [
+    "musicLibrary/plan/jules_payloads/WP9.json",
+    "musicLibrary/plan/jules_sessions.json"
+   ]
+  },
+  {
+   "id": "ml-queued-wp7-pipeline-client",
+   "source": "musicLibrary/plan/agents/WP7_pipeline_client.md",
+   "title": "MetaBrainz reference data + musicLibrary -> songnodes pipeline client",
+   "target_repo": "musicLibrary and songnodes",
+   "state": "queued",
+   "note": "unmerged brief with no payload; no musicLibrary pipeline module queries ref_mb or uses MB_LOCAL_ENABLED",
+   "evidence": [
+    "musicLibrary/plan/agents/WP7_pipeline_client.md",
+    "musicLibrary/pipeline/run_weekly.py"
+   ]
+  },
+  {
+   "id": "ml-queued-open-prs",
+   "source": "gh api repos/zvirb/songnodes/pulls/576..580/files",
+   "title": "Open songnodes PRs #576-#580 (Duo auth, tunnel, Sentinel)",
+   "target_repo": "songnodes",
+   "state": "queued",
+   "note": "none of the five touch musicLibrary, library, setBuilder or TIDAL files (filename grep empty)",
+   "evidence": [
+    "gh api repos/zvirb/songnodes/pulls/<n>/files"
+   ]
+  }
+ ],
+ "timings": [
+  {
+   "id": "ml-t-weekly-schedule",
+   "name": "weekly run schedule",
+   "value_ms": 604800000,
+   "raw": "Sunday 7:37am (weekly)",
+   "where": "ml-agent-weekly-run",
+   "kind": "schedule",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/agent/weekly_run.md:1",
+    "musicLibrary/README.md:13"
+   ]
+  },
+  {
+   "id": "ml-t-scrape-lookback",
+   "name": "scrape look-back window",
+   "value_ms": 691200000,
+   "raw": "--days 8",
+   "where": "ml-cli-scrape",
+   "kind": "schedule",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:646",
+    "musicLibrary/agent/weekly_run.md:2"
+   ]
+  },
+  {
+   "id": "ml-t-fetch-delay",
+   "name": "scraper polite delay",
+   "value_ms": 1000,
+   "raw": "delay=1.0",
+   "where": "ml-cli-scrape",
+   "kind": "debounce",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/scrapers.py:19-20"
+   ]
+  },
+  {
+   "id": "ml-t-rrr-delay",
+   "name": "3RRR episode delay",
+   "value_ms": 2000,
+   "raw": "delay=2",
+   "where": "ml-cli-scrape",
+   "kind": "debounce",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/scrapers.py:146"
+   ]
+  },
+  {
+   "id": "ml-t-fetch-timeout",
+   "name": "scraper HTTP timeout",
+   "value_ms": 30000,
+   "raw": "timeout=30",
+   "where": "ml-cli-scrape",
+   "kind": "timeout",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/scrapers.py:22"
+   ]
+  },
+  {
+   "id": "ml-t-deezer-sleep",
+   "name": "Deezer per-request sleep",
+   "value_ms": 150,
+   "raw": "time.sleep(0.15)",
+   "where": "ml-cli-resolve",
+   "kind": "debounce",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/deezer.py:10"
+   ]
+  },
+  {
+   "id": "ml-t-deezer-backoff",
+   "name": "Deezer quota backoff",
+   "value_ms": 1000,
+   "raw": "2 ** attempt s, 4 attempts (1,2,4,8 s)",
+   "where": "ml-cli-resolve",
+   "kind": "retry",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/deezer.py:9-15"
+   ]
+  },
+  {
+   "id": "ml-t-deezer-timeout",
+   "name": "Deezer HTTP timeout",
+   "value_ms": 20000,
+   "raw": "timeout=20",
+   "where": "ml-cli-resolve",
+   "kind": "timeout",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/deezer.py:11"
+   ]
+  },
+  {
+   "id": "ml-t-tidal-timeout",
+   "name": "TIDAL API and token HTTP timeout",
+   "value_ms": 30000,
+   "raw": "timeout=30",
+   "where": "ml-cli-resolve",
+   "kind": "timeout",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/tidal.py:70",
+    "musicLibrary/pipeline/djlib/tidal.py:180"
+   ]
+  },
+  {
+   "id": "ml-t-tidal-backoff",
+   "name": "TIDAL 429/5xx retry",
+   "value_ms": 1000,
+   "raw": "Retry-After or 2 ** attempt s, 5 attempts",
+   "where": "ml-cli-sync-tidal",
+   "kind": "retry",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/tidal.py:177-188"
+   ]
+  },
+  {
+   "id": "ml-t-tidal-user-refresh",
+   "name": "TIDAL user token refresh margin",
+   "value_ms": 120000,
+   "raw": "expires_in - 120",
+   "where": "ml-store-secrets",
+   "kind": "expiry",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/tidal.py:156"
+   ]
+  },
+  {
+   "id": "ml-t-tidal-client-refresh",
+   "name": "TIDAL client token refresh margin",
+   "value_ms": 60000,
+   "raw": "expires_in - 60",
+   "where": "ml-cli-resolve",
+   "kind": "expiry",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/tidal.py:78"
+   ]
+  },
+  {
+   "id": "ml-t-tidal-user-default",
+   "name": "TIDAL token default lifetime",
+   "value_ms": 3600000,
+   "raw": "tok.get('expires_in', 3600)",
+   "where": "ml-store-secrets",
+   "kind": "expiry",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/tidal.py:156"
+   ]
+  },
+  {
+   "id": "ml-t-pkce-age",
+   "name": "PKCE login link max age",
+   "value_ms": 900000,
+   "raw": "> 900",
+   "where": "ml-cli-tidal",
+   "kind": "expiry",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/tidal.py:101-102"
+   ]
+  },
+  {
+   "id": "ml-t-login-wait",
+   "name": "one-step login callback wait",
+   "value_ms": 300000,
+   "raw": "600 x 0.5 s",
+   "where": "ml-cli-tidal",
+   "kind": "timeout",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/tidal.py:139-142"
+   ]
+  },
+  {
+   "id": "ml-t-resolve-chunk",
+   "name": "resolve foreground chunk",
+   "value_ms": 160000,
+   "raw": "timeout 160",
+   "where": "ml-agent-weekly-run",
+   "kind": "timeout",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/agent/weekly_run.md:3"
+   ]
+  },
+  {
+   "id": "ml-t-sn-post-timeout",
+   "name": "songnodes ingest POST timeout",
+   "value_ms": 30000,
+   "raw": "timeout=30",
+   "where": "ml-cli-sync-songnodes",
+   "kind": "timeout",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:594",
+    "musicLibrary/pipeline/run_weekly.py:613"
+   ]
+  },
+  {
+   "id": "ml-t-sn-import-poll",
+   "name": "import-music-library job poll",
+   "value_ms": 5000,
+   "raw": "sleep 5, 120 polls (10 min)",
+   "where": "sn-scripts",
+   "kind": "poll",
+   "state": "built",
+   "evidence": [
+    "songnodes/scripts/import-music-library.sh:55-70"
+   ]
+  },
+  {
+   "id": "ml-t-sets-init-timeout",
+   "name": "artifact shared-store init timeout",
+   "value_ms": 4000,
+   "raw": "setTimeout(..., 4000)",
+   "where": "ml-page-set-builder",
+   "kind": "timeout",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/artifact/app/artifact-data.ts:59"
+   ]
+  },
+  {
+   "id": "ml-t-legacy-toast",
+   "name": "legacy toast",
+   "value_ms": 2200,
+   "raw": "2200",
+   "where": "ml-page-set-builder-legacy",
+   "kind": "timeout",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/artifact/index.html"
+   ]
+  },
+  {
+   "id": "ml-t-legacy-delete-arm",
+   "name": "legacy delete confirm arm",
+   "value_ms": 3000,
+   "raw": "3000",
+   "where": "ml-page-set-builder-legacy",
+   "kind": "timeout",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/artifact/index.html:563"
+   ]
+  },
+  {
+   "id": "ml-t-promote-window",
+   "name": "promotion window",
+   "value_ms": 2592000000,
+   "raw": "promote_window_days 30",
+   "where": "ml-cli-process",
+   "kind": "ttl",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/config/rules.json"
+   ]
+  },
+  {
+   "id": "ml-t-chart-entry",
+   "name": "early chart entry window",
+   "value_ms": 1814400000,
+   "raw": "chart_entry_window_days 21",
+   "where": "ml-cli-process",
+   "kind": "ttl",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/config/rules.json"
+   ]
+  },
+  {
+   "id": "ml-t-chart-fresh",
+   "name": "chart last-seen freshness",
+   "value_ms": 1209600000,
+   "raw": "timedelta(days=14)",
+   "where": "ml-cli-process",
+   "kind": "ttl",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/ledger.py:133"
+   ]
+  },
+  {
+   "id": "ml-t-high-tenure",
+   "name": "High Rotation tenure cap",
+   "value_ms": 3628800000,
+   "raw": "high_tenure_max_days 42",
+   "where": "ml-cli-process",
+   "kind": "ttl",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/config/rules.json"
+   ]
+  },
+  {
+   "id": "ml-t-high-silence",
+   "name": "High Rotation silence demotion",
+   "value_ms": 3888000000,
+   "raw": "high_silence_days 45",
+   "where": "ml-cli-process",
+   "kind": "ttl",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/config/rules.json"
+   ]
+  },
+  {
+   "id": "ml-t-std-archive-age",
+   "name": "Standard archive minimum age",
+   "value_ms": 15552000000,
+   "raw": "std_archive_min_age_days 180",
+   "where": "ml-cli-process",
+   "kind": "ttl",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/config/rules.json"
+   ]
+  },
+  {
+   "id": "ml-t-std-archive-silence",
+   "name": "Standard archive silence",
+   "value_ms": 5184000000,
+   "raw": "std_archive_silence_days 60",
+   "where": "ml-cli-process",
+   "kind": "ttl",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/config/rules.json"
+   ]
+  },
+  {
+   "id": "ml-t-refmb-stop",
+   "name": "ref-mb stop grace period",
+   "value_ms": 600000,
+   "raw": "stop_grace_period: 10m",
+   "where": "ml-svc-ref-mb",
+   "kind": "timeout",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/ref_mb/compose.yaml"
+   ]
+  },
+  {
+   "id": "ml-t-refmb-health",
+   "name": "ref-mb healthcheck",
+   "value_ms": 30000,
+   "raw": "interval 30s, timeout 5s, retries 5",
+   "where": "ml-svc-ref-mb",
+   "kind": "heartbeat",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/ref_mb/compose.yaml"
+   ]
+  },
+  {
+   "id": "ml-t-refmb-checkpoint",
+   "name": "ref-mb checkpoint_timeout",
+   "value_ms": 1800000,
+   "raw": "checkpoint_timeout=30min",
+   "where": "ml-svc-ref-mb",
+   "kind": "schedule",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/ref_mb/compose.yaml"
+   ]
+  },
+  {
+   "id": "ml-t-refmb-stmt",
+   "name": "songnodes ref_mb statement timeout",
+   "value_ms": 2000,
+   "raw": "MB_LOCAL_STATEMENT_TIMEOUT_MS 2000",
+   "where": "sn-be-refmb",
+   "kind": "timeout",
+   "state": "built",
+   "evidence": [
+    "songnodes/services/common/refmb/settings.py:29"
+   ]
+  },
+  {
+   "id": "ml-t-mb-head",
+   "name": "MetaBrainz HEAD retry",
+   "value_ms": 5000,
+   "raw": "5 tries, sleep 5, timeout 60",
+   "where": "ml-cli-fetch-metabrainz",
+   "kind": "retry",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/fetch_metabrainz.py:11-17"
+   ]
+  },
+  {
+   "id": "ml-t-mb-curl",
+   "name": "MetaBrainz curl retry",
+   "value_ms": 5000,
+   "raw": "--retry 8 --retry-delay 5",
+   "where": "ml-cli-fetch-metabrainz",
+   "kind": "retry",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/fetch_metabrainz.sh"
+   ]
+  }
+ ],
+ "limits": [
+  {
+   "id": "ml-l-abc-limit",
+   "name": "ABC plays page size",
+   "value": 100,
+   "unit": "items",
+   "where": "ml-cli-scrape",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/scrapers.py:90"
+   ]
+  },
+  {
+   "id": "ml-l-episodes",
+   "name": "episodes per program default",
+   "value": 2,
+   "unit": "episodes",
+   "where": "ml-cli-scrape",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/scrapers.py:54",
+    "musicLibrary/pipeline/djlib/scrapers.py:136"
+   ]
+  },
+  {
+   "id": "ml-l-aria-min",
+   "name": "ARIA parse sanity floor",
+   "value": 40,
+   "unit": "rows",
+   "where": "ml-cli-scrape",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/scrapers.py:122"
+   ],
+   "current": 50
+  },
+  {
+   "id": "ml-l-tidal-search",
+   "name": "TIDAL search results kept",
+   "value": 20,
+   "unit": "tracks",
+   "where": "ml-cli-resolve",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/tidal.py:207"
+   ]
+  },
+  {
+   "id": "ml-l-tidal-batch",
+   "name": "TIDAL /tracks filter[id] and ISRC batch",
+   "value": 20,
+   "unit": "ids",
+   "where": "ml-cli-resolve",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/tidal.py:217",
+    "musicLibrary/pipeline/djlib/tidal.py:225"
+   ]
+  },
+  {
+   "id": "ml-l-tidal-items",
+   "name": "TIDAL playlist add/remove chunk",
+   "value": 50,
+   "unit": "tracks",
+   "where": "ml-cli-sync-tidal",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/tidal.py:258",
+    "musicLibrary/pipeline/djlib/tidal.py:267"
+   ]
+  },
+  {
+   "id": "ml-l-deezer-search",
+   "name": "Deezer search limit per query",
+   "value": 25,
+   "unit": "tracks",
+   "where": "ml-cli-resolve",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/deezer.py:20"
+   ]
+  },
+  {
+   "id": "ml-l-resolve-workers",
+   "name": "resolve thread pool",
+   "value": 4,
+   "unit": "workers",
+   "where": "ml-cli-resolve",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:456"
+   ]
+  },
+  {
+   "id": "ml-l-resolve-flush",
+   "name": "resolve flush interval",
+   "value": 20,
+   "unit": "songs",
+   "where": "ml-cli-resolve",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:459"
+   ]
+  },
+  {
+   "id": "ml-l-resolve-attempts",
+   "name": "attempts before UNRESOLVED",
+   "value": 3,
+   "unit": "attempts",
+   "where": "ml-cli-process",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:236"
+   ],
+   "current": "max 2 in pending"
+  },
+  {
+   "id": "ml-l-recheck",
+   "name": "rejected re-check threshold",
+   "value": 2,
+   "unit": "appearances",
+   "where": "ml-cli-ingest",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/ledger.py:114"
+   ]
+  },
+  {
+   "id": "ml-l-high-cap",
+   "name": "high_crate_cap",
+   "value": 60,
+   "unit": "tracks per crate",
+   "where": "ml-cli-process",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/config/rules.json",
+    "musicLibrary/pipeline/run_weekly.py:278"
+   ],
+   "current": 7
+  },
+  {
+   "id": "ml-l-std-cap",
+   "name": "std_crate_cap (not enforced)",
+   "value": 250,
+   "unit": "tracks per crate",
+   "where": "ml-cli-process",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/config/rules.json"
+   ],
+   "current": 131
+  },
+  {
+   "id": "ml-l-promote-sources",
+   "name": "promote_min_sources",
+   "value": 2,
+   "unit": "sources",
+   "where": "ml-cli-process",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/config/rules.json"
+   ]
+  },
+  {
+   "id": "ml-l-promote-saves",
+   "name": "promote_min_saves",
+   "value": 50,
+   "unit": "saves",
+   "where": "ml-cli-process",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/config/rules.json"
+   ]
+  },
+  {
+   "id": "ml-l-chart-sat",
+   "name": "high_chart_saturation_weeks",
+   "value": 6,
+   "unit": "weeks",
+   "where": "ml-cli-process",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/config/rules.json"
+   ]
+  },
+  {
+   "id": "ml-l-duration-floor",
+   "name": "duration floors",
+   "value": {
+    "MEL_House": 285,
+    "MEL_Techno": 285,
+    "UK_Garage": 225
+   },
+   "unit": "seconds",
+   "where": "ml-cli-process",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/config/rules.json",
+    "musicLibrary/pipeline/djlib/gates.py:27"
+   ]
+  },
+  {
+   "id": "ml-l-playlist-name",
+   "name": "SET playlist name length",
+   "value": 250,
+   "unit": "characters",
+   "where": "ml-cli-sync-sets",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:539"
+   ]
+  },
+  {
+   "id": "ml-l-runs",
+   "name": "runs kept in library.json",
+   "value": 26,
+   "unit": "runs",
+   "where": "ml-cli-build-db",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/build_db.py:224"
+   ],
+   "current": 4
+  },
+  {
+   "id": "ml-l-artifactdata",
+   "name": "ArtifactData list page",
+   "value": 1000,
+   "unit": "documents",
+   "where": "ml-agent-weekly-run",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/agent/weekly_run.md:5"
+   ],
+   "current": 0
+  },
+  {
+   "id": "ml-l-beatport-pause",
+   "name": "Beatport actions before check-in",
+   "value": 25,
+   "unit": "actions",
+   "where": "ml-agent-beatport-sync",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/agent/beatport_sync.md:7"
+   ]
+  },
+  {
+   "id": "ml-l-artifact-size",
+   "name": "artifact page and file size limit (platform)",
+   "value": 16,
+   "unit": "MB",
+   "where": "ml-store-artifact-files",
+   "state": "built",
+   "evidence": [
+    "Artifact tool contract"
+   ],
+   "current": {
+    "app.js": 372921,
+    "library.json": 185443,
+    "style.css": 262326
+   }
+  },
+  {
+   "id": "ml-l-sn-search",
+   "name": "songnodes library search limit used by the page",
+   "value": 5000,
+   "unit": "tracks",
+   "where": "sn-fe-musicLibrary",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/data.ts:114"
+   ],
+   "current": 413
+  },
+  {
+   "id": "ml-l-sn-idem",
+   "name": "songnodes Idempotency-Key length",
+   "value": 200,
+   "unit": "characters",
+   "where": "sn-be-library-ingest",
+   "state": "built",
+   "evidence": [
+    "songnodes/services/rest_api/routers/library_ingest.py:12"
+   ],
+   "current": 39
+  },
+  {
+   "id": "ml-l-refmb-mem",
+   "name": "ref-mb memory and buffers",
+   "value": {
+    "mem_limit": "4g",
+    "shm_size": "1g",
+    "shared_buffers": "1GB",
+    "max_wal_size": "8GB",
+    "work_mem": "32MB"
+   },
+   "unit": "bytes",
+   "where": "ml-svc-ref-mb",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/ref_mb/compose.yaml"
+   ]
+  },
+  {
+   "id": "ml-l-mb-serial",
+   "name": "MetaBrainz parallel downloads",
+   "value": 1,
+   "unit": "connections",
+   "where": "ml-cli-fetch-metabrainz",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/fetch_metabrainz.sh"
+   ]
+  },
+  {
+   "id": "ml-l-data",
+   "name": "data folder size",
+   "value": 58,
+   "unit": "GB",
+   "where": "ml-store-data",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/_data_manifest.txt"
+   ]
+  },
+  {
+   "id": "ml-l-mb-ratelimit",
+   "name": "MusicBrainz web API rate (brief rule)",
+   "value": 1,
+   "unit": "request per second",
+   "where": "ml-queued-wp7-pipeline-client",
+   "state": "queued",
+   "evidence": [
+    "musicLibrary/plan/agents/WP7_pipeline_client.md"
+   ]
+  }
+ ],
+ "secrets": [
+  {
+   "id": "ml-sec-tidal-app",
+   "path": "musicLibrary/secrets/tidal_app.json (not in snapshot)",
+   "type": "TIDAL client id and client secret copied from songnodes .env TIDAL_CLIENT_ID/TIDAL_CLIENT_SECRET",
+   "risk": "real-looking",
+   "state": "built",
+   "note": "folder absent from this copy; existence inferred from 614 TIDAL matches on 24 Oct",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/tidal.py:52-55",
+    "musicLibrary/README.md"
+   ]
+  },
+  {
+   "id": "ml-sec-tidal-user",
+   "path": "musicLibrary/secrets/tidal_user_token.json (not in snapshot)",
+   "type": "TIDAL OAuth access and refresh token",
+   "risk": "real-looking",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/tidal.py:58",
+    "musicLibrary/pipeline/djlib/tidal.py:148-150"
+   ]
+  },
+  {
+   "id": "ml-sec-tidal-pkce",
+   "path": "musicLibrary/secrets/tidal_pkce_pending.json (not in snapshot)",
+   "type": "PKCE verifier and state (blanked to {} after use)",
+   "risk": "real-looking",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/tidal.py:92-93",
+    "musicLibrary/pipeline/djlib/tidal.py:112-113"
+   ]
+  },
+  {
+   "id": "ml-sec-tidal-playlists",
+   "path": "musicLibrary/secrets/tidal_playlists.json (not in snapshot)",
+   "type": "crate and set to TIDAL playlist id map (not a credential)",
+   "risk": "placeholder",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:476"
+   ]
+  },
+  {
+   "id": "ml-sec-refmb-admin",
+   "path": "musicLibrary/ref_mb/secrets/ref_mb_admin_password.txt",
+   "type": "Postgres admin password file (32 bytes, Docker secret)",
+   "risk": "real-looking",
+   "state": "built",
+   "note": "present in the snapshot; musicLibrary is not a git repo; ref_mb/.gitignore lists secrets/",
+   "evidence": [
+    "musicLibrary/ref_mb/compose.yaml",
+    "musicLibrary/ref_mb/.gitignore"
+   ]
+  },
+  {
+   "id": "ml-sec-refmb-reader",
+   "path": "musicLibrary/ref_mb/secrets/ref_mb_reader_password.txt",
+   "type": "Postgres read-only role password file (32 bytes)",
+   "risk": "real-looking",
+   "state": "built",
+   "note": "songnodes needs the same value as MB_LOCAL password env",
+   "evidence": [
+    "musicLibrary/ref_mb/sql/07_roles.sql"
+   ]
+  },
+  {
+   "id": "ml-sec-refmb-env",
+   "path": "musicLibrary/ref_mb/.env",
+   "type": "REF_MB_PORT only, no secret",
+   "risk": "placeholder",
+   "state": "built",
+   "evidence": [
+    "musicLibrary/ref_mb/.env"
+   ]
+  },
+  {
+   "id": "ml-sec-jules",
+   "path": "env JULES_API_KEY (shell only)",
+   "type": "Google Jules API key",
+   "risk": "placeholder",
+   "state": "built",
+   "note": "launcher refuses to read it from a file",
+   "evidence": [
+    "musicLibrary/plan/launch_jules.py:18",
+    "musicLibrary/plan/launch_jules.py:133"
+   ]
+  }
+ ],
+ "rule_results": [
+  {
+   "page": "ml-page-set-builder",
+   "rule": "R1",
+   "result": "pass",
+   "detail": "AppShell from songnodes provides the NavDrawer; no tab bar (M3 headings show Set builder only)",
+   "evidence": [
+    "musicLibrary/artifact/app/main.tsx:85-99"
+   ]
+  },
+  {
+   "page": "ml-page-set-builder",
+   "rule": "R2",
+   "result": "pass",
+   "detail": "one sn-btn--primary 'Build set' in the header; the second instance is in the empty-state actions shown instead of the populated view",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/SetBuilderPage.tsx:450",
+    "songnodes/frontend/src/features/musicLibrary/SetBuilderPage.tsx:590"
+   ]
+  },
+  {
+   "page": "ml-page-set-builder",
+   "rule": "R3",
+   "result": "pass",
+   "detail": "no alert/confirm/prompt in app.js (grep 0); ConfirmDialog used",
+   "evidence": [
+    "musicLibrary/artifact/build/app.js"
+   ]
+  },
+  {
+   "page": "ml-page-set-builder",
+   "rule": "R4",
+   "result": "pass",
+   "detail": "design-system/linters/check.py on songnodes features/musicLibrary: 0 findings; app.js has 0 hex. But built on design system 1.1.0 while source is 1.10.0, so look and feel are stale",
+   "evidence": [
+    "songnodes/design-system/linters/check.py",
+    "songnodes/design-system/tokens.json"
+   ]
+  },
+  {
+   "page": "ml-page-set-builder",
+   "rule": "R5",
+   "result": "exception",
+   "detail": "linter WRT-EMO 2 findings in app.js are react-router's bundled dev error screen text, not page copy; page copy uses en dash and sentence case",
+   "evidence": [
+    "musicLibrary/artifact/build/app.js:11",
+    "musicLibrary/artifact/build/app.js:13"
+   ]
+  },
+  {
+   "page": "ml-page-set-builder",
+   "rule": "R6",
+   "result": "exception",
+   "detail": "artifact edition mounts its own HashRouter in main.tsx; the songnodes source pages self-register via features/musicLibrary/route.tsx (/library, /sets)",
+   "evidence": [
+    "musicLibrary/artifact/app/main.tsx:92-103",
+    "songnodes/frontend/src/features/musicLibrary/route.tsx"
+   ]
+  },
+  {
+   "page": "ml-page-set-builder",
+   "rule": "R7",
+   "result": "n/a",
+   "detail": "no scraper",
+   "evidence": []
+  },
+  {
+   "page": "ml-page-set-builder",
+   "rule": "R8",
+   "result": "n/a",
+   "detail": "no transitions shown",
+   "evidence": []
+  },
+  {
+   "page": "ml-page-set-builder-legacy",
+   "rule": "R1",
+   "result": "violation",
+   "detail": "nav.views button tabs (Library / Set builder) are the site navigation",
+   "evidence": [
+    "musicLibrary/artifact/index.html:40-45"
+   ]
+  },
+  {
+   "page": "ml-page-set-builder-legacy",
+   "rule": "R2",
+   "result": "pass",
+   "detail": "one .btn.primary (Build set)",
+   "evidence": [
+    "musicLibrary/artifact/index.html:194"
+   ]
+  },
+  {
+   "page": "ml-page-set-builder-legacy",
+   "rule": "R3",
+   "result": "pass",
+   "detail": "delete uses a two-click armed button, no confirm()",
+   "evidence": [
+    "musicLibrary/artifact/index.html:561-564"
+   ]
+  },
+  {
+   "page": "ml-page-set-builder-legacy",
+   "rule": "R4",
+   "result": "violation",
+   "detail": "design-system/linters/check.py: 43 findings (TYP-PX 22, COL-HEX 13, LAY-Z 4, WRT-DATE 2, COL-FN 1, LAY-IMP 1); M1 grep 48 hex, 181 px; own fonts Big Shoulders Display and Barlow",
+   "evidence": [
+    "songnodes/design-system/linters/check.py",
+    "musicLibrary/artifact/index.html"
+   ]
+  },
+  {
+   "page": "ml-page-set-builder-legacy",
+   "rule": "R5",
+   "result": "violation",
+   "detail": "labels rendered uppercase via text-transform (PILLAR, ENERGY TIER); missing values use en dash (pass on that part)",
+   "evidence": [
+    "musicLibrary/artifact/index.html",
+    "M3 innerText"
+   ]
+  },
+  {
+   "page": "ml-page-set-builder-legacy",
+   "rule": "R6",
+   "result": "n/a",
+   "detail": "single-file artifact",
+   "evidence": []
+  },
+  {
+   "page": "ml-page-set-builder-legacy",
+   "rule": "R7",
+   "result": "n/a",
+   "detail": "",
+   "evidence": []
+  },
+  {
+   "page": "ml-page-set-builder-legacy",
+   "rule": "R8",
+   "result": "n/a",
+   "detail": "",
+   "evidence": []
+  },
+  {
+   "page": "ml-page-artifact-app-entry",
+   "rule": "R4",
+   "result": "n/a",
+   "detail": "179-byte Vite entry, no styling",
+   "evidence": [
+    "musicLibrary/artifact/app/index.html"
+   ]
+  }
+ ],
+ "claims": [
+  {
+   "id": "ml-claim-stdlib",
+   "claim": "Standard-library Python 3.10+. Nothing to install.",
+   "source": "musicLibrary/README.md:9",
+   "outcome": "confirmed",
+   "finding": "pipeline imports only stdlib modules; djlib has no third-party imports",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:11-27"
+   ]
+  },
+  {
+   "id": "ml-claim-schedule",
+   "claim": "Weekly flow runs as a Sunday 7:37am scheduled task",
+   "source": "musicLibrary/README.md:13",
+   "outcome": "refuted",
+   "finding": "runs dated 24 Oct (Sat), 27 Oct (Tue), 31 Oct (Fri), 3 Nov (Tue); none on a Sunday",
+   "evidence": [
+    "musicLibrary/outputs/"
+   ]
+  },
+  {
+   "id": "ml-claim-resolve-fields",
+   "claim": "resolve writes TIDAL and Deezer versions with duration, version, BPM, key, ISRC, genre",
+   "source": "musicLibrary/README.md (step table)",
+   "outcome": "corrected",
+   "finding": "0 of 1007 TIDAL versions carry BPM or key; Deezer BPM on 38 of 732 and never copied to the chosen version; ledger BPM 0/413, key 0/413",
+   "evidence": [
+    "musicLibrary/inbox/resolved_2026-10-24.json",
+    "musicLibrary/ledger/dj_library_ledger.json"
+   ]
+  },
+  {
+   "id": "ml-claim-resumable",
+   "claim": "resolve is resumable",
+   "source": "musicLibrary/README.md (step table)",
+   "outcome": "confirmed",
+   "finding": "skips keys already in resolved_<date>.json, flushes every 20",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:418-461"
+   ]
+  },
+  {
+   "id": "ml-claim-db-tables",
+   "claim": "DB tables tracks … runs; views v_crates, v_source_yield, v_review_queue, v_buy_list",
+   "source": "musicLibrary/README.md (Database)",
+   "outcome": "confirmed",
+   "finding": "sqlite_master matches (plus a meta table not listed)",
+   "evidence": [
+    "musicLibrary/db/dj_library.sqlite"
+   ]
+  },
+  {
+   "id": "ml-claim-page-source",
+   "claim": "Page source: artifact/index.html; the weekly run republishes it",
+   "source": "musicLibrary/README.md (Set Builder)",
+   "outcome": "refuted",
+   "finding": "the published page is artifact/build/index.html with app.js; artifact/index.html has no library.json beside it",
+   "evidence": [
+    "musicLibrary/agent/weekly_run.md:8",
+    "musicLibrary/artifact/app/README.md"
+   ]
+  },
+  {
+   "id": "ml-claim-sync-script",
+   "claim": "scripts/sync-music-library.sh copies library.json to frontend/public/data/music-library.json",
+   "source": "musicLibrary/README.md (In SongNodes)",
+   "outcome": "refuted",
+   "finding": "neither exists in songnodes 7429821; contract is POST /api/v1/library/ingest (import-music-library.sh, cmd_sync_songnodes)",
+   "evidence": [
+    "songnodes/scripts/import-music-library.sh",
+    "songnodes/.gitignore:251-253"
+   ]
+  },
+  {
+   "id": "ml-claim-same-set-shape",
+   "claim": "Sets saved in SongNodes use the same document shape as this artifact's saved sets",
+   "source": "musicLibrary/README.md (In SongNodes)",
+   "outcome": "refuted",
+   "finding": "songnodes server stores name, description and uuid track ids only; no tidal, shape or minutes on the server",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/data.ts:271-283",
+    "songnodes/sql/migrations/101_library_schema_up.sql:68-82"
+   ]
+  },
+  {
+   "id": "ml-claim-review-queue",
+   "claim": "Tracks go to review_queue.csv when BPM and source methods disagree by 3+ points",
+   "source": "musicLibrary/README.md (Energy model)",
+   "outcome": "corrected",
+   "finding": "needs_review is also set when fewer than two methods exist, so all 413 tracks are in the queue",
+   "evidence": [
+    "musicLibrary/pipeline/djlib/classify.py:77",
+    "musicLibrary/outputs/2026-11-03/weekly_report.md"
+   ]
+  },
+  {
+   "id": "ml-claim-weights",
+   "claim": "Energy blend BPM 45%, source 40%, version cues 15%",
+   "source": "musicLibrary/README.md (Energy model)",
+   "outcome": "confirmed",
+   "finding": "rules.energy.weights = 0.45/0.40/0.15; in practice only the source weight applies",
+   "evidence": [
+    "musicLibrary/config/rules.json"
+   ]
+  },
+  {
+   "id": "ml-claim-overrides",
+   "claim": "Overrides are re-applied every run and the auto score is kept",
+   "source": "musicLibrary/README.md (levers)",
+   "outcome": "confirmed",
+   "finding": "apply_overrides stores energy_auto once; 0 overrides so far",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:152-182"
+   ]
+  },
+  {
+   "id": "ml-claim-manual-stamp",
+   "claim": "manual_adds rows get stamped processed",
+   "source": "musicLibrary/README.md (levers)",
+   "outcome": "confirmed",
+   "finding": "stamp written before raw_<date>.json",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:386-395"
+   ]
+  },
+  {
+   "id": "ml-claim-calibrate",
+   "claim": "calibrate writes suggestions only",
+   "source": "musicLibrary/README.md (levers)",
+   "outcome": "confirmed",
+   "finding": "writes outputs/calibration_suggestions.json; file absent, never run",
+   "evidence": [
+    "musicLibrary/pipeline/calibrate.py:85"
+   ]
+  },
+  {
+   "id": "ml-claim-xml-local",
+   "claim": "Rekordbox XML only includes tracks with a local_path",
+   "source": "musicLibrary/README.md (one-off setup)",
+   "outcome": "confirmed",
+   "finding": "0 local paths, XML has Entries=0",
+   "evidence": [
+    "musicLibrary/outputs/rekordbox_musicLibrary.xml"
+   ]
+  },
+  {
+   "id": "ml-claim-tidal-fallback",
+   "claim": "Until TIDAL setup is done resolve uses Deezer only and TIDAL sync is skipped",
+   "source": "musicLibrary/README.md (one-off setup)",
+   "outcome": "confirmed",
+   "finding": "guards on secrets/tidal_app.json and tidal_user_token.json; sync_result files show 403 tracks on TIDAL, so setup was done",
+   "evidence": [
+    "musicLibrary/pipeline/run_weekly.py:420-424",
+    "musicLibrary/pipeline/run_weekly.py:471-473"
+   ]
+  },
+  {
+   "id": "ml-claim-db-loud",
+   "claim": "db fails loudly if the row count or integrity check is wrong",
+   "source": "musicLibrary/agent/weekly_run.md:6",
+   "outcome": "confirmed",
+   "finding": "sys.exit on mismatch",
+   "evidence": [
+    "musicLibrary/pipeline/build_db.py:185-186"
+   ]
+  },
+  {
+   "id": "ml-claim-atomic",
+   "claim": "database is written to a temp file and swapped in atomically",
+   "source": "musicLibrary/pipeline/build_db.py:6-7",
+   "outcome": "corrected",
+   "finding": "shutil.copyfile over the target, not an atomic rename",
+   "evidence": [
+    "musicLibrary/pipeline/build_db.py:179"
+   ]
+  },
+  {
+   "id": "ml-claim-shared-wins",
+   "claim": "Shared sets win by id, and sets only in this browser are uploaded",
+   "source": "musicLibrary/artifact/app/README.md",
+   "outcome": "confirmed",
+   "finding": "initSavedSets merges remote first then local-only uploads",
+   "evidence": [
+    "musicLibrary/artifact/app/artifact-data.ts:55-72"
+   ]
+  },
+  {
+   "id": "ml-claim-ds-version",
+   "claim": "Published Set Builder is built from SongNodes design system 1.1.0",
+   "source": "musicLibrary/artifact/app/README.md",
+   "outcome": "open",
+   "finding": "no version string in style.css to confirm; songnodes is now 1.10.0 and the build cannot be redone from main",
+   "evidence": [
+    "songnodes/design-system/tokens.json"
+   ]
+  },
+  {
+   "id": "ml-claim-isrc-319",
+   "claim": "Resolver thresholds to be fitted to the 319 ISRC-bearing library tracks",
+   "source": "musicLibrary/decisions/2026-10-25-metabrainz-integration-baseline.md",
+   "outcome": "corrected",
+   "finding": "all 413 ledger tracks now carry an ISRC",
+   "evidence": [
+    "musicLibrary/ledger/dj_library_ledger.json"
+   ]
+  },
+  {
+   "id": "ml-claim-goodstatic",
+   "claim": "Good Static is always 0 because it publishes no playlists",
+   "source": "musicLibrary/agent/weekly_run.md:9",
+   "outcome": "confirmed",
+   "finding": "0 rows in all four scrape logs; Elektrosophy and Passing Notes also fell to 0 on 3 Nov after identical 46-row counts three runs running",
+   "evidence": [
+    "musicLibrary/outputs/2026-11-03/scrape_log.txt"
+   ]
+  },
+  {
+   "id": "ml-claim-only-library-json",
+   "claim": "The weekly run only replaces library.json",
+   "source": "musicLibrary/agent/weekly_run.md:8",
+   "outcome": "confirmed",
+   "finding": "publish step passes only index.html and library.json; build/library.json equals outputs/artifact/library.json",
+   "evidence": [
+    "musicLibrary/agent/weekly_run.md:8"
+   ]
+  }
+ ]
+}

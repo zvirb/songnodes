@@ -1,0 +1,1315 @@
+[
+ {
+  "id": "D1",
+  "kind": "diagram",
+  "title": "Closed loop",
+  "caption": "The loop is open at one hop: reconciliation does not feed demand ingestion automatically.",
+  "unit": "stages",
+  "n": 6,
+  "state": "built",
+  "source": "loop[] (name, mapping, systems, domain, gap)",
+  "method": "hand-placed ring of 6 cards, orthogonal hops; 0 crossings",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 11.14,
+   "font_floor_used": 12,
+   "viewbox": [
+    1210,
+    479
+   ]
+  },
+  "file": "production-execution-closed-loop.svg"
+ },
+ {
+  "id": "D2a",
+  "kind": "diagram",
+  "title": "System architecture – ingest, musiclibrary",
+  "caption": "Every ingest, musiclibrary flow, numbered as in the flow table; all of them are built.",
+  "unit": "flows",
+  "n": 11,
+  "state": "built",
+  "source": "flows[] (n, id, from, to, label, domain, state); pages[]/stores[] (title, name, domain, kind, classification, state); domain_order; colour_map",
+  "method": "graphviz dot layered layout (TB, order reverse; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 1 crossings, 0 edges through nodes",
+  "wide": true,
+  "checks": {
+   "crossings": 1,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 12.56,
+   "font_floor_used": 15,
+   "viewbox": [
+    1364,
+    601
+   ],
+   "projected": {
+    "crossings": 1,
+    "edges_through_nodes": 0,
+    "label_collisions": 0,
+    "min_font_units": 12.56,
+    "font_floor_used": 15,
+    "viewbox": [
+     1364,
+     601
+    ]
+   }
+  },
+  "file": "system-architecture-data-flow.svg",
+  "filter_table": "t-flows"
+ },
+ {
+  "id": "D2b",
+  "kind": "diagram",
+  "title": "System architecture – ingest, songnodes",
+  "caption": "Every ingest, songnodes flow, numbered as in the flow table; all of them are built.",
+  "unit": "flows",
+  "n": 14,
+  "state": "built",
+  "source": "flows[] (n, id, from, to, label, domain, state); pages[]/stores[] (title, name, domain, kind, classification, state); domain_order; colour_map",
+  "method": "graphviz dot layered layout (LR, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 4 crossings, 0 edges through nodes",
+  "wide": true,
+  "checks": {
+   "crossings": 4,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 12.37,
+   "font_floor_used": 15,
+   "viewbox": [
+    1344,
+    739
+   ],
+   "projected": {
+    "crossings": 4,
+    "edges_through_nodes": 0,
+    "label_collisions": 0,
+    "min_font_units": 12.37,
+    "font_floor_used": 15,
+    "viewbox": [
+     1344,
+     739
+    ]
+   }
+  },
+  "file": "system-architecture-data-flow-b.svg",
+  "filter_table": "t-flows"
+ },
+ {
+  "id": "D2c",
+  "kind": "diagram",
+  "title": "System architecture – library, musiclibrary",
+  "caption": "Every library, musiclibrary flow, numbered as in the flow table; all of them are built.",
+  "unit": "flows",
+  "n": 16,
+  "state": "built",
+  "source": "flows[] (n, id, from, to, label, domain, state); pages[]/stores[] (title, name, domain, kind, classification, state); domain_order; colour_map",
+  "method": "graphviz dot layered layout (TB, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 5 crossings, 0 edges through nodes",
+  "wide": true,
+  "checks": {
+   "crossings": 5,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 12.91,
+   "font_floor_used": 15,
+   "viewbox": [
+    1402,
+    766
+   ],
+   "projected": {
+    "crossings": 5,
+    "edges_through_nodes": 0,
+    "label_collisions": 0,
+    "min_font_units": 12.91,
+    "font_floor_used": 15,
+    "viewbox": [
+     1402,
+     766
+    ]
+   }
+  },
+  "file": "system-architecture-data-flow-c.svg",
+  "filter_table": "t-flows"
+ },
+ {
+  "id": "D2d",
+  "kind": "diagram",
+  "title": "System architecture – library, songnodes",
+  "caption": "Every library, songnodes flow, numbered as in the flow table; all of them are built.",
+  "unit": "flows",
+  "n": 8,
+  "state": "built",
+  "source": "flows[] (n, id, from, to, label, domain, state); pages[]/stores[] (title, name, domain, kind, classification, state); domain_order; colour_map",
+  "method": "graphviz dot layered layout (TB, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 9.58,
+   "font_floor_used": 12,
+   "viewbox": [
+    1041,
+    573
+   ],
+   "projected": {
+    "crossings": 0,
+    "edges_through_nodes": 0,
+    "label_collisions": 0,
+    "min_font_units": 9.58,
+    "font_floor_used": 12,
+    "viewbox": [
+     1041,
+     573
+    ]
+   }
+  },
+  "file": "system-architecture-data-flow-d.svg",
+  "filter_table": "t-flows"
+ },
+ {
+  "id": "D2e",
+  "kind": "diagram",
+  "title": "System architecture – graph and sets",
+  "caption": "Every graph and sets flow, numbered as in the flow table; 1 queued flow appears only in the Projected view.",
+  "unit": "flows",
+  "n": 17,
+  "state": "built+queued",
+  "source": "flows[] (n, id, from, to, label, domain, state); pages[]/stores[] (title, name, domain, kind, classification, state); domain_order; colour_map",
+  "method": "graphviz dot layered layout (TB, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 0 crossings, 0 edges through nodes",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 14.29,
+   "font_floor_used": 15,
+   "viewbox": [
+    1552,
+    820
+   ],
+   "projected": {
+    "crossings": 0,
+    "edges_through_nodes": 0,
+    "label_collisions": 0,
+    "min_font_units": 14.29,
+    "font_floor_used": 15,
+    "viewbox": [
+     1552,
+     851
+    ]
+   }
+  },
+  "file": "system-architecture-data-flow-e.svg",
+  "filter_table": "t-flows"
+ },
+ {
+  "id": "D2f",
+  "kind": "diagram",
+  "title": "System architecture – services",
+  "caption": "Every services flow, numbered as in the flow table; all of them are built.",
+  "unit": "flows",
+  "n": 11,
+  "state": "built",
+  "source": "flows[] (n, id, from, to, label, domain, state); pages[]/stores[] (title, name, domain, kind, classification, state); domain_order; colour_map",
+  "method": "graphviz dot layered layout (LR, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 10.83,
+   "font_floor_used": 12,
+   "viewbox": [
+    1176,
+    634
+   ],
+   "projected": {
+    "crossings": 0,
+    "edges_through_nodes": 0,
+    "label_collisions": 0,
+    "min_font_units": 14.59,
+    "font_floor_used": 15,
+    "viewbox": [
+     1585,
+     872
+    ]
+   }
+  },
+  "file": "system-architecture-data-flow-f.svg",
+  "filter_table": "t-flows"
+ },
+ {
+  "id": "D2g",
+  "kind": "diagram",
+  "title": "System architecture – ops and design",
+  "caption": "Every ops and design flow, numbered as in the flow table; 1 queued flow appears only in the Projected view.",
+  "unit": "flows",
+  "n": 10,
+  "state": "built+queued",
+  "source": "flows[] (n, id, from, to, label, domain, state); pages[]/stores[] (title, name, domain, kind, classification, state); domain_order; colour_map",
+  "method": "graphviz dot layered layout (TB, order given, components packed 4 across, ungrouped; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 10.15,
+   "font_floor_used": 12,
+   "viewbox": [
+    1103,
+    527
+   ],
+   "projected": {
+    "crossings": 0,
+    "edges_through_nodes": 0,
+    "label_collisions": 0,
+    "min_font_units": 14.76,
+    "font_floor_used": 15,
+    "viewbox": [
+     1603,
+     562
+    ]
+   }
+  },
+  "file": "system-architecture-data-flow-g.svg",
+  "filter_table": "t-flows"
+ },
+ {
+  "id": "D3a",
+  "kind": "diagram",
+  "title": "Storage topology – musicLibrary stores",
+  "caption": "3 of 12 musicLibrary stores carry a lock, lease or unique-key rule; the rest rely on whole-file overwrite or last writer wins.",
+  "unit": "stores",
+  "n": 12,
+  "state": "built",
+  "source": "stores[] (kind, location, owner, readers, concurrency); flows[] touching stores",
+  "method": "graphviz dot layered layout (LR, order reverse, ungrouped; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 17 units; 3 crossings, 0 edges through nodes",
+  "wide": true,
+  "checks": {
+   "crossings": 3,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 16.79,
+   "font_floor_used": 17,
+   "viewbox": [
+    1824,
+    1003
+   ]
+  },
+  "file": "storage-topology.svg",
+  "filter_table": "t-stores"
+ },
+ {
+  "id": "D3b",
+  "kind": "diagram",
+  "title": "Storage topology – external services",
+  "caption": "0 of 10 external services carry a lock, lease or unique-key rule; the rest rely on whole-file overwrite or last writer wins.",
+  "unit": "stores",
+  "n": 10,
+  "state": "built",
+  "source": "stores[] (kind, location, owner, readers, concurrency); flows[] touching stores",
+  "method": "graphviz dot layered layout (TB, order reverse; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 18 units; 24 crossings, 0 edges through nodes",
+  "wide": true,
+  "checks": {
+   "crossings": 24,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 17.73,
+   "font_floor_used": 18,
+   "viewbox": [
+    1926,
+    670
+   ]
+  },
+  "file": "storage-topology-b.svg",
+  "filter_table": "t-stores"
+ },
+ {
+  "id": "D3c",
+  "kind": "diagram",
+  "title": "Storage topology – songnodes medallion tables",
+  "caption": "2 of 9 songnodes medallion tables carry a lock, lease or unique-key rule; the rest rely on whole-file overwrite or last writer wins.",
+  "unit": "stores",
+  "n": 9,
+  "state": "built",
+  "source": "stores[] (kind, location, owner, readers, concurrency); flows[] touching stores",
+  "method": "graphviz dot layered layout (LR, order given, ungrouped; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 0 crossings, 0 edges through nodes",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 14.5,
+   "font_floor_used": 15,
+   "viewbox": [
+    1575,
+    866
+   ]
+  },
+  "file": "storage-topology-c.svg",
+  "filter_table": "t-stores"
+ },
+ {
+  "id": "D3d",
+  "kind": "diagram",
+  "title": "Storage topology – songnodes operational tables",
+  "caption": "3 of 6 songnodes operational tables carry a lock, lease or unique-key rule; the rest rely on whole-file overwrite or last writer wins.",
+  "unit": "stores",
+  "n": 6,
+  "state": "built",
+  "source": "stores[] (kind, location, owner, readers, concurrency); flows[] touching stores",
+  "method": "graphviz dot layered layout (LR, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 19 crossings, 0 edges through nodes",
+  "wide": true,
+  "checks": {
+   "crossings": 19,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 10.72,
+   "font_floor_used": 12,
+   "viewbox": [
+    1165,
+    641
+   ]
+  },
+  "file": "storage-topology-d.svg",
+  "filter_table": "t-stores"
+ },
+ {
+  "id": "D3e",
+  "kind": "diagram",
+  "title": "Storage topology – songnodes services and queues",
+  "caption": "1 of 6 songnodes services and queues carry a lock, lease or unique-key rule; the rest rely on whole-file overwrite or last writer wins.",
+  "unit": "stores",
+  "n": 6,
+  "state": "built",
+  "source": "stores[] (kind, location, owner, readers, concurrency); flows[] touching stores",
+  "method": "graphviz dot layered layout (TB, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 11.89,
+   "font_floor_used": 12,
+   "viewbox": [
+    1292,
+    711
+   ]
+  },
+  "file": "storage-topology-e.svg",
+  "filter_table": "t-stores"
+ },
+ {
+  "id": "D3f",
+  "kind": "diagram",
+  "title": "Storage topology – songnodes browser stores",
+  "caption": "1 of 5 songnodes browser stores carry a lock, lease or unique-key rule; the rest rely on whole-file overwrite or last writer wins.",
+  "unit": "stores",
+  "n": 5,
+  "state": "built",
+  "source": "stores[] (kind, location, owner, readers, concurrency); flows[] touching stores",
+  "method": "graphviz dot layered layout (TB, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 8.08,
+   "font_floor_used": 12,
+   "viewbox": [
+    877,
+    483
+   ]
+  },
+  "file": "storage-topology-f.svg",
+  "filter_table": "t-stores"
+ },
+ {
+  "id": "D4a",
+  "kind": "diagram",
+  "title": "Page link graph – songnodes frontend",
+  "caption": "7 of 17 songnodes frontend pages carry at least one standing-rule violation.",
+  "unit": "pages",
+  "n": 17,
+  "state": "built+queued",
+  "source": "pages[] (links_out, classification, state, domain); flows[] between pages; rule_results[] (result = violation)",
+  "method": "graphviz dot layered layout (LR, order degree, ungrouped; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 1 crossings, 0 edges through nodes",
+  "wide": true,
+  "checks": {
+   "crossings": 1,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 13.03,
+   "font_floor_used": 15,
+   "viewbox": [
+    1415,
+    726
+   ],
+   "projected": {
+    "crossings": 4,
+    "edges_through_nodes": 0,
+    "label_collisions": 0,
+    "min_font_units": 17.82,
+    "font_floor_used": 18,
+    "viewbox": [
+     1936,
+     1065
+    ]
+   }
+  },
+  "file": "page-link-graph.svg",
+  "filter_table": "t-pages"
+ },
+ {
+  "id": "D4b",
+  "kind": "diagram",
+  "title": "Page link graph – songnodes backend",
+  "caption": "3 of 20 songnodes backend pages carry at least one standing-rule violation.",
+  "unit": "pages",
+  "n": 20,
+  "state": "built+queued",
+  "source": "pages[] (links_out, classification, state, domain); flows[] between pages; rule_results[] (result = violation)",
+  "method": "graphviz dot layered layout (TB, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 17 units; 3 crossings, 0 edges through nodes",
+  "wide": true,
+  "checks": {
+   "crossings": 3,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 15.84,
+   "font_floor_used": 17,
+   "viewbox": [
+    1721,
+    638
+   ],
+   "projected": {
+    "crossings": 0,
+    "edges_through_nodes": 0,
+    "label_collisions": 0,
+    "min_font_units": 11.69,
+    "font_floor_used": 12,
+    "viewbox": [
+     1270,
+     662
+    ]
+   }
+  },
+  "file": "page-link-graph-b.svg",
+  "filter_table": "t-pages"
+ },
+ {
+  "id": "D4c",
+  "kind": "diagram",
+  "title": "Page link graph – musicLibrary",
+  "caption": "0 of 19 musicLibrary pages carry at least one standing-rule violation.",
+  "unit": "pages",
+  "n": 19,
+  "state": "built",
+  "source": "pages[] (links_out, classification, state, domain); flows[] between pages; rule_results[] (result = violation)",
+  "method": "graphviz dot layered layout (LR, order reverse, ungrouped; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 0 crossings, 0 edges through nodes",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 14.56,
+   "font_floor_used": 15,
+   "viewbox": [
+    1582,
+    870
+   ],
+   "projected": {
+    "crossings": 0,
+    "edges_through_nodes": 0,
+    "label_collisions": 0,
+    "min_font_units": 14.56,
+    "font_floor_used": 15,
+    "viewbox": [
+     1582,
+     870
+    ]
+   }
+  },
+  "file": "page-link-graph-c.svg",
+  "filter_table": "t-pages"
+ },
+ {
+  "id": "D5",
+  "kind": "diagram",
+  "title": "Persona overview",
+  "caption": "8 personas take 49 steps; only 2 of them touch Reconciliation.",
+  "unit": "steps",
+  "n": 49,
+  "state": "built",
+  "source": "personas[] (steps[].page, action, writes); loop[]; pages[].domain",
+  "method": "hand-placed grid (lanes = personas, columns = loop stages); stage = page domain, override/calibrate/confirm steps = Reconciliation; 0 crossings",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 13.98,
+   "font_floor_used": 15,
+   "viewbox": [
+    1518,
+    835
+   ]
+  },
+  "file": "user-journey-operational-flow.svg",
+  "filter_table": "t-personas"
+ },
+ {
+  "id": "D5-P1",
+  "kind": "diagram",
+  "title": "Swimlane – P1 DJ performing",
+  "caption": "DJ performing: 3 steps across 1 lane; 1 step name a fallback.",
+  "unit": "steps",
+  "n": 3,
+  "state": "built",
+  "source": "personas[].steps[] (n, page, action, writes, trigger, handoff, fallback); pages[].domain",
+  "method": "hand-placed swimlane (lanes = systems, columns = steps, card width 220); orthogonal arrows in the column gaps; 0 crossings by construction",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 7.94,
+   "font_floor_used": 12,
+   "viewbox": [
+    862,
+    394
+   ]
+  },
+  "file": "d5-p1-dj-performing.svg"
+ },
+ {
+  "id": "D5-P2",
+  "kind": "diagram",
+  "title": "Swimlane – P2 Set planner",
+  "caption": "Set planner: 8 steps across 3 lanes; 6 steps name a fallback.",
+  "unit": "steps",
+  "n": 8,
+  "state": "built",
+  "source": "personas[].steps[] (n, page, action, writes, trigger, handoff, fallback); pages[].domain",
+  "method": "hand-placed swimlane (lanes = systems, columns = steps, card width 180); orthogonal arrows in the column gaps; 0 crossings by construction",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 16.77,
+   "font_floor_used": 17,
+   "viewbox": [
+    1821,
+    1002
+   ]
+  },
+  "file": "d5-p2-set-planner.svg"
+ },
+ {
+  "id": "D5-P3",
+  "kind": "diagram",
+  "title": "Swimlane – P3 Library curator",
+  "caption": "Library curator: 8 steps across 2 lanes; 4 steps name a fallback.",
+  "unit": "steps",
+  "n": 8,
+  "state": "built",
+  "source": "personas[].steps[] (n, page, action, writes, trigger, handoff, fallback); pages[].domain",
+  "method": "hand-placed swimlane (lanes = systems, columns = steps, card width 160); orthogonal arrows in the column gaps; 0 crossings by construction",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 14.79,
+   "font_floor_used": 15,
+   "viewbox": [
+    1607,
+    776
+   ]
+  },
+  "file": "d5-p3-library-curator.svg"
+ },
+ {
+  "id": "D5-P4",
+  "kind": "diagram",
+  "title": "Swimlane – P4 Pipeline operator",
+  "caption": "Pipeline operator: 10 steps across 2 lanes; 9 steps name a fallback.",
+  "unit": "steps",
+  "n": 10,
+  "state": "built",
+  "source": "personas[].steps[] (n, page, action, writes, trigger, handoff, fallback); pages[].domain",
+  "method": "hand-placed swimlane (lanes = systems, columns = steps, card width 124); orthogonal arrows in the column gaps; 0 crossings by construction",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 14.69,
+   "font_floor_used": 15,
+   "viewbox": [
+    1596,
+    860
+   ]
+  },
+  "file": "d5-p4-pipeline-operator.svg"
+ },
+ {
+  "id": "D5-P5a",
+  "kind": "diagram",
+  "title": "Swimlane – P5 Developer, steps 1–4",
+  "caption": "Developer: 4 steps across 1 lane; 4 steps name a fallback.",
+  "unit": "steps",
+  "n": 4,
+  "state": "built",
+  "source": "personas[].steps[] (n, page, action, writes, trigger, handoff, fallback); pages[].domain",
+  "method": "hand-placed swimlane (lanes = systems, columns = steps, card width 220); orthogonal arrows in the column gaps; 0 crossings by construction",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 10.16,
+   "font_floor_used": 12,
+   "viewbox": [
+    1104,
+    367
+   ]
+  },
+  "file": "d5-p5a-developer.svg"
+ },
+ {
+  "id": "D5-P5b",
+  "kind": "diagram",
+  "title": "Swimlane – P5 Developer, steps 5–8",
+  "caption": "Developer: 4 steps across 2 lanes; 0 steps name a fallback.",
+  "unit": "steps",
+  "n": 4,
+  "state": "built",
+  "source": "personas[].steps[] (n, page, action, writes, trigger, handoff, fallback); pages[].domain",
+  "method": "hand-placed swimlane (lanes = systems, columns = steps, card width 220); orthogonal arrows in the column gaps; 0 crossings by construction",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 10.3,
+   "font_floor_used": 12,
+   "viewbox": [
+    1119,
+    534
+   ]
+  },
+  "file": "d5-p5b-developer.svg"
+ },
+ {
+  "id": "D5-P6",
+  "kind": "diagram",
+  "title": "Swimlane – P6 Scraper (system actor)",
+  "caption": "Scraper (system actor): 6 steps across 1 lane; 6 steps name a fallback.",
+  "unit": "steps",
+  "n": 6,
+  "state": "built",
+  "source": "personas[].steps[] (n, page, action, writes, trigger, handoff, fallback); pages[].domain",
+  "method": "hand-placed swimlane (lanes = systems, columns = steps, card width 160); orthogonal arrows in the column gaps; 0 crossings by construction",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 11.3,
+   "font_floor_used": 12,
+   "viewbox": [
+    1228,
+    454
+   ]
+  },
+  "file": "d5-p6-scraper-system-actor.svg"
+ },
+ {
+  "id": "D5-P7",
+  "kind": "diagram",
+  "title": "Swimlane – P7 Weekly-run agent (system actor)",
+  "caption": "Weekly-run agent (system actor): 3 steps across 2 lanes; 2 steps name a fallback.",
+  "unit": "steps",
+  "n": 3,
+  "state": "built",
+  "source": "personas[].steps[] (n, page, action, writes, trigger, handoff, fallback); pages[].domain",
+  "method": "hand-placed swimlane (lanes = systems, columns = steps, card width 220); orthogonal arrows in the column gaps; 0 crossings by construction",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 10.18,
+   "font_floor_used": 12,
+   "viewbox": [
+    1106,
+    608
+   ]
+  },
+  "file": "d5-p7-weekly-run-agent-system-actor.svg"
+ },
+ {
+  "id": "D5-P8",
+  "kind": "diagram",
+  "title": "Swimlane – P8 Beatport sync (assisted)",
+  "caption": "Beatport sync (assisted): 3 steps across 1 lane; 0 steps name a fallback.",
+  "unit": "steps",
+  "n": 3,
+  "state": "built",
+  "source": "personas[].steps[] (n, page, action, writes, trigger, handoff, fallback); pages[].domain",
+  "method": "hand-placed swimlane (lanes = systems, columns = steps, card width 220); orthogonal arrows in the column gaps; 0 crossings by construction",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 8.07,
+   "font_floor_used": 12,
+   "viewbox": [
+    877,
+    321
+   ]
+  },
+  "file": "d5-p8-beatport-sync-assisted.svg"
+ },
+ {
+  "id": "D6a",
+  "kind": "diagram",
+  "title": "Sequence – Scrape to bronze, silver and projections",
+  "caption": "11 messages across 7 participants, numbered in order; red marks where the protocol leaks.",
+  "unit": "messages",
+  "n": 11,
+  "state": "built",
+  "source": "protocols[] sn-be-proto-recurring-schedule, sn-be-proto-job-queue, sn-be-proto-scrape-etl-order, sn-be-proto-outbox (algorithm, conflict_resolution, stale_fallback); timings[]",
+  "method": "hand-placed UML sequence (lifelines in first-use order, one row per message); protocols chosen per theme by flows touching their participants (sn-be-proto-recurring-schedule 6, sn-be-proto-job-queue 31, sn-be-proto-scrape-etl-order 10, sn-be-proto-outbox 0); 0 crossings",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 14.54,
+   "font_floor_used": 15,
+   "viewbox": [
+    1580,
+    869
+   ]
+  },
+  "file": "sequence-scrape-to-bronze-silver-and-projections.svg"
+ },
+ {
+  "id": "D6b",
+  "kind": "diagram",
+  "title": "Sequence – Weekly musicLibrary run to TIDAL and songnodes",
+  "caption": "10 messages across 9 participants, numbered in order; red marks where the protocol leaks.",
+  "unit": "messages",
+  "n": 10,
+  "state": "built",
+  "source": "protocols[] ml-proto-resolve-resume, ml-proto-sync-sets, ml-proto-songnodes-ingest (algorithm, conflict_resolution, stale_fallback); timings[]",
+  "method": "hand-placed UML sequence (lifelines in first-use order, one row per message); protocols chosen per theme by flows touching their participants (ml-proto-resolve-resume 7, ml-proto-sync-sets 9, ml-proto-songnodes-ingest 2); 0 crossings",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 12.2,
+   "font_floor_used": 15,
+   "viewbox": [
+    1325,
+    729
+   ]
+  },
+  "file": "sequence-weekly-musiclibrary-run-to-tidal-and-songnodes.svg"
+ },
+ {
+  "id": "D6c",
+  "kind": "diagram",
+  "title": "Sequence – TIDAL and Spotify OAuth connect",
+  "caption": "15 messages across 6 participants, numbered in order; red marks where the protocol leaks.",
+  "unit": "messages",
+  "n": 15,
+  "state": "built",
+  "source": "protocols[] sn-fe-proto-oauth, sn-be-proto-oauth-pkce (algorithm, conflict_resolution, stale_fallback); timings[]",
+  "method": "hand-placed UML sequence (lifelines in first-use order, one row per message); protocols chosen per theme by flows touching their participants (sn-fe-proto-oauth 4, sn-be-proto-oauth-pkce 25); 0 crossings",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 14.61,
+   "font_floor_used": 15,
+   "viewbox": [
+    1587,
+    873
+   ]
+  },
+  "file": "sequence-tidal-and-spotify-oauth-connect.svg"
+ },
+ {
+  "id": "D7a",
+  "kind": "diagram",
+  "title": "State machine – Scrape and ingestion job",
+  "caption": "6 states, 7 transitions; every timing on an arrow comes from the timings table.",
+  "unit": "transitions",
+  "n": 7,
+  "state": "built",
+  "source": "protocols sn-be-proto-job-queue, sn-be-proto-scrape-etl-order; timings sn-be-t-lease-default, sn-be-t-lease-scrape, sn-be-t-backoff-base, sn-be-t-backoff-max",
+  "method": "graphviz dot layered layout (LR, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 8.1,
+   "font_floor_used": 12,
+   "viewbox": [
+    880,
+    476
+   ]
+  },
+  "file": "state-machine-scrape-and-ingestion-job.svg"
+ },
+ {
+  "id": "D7b",
+  "kind": "diagram",
+  "title": "State machine – Track rotation",
+  "caption": "6 states, 7 transitions; every timing on an arrow comes from the timings table.",
+  "unit": "transitions",
+  "n": 7,
+  "state": "built",
+  "source": "timings ml-t-promote-window, ml-t-chart-entry, ml-t-high-tenure, ml-t-high-silence, ml-t-std-archive-age, ml-t-std-archive-silence; limits ml-l-promote-sources, ml-l-promote-saves, ml-l-high-cap, ml-l-chart-sat, ml-l-resolve-attempts, ml-l-recheck",
+  "method": "graphviz dot layered layout (LR, order reverse; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 7.97,
+   "font_floor_used": 12,
+   "viewbox": [
+    866,
+    476
+   ]
+  },
+  "file": "state-machine-track-rotation.svg"
+ },
+ {
+  "id": "D7c",
+  "kind": "diagram",
+  "title": "State machine – OAuth token",
+  "caption": "5 states, 7 transitions; every timing on an arrow comes from the timings table.",
+  "unit": "transitions",
+  "n": 7,
+  "state": "built",
+  "source": "protocols sn-fe-proto-oauth, sn-be-proto-oauth-pkce, ml-proto-tidal-login; timings sn-be-t-oauth-state, sn-fe-t-token-buffer, sn-fe-t-token-check, sn-fe-t-token-default-expiry, sn-fe-t-oauth-error-redirect, ml-t-pkce-age",
+  "method": "graphviz dot layered layout (LR, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 7.94,
+   "font_floor_used": 12,
+   "viewbox": [
+    863,
+    415
+   ]
+  },
+  "file": "state-machine-oauth-token.svg"
+ },
+ {
+  "id": "D8a",
+  "kind": "diagram",
+  "title": "Gap map – musicLibrary and cross-project",
+  "caption": "9 musicLibrary and cross-project gaps, 4 of them critical; dashed brand cards are the modules that close them.",
+  "unit": "gaps",
+  "n": 9,
+  "state": "built",
+  "source": "gaps[] (title, contract, affects, severity, effort); modules[]; tasks[] (gaps, title)",
+  "method": "graphviz dot layered layout (TB, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 0 crossings, 0 edges through nodes; gap endpoints = first two affected paths matched to pages by path prefix",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 14.44,
+   "font_floor_used": 15,
+   "viewbox": [
+    1569,
+    863
+   ]
+  },
+  "file": "enhanced-architecture-connections-and-gaps.svg"
+ },
+ {
+  "id": "D8b",
+  "kind": "diagram",
+  "title": "Gap map – songnodes backend: data layers and scraping",
+  "caption": "6 songnodes backend: data layers and scraping gaps, 0 of them critical; dashed brand cards are the modules that close them.",
+  "unit": "gaps",
+  "n": 6,
+  "state": "built",
+  "source": "gaps[] (title, contract, affects, severity, effort); modules[]; tasks[] (gaps, title)",
+  "method": "graphviz dot layered layout (LR, order given, components packed 3 across; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes; gap endpoints = first two affected paths matched to pages by path prefix",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 11.18,
+   "font_floor_used": 12,
+   "viewbox": [
+    1215,
+    668
+   ]
+  },
+  "file": "enhanced-architecture-connections-and-gaps-b.svg"
+ },
+ {
+  "id": "D8c",
+  "kind": "diagram",
+  "title": "Gap map – songnodes backend: platform and operations",
+  "caption": "5 songnodes backend: platform and operations gaps, 1 of them critical; dashed brand cards are the modules that close them.",
+  "unit": "gaps",
+  "n": 5,
+  "state": "built",
+  "source": "gaps[] (title, contract, affects, severity, effort); modules[]; tasks[] (gaps, title)",
+  "method": "graphviz dot layered layout (TB, order given, components packed 4 across; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes; gap endpoints = first two affected paths matched to pages by path prefix",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 10.1,
+   "font_floor_used": 12,
+   "viewbox": [
+    1098,
+    545
+   ]
+  },
+  "file": "enhanced-architecture-connections-and-gaps-c.svg"
+ },
+ {
+  "id": "D8d",
+  "kind": "diagram",
+  "title": "Gap map – songnodes frontend",
+  "caption": "8 songnodes frontend gaps, 1 of them critical; dashed brand cards are the modules that close them.",
+  "unit": "gaps",
+  "n": 8,
+  "state": "built",
+  "source": "gaps[] (title, contract, affects, severity, effort); modules[]; tasks[] (gaps, title)",
+  "method": "graphviz dot layered layout (LR, order given, components packed 4 across; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 0 crossings, 0 edges through nodes; gap endpoints = first two affected paths matched to pages by path prefix",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 13.45,
+   "font_floor_used": 15,
+   "viewbox": [
+    1461,
+    804
+   ]
+  },
+  "file": "enhanced-architecture-connections-and-gaps-d.svg"
+ },
+ {
+  "id": "D9",
+  "kind": "diagram",
+  "title": "Built to Projected change map",
+  "caption": "Queued work adds 10 cards and 6 edges and changes 3 built items; 32 briefs wait behind them.",
+  "unit": "items",
+  "n": 51,
+  "state": "built+queued",
+  "source": "queued[] (PR touches and effect, brief notes); flows[] and pages[]/stores[] with state queued",
+  "method": "graphviz dot layered layout (LR, order given, components packed 2 across; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 6.33,
+   "font_floor_used": 12,
+   "viewbox": [
+    688,
+    314
+   ],
+   "projected": {
+    "crossings": 0,
+    "edges_through_nodes": 0,
+    "label_collisions": 0,
+    "min_font_units": 14.87,
+    "font_floor_used": 15,
+    "viewbox": [
+     1616,
+     764
+    ]
+   }
+  },
+  "file": "built-to-projected-change-map.svg"
+ },
+ {
+  "id": "D10",
+  "kind": "diagram",
+  "title": "Storage backbone before and after",
+  "caption": "Each project keeps its own data folder; the change is 4 new contract and exchange entries that carry the 8 cross-project hops.",
+  "unit": "stores and backbone entries",
+  "n": 66,
+  "state": "built+projected",
+  "source": "stores[] (repo, kind, domain, state); backbone.tree; flows[] crossing repos",
+  "method": "hand-placed two-panel tree; 0 edges",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 16.14,
+   "font_floor_used": 17,
+   "viewbox": [
+    1753,
+    964
+   ]
+  },
+  "file": "storage-backbone-before-after.svg"
+ },
+ {
+  "id": "D11a",
+  "kind": "diagram",
+  "title": "Roadmap timeline (waves W1 to W5)",
+  "caption": "5 waves and 16 tasks; the security gate in W1 comes before any tunnel.",
+  "unit": "tasks",
+  "n": 16,
+  "state": "queued",
+  "source": "roadmap[] (tasks, gate, depends); tasks[] (project, type, depends, gaps); meta.ml_snapshot (Today)",
+  "method": "hand-placed columns, dependency arrows routed through row corridors; 1 crossings",
+  "wide": true,
+  "checks": {
+   "crossings": 1,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 14.48,
+   "font_floor_used": 15,
+   "viewbox": [
+    1573,
+    865
+   ]
+  },
+  "file": "roadmap-timeline-a.svg"
+ },
+ {
+  "id": "D11b",
+  "kind": "diagram",
+  "title": "Roadmap timeline (wave W6)",
+  "caption": "W6 alone: 13 one-job packages for the proposed pages and design-system updates, after waves W2, W4.",
+  "unit": "tasks",
+  "n": 13,
+  "state": "queued",
+  "source": "roadmap[] (tasks, gate, depends); tasks[] (project, type, depends, gaps); meta.ml_snapshot (Today)",
+  "method": "hand-placed columns, dependency arrows routed through row corridors; 0 crossings",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 12.87,
+   "font_floor_used": 15,
+   "viewbox": [
+    1398,
+    769
+   ]
+  },
+  "file": "roadmap-timeline-b.svg"
+ },
+ {
+  "id": "D12",
+  "kind": "diagram",
+  "title": "Sister-project dependency graph",
+  "caption": "Only 8 of 87 flows cross between songnodes and musicLibrary; the rest stay inside one project or reach an external service.",
+  "unit": "project pairs",
+  "n": 15,
+  "state": "built",
+  "source": "flows[] aggregated by repo pair (pages[]/stores[].repo); tasks[].project; design-system pages",
+  "method": "graphviz dot layered layout (TB, order degree; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 17 units; 0 crossings, 0 edges through nodes",
+  "wide": true,
+  "checks": {
+   "crossings": 0,
+   "edges_through_nodes": 0,
+   "label_collisions": 0,
+   "min_font_units": 15.1,
+   "font_floor_used": 17,
+   "viewbox": [
+    1640,
+    698
+   ]
+  },
+  "file": "sister-project-dependencies.svg"
+ },
+ {
+  "id": "C1",
+  "kind": "chart",
+  "title": "Pages by domain and status",
+  "caption": "ops holds the most pages (56 of 115); 67 pages are non-final and 4 queued.",
+  "unit": "pages",
+  "n": 115,
+  "state": "projected",
+  "source": "pages[].domain, pages[].classification, pages[].state",
+  "method": "Count of pages per domain; built pages split by classification, queued pages counted separately; sorted by total.",
+  "wide": false,
+  "file": "c01-pages-by-domain.svg",
+  "filter_table": "t-pages"
+ },
+ {
+  "id": "C2",
+  "kind": "chart",
+  "title": "Page and store access matrix",
+  "caption": "The 21 most connected pages against the 15 most used stores (of 23 pages and 35 stores with 61 access links); letters give the access, R read, W write, RW both.",
+  "unit": "page–store links",
+  "n": 61,
+  "state": "projected",
+  "source": "signals[] (from, to, direction, state), flows[] (from, to, state)",
+  "method": "A link is any signal or flow between a page and a store; signal direction gives R/W/RW, a flow into a store is W and out of a store is R. Rows and columns ranked by distinct connections (ties by id) and capped at 25 by 15.",
+  "wide": false,
+  "file": "c02-page-store-matrix.svg",
+  "filter_table": "t-signals"
+ },
+ {
+  "id": "C3",
+  "kind": "chart",
+  "title": "Signal primitives, built and projected",
+  "caption": "http-endpoint carries 225 of 404 signals; queued work adds 7 signals (cookie, fetch, http-endpoint, redis).",
+  "unit": "signals",
+  "n": 404,
+  "state": "projected",
+  "source": "signals[].type, signals[].state",
+  "method": "Count of signals per type; Built = state built, Projected = built + queued; sorted by projected count.",
+  "wide": false,
+  "file": "c03-signal-primitives.svg",
+  "filter_table": "t-signals"
+ },
+ {
+  "id": "C4",
+  "kind": "chart",
+  "title": "Store fan-in and fan-out",
+  "caption": "silver_enriched_tracks is the busiest store (3 flows in, 2 out); 31 of 48 stores sit on a numbered flow.",
+  "unit": "flows",
+  "n": 49,
+  "state": "projected",
+  "source": "flows[] (from, to, channel, state), stores[], signals[] for the contract",
+  "method": "In = flows whose target is the store, out = flows whose source is the store; main contract = the signal named by the store's most frequent flow channel.",
+  "wide": false,
+  "file": "c04-store-fan-in-out.svg",
+  "filter_table": "t-stores"
+ },
+ {
+  "id": "C5",
+  "kind": "chart",
+  "title": "Timing constants on a log axis",
+  "caption": "105 timing constants span 100 ms to 365 d; reference lines mark Heartbeat stale (sn-be-t-heartbeat-stale), Job lease (sn-be-t-lease-default), Job stall (sn-fe-t-stall), Token lifetime (ml-t-tidal-user-default).",
+  "unit": "milliseconds (log scale)",
+  "n": 105,
+  "state": "projected",
+  "source": "timings[].value_ms, timings[].kind, timings[].state",
+  "method": "Each constant is one dot on a log10 axis, one lane per kind (kinds ordered by median value); coincident dots stack. Reference lines are the timings matched by name: heartbeat staleness, default job lease, job stall threshold and default token lifetime.",
+  "wide": true,
+  "file": "c05-timing-constants.svg",
+  "filter_table": "t-timings"
+ },
+ {
+  "id": "C6",
+  "kind": "chart",
+  "title": "Polling load by target store (Estimate)",
+  "caption": "Estimate: the heaviest polling target is via Melbourne crate (3 stores), 1,800 requests per hour; queued work adds no polling.",
+  "unit": "requests per hour (Estimate)",
+  "n": 17,
+  "state": "built",
+  "source": "timings[] (kind poll|schedule, value_ms, where), signals[] and flows[] to resolve the store",
+  "method": "Estimate: requests per hour = 3,600,000 / value_ms per poll or schedule timing, summed by target store; the target is the timing's own store, else the single store linked to its component by signals or flows, else the component is named with its store count. Assumes every tick makes one request.",
+  "wide": false,
+  "file": "c06-polling-load.svg",
+  "filter_table": "t-timings"
+ },
+ {
+  "id": "C7",
+  "kind": "chart",
+  "title": "Sizes against limits",
+  "caption": "None of the 11 measured limits is within 10 % of its limit; the one with least headroom is ARIA parse sanity floor at 125 % of its floor.",
+  "unit": "per cent of limit",
+  "n": 11,
+  "state": "built",
+  "source": "limits[] with current (value, unit, current)",
+  "method": "Bullet chart: current / limit. Text currents take their first number; a file map takes its largest file (the limit is per file), bytes to MB at 1,048,576. Floors (name says floor or minimum) are near when under 110 %, others when at or over 90 %.",
+  "wide": false,
+  "file": "c07-size-vs-limit.svg",
+  "filter_table": "t-limits"
+ },
+ {
+  "id": "C8",
+  "kind": "chart",
+  "title": "Standing-rule conformance",
+  "caption": "17 of 128 page results are violations; R5 has the most (6).",
+  "unit": "page results",
+  "n": 128,
+  "state": "built",
+  "source": "rule_results[] (rule, result), standing_rules[]",
+  "method": "Count of page results per rule R1–R8 (ordinal, not sorted) split by result.",
+  "wide": false,
+  "file": "c08-rule-conformance.svg",
+  "filter_table": "t-rules"
+ },
+ {
+  "id": "C9",
+  "kind": "chart",
+  "title": "Personas by page, with step numbers",
+  "caption": "8 personas take 49 steps over 30 pages; 7 pages serve more than one persona. No ease scores: findings.json holds no evidence for them.",
+  "unit": "steps",
+  "n": 49,
+  "state": "built",
+  "source": "personas[].steps[] (n, page)",
+  "method": "Each cell lists the step numbers a persona takes on a page; columns ordered by number of personas, then by first appearance. Ease scores omitted (no evidence).",
+  "wide": true,
+  "file": "c09-persona-page-matrix.svg"
+ },
+ {
+  "id": "C10",
+  "kind": "chart",
+  "title": "Risk matrix, severity by effort",
+  "caption": "11 of 47 debt items are critical or high; 4 of those are small-effort fixes.",
+  "unit": "debt items",
+  "n": 47,
+  "state": "projected",
+  "source": "debt[] (severity, effort, state)",
+  "method": "Count of debt items per severity (ordinal rows) and effort S/M/L (ordinal columns), with each item's short id.",
+  "wide": false,
+  "file": "c10-risk-matrix.svg",
+  "filter_table": "t-debt"
+ },
+ {
+  "id": "C11",
+  "kind": "chart",
+  "title": "Verification outcome by area",
+  "caption": "37 of 81 repo claims hold as written; 23 needed correcting and 17 are refuted.",
+  "unit": "claims",
+  "n": 81,
+  "state": "built",
+  "source": "claims[] (outcome, _agent)",
+  "method": "Count of claims per scanning area split by outcome; sorted by total.",
+  "wide": false,
+  "file": "c11-verification-outcome.svg",
+  "filter_table": "t-claims"
+ },
+ {
+  "id": "C12",
+  "kind": "chart",
+  "title": "Sister tasks by project, type and status",
+  "caption": "29 queued tasks over 3 projects; 16 are ready now and 13 wait on another task.",
+  "unit": "tasks",
+  "n": 29,
+  "state": "queued",
+  "source": "tasks[] (project, type, depends)",
+  "method": "Tasks placed by type (rows, by count) and project (columns, by count). tasks[] has no status field: status is derived from depends (Ready when empty).",
+  "wide": false,
+  "file": "c12-tasks.svg",
+  "filter_table": "t-tasks"
+ }
+]

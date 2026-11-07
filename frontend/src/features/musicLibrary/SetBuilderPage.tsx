@@ -440,6 +440,7 @@ const SetBuilderPage: React.FC = () => {
         desc={`${shape.name} over ${draft.minutes} min: ${SN.format.count(filled.length)} tracks, ${mixLine}.`}
         stampVerb="Saved"
         stamp={savedDoc?.updated ?? null}
+        stampUnknown={draft.slots.some((s) => s.id != null) && !savedDoc?.updated}
         pill={undefined}
         actions={
           <>
@@ -447,7 +448,7 @@ const SetBuilderPage: React.FC = () => {
             <button className="sn-btn sn-page-header__secondary" type="button" onClick={() => setExportingSet(savedSetFromDraft(draft, byId, saved))} disabled={!filled.length}><SnIcon name="download" />Export</button>
             <button className="sn-btn sn-page-header__secondary" type="button" onClick={() => setSendingTidal(true)} disabled={!savedDoc}><SnIcon name="list-music" />Send to TIDAL</button>
             <OverflowMenu label="More actions" heading="Set" items={menuItems} onSelect={(id) => { if (id === 'save') save(); if (id === 'export') exportSets(); if (id === 'export-single' && savedDoc) setExportingSet(savedDoc); if (id === 'delete' && savedDoc) setToDelete(savedDoc); }} />
-            <button className="sn-btn sn-btn--primary" type="button" onClick={() => build()} disabled={!lib}><SnIcon name="wand-sparkles" />Build set</button>
+            {draft.slots.length > 0 && <button className="sn-btn sn-btn--primary" type="button" onClick={() => build()} disabled={!lib}><SnIcon name="wand-sparkles" />Build set</button>}
           </>
         }
       />
