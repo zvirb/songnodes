@@ -7,7 +7,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 import jwt
-import respx
+from unittest.mock import AsyncMock, patch
 import httpx
 
 import sys
@@ -75,6 +75,28 @@ def test_password_hashing_and_verification():
     assert verify_password(raw_pw, hashed) is True
     assert verify_password("WrongPassword!", hashed) is False
     assert verify_password("", hashed) is False
+
+
+def test_unconfigured_credentials_and_legacy_hash_are_rejected(monkeypatch):
+    for name in ("AUTH_USERS", "AUTH_USERNAME", "AUTH_PASSWORD", "AUTH_PASSWORD_HASH"):
+        monkeypatch.delenv(name, raising=False)
+    assert not verify_user_credentials("admin", "admin")
+    assert not verify_password("password", "sha256$salt$legacyhash")
+
+
+def test_session_signing_requires_configuration(monkeypatch):
+    monkeypatch.delenv("JWT_SECRET_KEY", raising=False)
+    monkeypatch.delenv("JWT_SECRET", raising=False)
+    from fastapi import HTTPException
+    with pytest.raises(HTTPException, match="JWT_SECRET_KEY"):
+        get_duo_config()
+
+
+@pytest.mark.parametrize("destination", ["https://evil.example/", "//evil.example/", "/\\evil.example/", "/unlisted"])
+def test_callback_rejects_unapproved_redirects(client, duo_env, destination):
+    response = client.get("/api/v1/auth/duo/callback", params={"state": "unused", "code": "unused", "redirect_url": destination})
+    assert response.status_code == 400
+    assert "Unsupported redirect" in response.json()["detail"]
 
 
 def test_verify_user_credentials_env(duo_env, monkeypatch):
@@ -175,8 +197,8 @@ def test_login_missing_fields(client, duo_env):
 # GET /api/v1/auth/duo/callback Endpoint Tests
 # ============================================================================
 
-@respx.mock
-def test_duo_callback_success(client, duo_env):
+@patch("routers.user_auth.httpx.AsyncClient.post", new_callable=AsyncMock)
+def test_duo_callback_success(mock_post, client, duo_env):
     # Step 1: Perform login to generate state and nonce
     login_resp = client.post(
         "/api/v1/auth/login",
@@ -206,7 +228,7 @@ def test_duo_callback_success(client, duo_env):
     )
 
     # Mock Duo token endpoint
-    respx.post("https://api-test.duosecurity.com/oauth/v1/token").respond(
+    mock_post.return_value = httpx.Response(
         status_code=200,
         json={
             "id_token": mock_id_token,
@@ -235,8 +257,8 @@ def test_duo_callback_success(client, duo_env):
     assert payload["username"] == "dj_test"
 
 
-@respx.mock
-def test_duo_callback_with_redirect_url(client, duo_env):
+@patch("routers.user_auth.httpx.AsyncClient.post", new_callable=AsyncMock)
+def test_duo_callback_with_redirect_url(mock_post, client, duo_env):
     login_resp = client.post(
         "/api/v1/auth/login",
         json={"username": "dj_test", "password": "correct_horse_battery_staple"},
@@ -252,7 +274,7 @@ def test_duo_callback_with_redirect_url(client, duo_env):
         algorithm="HS256",
     )
 
-    respx.post("https://api-test.duosecurity.com/oauth/v1/token").respond(
+    mock_post.return_value = httpx.Response(
         status_code=200,
         json={"id_token": mock_id_token},
     )
@@ -299,8 +321,8 @@ def test_duo_callback_invalid_or_expired_state(client, duo_env):
     assert "Invalid or expired state" in response.json()["detail"]
 
 
-@respx.mock
-def test_duo_callback_nonce_mismatch(client, duo_env):
+@patch("routers.user_auth.httpx.AsyncClient.post", new_callable=AsyncMock)
+def test_duo_callback_nonce_mismatch(mock_post, client, duo_env):
     login_resp = client.post(
         "/api/v1/auth/login",
         json={"username": "dj_test", "password": "correct_horse_battery_staple"},
@@ -315,7 +337,7 @@ def test_duo_callback_nonce_mismatch(client, duo_env):
         algorithm="HS256",
     )
 
-    respx.post("https://api-test.duosecurity.com/oauth/v1/token").respond(
+    mock_post.return_value = httpx.Response(
         status_code=200,
         json={"id_token": mock_id_token},
     )
@@ -325,8 +347,8 @@ def test_duo_callback_nonce_mismatch(client, duo_env):
     assert "Nonce mismatch" in resp.json()["detail"]
 
 
-@respx.mock
-def test_duo_callback_token_endpoint_failure(client, duo_env):
+@patch("routers.user_auth.httpx.AsyncClient.post", new_callable=AsyncMock)
+def test_duo_callback_token_endpoint_failure(mock_post, client, duo_env):
     login_resp = client.post(
         "/api/v1/auth/login",
         json={"username": "dj_test", "password": "correct_horse_battery_staple"},
@@ -334,7 +356,7 @@ def test_duo_callback_token_endpoint_failure(client, duo_env):
     query = urllib.parse.parse_qs(urllib.parse.urlparse(login_resp.json()["duo_auth_url"]).query)
     state = query["state"][0]
 
-    respx.post("https://api-test.duosecurity.com/oauth/v1/token").respond(
+    mock_post.return_value = httpx.Response(
         status_code=400,
         text="invalid_grant",
     )

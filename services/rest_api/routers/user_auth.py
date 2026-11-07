@@ -35,7 +35,7 @@ router = APIRouter(prefix="/api/v1/auth", tags=["User Authentication"])
 
 COOKIE_NAME = "songnodes_session"
 DEFAULT_REDIRECT_URI = "https://song.aiwfe.com/api/v1/auth/duo/callback"
-DEFAULT_JWT_SECRET = "songnodes-default-jwt-secret-key-change-in-production"
+REDIRECT_PATHS = {"/": "/", "/library": "/library", "/sets": "/sets", "/dashboard": "/dashboard"}
 SESSION_EXPIRY_SECONDS = 7 * 24 * 60 * 60  # 7 days
 STATE_EXPIRY_SECONDS = 600  # 10 minutes
 
@@ -50,8 +50,9 @@ def get_duo_config() -> Dict[str, str]:
     jwt_secret = (
         os.getenv("JWT_SECRET_KEY")
         or os.getenv("JWT_SECRET")
-        or DEFAULT_JWT_SECRET
     )
+    if not jwt_secret:
+        raise HTTPException(status_code=503, detail="JWT_SECRET_KEY or JWT_SECRET is required")
     return {
         "client_id": os.getenv("DUO_CLIENT_ID", ""),
         "client_secret": os.getenv("DUO_CLIENT_SECRET", ""),
@@ -139,7 +140,7 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(plain_password: str, stored_hash_or_pw: str) -> bool:
-    """Verify password against Argon2, PBKDF2-SHA256, salted SHA256, or plaintext fallback."""
+    """Verify explicitly configured Argon2, PBKDF2-SHA256 or plaintext credentials."""
     if not plain_password or not stored_hash_or_pw:
         return False
 
@@ -165,16 +166,9 @@ def verify_password(plain_password: str, stored_hash_or_pw: str) -> bool:
         except Exception:
             return False
 
-    # SHA256 with salt: sha256${salt}${hash}
+    # Legacy fast hashes are not safe password credentials; require a reset.
     if stored_hash_or_pw.startswith("sha256$"):
-        try:
-            parts = stored_hash_or_pw.split("$")
-            salt = parts[1].encode("utf-8")
-            expected_hex = parts[2]
-            computed = hashlib.sha256(salt + plain_password.encode("utf-8")).hexdigest()
-            return hmac.compare_digest(computed, expected_hex)
-        except Exception:
-            return False
+        return False
 
     # Plain text constant-time match
     return hmac.compare_digest(plain_password, stored_hash_or_pw)
@@ -191,8 +185,8 @@ def verify_user_credentials(username: str, password: str) -> bool:
         except Exception as exc:
             logger.warning(f"Failed to parse AUTH_USERS JSON: {exc}")
 
-    configured_user = os.getenv("AUTH_USERNAME", "admin")
-    configured_pass = os.getenv("AUTH_PASSWORD", "admin")
+    configured_user = os.getenv("AUTH_USERNAME", "")
+    configured_pass = os.getenv("AUTH_PASSWORD", "")
     configured_hash = os.getenv("AUTH_PASSWORD_HASH")
 
     if username == configured_user:
@@ -319,6 +313,8 @@ async def duo_callback(
     redirect_url: Optional[str] = Query(None, description="Optional target redirect URL"),
 ):
     """Validate Duo authorization callback, exchange code for token, verify claims, set session cookie."""
+    if redirect_url and redirect_url not in REDIRECT_PATHS:
+        raise HTTPException(status_code=400, detail="Unsupported redirect destination")
     if error:
         detail = error_description or error
         logger.warning(f"Duo callback returned error: {detail}")
@@ -448,7 +444,7 @@ async def duo_callback(
     )
 
     if redirect_url:
-        response = RedirectResponse(url=redirect_url, status_code=302)
+        response = RedirectResponse(url=REDIRECT_PATHS[redirect_url], status_code=302)
     else:
         response = JSONResponse(
             content={

@@ -2745,3 +2745,10 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
   - `python -m pytest tests/rest_api/test_router_registry.py` (passed: 4/4 tests)
 - Next: merge PR and integrate with frontend login interface.
 <!-- SLOT:DUO1 END -->
+
+<!-- SLOT:CIC04 BEGIN -->
+## CIC04 — started 2026-11-07
+One job: remove unsafe auth defaults and fix the reported auth CodeQL findings in PR 578.
+Owned paths: services/rest_api/routers/user_auth.py, tests/rest_api/test_user_auth.py, plan/agents/CIC04_auth_ci.md, STATUS.md CIC04 slot.
+Removed default admin credentials and default JWT signing secret, rejected legacy fast SHA256 hashes and restricted redirects to fixed local paths. Replaced undeclared respx with standard-library AsyncMock. Passed: 29 auth/common credential tests (7 warnings: optional timeout plugin absent, Starlette deprecation and short existing test-only keys); syntax and whitespace. Initial sandbox TestClient run interrupted; completed outside sandbox with Redis disabled. Runtime is bundled Python 3.12, so CI Python 3.15 remains authoritative. Next: rebase on main and run full CI.
+<!-- SLOT:CIC04 END -->
