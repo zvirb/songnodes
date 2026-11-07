@@ -3104,3 +3104,88 @@ One job: align the pipeline route smoke test with the intentional Health page.
 Owned paths: frontend/tests/e2e/routes.smoke.spec.ts, STATUS.md CIC08 slot.
 Changed smoke test to assert Health heading, four named summary tiles, retained sections, current run-empty text and disclosure opening the queue form. Playwright discovered all 13 Chromium route smoke tests successfully; diff whitespace check against main passed. Actual test execution remains CI's canonical stack. Next: inspect the new Linux run and refresh only reviewed changed pipeline snapshots in another package.
 <!-- SLOT:CIC08 END -->
+
+<!-- SLOT:CIC09 BEGIN -->
+## CIC09 — started 2026-11-07
+One job: restore conformance for the newly merged frontend.
+Owned paths: frontend/src/components/ds/FreshnessStamp.tsx, frontend/src/features/trackDetail/TrackDetailPage.tsx, frontend/src/features/pipeline/RunsPage.tsx, plan/agents/CIC09_freshness_tip.md, STATUS.md CIC09 slot.
+Latest main also introduced duplicate key-name literals flagged as emoji, redundant card styling read as spacing, and an undefined run-history header class. Use SN.keyName, canonical sn-card styling and the defined header main class. Implemented all three scoped fixes. Passed: zero conformance findings, TypeScript, 13 component tests (track detail and pipeline), and whitespace check. No generated styles edited. Integrated final original-PR main at 6d74c06e. Full verification passed: TypeScript, 70 unit files / 603 tests, production build and zero conformance findings. Next: publish the conformance follow-up, inspect canonical CI (including changed pipeline visual baselines) and merge when green.
+Resumed 8 Nov 2026: rebased current main (already current). PR601 head5aa402ff passes all checks except E2E run42346214726; inspecting full all-page audit findings and canonical captures before a scoped repair. Authoritative local design system remains1.10.0.
+<!-- SLOT:CIC09 END -->
+
+<!-- SLOT:CIC10 BEGIN -->
+## CIC10 — started 2026-11-07
+One job: fix the upload regression test's missing assertion, rejected by CI lint.
+Owned paths: frontend/src/features/musicLibrary/components/LibraryImportDialog.test.tsx, STATUS.md CIC10 slot; integration ownership declared in CIC09 brief.
+Changed the awaited error lookup into an explicit assertion. Passed: all six component tests and targeted oxlint (warnings only, zero errors) from the frontend configuration root. Initial lint command from repository root hit the nested config restriction; corrected invocation passed. This repair does not depend on design-system version. User corrected the source history: local 1.10.0 is authoritative and most recent; the cloud copy was stale. Continue auditing against local 1.10.0.
+<!-- SLOT:CIC10 END -->
+
+<!-- SLOT:CIC11 BEGIN -->
+## CIC11 — started 2026-11-07
+One job: cover every registered page in the design-system browser audit.
+Owned paths: frontend/tests/e2e/all-pages.spec.ts, frontend/tests/e2e/libraryApi.ts, STATUS.md CIC11 slot; integration ownership declared in CIC09 brief.
+Audit discovers routes from App, registry and feature route modules; checks dark/light/booth, one main/h1, one primary, honest missing values, runtime DS 1.10.0, serious/critical axe findings and phone overflow. Dynamically visits all settings links. Explicit test-only anonymous/review-empty fixtures preserve contract shapes. Passed: Playwright discovered 66 Chromium cases before run-history registration; includes all settings-card links dynamically. Initial discovery was invoked from the wrong directory; corrected frontend-root invocation passed. Actual runtime compliance is not yet claimed. Next: CI after separately scoped prerequisites CIC12–CIC14.
+<!-- SLOT:CIC11 END -->
+
+<!-- SLOT:CIC12 BEGIN -->
+## CIC12 — started 2026-11-07
+One job: make the registered login page usable and compliant.
+Owned paths: frontend/src/features/auth/route.tsx, LoginPage.tsx, LoginPage.test.tsx, STATUS.md CIC12 slot.
+Wrapped registered element in AuthProvider, used sentence-case copy and added an actual-route regression. Passed TypeScript and all 8 login tests. Initial regression omitted a test-only MemoryRouter import; adding it resolved both type-check and test failure. Next: canonical all-page CI audit.
+<!-- SLOT:CIC12 END -->
+
+<!-- SLOT:CIC13 BEGIN -->
+## CIC13 — started 2026-11-07
+One job: register the existing Run history page at /pipeline/runs.
+Owned paths: frontend/src/features/pipeline/route.tsx, frontend/src/routes/registry.test.tsx, STATUS.md CIC13 slot; integration ownership in CIC09 brief.
+Used the feature-route registry (no App.tsx edits). Added a discovery assertion for /pipeline/runs. Passed TypeScript, registry regression, feature boundaries and whitespace; all-page discovery now has 69 Chromium cases (three themes). Next: canonical all-page CI.
+<!-- SLOT:CIC13 END -->
+
+<!-- SLOT:CIC14 BEGIN -->
+## CIC14 — started 2026-11-07
+One job: give standalone callback pages the required landmark and error-page heading.
+Owned paths: frontend/src/components/OAuthCallback.tsx, STATUS.md CIC14 slot.
+Read AuthCallbackPage and ErrorState cards. Added canonical main identifier/focus target and native ErrorState markup with a sentence-case page h1. Callback/token handling is unchanged. Passed TypeScript, zero conformance findings, feature boundaries, whitespace and all 70 unit files / 604 tests. Next: canonical route audit (69 cases plus dynamic settings links).
+<!-- SLOT:CIC14 END -->
+
+<!-- SLOT:CIC15 BEGIN -->
+## CIC15 — started 2026-11-07
+One job: prevent full-page screenshot wrapping past SwiftShader's 8192-pixel limit.
+Owned paths: frontend/tests/e2e/visual.spec.ts, STATUS.md CIC15 slot; integration scope in CIC09 brief.
+Canonical run 42344661619 settings phone captures are 390x11078 and visibly wrap. Added viewport fallback for oversized pages; tolerances unchanged. Passed: Playwright discovers all 28 visual cases; full frontend lint passes with warnings and zero errors; whitespace check passes. Next: canonical CI and review valid regenerated captures in a separate baseline package.
+<!-- SLOT:CIC15 END -->
+
+<!-- SLOT:CIC16 BEGIN -->
+## CIC16 — started 8 Nov 2026
+One job: provide the graph page's missing accessible h1.
+Owned paths: frontend/src/pages/GraphPage.tsx, STATUS.md CIC16 slot; integration scope in CIC09 brief.
+Added a screen-reader heading matching the existing page identity without changing graph layout. TypeScript, conformance, build and all 604 unit tests passed; canonical audit remains CI.
+<!-- SLOT:CIC16 END -->
+
+<!-- SLOT:CIC17 BEGIN -->
+## CIC17 — started 8 Nov 2026
+One job: remove repeated primary styling from Buy list row actions.
+Owned paths: frontend/src/features/musicLibrary/BuyListPage.tsx, STATUS.md CIC17 slot.
+The audit counted 294 primaries, one per row. Row actions now use the existing small secondary style; the selected-row bulk action retains primary status. Checks: static conformance and whitespace; browser audit remains CI.
+<!-- SLOT:CIC17 END -->
+
+<!-- SLOT:CIC18 BEGIN -->
+## CIC18 — started 8 Nov 2026
+One job: make import-method tabs and the prompt scroll region accessible.
+Owned paths: frontend/src/features/aiSetlists/AISetlistsPage.tsx, STATUS.md CIC18 slot.
+Paired TabPanel IDs with both hidden/inactive panels retained, a focusable named prompt region, associated textarea heading and sentence-case labels. TypeScript and static conformance passed. Next: canonical axe audit.
+<!-- SLOT:CIC18 END -->
+
+<!-- SLOT:CIC19 BEGIN -->
+## CIC19 — started 8 Nov 2026
+One job: let callback lazy rendering finish before pausing its redirect clock.
+Owned paths: frontend/tests/e2e/all-pages.spec.ts, STATUS.md CIC19 slot.
+CI run 42413608935 passed 223 tests (including all changed product pages and visual baselines), but 9 callback cases timed out in axe because its timers were paused too. Second fix attempt delays only the known three-second redirect in the content fixture, retains route assertions and adds two real redirect regressions. Playwright discovery passed (71 Chromium cases). A local Chrome run could not start: shared dependencies lack the Vite launcher/native Rolldown binding; no dependency changes made. Next: canonical CI; if callback audit still fails, stop and draft per rule 5.
+<!-- SLOT:CIC19 END -->
+
+<!-- SLOT:CIC20 BEGIN -->
+## CIC20 — started 8 Nov 2026
+One job: refresh eight stale settings/pipeline visual baselines.
+Owned paths: frontend/tests/e2e/visual.spec.ts-snapshots/{pipeline,settings}-{dark,light}-{desktop,phone}-chromium-linux.png; STATUS.md CIC20 slot; integration brief.
+Visually reviewed all eight canonical captures from run 42346214726. Correct empty states, responsive layouts, no wrapping corruption; settings phone is a viewport capture. Tolerances unchanged. All eight copied PNGs passed SHA256 equality verification. TypeScript, lint (warnings only), build, conformance, design-system 1.10.0 sync and 70 unit files / 604 tests passed. Playwright discovery passes. Initial npm test -- --run was an unsupported Playwright option; corrected to test:unit. Next: canonical CI, then merge only when all checks pass.
+<!-- SLOT:CIC20 END -->

@@ -174,6 +174,6 @@ describe('LibraryImportDialog', () => {
     const importBtn = screen.getByRole('button', { name: 'Import' });
     fireEvent.click(importBtn);
 
-    await screen.findByText(/Upload exceeds the maximum file size limit \(50 MB\)/);
+    expect(await screen.findByText(/Upload exceeds the maximum file size limit \(50 MB\)/)).toBeTruthy();
   });
 });

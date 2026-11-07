@@ -1,0 +1,55 @@
+# CIC09: Restore merged frontend conformance
+
+## One job
+Clear the conformance findings in the newly merged frontend. Remove undefined
+classes, use the design-system key-name helper and canonical card styling.
+
+## Owned paths
+- `plan/agents/CIC09_freshness_tip.md`
+- `frontend/src/components/ds/FreshnessStamp.tsx`
+- `frontend/src/features/trackDetail/TrackDetailPage.tsx`
+- `frontend/src/features/pipeline/RunsPage.tsx`
+- `frontend/src/features/musicLibrary/components/LibraryImportDialog.test.tsx`
+- `frontend/tests/e2e/all-pages.spec.ts`
+- `frontend/tests/e2e/libraryApi.ts`
+- `frontend/tests/e2e/visual.spec.ts`
+- `frontend/src/features/auth/route.tsx`
+- `frontend/src/features/auth/LoginPage.tsx`
+- `frontend/src/features/auth/LoginPage.test.tsx`
+- `frontend/src/features/pipeline/route.tsx`
+- `frontend/src/routes/registry.test.tsx`
+- `frontend/src/components/OAuthCallback.tsx`
+- `frontend/src/pages/GraphPage.tsx`
+- `frontend/src/features/musicLibrary/BuyListPage.tsx`
+- `frontend/src/features/aiSetlists/AISetlistsPage.tsx`
+- `STATUS.md` (CIC09 slot only)
+
+- `frontend/tests/e2e/visual.spec.ts-snapshots/pipeline-dark-desktop-chromium-linux.png`
+- `frontend/tests/e2e/visual.spec.ts-snapshots/pipeline-dark-phone-chromium-linux.png`
+- `frontend/tests/e2e/visual.spec.ts-snapshots/pipeline-light-desktop-chromium-linux.png`
+- `frontend/tests/e2e/visual.spec.ts-snapshots/pipeline-light-phone-chromium-linux.png`
+- `frontend/tests/e2e/visual.spec.ts-snapshots/settings-dark-desktop-chromium-linux.png`
+- `frontend/tests/e2e/visual.spec.ts-snapshots/settings-dark-phone-chromium-linux.png`
+- `frontend/tests/e2e/visual.spec.ts-snapshots/settings-light-desktop-chromium-linux.png`
+- `frontend/tests/e2e/visual.spec.ts-snapshots/settings-light-phone-chromium-linux.png`
+
+## Checks
+Design-system conformance, TypeScript, existing track-detail component tests,
+whitespace, scope and deletion guards. Full CI remains authoritative.
+
+## Behavioural check
+Open Library with a stale data stamp. Its tooltip is still available and the
+stamp retains its absolute and relative time.
+
+## Follow-ups
+The user confirmed local 1.10.0 is authoritative; the cloud copy is stale.
+Receive scoped follow-up packages CIC10 (upload assertion), CIC11 (all registered
+page audit and fresh-library test fixtures), CIC12 (login route), CIC13 (run-history
+route) and CIC14 (callback page semantics). Each has its own commit and status
+slot; the combined audit coverage needs more than ten files, while each package
+remains small. No unrelated paths may be edited.
+Receive CIC15's bounded screenshot capture to prevent SwiftShader wrapping on
+oversized pages; do not weaken image-difference tolerances.
+Review pipeline E2E output and its changed visual baselines separately.
+
+Receive CIC16–CIC19 scoped heading, action, tabs and clock fixes. CIC20 owns exactly the eight pipeline/settings dark/light desktop/phone chromium-linux PNG baselines under frontend/tests/e2e/visual.spec.ts-snapshots/.

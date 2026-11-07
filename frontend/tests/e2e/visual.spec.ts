@@ -11,7 +11,8 @@ const stylePath = fileURLToPath(new URL('./visual.css', import.meta.url));
  * this spec runs in the chromium project only. Relative times and build stamps are hidden
  * by visual.css (masks would paint over the open NavDrawer).
  * The crate is taller than SwiftShader's 8192px maximum texture, where a full-page
- * capture wraps, so the library is captured at viewport height.
+ * capture wraps, so the library is captured at viewport height. Other long pages
+ * use the same viewport fallback when they exceed that capture limit.
  */
 const PAGES: [string, string, boolean][] = [
   ['home', '/', true],
@@ -57,8 +58,9 @@ for (const theme of ['dark', 'light'] as const) {
         if (name === 'pipeline') await stubEmptyPipeline(page);
         await openRoute(page, route);
         await page.evaluate(() => document.fonts.ready);
+        const captureFullPage = fullPage && await page.evaluate(() => document.documentElement.scrollHeight <= 8192);
         await expect(page).toHaveScreenshot(`${name}-${theme}-${wName}.png`, {
-          fullPage,
+          fullPage: captureFullPage,
           animations: 'disabled',
           caret: 'hide',
           stylePath,

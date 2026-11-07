@@ -213,7 +213,7 @@ export const BuyListPage: React.FC = () => {
           <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
             <button
               type="button"
-              className="sn-btn sn-btn--primary sn-btn--sm"
+              className="sn-btn sn-btn--sm"
               onClick={() => {
                 setBuyingTrack(r);
                 setLocalPathInput(`/Music/DJ/${r.artist} - ${r.title}.mp3`);

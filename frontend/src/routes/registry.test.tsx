@@ -66,6 +66,7 @@ describe('registry', () => {
     expect(paths).toContain('/sources');
     expect(paths).toContain('/sources/targets');
     expect(paths).toContain('/pipeline');
+    expect(paths).toContain('/pipeline/runs');
     expect(paths).toContain('/settings');
     expect(paths).toContain('*');
 

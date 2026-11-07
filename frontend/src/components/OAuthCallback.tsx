@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Title, Button, Card, ErrorPanel } from './ds';
+import { Title, Button, Card } from './ds';
+import { SnIcon } from '../lib/songnodes';
 import { API_BASE_URL } from '../lib/apiBase';
 
 const OAuthCallback: React.FC = () => {
@@ -297,23 +298,21 @@ const OAuthCallback: React.FC = () => {
   }, []);
 
   return (
-    <main className="sn-page-auth">
+    <main className="sn-page-auth" id="main" tabIndex={-1}>
       {status === 'error' ? (
-        <ErrorPanel
-          status="bad"
-          title="Authentication Failed"
-          panel
-          actions={
+        <section className="sn-error-state sn-error-state--panel" data-status="bad" aria-labelledby="oauth-error-title" role="alert">
+          <div className="sn-error-state__icon" aria-hidden="true"><SnIcon name="alert-triangle" size={20} /></div>
+          <Title size="title-s" as="h1" className="sn-error-state__title" id="oauth-error-title">Authentication failed</Title>
+          <div className="sn-error-state__text">{message}</div>
+          <div className="sn-error-state__actions">
             <Button
               kind="primary"
               onClick={() => window.opener ? window.close() : window.location.href = '/'}
             >
               Try again
             </Button>
-          }
-        >
-          {message}
-        </ErrorPanel>
+          </div>
+        </section>
       ) : (
         <Card>
           <div className="sn-card__head">

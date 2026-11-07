@@ -92,7 +92,6 @@ export const FreshnessStamp: React.FC<FreshnessStampProps> = ({
           </span>
           {tipHtml ? (
             <span
-              className="sn-freshness-stamp__tip"
               dangerouslySetInnerHTML={{ __html: tipHtml }}
             />
           ) : null}

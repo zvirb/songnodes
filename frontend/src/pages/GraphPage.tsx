@@ -42,6 +42,7 @@ const GraphPage: React.FC = () => {
 
   return (
     <main className="sn-graph-route sn-page-graph" id="main" tabIndex={-1}>
+      <h1 className="sn-sr">Graph: Adjacency</h1>
       <React.Suspense
         fallback={
           <div className="sn-graph-route__loading" aria-busy="true">

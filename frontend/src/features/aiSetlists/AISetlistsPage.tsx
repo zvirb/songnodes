@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { usePageHeader } from '../../shell/AppShell';
 import { PageHeader } from '../../shell/PageParts';
-import { Button, Tabs, ConfirmDialog, ErrorPanel } from '../../components/ds';
+import { Button, Tabs, TabPanel, ConfirmDialog, ErrorPanel } from '../../components/ds';
 import { InlineMessage, CopyButton, DataTable, type DataTableColumn } from './components/ui';
 import { useUnifiedTracks } from '../../hooks/useUnifiedTracks';
 import { buildPrompt } from './api/prompt';
@@ -23,6 +23,7 @@ export default function AISetlistsPage() {
   const [localLedger, setLocalLedger] = useState<string[]>([]);
 
   const [activeTab, setActiveTab] = useState<'prompt' | 'api'>('prompt');
+  const methodTabsId = `import-method-${useId().replace(/:/g, '')}`;
 
   // Prompt builder state
   const [genre, setGenre] = useState('');
@@ -190,25 +191,26 @@ export default function AISetlistsPage() {
       />
       <div>
         <Tabs
-          label="Import Methods"
+          label="Import methods"
+          idBase={methodTabsId}
           value={activeTab}
           onChange={(v: any) => setActiveTab(v)}
           tabs={[
-            { id: 'prompt', label: 'Copy Prompt' },
+            { id: 'prompt', label: 'Copy prompt' },
             { id: 'api', label: 'Use API' }
           ]}
         />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', marginTop: 'var(--space-4)' }}>
 
            <div className="sn-card">
-             <div style={{ marginBottom: 'var(--space-3)' }}><Title size="title-s" as="h2">Setlist Parameters</Title></div>
+             <div style={{ marginBottom: 'var(--space-3)' }}><Title size="title-s" as="h2">Setlist parameters</Title></div>
              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-4)' }}>
                <label className="sn-field">
-                 <span className="label">Genre / Style</span>
+                 <span className="label">Genre / style</span>
                  <input type="text" className="sn-input" value={genre} onChange={e => setGenre(e.target.value)} placeholder="e.g. Techno, UKG" />
                </label>
                <label className="sn-field">
-                 <span className="label">DJs or Events</span>
+                 <span className="label">DJs or events</span>
                  <input type="text" className="sn-input" value={djsOrEvents} onChange={e => setDjsOrEvents(e.target.value)} placeholder="e.g. Dekmantel, Boiler Room" />
                </label>
                <label className="sn-field">
@@ -216,37 +218,39 @@ export default function AISetlistsPage() {
                  <input type="number" className="sn-input" value={count} onChange={e => setCount(Number(e.target.value))} min={1} max={20} />
                </label>
                <label className="sn-field">
-                 <span className="label">Additional Exclusions</span>
+                 <span className="label">Additional exclusions</span>
                  <input type="text" className="sn-input" value={userExtra} onChange={e => setUserExtra(e.target.value)} placeholder="Specific DJs or keywords to avoid" />
                </label>
              </div>
            </div>
 
-           {activeTab === 'prompt' ? (
+           <TabPanel idBase={methodTabsId} id="prompt" hidden={activeTab !== 'prompt'}>
              <div className="sn-card">
-               <div style={{ marginBottom: 'var(--space-3)' }}><Title size="title-s" as="h2">1. Copy Prompt</Title></div>
-               <div className="sn-tablebox" style={{ maxHeight: 200, padding: 'var(--space-3)' }}>
+               <div style={{ marginBottom: 'var(--space-3)' }}><Title size="title-s" as="h2">1. Copy prompt</Title></div>
+               <div className="sn-tablebox" tabIndex={0} role="region" aria-label="Generated prompt" style={{ maxHeight: 200, padding: 'var(--space-3)' }}>
                  <pre className="data" style={{ whiteSpace: 'break-spaces', overflowWrap: 'anywhere', margin: 0 }}>{generatedPrompt}</pre>
                </div>
                <div style={{ marginTop: 'var(--space-3)' }}>
                  <CopyButton value={generatedPrompt} what="Prompt" label="Copy prompt" />
                </div>
 
-               <div style={{ marginTop: 'var(--space-6)', marginBottom: 'var(--space-3)' }}><Title size="title-s" as="h2">2. Paste Result</Title></div>
+               <div style={{ marginTop: 'var(--space-6)', marginBottom: 'var(--space-3)' }}><Title size="title-s" as="h2" id={`${methodTabsId}-response`}>2. Paste result</Title></div>
                <textarea
                  className="sn-input"
+                 aria-labelledby={`${methodTabsId}-response`}
                  rows={8}
                  value={pastedJson}
                  onChange={e => setPastedJson(e.target.value)}
                  placeholder="Paste the JSON response here…"
                />
                <div style={{ marginTop: 'var(--space-3)' }}>
-                 <button className="sn-btn sn-btn--primary" onClick={() => handleReview(pastedJson)} disabled={!pastedJson.trim()}>Review Data</button>
+                 <button className="sn-btn sn-btn--primary" onClick={() => handleReview(pastedJson)} disabled={!pastedJson.trim()}>Review data</button>
                </div>
              </div>
-           ) : (
+           </TabPanel>
+           <TabPanel idBase={methodTabsId} id="api" hidden={activeTab !== 'api'}>
              <div className="sn-card">
-                <div style={{ marginBottom: 'var(--space-3)' }}><Title size="title-s" as="h2">Provider Settings</Title></div>
+                <div style={{ marginBottom: 'var(--space-3)' }}><Title size="title-s" as="h2">Provider settings</Title></div>
                 {providers.length === 0 ? (
                    <InlineMessage status="warn"><span dangerouslySetInnerHTML={{ __html: "No AI providers configured. " + SN.sourceLink({ text: "Add keys in Settings", href: "/settings/api-keys", module: "services" }) }} /></InlineMessage>
                 ) : (
@@ -270,7 +274,7 @@ export default function AISetlistsPage() {
                 )}
                 {apiError && <div style={{ marginTop: 'var(--space-3)' }}><InlineMessage status="bad">{apiError}</InlineMessage></div>}
              </div>
-           )}
+           </TabPanel>
 
            {parseErrors.length > 0 && (
              <ErrorPanel status="bad" title="Validation Errors" helps={false} style={{ marginBottom: 'var(--space-4)' }}>
