@@ -3035,6 +3035,42 @@ Owned paths: services/rest_api/routers/transitions_export.py, tests/rest_api/tes
 Consulted IMPLEMENTATION_PLAN WP1-WP5 and TRACK_METADATA_RETRIEVAL. Found SQL converting absent BPM difference to 0 and absent key compatibility to true. Changed two SQL expressions to preserve NULL BPM difference and harmonic compatibility. Passed: two synthetic contract cases (known and missing values), schema validation and whitespace. Test launcher isolated the unused main import with an empty module; get_pool was already mocked by the test. No live database/provider/coverage validation. Next: integrate current main and run CI before merge.
 <!-- SLOT:CIC06 END -->
 
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+<!-- SLOT:UX-T01 BEGIN -->
+### UX-T01: Review queue page (UX-01)
+- Completed: 2026-11-07 (branch ux-t01-review-queue off origin/main).
+- Scope: Build the Review queue page at `/library/review` and API endpoints for queue querying and override persistence.
+- Changes:
+  - `services/rest_api/routers/library_overrides.py`: Created REST endpoints (`GET /api/v1/library/review-queue`, `GET /api/v1/library/review-queue/count`, `POST/PUT /api/v1/library/overrides`, `GET /api/v1/library/overrides`) that parse review queue tracks, filter out already-overridden items, persist overrides to `overrides/energy_overrides.csv`, and sync to Postgres if connected.
+  - `frontend/src/features/musicLibrary/ReviewQueuePage.tsx`: Implemented ReviewQueuePage using LogPage pattern with PageHeader, filter chips (All, Missing BPM, Energy estimate, Needs check), search, bulk actions (set pillar, set rotation), and interactive DataTable with inline EditableCell controls for energy (steppers), pillar, rotation, and local_path.
+  - `frontend/src/features/musicLibrary/route.tsx`: Registered `/library/review` route.
+- Checks run and passed:
+  - `python -m py_compile services/rest_api/routers/library_overrides.py` (passed)
+  - `python scripts/check_feature_imports.py --check` (passed: Feature boundaries OK)
+  - `npm run type-check` (passed: tsc --noEmit)
+  - `npm run lint` (passed: 0 errors)
+  - `npm run test:unit` (passed: 68 test files, 586 tests)
+- Next: merge PR and proceed to UX-T03 (Pipeline health page and run history).
+- CI repair continuation: rebased on current main; preserved Buy list and Review queue routes together and all upstream status slots. Replaced raw gap with a spacing token and used the canonical main page container. TypeScript and route-registry test passed; full 69-file / 596-test suite passed before the two conformance styling edits. Feature boundaries and diff whitespace passed. Conformance now reports only the separate shared FreshnessStamp undefined tip class; that belongs to its own repair package. Next: run CI after shared conformance repair.
+<!-- SLOT:UX-T01 END -->
+  
+  
+  
+  
+  
+  
+  
+  
+  
 <!-- SLOT:UX-T03 BEGIN -->
 ### UX-T03: Pipeline health page and run history (UX-03)
 - Completed: 2026-11-07 (branch ux-t03-pipeline-health-run-history off origin/main ebf44357).
