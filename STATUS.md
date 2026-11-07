@@ -2742,6 +2742,21 @@ Validated the three existing proposed fixes in an isolated checkout; original lo
 Passed: conformance, feature boundaries, design-system sync (1.9.1), type-check, lint (warnings, zero errors), 68 unit files / 586 tests, production build and diff whitespace check. Initial host Python/WSL/Git Bash sandbox issues were resolved using bundled Python and elevated Git Bash; the first sandbox unit run passed but its subsequent build was interrupted, then the unit suite and build both passed outside the sandbox.
 Not run: full Docker E2E (Docker daemon unavailable). Remaining failures: /paths primary actions, visual snapshots, PR 578 credentials and missing respx, CodeQL findings on older PRs. Continuation: user authorized processing all PRs to merge. CIC02 (#599) and CIC03 (#600) are separate prerequisite packages; CIC03 passed canonical CI including E2E and merged into CIC02. Declared their integration ownership in this brief. Preserved #576 status after merging latest main. Next: receive green CIC02, run full CI on this integration branch, merge to main, then update dependent PRs.
 <!-- SLOT:CIC01 END -->
+
+<!-- SLOT:CIC02 BEGIN -->
+## CIC02 — started 2026-11-07
+One job: show only the relevant primary action on /paths.
+Owned paths: plan/agents/CIC02_path_primary.md, STATUS.md CIC02 slot, frontend/src/features/pathfinder/PathfinderPage.tsx and PathfinderPage.test.tsx.
+Changed: hide route controls for empty/error/loading libraries; show the standalone Find path action only during calculation, errors or results. Added two regression tests. Passed: 5 component tests, type-check, conformance and git diff --check. No deletions. Next: publish CIC02 stacked on CIC01; Linux snapshot repair follows as CIC03.
+<!-- SLOT:CIC02 END -->
+
+<!-- SLOT:CIC03 BEGIN -->
+## CIC03 — started 2026-11-07
+One job: refresh four /sets screenshot baselines from reviewed canonical Linux CI output.
+Owned paths: plan/agents/CIC03_sets_baselines.md, STATUS.md CIC03 slot, frontend/tests/e2e/visual.spec.ts-snapshots/sets-{dark,light}-{desktop,phone}-chromium-linux.png.
+Reviewed all four actual screenshots from run 42340395662 at e9d163f1. Differences match the intended empty-state action moves, header primary removal, and saved-set empty action. No clipped content seen. Source: Linux Playwright v1.64.1-noble CI artifact 13561074678. Application code unchanged; verification via next CI run.
+Next: copy only the four reviewed PNGs and verify dimensions/checksums; publish stacked on CIC02.
+<!-- SLOT:CIC03 END -->
 <!-- SLOT:DUOAUTH BEGIN -->
 ### DUOAUTH: Cisco Duo 2FA and Username/Password Auth with Cloudflare Tunnel
 - Start: 2026-11-05 (branch cisco_duo_auth_guide).
