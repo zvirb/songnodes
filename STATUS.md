@@ -3168,3 +3168,10 @@ One job: remove repeated primary styling from Buy list row actions.
 Owned paths: frontend/src/features/musicLibrary/BuyListPage.tsx, STATUS.md CIC17 slot.
 The audit counted 294 primaries, one per row. Row actions now use the existing small secondary style; the selected-row bulk action retains primary status. Checks: static conformance and whitespace; browser audit remains CI.
 <!-- SLOT:CIC17 END -->
+
+<!-- SLOT:CIC18 BEGIN -->
+## CIC18 — started 8 Nov 2026
+One job: make import-method tabs and the prompt scroll region accessible.
+Owned paths: frontend/src/features/aiSetlists/AISetlistsPage.tsx, STATUS.md CIC18 slot.
+Paired TabPanel IDs with both hidden/inactive panels retained, a focusable named prompt region, associated textarea heading and sentence-case labels. TypeScript and static conformance passed. Next: canonical axe audit.
+<!-- SLOT:CIC18 END -->
