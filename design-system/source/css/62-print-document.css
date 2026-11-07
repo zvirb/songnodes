@@ -12,8 +12,10 @@
   .sn-print-doc { page: doc; }
   .sn-print-wide { page: wide; width: var(--print-wide-w); max-width: none; }   /* the change of named page breaks; consecutive wide blocks share a landscape page */
   .sn-print-doc .sn-page__main { padding: 0; max-width: none; }
+  .sn-print-wide .sn-figure__canvas > svg { max-height: var(--print-wide-h); width: auto; max-width: 100%; }
   .sn-table { width: 100%; }
   .sn-table :is(th, td) { overflow-wrap: anywhere; }
+  .sn-table :is(.sn-tag, .sn-pill), .sn-key-value-grid__id, .sn-key-value-grid dd code { white-space: normal; overflow-wrap: anywhere; }   /* nothing may widen the page: Chromium then shrinks every page to fit */
   .sn-table thead th { position: static; }
   .sn-table tbody tr:nth-child(-n+3) { break-after: avoid; }
   .sn-table tbody tr:nth-last-child(-n+3) { break-before: avoid; }
