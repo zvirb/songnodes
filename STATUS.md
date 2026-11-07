@@ -2807,6 +2807,84 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
 - Next: merge PR and proceed to UX-T11 (Service rows tell the truth about OAuth).
 <!-- SLOT:UX-T09 END -->
 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+<!-- SLOT:UX-T02 BEGIN -->
+### UX-T02: Build the Track detail page (UX-02)
+- Completed: 2026-11-07 (branch ux-t02-track-detail-page off origin/main ebf44357).
+- Scope: Build the TrackDetailPage route (/tracks/:id and /track/:id) using the TrackDetailPage pattern (KeyValueGrid, KeyBadge with key name, BpmReadout, EnergyBar, SourceBadge, connected tracks table with HarmonicCompatibility, heard-on sources, raw data disclosure, Camelot compatible keys aside, identifiers with copy buttons, and listen/buy external links), and link TrackDetailsModal to it.
+- Changes:
+  - `frontend/src/features/trackDetail/TrackDetailPage.tsx` (new): Full track detail page.
+  - `frontend/src/features/trackDetail/route.tsx` (new): Registered routes for `/tracks/:id` and `/track/:id`.
+  - `frontend/src/features/trackDetail/TrackDetailPage.test.tsx` (new): Tests for track rendering, key/BPM/energy, transitions table, and not-found state.
+  - `frontend/src/components/TrackDetailsModal.tsx`: Added "Open full track page" link to `/tracks/:id`.
+- Checks run and passed:
+  - `npm run type-check` (passed: tsc --noEmit)
+  - `npm run lint` (passed: 0 errors)
+  - `npm run test:unit` (passed: 69 test files, 588 tests)
+  - `npm run build` (passed: vite build succeeded)
+  - `python scripts/check_feature_imports.py --check` (passed: Feature boundaries OK)
+  - `python scripts/check_design_system.py --check` (passed: 0 findings for trackDetail)
+- Next: Open PR for UX-T02 and proceed to UX-T04 (Buy list).
+    
+<!-- SLOT:UX-T02 END -->
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+<!-- SLOT:SNT03 BEGIN -->
+### SNT03: Enforce library ingest idempotency contract (SN-T03)
+- Completed: 2026-11-07 (branch snt03-library-ingest-fields off origin/main ebf44357).
+- Scope: Enforce the library ingest body idempotency contract and complete OpenAPI schema, closing gap sn-be-gap-library-ingest-409:
+  1. `services/rest_api/routers/library_ingest.py`: Check existing ingestion jobs for idempotency key reuse. If submitted with an identical payload, return 202 with `created: False`. If submitted with a different payload, raise `CatalogError(409, "Idempotency key was already submitted with a different payload")`.
+  2. `contracts/library_ingest.openapi.yaml`: Documented track metadata fields (energy, rotation, pillar, isrc, tidal, deezer, beatport) and added HTTP 409 response definition with error details schema.
+  3. `tests/rest_api/test_library_ingest_idempotency.py`: Added unit tests asserting 202 (created=True) on initial request, 202 (created=False) on duplicate identical request, and 409 Conflict on duplicate key with differing payload.
+- Checks run and passed:
+  - `$env:PYTHONPATH="services;services/common;services/rest_api"; python -m pytest tests/rest_api/test_library_ingest_idempotency.py tests/contracts/test_contracts.py` (6 passed in 0.98s)
+  - `git diff --diff-filter=D --name-only origin/main...HEAD` (0 deleted files outside owned paths)
+- Note: `scripts/check_design_system.py --check` reports pre-existing un-tokenized values in `frontend/src/components/ds/EditableCell.tsx` and `frontend/src/components/ds/DataTable.tsx` introduced in commit `ebf44357` (UX-T09), which are out of scope for this backend contract package (Rule 6).
+- Next: Open PR and proceed to SN-T05 (Stop the unified scraper at bronze).
+<!-- SLOT:SNT03 END -->
+    
+    
+    
+    
+    
+<!-- SLOT:SNT04 BEGIN -->
+### SNT04: Raise frontend nginx body limit to the ingest limit (SN-T04)
+- Completed: 2026-11-07 (branch snt04-nginx-body-limit off origin/main ebf44357).
+- Scope: Raise frontend Nginx proxy body limit to 64 MB to match the 50 MB library ingest limit, closing gap sn-fe-gap-ingest-body-limit:
+  1. `frontend/Dockerfile`: Added `client_max_body_size 64m;` to Nginx `location /api/` proxy configuration block.
+  2. `frontend/src/features/musicLibrary/components/LibraryImportDialog.tsx`: Mapped HTTP 413 response status to explicit error message ('Upload exceeds the maximum file size limit (50 MB)').
+  3. `frontend/src/features/musicLibrary/components/LibraryImportDialog.test.tsx`: Added unit test asserting explicit error display upon receiving HTTP 413.
+- Checks run and passed:
+  - `npm --prefix frontend run type-check` (passed: tsc --noEmit)
+  - `npx --prefix frontend vitest run src/features/musicLibrary/components/LibraryImportDialog.test.tsx` (6 passed in 1.1s)
+  - `git diff --diff-filter=D --name-only origin/main...HEAD` (0 deleted files outside owned paths)
+- Note: `scripts/check_design_system.py --check` reports pre-existing un-tokenized values in `frontend/src/components/ds/EditableCell.tsx` and `frontend/src/components/ds/DataTable.tsx` introduced in commit `ebf44357` (UX-T09), which are out of scope for this package (Rule 6).
+- Next: Open PR and proceed to SN-T03.
+<!-- SLOT:SNT04 END -->
+    
+    
+    
+    
 <!-- SLOT:SNT01 BEGIN -->
 ### SNT01: Require the API token on write and admin routes (SN-T01)
 - Completed: 2026-11-07 (branch snt01-api-token-auth off origin/main ebf44357).
@@ -2957,6 +3035,16 @@ Owned paths: services/rest_api/routers/transitions_export.py, tests/rest_api/tes
 Consulted IMPLEMENTATION_PLAN WP1-WP5 and TRACK_METADATA_RETRIEVAL. Found SQL converting absent BPM difference to 0 and absent key compatibility to true. Changed two SQL expressions to preserve NULL BPM difference and harmonic compatibility. Passed: two synthetic contract cases (known and missing values), schema validation and whitespace. Test launcher isolated the unused main import with an empty module; get_pool was already mocked by the test. No live database/provider/coverage validation. Next: integrate current main and run CI before merge.
 <!-- SLOT:CIC06 END -->
 
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
 <!-- SLOT:UX-T01 BEGIN -->
 ### UX-T01: Review queue page (UX-01)
 - Completed: 2026-11-07 (branch ux-t01-review-queue off origin/main).
@@ -2974,3 +3062,45 @@ Consulted IMPLEMENTATION_PLAN WP1-WP5 and TRACK_METADATA_RETRIEVAL. Found SQL co
 - Next: merge PR and proceed to UX-T03 (Pipeline health page and run history).
 - CI repair continuation: rebased on current main; preserved Buy list and Review queue routes together and all upstream status slots. Replaced raw gap with a spacing token and used the canonical main page container. TypeScript and route-registry test passed; full 69-file / 596-test suite passed before the two conformance styling edits. Feature boundaries and diff whitespace passed. Conformance now reports only the separate shared FreshnessStamp undefined tip class; that belongs to its own repair package. Next: run CI after shared conformance repair.
 <!-- SLOT:UX-T01 END -->
+  
+  
+  
+  
+  
+  
+  
+  
+  
+<!-- SLOT:UX-T03 BEGIN -->
+### UX-T03: Pipeline health page and run history (UX-03)
+- Completed: 2026-11-07 (branch ux-t03-pipeline-health-run-history off origin/main ebf44357).
+- Scope: Replace the telemetry page's head with the MonitoringPage pattern (one Banner for worst current condition, 4 FigureTiles: Last run, Resolve yield, Review queue, Last backup), move scrape controls into a Disclosure, implement RunMonitor (module M5) with yield drop detection (< 50% of previous 4 runs average), and build RunsPage with StagedProgress for run history.
+- Changes:
+  - `frontend/src/features/pipeline/RunMonitor.tsx` (new): Module M5 calculating yield metrics, rolling 4-run average, yield drop warning alert, and severity-ranked worst-condition evaluation.
+  - `frontend/src/features/pipeline/RunsPage.tsx` (new): Run history page with status filter chips, StagedProgress run inspector, and DataTable.
+  - `frontend/src/pages/ScraperProgressPage.tsx`: Converted header to Pipeline: Health, added worst-condition alert Banner linking to /pipeline/runs, added 4 FigureTiles (Last run, Resolve yield, Review queue, Last backup), moved scrape controls under `<details className="sn-disclosure">`, and added run history toggle.
+  - `frontend/src/pages/ScraperProgressPage.test.tsx`: Updated header test to Pipeline: Health and added test for yield drop alert banner and /pipeline/runs link.
+- Checks run and passed:
+  - `cd frontend && npm run type-check` (passed: tsc --noEmit)
+  - `cd frontend && npm run lint` (passed: 0 errors)
+  - `cd frontend && npm run test:unit` (passed: 68 test files, 587 tests)
+  - `cd frontend && npm run build` (passed: vite build succeeded)
+  - `bash scripts/sync-design-system.sh --check` (passed: design-system 1.9.1 in sync)
+  - `python scripts/check_feature_imports.py --check` (passed: Feature boundaries OK)
+  - `python scripts/check_design_system.py --check` (passed: 0 findings for ScraperProgressPage)
+- Next: Open PR for UX-T03 and proceed to UX-T05 (One Set builder: retire artifact behind /sets).
+<!-- SLOT:UX-T03 END -->
+
+<!-- SLOT:CIC07 BEGIN -->
+## CIC07 — started 2026-11-07
+One job: replace the pipeline review-queue placeholder with the real count endpoint.
+Owned paths: frontend/src/pages/ScraperProgressPage.tsx and ScraperProgressPage.test.tsx, STATUS.md CIC07 slot.
+Changed to GET /library/review-queue/count and render only a non-negative integer count, including zero; missing response stays an en dash. Removed hardcoded 413. Passed TypeScript and 11 focused component tests. Follow-up: pipeline smoke expectations and reviewed Linux visual baselines remain separate packages.
+<!-- SLOT:CIC07 END -->
+
+<!-- SLOT:CIC08 BEGIN -->
+## CIC08 — started 2026-11-07
+One job: align the pipeline route smoke test with the intentional Health page.
+Owned paths: frontend/tests/e2e/routes.smoke.spec.ts, STATUS.md CIC08 slot.
+Changed smoke test to assert Health heading, four named summary tiles, retained sections, current run-empty text and disclosure opening the queue form. Playwright discovered all 13 Chromium route smoke tests successfully; diff whitespace check against main passed. Actual test execution remains CI's canonical stack. Next: inspect the new Linux run and refresh only reviewed changed pipeline snapshots in another package.
+<!-- SLOT:CIC08 END -->

@@ -153,4 +153,27 @@ describe('LibraryImportDialog', () => {
     await screen.findAllByText('The selected file must be a .json file.');
     expect(screen.queryByRole('button', { name: 'Import' })).toBeNull();
   });
+
+  it('displays explicit message when upload fails with HTTP 413 (Entity Too Large)', async () => {
+    const fetchMock = fetch as Mock;
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 413,
+      statusText: 'Payload Too Large',
+    });
+
+    render(<LibraryImportDialog open={true} onClose={vi.fn()} onReload={vi.fn()} pollMs={0} />);
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const mockLib = { tracks: [{ id: '1', a: 'a', t: 't' }] };
+    const file = generateMockFile(JSON.stringify(mockLib));
+
+    fireEvent.change(input, { target: { files: [file] } });
+    await screen.findByText(/1 tracks/);
+
+    const importBtn = screen.getByRole('button', { name: 'Import' });
+    fireEvent.click(importBtn);
+
+    await screen.findByText(/Upload exceeds the maximum file size limit \(50 MB\)/);
+  });
 });
