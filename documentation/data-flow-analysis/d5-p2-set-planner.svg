@@ -1,0 +1,1011 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1821 1002" role="img" aria-labelledby="D5-P2-t D5-P2-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
+:root, [data-theme="dark"] {
+  --bg: #222222;
+  --surface-1: #2d2d2d;
+  --surface-2: #373737;
+  --surface-3: #414141;
+  --sunk: #1b1b1b;
+  --line: #3c3c3c;
+  --line-strong: #858585;
+  --fg: #f9f9f9;
+  --fg-2: #bbbbbb;
+  --fg-3: #a3a3a3;
+  --fg-disabled: #6a6a6a;
+  --overlay: rgba(0, 0, 0, 0.55);
+  --brand: #9b85cb;
+  --brand-strong: #b4a2dc;
+  --brand-soft: #332b45;
+  --on-brand: #160f26;
+  --link: var(--brand-strong);
+  --focus: var(--brand);
+  --hover-bg: rgba(255, 255, 255, 0.06);
+  --flag-bg: #3a3020;
+  --mod-graph: #6fa8dc;
+  --mod-graph-bg: #22313e;
+  --mod-graph-raised: #2d4256;
+  --mod-graph-line: #3d5872;
+  --mod-graph-ink: #e2f0fe;
+  --mod-graph-muted: #acc8e3;
+  --on-mod-graph: #0a1c2c;
+  --mod-library: #c9a85c;
+  --mod-library-bg: #362e1b;
+  --mod-library-raised: #4a3e22;
+  --mod-library-line: #63532f;
+  --mod-library-ink: #f6eedc;
+  --mod-library-muted: #d3c29f;
+  --on-mod-library: #231902;
+  --mod-sets: #e08a5f;
+  --mod-sets-bg: #3f291e;
+  --mod-sets-raised: #573726;
+  --mod-sets-line: #744935;
+  --mod-sets-ink: #feeae0;
+  --mod-sets-muted: #e6b9a4;
+  --on-mod-sets: #2c1206;
+  --mod-paths: #d27aa8;
+  --mod-paths-bg: #3e2732;
+  --mod-paths-raised: #553345;
+  --mod-paths-line: #71455c;
+  --mod-paths-ink: #fee7f2;
+  --mod-paths-muted: #e3b5cb;
+  --on-mod-paths: #2b101e;
+  --mod-harmony: #5fb8b0;
+  --mod-harmony-bg: #1e3432;
+  --mod-harmony-raised: #264743;
+  --mod-harmony-line: #345e5a;
+  --mod-harmony-ink: #dff4f1;
+  --mod-harmony-muted: #a5cec9;
+  --on-mod-harmony: #03201d;
+  --mod-sources: #8fbf6b;
+  --mod-sources-bg: #27331e;
+  --mod-sources-raised: #344627;
+  --mod-sources-line: #465d35;
+  --mod-sources-ink: #e7f3de;
+  --mod-sources-muted: #b5cda5;
+  --on-mod-sources: #111f06;
+  --mod-pipeline: #7fa1b3;
+  --mod-pipeline-bg: #283135;
+  --mod-pipeline-raised: #354249;
+  --mod-pipeline-line: #475861;
+  --mod-pipeline-ink: #e7f0f5;
+  --mod-pipeline-muted: #b6c7d1;
+  --on-mod-pipeline: #121c22;
+  --mod-services: #a5a07b;
+  --mod-services-bg: #312f26;
+  --mod-services-raised: #424032;
+  --mod-services-line: #585644;
+  --mod-services-ink: #f0efe5;
+  --mod-services-muted: #c7c5b2;
+  --on-mod-services: #1d1b10;
+  --status-ok: #5fd08f;
+  --status-ok-bg: #143321;
+  --status-fair: #b6d35a;
+  --status-fair-bg: #282f11;
+  --status-warn: #efb54a;
+  --status-warn-bg: #38280c;
+  --status-bad: #ff7469;
+  --status-bad-bg: #41211e;
+  --status-info: #bbbbbb;
+  --status-info-bg: #2b2b2b;
+  --on-status-bad: #2a0806;
+  --compat-perfect: var(--status-ok);
+  --compat-compatible: var(--status-fair);
+  --compat-possible: var(--status-warn);
+  --compat-clash: var(--status-bad);
+  --progress-fill: var(--fg-2);
+  --progress-track: var(--surface-3);
+  --energy-1: #3b3a8f;
+  --energy-2: #4c3fa6;
+  --energy-3: #6a43b3;
+  --energy-4: #8a47b5;
+  --energy-5: #a94ba9;
+  --energy-6: #c55394;
+  --energy-7: #db6278;
+  --energy-8: #ea795c;
+  --energy-9: #f39a45;
+  --energy-10: #f7c04a;
+  --key-1a: #17a478;
+  --key-1b: #5ed8a9;
+  --key-2a: #689d48;
+  --key-2b: #99d079;
+  --key-3a: #989016;
+  --key-3b: #cac256;
+  --key-4a: #ba7f14;
+  --key-4b: #eeb154;
+  --key-5a: #cc7044;
+  --key-5b: #ffa47a;
+  --key-6a: #cf6872;
+  --key-6b: #fe9fa6;
+  --key-7a: #c3699e;
+  --key-7b: #f99bd1;
+  --key-8a: #aa72c2;
+  --key-8b: #dda4f7;
+  --key-9a: #857fd7;
+  --key-9b: #b6b4fe;
+  --key-10a: #528ed9;
+  --key-10b: #91c1ff;
+  --key-11a: #089ac3;
+  --key-11b: #49cffc;
+  --key-12a: #09a0a0;
+  --key-12b: #2ad7d7;
+  --chart-1: #56b4e9;
+  --chart-2: #e69f00;
+  --chart-3: #3fc29a;
+  --chart-4: #cc79a7;
+  --chart-5: #e8d95a;
+  --chart-6: #5aa0e0;
+  --chart-7: #f08a4b;
+  --chart-8: #999999;
+  --chart-grid: #353535;
+  --chart-axis: var(--fg-3);
+  --chart-ref: #d9d9d9;
+  --on-now: #1f1600;
+  --now: #f7c04a;
+  --sim: #8f8f8f;
+  --svc-spotify: #1db954;
+  --on-svc-spotify: #000000;
+  --svc-tidal: #000000;
+  --on-svc-tidal: #ffffff;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.30);
+  --shadow-2: 0 6px 20px rgba(0, 0, 0, 0.45);
+  --shadow-3: 0 18px 48px rgba(0, 0, 0, 0.55);
+}
+[data-theme="light"] {
+  --bg: #f4f4f1;
+  --surface-1: #ffffff;
+  --surface-2: #ecece8;
+  --surface-3: #e1e1dc;
+  --sunk: #e9e9e5;
+  --line: #d9d9d4;
+  --line-strong: #86867f;
+  --fg: #1c1c1e;
+  --fg-2: #47474b;
+  --fg-3: #616166;
+  --fg-disabled: #a3a3a0;
+  --overlay: rgba(20, 20, 24, 0.40);
+  --brand: #6a52a6;
+  --brand-strong: #56408f;
+  --brand-soft: #ebe5f7;
+  --on-brand: #ffffff;
+  --link: var(--brand);
+  --focus: var(--brand);
+  --hover-bg: rgba(0, 0, 0, 0.045);
+  --flag-bg: #fbf0d9;
+  --mod-graph: #2b679a;
+  --mod-graph-bg: #e5f2fe;
+  --mod-graph-raised: #cbe5fd;
+  --mod-graph-line: #accbe9;
+  --mod-graph-ink: #14283b;
+  --mod-graph-muted: #2d4a66;
+  --on-mod-graph: #ffffff;
+  --mod-library: #7d5e01;
+  --mod-library-bg: #f9efda;
+  --mod-library-raised: #eee0c0;
+  --mod-library-line: #d8c59e;
+  --mod-library-ink: #302508;
+  --mod-library-muted: #56451d;
+  --on-mod-library: #ffffff;
+  --mod-sets: #9b4816;
+  --mod-sets-bg: #ffece3;
+  --mod-sets-raised: #fcd9c8;
+  --mod-sets-line: #e9bca7;
+  --mod-sets-ink: #3c1d0d;
+  --mod-sets-muted: #673a24;
+  --on-mod-sets: #ffffff;
+  --mod-paths: #964070;
+  --mod-paths-bg: #ffe9f3;
+  --mod-paths-raised: #f9d6e6;
+  --mod-paths-line: #e6b8ce;
+  --mod-paths-ink: #3a1a2b;
+  --mod-paths-muted: #64364e;
+  --on-mod-paths: #ffffff;
+  --mod-harmony: #00736c;
+  --mod-harmony-bg: #def6f3;
+  --mod-harmony-raised: #c5eae6;
+  --mod-harmony-line: #a5d2cd;
+  --mod-harmony-ink: #0a2d2a;
+  --mod-harmony-muted: #21514d;
+  --on-mod-harmony: #ffffff;
+  --mod-sources: #447214;
+  --mod-sources-bg: #e8f5e0;
+  --mod-sources-raised: #d6e8ca;
+  --mod-sources-line: #b8d0a8;
+  --mod-sources-ink: #1b2c0e;
+  --mod-sources-muted: #375024;
+  --on-mod-sources: #ffffff;
+  --mod-pipeline: #46687a;
+  --mod-pipeline-bg: #e7f2f8;
+  --mod-pipeline-raised: #d4e4ed;
+  --mod-pipeline-line: #b8cbd5;
+  --mod-pipeline-ink: #1c282f;
+  --mod-pipeline-muted: #394b54;
+  --on-mod-pipeline: #ffffff;
+  --mod-services: #6a6440;
+  --mod-services-bg: #f2f1e5;
+  --mod-services-raised: #e4e2d1;
+  --mod-services-line: #cbc8b3;
+  --mod-services-ink: #29271a;
+  --mod-services-muted: #4b4835;
+  --on-mod-services: #ffffff;
+  --status-ok: #1d7a45;
+  --status-ok-bg: #daf7e2;
+  --status-fair: #5d7414;
+  --status-fair-bg: #e9f4d5;
+  --status-warn: #8a5a00;
+  --status-warn-bg: #feebd3;
+  --status-bad: #b3261e;
+  --status-bad-bg: #fee9e5;
+  --status-info: #47474b;
+  --status-info-bg: #eeeef0;
+  --on-status-bad: #ffffff;
+  --compat-perfect: var(--status-ok);
+  --compat-compatible: var(--status-fair);
+  --compat-possible: var(--status-warn);
+  --compat-clash: var(--status-bad);
+  --progress-fill: var(--fg-2);
+  --progress-track: var(--surface-3);
+  --key-1a: #057c59;
+  --key-1b: #029e72;
+  --key-2a: #467922;
+  --key-2b: #629742;
+  --key-3a: #736c01;
+  --key-3b: #928a07;
+  --key-4a: #8d5e00;
+  --key-4b: #b37903;
+  --key-5a: #a44c1d;
+  --key-5b: #c56a3e;
+  --key-6a: #a64450;
+  --key-6b: #c8626d;
+  --key-7a: #9b467a;
+  --key-7b: #bc6398;
+  --key-8a: #854f9c;
+  --key-8b: #a36cbc;
+  --key-9a: #635bb0;
+  --key-9b: #7f79d1;
+  --key-10a: #2e69b2;
+  --key-10b: #4c88d3;
+  --key-11a: #027493;
+  --key-11b: #0994ba;
+  --key-12a: #047879;
+  --key-12b: #009a9a;
+  --chart-1: #0072b2;
+  --chart-2: #b36b00;
+  --chart-3: #007a5a;
+  --chart-4: #b0477f;
+  --chart-5: #8a7d00;
+  --chart-6: #005a8c;
+  --chart-7: #b34700;
+  --chart-8: #6b6b6b;
+  --chart-grid: #e4e4df;
+  --chart-axis: var(--fg-3);
+  --chart-ref: #3a3a3d;
+  --on-now: #ffffff;
+  --now: #9a6400;
+  --sim: #76767a;
+  --shadow-1: 0 1px 2px rgba(20, 20, 24, 0.08);
+  --shadow-2: 0 6px 20px rgba(20, 20, 24, 0.14);
+  --shadow-3: 0 18px 48px rgba(20, 20, 24, 0.22);
+}
+[data-theme="booth"] {
+  --bg: #000000;
+  --surface-1: #0f0f0f;
+  --surface-2: #1c1c1c;
+  --surface-3: #2a2a2a;
+  --sunk: #000000;
+  --line: #5e5e5e;
+  --line-strong: #a8a8a8;
+  --fg: #ffffff;
+  --fg-2: #e8e8e8;
+  --fg-3: #cfcfcf;
+  --fg-disabled: #8a8a8a;
+  --overlay: rgba(0, 0, 0, 0.80);
+  --brand: #c9b9f0;
+  --brand-strong: #e0d6fa;
+  --brand-soft: #271e3d;
+  --on-brand: #000000;
+  --link: var(--brand);
+  --focus: var(--brand);
+  --hover-bg: rgba(255, 255, 255, 0.14);
+  --flag-bg: #3a2a00;
+  --mod-graph: #acd6fe;
+  --mod-graph-bg: #081725;
+  --mod-graph-raised: #162d42;
+  --mod-graph-line: #658aad;
+  --mod-graph-ink: #fafcfe;
+  --mod-graph-muted: #d1e8fe;
+  --on-mod-graph: #000000;
+  --mod-library: #e9ce92;
+  --mod-library-bg: #1d1502;
+  --mod-library-raised: #372908;
+  --mod-library-line: #998352;
+  --mod-library-ink: #fffbf4;
+  --mod-library-muted: #f1e3c6;
+  --on-mod-library: #000000;
+  --mod-sets: #fec1a4;
+  --mod-sets-bg: #250f05;
+  --mod-sets-raised: #43210f;
+  --mod-sets-line: #b0765a;
+  --mod-sets-ink: #fefbf9;
+  --mod-sets-muted: #ffdccc;
+  --on-mod-sets: #000000;
+  --mod-paths: #feb9db;
+  --mod-paths-bg: #240d19;
+  --mod-paths-raised: #411d31;
+  --mod-paths-line: #ad718f;
+  --mod-paths-ink: #fefbfc;
+  --mod-paths-muted: #ffd8ea;
+  --on-mod-paths: #000000;
+  --mod-harmony: #9ce0d9;
+  --mod-harmony-bg: #031a18;
+  --mod-harmony-raised: #0b322f;
+  --mod-harmony-line: #59928d;
+  --mod-harmony-ink: #f5fefd;
+  --mod-harmony-muted: #ccede9;
+  --on-mod-harmony: #000000;
+  --mod-sources: #b8df9c;
+  --mod-sources-bg: #0e1a05;
+  --mod-sources-raised: #1f320f;
+  --mod-sources-line: #72925a;
+  --mod-sources-ink: #f9fdf6;
+  --mod-sources-muted: #d8eccb;
+  --on-mod-sources: #000000;
+  --mod-pipeline: #bad6e5;
+  --mod-pipeline-bg: #0f171c;
+  --mod-pipeline-raised: #202e35;
+  --mod-pipeline-line: #738a96;
+  --mod-pipeline-ink: #f9fcfe;
+  --mod-pipeline-muted: #d9e7ef;
+  --on-mod-pipeline: #000000;
+  --mod-services: #d6d2b4;
+  --mod-services-bg: #18160d;
+  --mod-services-raised: #2e2c1d;
+  --mod-services-line: #8a876e;
+  --mod-services-ink: #fdfcf5;
+  --mod-services-muted: #e7e5d6;
+  --on-mod-services: #000000;
+  --status-ok: #6fe0a0;
+  --status-ok-bg: #001709;
+  --status-fair: #c6e36a;
+  --status-fair-bg: #0f1400;
+  --status-warn: #f7c35a;
+  --status-warn-bg: #1a0f00;
+  --status-bad: #ff8a80;
+  --status-bad-bg: #240706;
+  --status-info: #e8e8e8;
+  --status-info-bg: #121212;
+  --on-status-bad: #000000;
+  --compat-perfect: var(--status-ok);
+  --compat-compatible: var(--status-fair);
+  --compat-possible: var(--status-warn);
+  --compat-clash: var(--status-bad);
+  --progress-fill: var(--fg-2);
+  --progress-track: var(--surface-3);
+  --energy-1: #47489f;
+  --energy-2: #4e41a9;
+  --key-1a: #2dc08e;
+  --key-1b: #68eeba;
+  --key-2a: #7db85a;
+  --key-2b: #a9e686;
+  --key-3a: #b2a92a;
+  --key-3b: #dfd65f;
+  --key-4a: #d79628;
+  --key-4b: #fec675;
+  --key-5a: #eb8656;
+  --key-5b: #fec1a6;
+  --key-6a: #ef7d88;
+  --key-6b: #ffbdc1;
+  --key-7a: #e17eb9;
+  --key-7b: #feb8df;
+  --key-8a: #c588e0;
+  --key-8b: #eabdfe;
+  --key-9a: #9c96f8;
+  --key-9b: #cbcbfe;
+  --key-10a: #65a7fa;
+  --key-10b: #b3d4ff;
+  --key-11a: #03b5e4;
+  --key-11b: #8cdeff;
+  --key-12a: #08bcbc;
+  --key-12b: #2eeded;
+  --chart-grid: #3a3a3a;
+  --chart-axis: var(--fg-3);
+  --chart-ref: #ffffff;
+  --on-now: #000000;
+  --now: #ffd166;
+  --sim: #bdbdbd;
+  --shadow-1: none;
+  --shadow-2: 0 0 0 1px #a8a8a8;
+  --shadow-3: 0 0 0 2px #ffffff;
+}
+:root {
+  --space-0: 0px;
+  --space-0\.5: 2px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --radius-chip: 4px;
+  --radius-control: 8px;
+  --radius-card: 14px;
+  --radius-sheet: 18px;
+  --radius-pill: 999px;
+  --control-sm: 32px;
+  --control-md: 40px;
+  --control-lg: 48px;
+  --touch-min: 44px;
+  --row-compact: 32px;
+  --row-comfortable: 40px;
+  --row-two-line: 56px;
+  --header-h: 56px;
+  --drawer-w: 300px;
+  --rail-w: 248px;
+  --content-max: 1400px;
+  --print-wide-h: 150mm;
+  --print-wide-w: 273mm;
+  --prose-max: 68ch;
+  --z-base: 0;
+  --z-sticky: 10;
+  --z-header: 20;
+  --z-drawer: 40;
+  --z-overlay: 50;
+  --z-dialog: 60;
+  --z-popover: 70;
+  --z-toast: 80;
+  --z-tooltip: 90;
+  --duration-instant: 0ms;
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 1, 1);
+  --bp-phone: 480px;
+  --bp-tablet: 768px;
+  --bp-desktop: 1100px;
+  --bp-wide: 1440px;
+  --bp-wall: 1920px;
+  --opacity-disabled: 0.45;
+  --opacity-faded: 0.15;
+  --opacity-edge: 0.6;
+  --graph-edge-w-1: 1px;
+  --graph-edge-w-2: 2px;
+  --graph-edge-w-3: 3.5px;
+  --graph-edge-w-4: 6px;
+  --graph-edge-op-1: 0.35;
+  --graph-edge-op-2: 0.55;
+  --graph-edge-op-3: 0.8;
+  --graph-edge-op-4: 1;
+  --graph-edge-dim: 0.25;
+  --graph-ring-first: 58px;
+  --graph-ring-step: 40px;
+  --graph-ring-aspect: 1.7;
+  --graph-seat-gap: 30px;
+  --graph-label-zoom: 1.5;
+  --graph-hood-steps: 3;
+  --graph-hood-max: 200;
+  --font-display: "Sora", "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+.display-xl { font-family: var(--font-display); font-size: 2.5rem; line-height: 1.1; font-weight: 700; letter-spacing: -0.01em; }
+.title-l { font-family: var(--font-display); font-size: 1.75rem; line-height: 1.2; font-weight: 700; }
+.title-m { font-family: var(--font-display); font-size: 1.375rem; line-height: 1.25; font-weight: 700; }
+.title-s { font-family: var(--font-display); font-size: 1.125rem; line-height: 1.3; font-weight: 700; }
+.title-lead { font-family: var(--font-display); font-size: 1em; line-height: 1.2; font-weight: 400; }
+.figure { font-family: var(--font-display); font-size: 2rem; line-height: 1.05; font-weight: 700; }
+.body-l { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.55; font-weight: 400; }
+.body { font-family: var(--font-body); font-size: 0.9375rem; line-height: 1.45; font-weight: 400; }
+.body-strong { font-family: var(--font-body); font-size: 0.9375rem; line-height: 1.45; font-weight: 600; }
+.body-s { font-family: var(--font-body); font-size: 0.8125rem; line-height: 1.4; font-weight: 400; }
+.label { font-family: var(--font-body); font-size: 0.75rem; line-height: 1.3; font-weight: 600; letter-spacing: 0.08em; }
+.caption { font-family: var(--font-body); font-size: 0.75rem; line-height: 1.35; font-weight: 400; }
+.data { font-family: var(--font-data); font-size: 0.8125rem; line-height: 1.4; font-weight: 400; }
+.data-strong { font-family: var(--font-data); font-size: 0.8125rem; line-height: 1.4; font-weight: 600; }
+.data-s { font-family: var(--font-data); font-size: 0.6875rem; line-height: 1.35; font-weight: 400; }
+
+
+
+
+
+@media (prefers-color-scheme: light) {
+:root:not([data-theme]) {
+  --bg: #f4f4f1;
+  --surface-1: #ffffff;
+  --surface-2: #ecece8;
+  --surface-3: #e1e1dc;
+  --sunk: #e9e9e5;
+  --line: #d9d9d4;
+  --line-strong: #86867f;
+  --fg: #1c1c1e;
+  --fg-2: #47474b;
+  --fg-3: #616166;
+  --fg-disabled: #a3a3a0;
+  --overlay: rgba(20, 20, 24, 0.40);
+  --brand: #6a52a6;
+  --brand-strong: #56408f;
+  --brand-soft: #ebe5f7;
+  --on-brand: #ffffff;
+  --link: var(--brand);
+  --hover-bg: rgba(0, 0, 0, 0.045);
+  --flag-bg: #fbf0d9;
+  --mod-graph: #2b679a;
+  --mod-graph-bg: #e5f2fe;
+  --mod-graph-raised: #cbe5fd;
+  --mod-graph-line: #accbe9;
+  --mod-graph-ink: #14283b;
+  --mod-graph-muted: #2d4a66;
+  --on-mod-graph: #ffffff;
+  --mod-library: #7d5e01;
+  --mod-library-bg: #f9efda;
+  --mod-library-raised: #eee0c0;
+  --mod-library-line: #d8c59e;
+  --mod-library-ink: #302508;
+  --mod-library-muted: #56451d;
+  --on-mod-library: #ffffff;
+  --mod-sets: #9b4816;
+  --mod-sets-bg: #ffece3;
+  --mod-sets-raised: #fcd9c8;
+  --mod-sets-line: #e9bca7;
+  --mod-sets-ink: #3c1d0d;
+  --mod-sets-muted: #673a24;
+  --on-mod-sets: #ffffff;
+  --mod-paths: #964070;
+  --mod-paths-bg: #ffe9f3;
+  --mod-paths-raised: #f9d6e6;
+  --mod-paths-line: #e6b8ce;
+  --mod-paths-ink: #3a1a2b;
+  --mod-paths-muted: #64364e;
+  --on-mod-paths: #ffffff;
+  --mod-harmony: #00736c;
+  --mod-harmony-bg: #def6f3;
+  --mod-harmony-raised: #c5eae6;
+  --mod-harmony-line: #a5d2cd;
+  --mod-harmony-ink: #0a2d2a;
+  --mod-harmony-muted: #21514d;
+  --on-mod-harmony: #ffffff;
+  --mod-sources: #447214;
+  --mod-sources-bg: #e8f5e0;
+  --mod-sources-raised: #d6e8ca;
+  --mod-sources-line: #b8d0a8;
+  --mod-sources-ink: #1b2c0e;
+  --mod-sources-muted: #375024;
+  --on-mod-sources: #ffffff;
+  --mod-pipeline: #46687a;
+  --mod-pipeline-bg: #e7f2f8;
+  --mod-pipeline-raised: #d4e4ed;
+  --mod-pipeline-line: #b8cbd5;
+  --mod-pipeline-ink: #1c282f;
+  --mod-pipeline-muted: #394b54;
+  --on-mod-pipeline: #ffffff;
+  --mod-services: #6a6440;
+  --mod-services-bg: #f2f1e5;
+  --mod-services-raised: #e4e2d1;
+  --mod-services-line: #cbc8b3;
+  --mod-services-ink: #29271a;
+  --mod-services-muted: #4b4835;
+  --on-mod-services: #ffffff;
+  --status-ok: #1d7a45;
+  --status-ok-bg: #daf7e2;
+  --status-fair: #5d7414;
+  --status-fair-bg: #e9f4d5;
+  --status-warn: #8a5a00;
+  --status-warn-bg: #feebd3;
+  --status-bad: #b3261e;
+  --status-bad-bg: #fee9e5;
+  --status-info: #47474b;
+  --status-info-bg: #eeeef0;
+  --on-status-bad: #ffffff;
+  --energy-1: #3b3a8f;
+  --energy-2: #4c3fa6;
+  --energy-3: #6a43b3;
+  --energy-4: #8a47b5;
+  --energy-5: #a94ba9;
+  --energy-6: #c55394;
+  --energy-7: #db6278;
+  --energy-8: #ea795c;
+  --energy-9: #f39a45;
+  --energy-10: #f7c04a;
+  --key-1a: #057c59;
+  --key-1b: #029e72;
+  --key-2a: #467922;
+  --key-2b: #629742;
+  --key-3a: #736c01;
+  --key-3b: #928a07;
+  --key-4a: #8d5e00;
+  --key-4b: #b37903;
+  --key-5a: #a44c1d;
+  --key-5b: #c56a3e;
+  --key-6a: #a64450;
+  --key-6b: #c8626d;
+  --key-7a: #9b467a;
+  --key-7b: #bc6398;
+  --key-8a: #854f9c;
+  --key-8b: #a36cbc;
+  --key-9a: #635bb0;
+  --key-9b: #7f79d1;
+  --key-10a: #2e69b2;
+  --key-10b: #4c88d3;
+  --key-11a: #027493;
+  --key-11b: #0994ba;
+  --key-12a: #047879;
+  --key-12b: #009a9a;
+  --chart-1: #0072b2;
+  --chart-2: #b36b00;
+  --chart-3: #007a5a;
+  --chart-4: #b0477f;
+  --chart-5: #8a7d00;
+  --chart-6: #005a8c;
+  --chart-7: #b34700;
+  --chart-8: #6b6b6b;
+  --chart-grid: #e4e4df;
+  --chart-ref: #3a3a3d;
+  --on-now: #ffffff;
+  --now: #9a6400;
+  --sim: #76767a;
+  --svc-tidal: #000000;
+  --shadow-1: 0 1px 2px rgba(20, 20, 24, 0.08);
+  --shadow-2: 0 6px 20px rgba(20, 20, 24, 0.14);
+  --shadow-3: 0 18px 48px rgba(20, 20, 24, 0.22);
+  color-scheme: light;
+}
+}
+.sn-m-graph    { --m: var(--mod-graph);    --m-bg: var(--mod-graph-bg);    --m-raised: var(--mod-graph-raised);    --m-line: var(--mod-graph-line);    --m-ink: var(--mod-graph-ink);    --m-muted: var(--mod-graph-muted);    --m-on: var(--on-mod-graph); }
+.sn-m-library  { --m: var(--mod-library);  --m-bg: var(--mod-library-bg);  --m-raised: var(--mod-library-raised);  --m-line: var(--mod-library-line);  --m-ink: var(--mod-library-ink);  --m-muted: var(--mod-library-muted);  --m-on: var(--on-mod-library); }
+.sn-m-sets     { --m: var(--mod-sets);     --m-bg: var(--mod-sets-bg);     --m-raised: var(--mod-sets-raised);     --m-line: var(--mod-sets-line);     --m-ink: var(--mod-sets-ink);     --m-muted: var(--mod-sets-muted);     --m-on: var(--on-mod-sets); }
+.sn-m-paths    { --m: var(--mod-paths);    --m-bg: var(--mod-paths-bg);    --m-raised: var(--mod-paths-raised);    --m-line: var(--mod-paths-line);    --m-ink: var(--mod-paths-ink);    --m-muted: var(--mod-paths-muted);    --m-on: var(--on-mod-paths); }
+.sn-m-harmony  { --m: var(--mod-harmony);  --m-bg: var(--mod-harmony-bg);  --m-raised: var(--mod-harmony-raised);  --m-line: var(--mod-harmony-line);  --m-ink: var(--mod-harmony-ink);  --m-muted: var(--mod-harmony-muted);  --m-on: var(--on-mod-harmony); }
+.sn-m-sources  { --m: var(--mod-sources);  --m-bg: var(--mod-sources-bg);  --m-raised: var(--mod-sources-raised);  --m-line: var(--mod-sources-line);  --m-ink: var(--mod-sources-ink);  --m-muted: var(--mod-sources-muted);  --m-on: var(--on-mod-sources); }
+.sn-m-pipeline { --m: var(--mod-pipeline); --m-bg: var(--mod-pipeline-bg); --m-raised: var(--mod-pipeline-raised); --m-line: var(--mod-pipeline-line); --m-ink: var(--mod-pipeline-ink); --m-muted: var(--mod-pipeline-muted); --m-on: var(--on-mod-pipeline); }
+.sn-m-services { --m: var(--mod-services); --m-bg: var(--mod-services-bg); --m-raised: var(--mod-services-raised); --m-line: var(--mod-services-line); --m-ink: var(--mod-services-ink); --m-muted: var(--mod-services-muted); --m-on: var(--on-mod-services); }
+.sn-m-icon { color: var(--m); }
+/* Diagram (1.10.0): build-time SVG diagrams for investigation reports (D-series figures).
+   Colour: one domain map, .sn-dg-c1 … .sn-dg-c8 set --dg-c to chart-1 … chart-8 (strokes and stripes only).
+   Nodes are neutral cards (surface-1, fg text); state is carried by outline style plus a word:
+   production solid, non-final dotted, queued dashed (sim), proposed dashed (brand). Gaps are status-bad dashed with a cross glyph.
+   Interaction hooks: [data-hl] highlights, [data-dim] fades, :focus-visible shows the focus ring. */
+.sn-diagram { font-family: var(--font-body); color: var(--fg); }
+.sn-diagram__bg { fill: var(--bg); }
+.sn-dg-c1 { --dg-c: var(--chart-1); }
+.sn-dg-c2 { --dg-c: var(--chart-2); }
+.sn-dg-c3 { --dg-c: var(--chart-3); }
+.sn-dg-c4 { --dg-c: var(--chart-4); }
+.sn-dg-c5 { --dg-c: var(--chart-5); }
+.sn-dg-c6 { --dg-c: var(--chart-6); }
+.sn-dg-c7 { --dg-c: var(--chart-7); }
+.sn-dg-c8 { --dg-c: var(--chart-8); }
+
+.sn-diagram__t { fill: var(--fg); }
+.sn-diagram__t--2 { fill: var(--fg-2); }
+.sn-diagram__t--3 { fill: var(--fg-3); }
+
+.sn-diagram__group { fill: none; stroke: var(--line); stroke-width: var(--graph-edge-w-1); }
+.sn-diagram__lane { fill: var(--surface-2); stroke: var(--line); stroke-width: var(--graph-edge-w-1); }
+.sn-diagram__lane--alt { fill: none; }
+.sn-diagram__grid { fill: none; stroke: var(--chart-grid); stroke-width: var(--graph-edge-w-1); }
+
+.sn-diagram__node { cursor: pointer; }
+.sn-diagram__box { fill: var(--surface-1); stroke: var(--line-strong); stroke-width: var(--graph-edge-w-1); filter: drop-shadow(var(--shadow-1)); }
+.sn-diagram__stripe { fill: var(--dg-c, var(--line-strong)); stroke: none; }
+.sn-diagram__node--nonfinal .sn-diagram__box,
+.sn-diagram__legend-box.sn-diagram__node--nonfinal { stroke-dasharray: 1.5 3; stroke-linecap: round; stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__node--queued .sn-diagram__box,
+.sn-diagram__legend-box.sn-diagram__node--queued { stroke: var(--sim); stroke-dasharray: 6 4; stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__node--proposed .sn-diagram__box,
+.sn-diagram__legend-box.sn-diagram__node--proposed { stroke: var(--brand); stroke-dasharray: 6 4; stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__node--gap .sn-diagram__box { stroke: var(--status-bad); stroke-dasharray: 4 3; stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__node--note .sn-diagram__box { fill: var(--surface-2); stroke: var(--line); filter: none; }
+.sn-diagram__node--fallback .sn-diagram__box { fill: var(--surface-2); stroke: var(--line-strong); stroke-dasharray: 4 3; filter: none; }
+.sn-diagram__node--changed .sn-diagram__box { stroke: var(--status-warn); stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__legend-box { fill: var(--surface-1); stroke: var(--line-strong); stroke-width: var(--graph-edge-w-1); }
+.sn-diagram__swatch { fill: var(--dg-c); }
+.sn-diagram__lock { fill: none; stroke: var(--fg-2); stroke-width: var(--graph-edge-w-1); stroke-linejoin: round; }
+
+.sn-diagram__edge { cursor: pointer; }
+.sn-diagram__line { fill: none; stroke: var(--dg-c, var(--line-strong)); stroke-width: var(--graph-edge-w-2); stroke-linejoin: round; opacity: var(--graph-edge-op-4); }
+.sn-diagram__head { fill: var(--dg-c, var(--line-strong)); stroke: none; }
+.sn-diagram__edge--queued .sn-diagram__line { stroke: var(--sim); stroke-dasharray: 6 4; }
+.sn-diagram__edge--queued .sn-diagram__head { fill: var(--sim); }
+.sn-diagram__edge--gap .sn-diagram__line { stroke: var(--status-bad); stroke-dasharray: 5 4; }
+.sn-diagram__edge--gap .sn-diagram__head { fill: var(--status-bad); }
+.sn-diagram__edge--proposed .sn-diagram__line { stroke: var(--brand); stroke-dasharray: 6 4; }
+.sn-diagram__edge--proposed .sn-diagram__head { fill: var(--brand); }
+.sn-diagram__edge--return .sn-diagram__line { stroke-dasharray: 4 3; }
+.sn-diagram__edge--fallback .sn-diagram__line { stroke: var(--line-strong); stroke-dasharray: 4 3; stroke-width: var(--graph-edge-w-1); }
+.sn-diagram__edge--fallback .sn-diagram__head { fill: var(--line-strong); }
+.sn-diagram__edge--neutral .sn-diagram__line { stroke: var(--line-strong); }
+.sn-diagram__edge--neutral .sn-diagram__head { fill: var(--line-strong); }
+.sn-diagram__lifeline { fill: none; stroke: var(--line-strong); stroke-width: var(--graph-edge-w-1); stroke-dasharray: 4 4; }
+
+.sn-diagram__badge-box { fill: var(--surface-1); stroke: var(--dg-c, var(--line-strong)); stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__edge--queued .sn-diagram__badge-box { stroke: var(--sim); stroke-dasharray: 3 2; }
+.sn-diagram__badge--gap .sn-diagram__badge-box,
+.sn-diagram__edge--gap .sn-diagram__badge-box { fill: var(--status-bad-bg); stroke: var(--status-bad); }
+.sn-diagram__badge--proposed .sn-diagram__badge-box,
+.sn-diagram__edge--proposed .sn-diagram__badge-box { fill: var(--brand-soft); stroke: var(--brand); }
+.sn-diagram__badge--neutral .sn-diagram__badge-box { stroke: var(--line-strong); }
+.sn-diagram__mark-box { fill: var(--status-bad-bg); stroke: var(--status-bad); stroke-width: var(--graph-edge-w-1); }
+.sn-diagram__mark--warn .sn-diagram__mark-box { fill: var(--status-warn-bg); stroke: var(--status-warn); }
+.sn-diagram__mark--info .sn-diagram__mark-box { fill: var(--surface-2); stroke: var(--line-strong); }
+.sn-diagram__now { fill: none; stroke: var(--now); stroke-width: var(--graph-edge-w-3); }
+.sn-diagram__gate { fill: var(--surface-1); stroke: var(--fg-2); stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__cell { fill: var(--surface-1); stroke: var(--line); stroke-width: var(--graph-edge-w-1); }
+
+/* interaction */
+.sn-diagram [data-dim] { opacity: var(--opacity-faded); }
+.sn-diagram__node[data-hl] .sn-diagram__box { stroke: var(--fg); stroke-width: var(--graph-edge-w-3); }
+.sn-diagram__edge[data-hl] .sn-diagram__line { stroke-width: var(--graph-edge-w-3); }
+.sn-diagram__node:focus-visible .sn-diagram__box,
+.sn-diagram__edge:focus-visible .sn-diagram__badge-box { stroke: var(--focus); stroke-width: var(--graph-edge-w-3); }
+.sn-diagram__edge:focus-visible .sn-diagram__line { stroke: var(--focus); stroke-width: var(--graph-edge-w-3); }
+
+@media print {
+  .sn-diagram__box { filter: none; }
+  .sn-diagram [data-dim] { opacity: 1; }
+}
+/* corner radii by part (SVG2 rx as a CSS property): tokens only */
+.sn-diagram__box, .sn-diagram__legend-box { rx: var(--radius-control); }
+.sn-diagram__badge-box { rx: var(--radius-pill); }
+.sn-diagram__mark-box, .sn-diagram__cell, .sn-diagram__stripe, .sn-diagram__swatch { rx: var(--radius-chip); }
+.sn-diagram__group, .sn-diagram__lane { rx: var(--radius-card); }
+
+/* ===== Report charts (source/css/65-report-charts.css) =====
+   Static report charts (data-flow report C-series): bars, matrix cells, bullet bands, log-axis dots and
+   pattern lines that ChartFrame does not define. Tokens only. Grid, base, tick and axis-title come from
+   .sn-chart-frame__* in 40-charts.css. Marks take their series colour from style="--c: var(--chart-N)". */
+.sn-chart { overflow: visible; font-family: var(--font-body); }
+.sn-rchart__bar { fill: var(--c, var(--chart-1)); }
+.sn-rchart__bar--proj { fill: none; stroke: var(--line-strong); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.sn-rchart__bar--none { fill: var(--surface-3); stroke: var(--line-strong); stroke-width: 1; }
+.sn-rchart__pat-line { stroke: var(--surface-1); stroke-width: 1.5; }
+.sn-rchart__label { fill: var(--fg-2); font-family: var(--font-body); font-size: 0.75rem; }
+.sn-rchart__label--strong { fill: var(--fg); font-weight: 600; }
+.sn-rchart__value { fill: var(--fg); font-family: var(--font-data); font-size: 0.6875rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.sn-rchart__halo { paint-order: stroke; stroke: var(--surface-1); stroke-width: 3; stroke-linejoin: round; }
+.sn-rchart__ref { stroke: var(--chart-ref); stroke-width: 1.5; stroke-dasharray: 5 4; fill: none; }
+.sn-rchart__ref-label { fill: var(--fg-2); font-family: var(--font-body); font-size: 0.6875rem; }
+.sn-rchart__cell { fill: var(--surface-3); stroke: var(--line-strong); stroke-width: 1; }
+.sn-rchart__cell--empty { fill: none; stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 2; }
+.sn-rchart__cell--queued { stroke-dasharray: 4 3; }
+.sn-rchart__cell--ok { fill: var(--status-ok-bg); }
+.sn-rchart__cell--fair { fill: var(--status-fair-bg); }
+.sn-rchart__cell--warn { fill: var(--status-warn-bg); }
+.sn-rchart__cell--bad { fill: var(--status-bad-bg); }
+.sn-rchart__cell--info { fill: var(--status-info-bg); }
+.sn-rchart__cell-text { fill: var(--fg); font-family: var(--font-data); font-size: 0.6875rem; font-weight: 600; }
+.sn-rchart__cell-id { fill: var(--fg-2); font-family: var(--font-data); font-size: 0.6875rem; }
+.sn-rchart__dot { fill: var(--c, var(--fg-2)); stroke: var(--surface-1); stroke-width: 1.5; }
+.sn-rchart__dot--proj { fill: var(--surface-1); stroke: var(--fg-2); stroke-width: 1.5; stroke-dasharray: 2 2; }
+.sn-rchart__band { fill: var(--surface-2); }
+.sn-rchart__band--near { fill: var(--surface-3); }
+.sn-rchart__mark { stroke: var(--fg); stroke-width: 2; }
+.sn-rchart__lane { stroke: var(--chart-grid); stroke-width: 1; shape-rendering: crispEdges; }
+
+.sn-chart-frame__grid { stroke: var(--chart-grid); stroke-width: 1; shape-rendering: crispEdges; }
+.sn-chart-frame__base { stroke: var(--line-strong); stroke-width: 1; shape-rendering: crispEdges; }
+.sn-chart-frame__tick { fill: var(--chart-axis); font-family: var(--font-data); font-size: 0.6875rem; font-variant-numeric: tabular-nums; }
+.sn-chart-frame__axis-title { fill: var(--chart-axis); font-family: var(--font-body); font-size: 0.6875rem; }</style>
+<title id="D5-P2-t">Swimlane: P2 Set planner</title>
+<desc id="D5-P2-d">8 numbered steps of Set planner left to right across 3 system lanes; each card shows its trigger, page, action, data written and hand-off, with dashed fallback cards below.</desc>
+<rect class="sn-diagram__bg" x="0" y="0" width="1821" height="1002"/>
+<rect class="sn-diagram__lane" x="24.0" y="24.0" width="1718.6" height="291.6"/>
+<text class="sn-diagram__t sn-diagram__t--2 title-s" x="34.0" y="52.4">musicLibra</text>
+<text class="sn-diagram__t sn-diagram__t--2 title-s" x="34.0" y="77.6">ry artifact</text>
+<rect class="sn-diagram__lane sn-diagram__lane--alt" x="24.0" y="315.6" width="1718.6" height="291.6"/>
+<text class="sn-diagram__t sn-diagram__t--2 title-s" x="34.0" y="344.0">songnodes</text>
+<text class="sn-diagram__t sn-diagram__t--2 title-s" x="34.0" y="369.2">frontend</text>
+<rect class="sn-diagram__lane" x="24.0" y="607.2" width="1718.6" height="291.6"/>
+<text class="sn-diagram__t sn-diagram__t--2 title-s" x="34.0" y="635.6">musicLibra</text>
+<text class="sn-diagram__t sn-diagram__t--2 title-s" x="34.0" y="660.8">ry pipeline</text>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-page-set-builder" data-step="1" tabindex="0" aria-label="P2 step 1 on Naarm Set Builder: filter and add to set. Trigger: user. Writes: localStorage sn-filters-library, sn-set-draft.">
+<title>P2 step 1 on Naarm Set Builder: filter and add to set. Trigger: user. Writes: localStorage sn-filters-library, sn-set-draft.</title>
+<rect class="sn-diagram__box" x="148.6" y="34.0" width="180.0" height="182.0"/>
+<rect class="sn-diagram__stripe" x="150.1" y="35.5" width="5" height="179.0"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="162.6" y="58.3">▶ user</text>
+<text class="sn-diagram__t title-s" x="162.6" y="83.2">1 · Naarm Set…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="162.6" y="107.3">design · artifact</text>
+<text class="sn-diagram__t body-l" x="162.6" y="131.1">filter and add to</text>
+<text class="sn-diagram__t body-l" x="162.6" y="154.9">set</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="162.6" y="178.7">writes:…</text>
+</g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-page-set-builder" data-step="2" tabindex="0" aria-label="P2 step 2 on Naarm Set Builder: Save set with tidal flag. Trigger: user. Writes: artifact db sets/&lt;id&gt;, localStorage sn-music-library-sets. Hands off SavedSet {name,shape,minutes,mix,pool,tidal,seed,tracks[{id,tgt,...,move}],updated,created} via artifact db collection sets. Fallback: no db capability: set kept in localStorage only and never reaches the weekly run.">
+<title>P2 step 2 on Naarm Set Builder: Save set with tidal flag. Trigger: user. Writes: artifact db sets/&lt;id&gt;, localStorage sn-music-library-sets. Hands off SavedSet {name,shape,minutes,mix,pool,tidal,seed,tracks[{id,tgt,...,move}],updated,created} via artifact db collection sets. Fallback: no db capability: set kept in localStorage only and never reaches the weekly run.</title>
+<rect class="sn-diagram__box" x="350.6" y="34.0" width="180.0" height="182.0"/>
+<rect class="sn-diagram__stripe" x="352.1" y="35.5" width="5" height="179.0"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="364.6" y="58.3">▶ user</text>
+<text class="sn-diagram__t title-s" x="364.6" y="83.2">2 · Naarm Set…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="364.6" y="107.3">design · artifact</text>
+<text class="sn-diagram__t body-l" x="364.6" y="131.1">Save set with tidal</text>
+<text class="sn-diagram__t body-l" x="364.6" y="154.9">flag</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="364.6" y="178.7">writes: artifact d…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="364.6" y="202.5">→ hands off:…</text>
+</g>
+<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--fallback" data-from="ml-page-set-builder" data-to="ml-page-set-builder" data-edge="P2-s2&gt;fb" tabindex="0" aria-label="Fallback branch of step 2">
+<title>Fallback branch of step 2</title>
+<path class="sn-diagram__line" d="M440.6 216.0 L440.6 244.0"/>
+<path class="sn-diagram__head" d="M440.6 244.0 L436.8 237.0 L444.5 237.0 Z"/>
+</g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--fallback" data-node="ml-page-set-builder" data-fallback="2" tabindex="0" aria-label="Fallback for step 2: no db capability: set kept in localStorage only and never reaches the weekly run">
+<title>Fallback for step 2: no db capability: set kept in localStorage only and never reaches the weekly run</title>
+<rect class="sn-diagram__box" x="350.6" y="244.0" width="180.0" height="61.6"/>
+<rect class="sn-diagram__stripe" x="352.1" y="245.5" width="5" height="58.6"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="364.6" y="268.3">If it fails: no db</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="364.6" y="292.1">capability: set…</text>
+</g>
+<g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-agent-weekly-run" data-step="3" tabindex="0" aria-label="P2 step 3 on Weekly run playbook: export sets. Trigger: schedule. Writes: inbox/artifact_sets.json.">
+<title>P2 step 3 on Weekly run playbook: export sets. Trigger: schedule. Writes: inbox/artifact_sets.json.</title>
+<rect class="sn-diagram__box" x="552.6" y="617.2" width="180.0" height="182.0"/>
+<rect class="sn-diagram__stripe" x="554.1" y="618.7" width="5" height="179.0"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="566.6" y="641.5">▶ schedule</text>
+<text class="sn-diagram__t title-s" x="566.6" y="666.4">3 · Weekly run…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="566.6" y="690.5">ops · cli</text>
+<text class="sn-diagram__t body-l" x="566.6" y="714.3">export sets</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="566.6" y="738.1">writes:…</text>
+</g>
+<g class="sn-diagram__node sn-dg-c4 sn-diagram__node--production" data-node="ml-cli-sync-sets" data-step="4" tabindex="0" aria-label="P2 step 4 on run_weekly sync-sets: push to &#x54;IDAL. Trigger: schedule. Writes: &#x54;IDAL playlist, secrets/tidal_playlists.json. Fallback: &#x54;IDAL not logged in: skipped with a message.">
+<title>P2 step 4 on run_weekly sync-sets: push to &#x54;IDAL. Trigger: schedule. Writes: &#x54;IDAL playlist, secrets/tidal_playlists.json. Fallback: &#x54;IDAL not logged in: skipped with a message.</title>
+<rect class="sn-diagram__box" x="754.6" y="617.2" width="180.0" height="182.0"/>
+<rect class="sn-diagram__stripe" x="756.1" y="618.7" width="5" height="179.0"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="768.6" y="641.5">▶ schedule</text>
+<text class="sn-diagram__t title-s" x="768.6" y="666.4">4 · run_weekly…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="768.6" y="690.5">sets · cli</text>
+<text class="sn-diagram__t body-l" x="768.6" y="714.3">push to &#x54;IDAL</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="768.6" y="738.1">writes: &#x54;IDAL…</text>
+</g>
+<g class="sn-diagram__edge sn-dg-c4 sn-diagram__edge--fallback" data-from="ml-cli-sync-sets" data-to="ml-cli-sync-sets" data-edge="P2-s4&gt;fb" tabindex="0" aria-label="Fallback branch of step 4">
+<title>Fallback branch of step 4</title>
+<path class="sn-diagram__line" d="M844.6 799.2 L844.6 827.2"/>
+<path class="sn-diagram__head" d="M844.6 827.2 L840.8 820.2 L848.5 820.2 Z"/>
+</g>
+<g class="sn-diagram__node sn-dg-c4 sn-diagram__node--fallback" data-node="ml-cli-sync-sets" data-fallback="4" tabindex="0" aria-label="Fallback for step 4: &#x54;IDAL not logged in: skipped with a message">
+<title>Fallback for step 4: &#x54;IDAL not logged in: skipped with a message</title>
+<rect class="sn-diagram__box" x="754.6" y="827.2" width="180.0" height="61.6"/>
+<rect class="sn-diagram__stripe" x="756.1" y="828.7" width="5" height="58.6"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="768.6" y="851.5">If it fails: &#x54;IDAL</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="768.6" y="875.3">not logged in:…</text>
+</g>
+<g class="sn-diagram__node sn-dg-c2 sn-diagram__node--production" data-node="sn-fe-library" data-step="5" tabindex="0" aria-label="P2 step 5 on Melbourne crate: filter and add tracks. Trigger: filter rail. Writes: sn-filters-library, sn-set-draft, sn-favs-library-crate. Fallback: filters kept in memory if storage blocked.">
+<title>P2 step 5 on Melbourne crate: filter and add tracks. Trigger: filter rail. Writes: sn-filters-library, sn-set-draft, sn-favs-library-crate. Fallback: filters kept in memory if storage blocked.</title>
+<rect class="sn-diagram__box" x="956.6" y="325.6" width="180.0" height="182.0"/>
+<rect class="sn-diagram__stripe" x="958.1" y="327.1" width="5" height="179.0"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="970.6" y="349.9">▶ filter rail</text>
+<text class="sn-diagram__t title-s" x="970.6" y="374.8">5 · Melbourne…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="970.6" y="398.9">library · route</text>
+<text class="sn-diagram__t body-l" x="970.6" y="422.7">filter and add</text>
+<text class="sn-diagram__t body-l" x="970.6" y="446.5">tracks</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="970.6" y="470.3">writes:…</text>
+</g>
+<g class="sn-diagram__edge sn-dg-c2 sn-diagram__edge--fallback" data-from="sn-fe-library" data-to="sn-fe-library" data-edge="P2-s5&gt;fb" tabindex="0" aria-label="Fallback branch of step 5">
+<title>Fallback branch of step 5</title>
+<path class="sn-diagram__line" d="M1046.6 507.6 L1046.6 535.6"/>
+<path class="sn-diagram__head" d="M1046.6 535.6 L1042.8 528.6 L1050.5 528.6 Z"/>
+</g>
+<g class="sn-diagram__node sn-dg-c2 sn-diagram__node--fallback" data-node="sn-fe-library" data-fallback="5" tabindex="0" aria-label="Fallback for step 5: filters kept in memory if storage blocked">
+<title>Fallback for step 5: filters kept in memory if storage blocked</title>
+<rect class="sn-diagram__box" x="956.6" y="535.6" width="180.0" height="61.6"/>
+<rect class="sn-diagram__stripe" x="958.1" y="537.1" width="5" height="58.6"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="970.6" y="559.9">If it fails: filters</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="970.6" y="583.7">kept in memory i…</text>
+</g>
+<g class="sn-diagram__node sn-dg-c4 sn-diagram__node--production" data-node="sn-fe-sets" data-step="6" tabindex="0" aria-label="P2 step 6 on Set builder: build from crate and shape energy. Trigger: /sets?pool=crate&amp;…. Writes: sn-set-draft. Fallback: draft kept in memory.">
+<title>P2 step 6 on Set builder: build from crate and shape energy. Trigger: /sets?pool=crate&amp;…. Writes: sn-set-draft. Fallback: draft kept in memory.</title>
+<rect class="sn-diagram__box" x="1158.6" y="325.6" width="180.0" height="182.0"/>
+<rect class="sn-diagram__stripe" x="1160.1" y="327.1" width="5" height="179.0"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="1172.6" y="349.9">▶…</text>
+<text class="sn-diagram__t title-s" x="1172.6" y="374.8">6 · Set builder</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="1172.6" y="398.9">sets · route</text>
+<text class="sn-diagram__t body-l" x="1172.6" y="422.7">build from crate</text>
+<text class="sn-diagram__t body-l" x="1172.6" y="446.5">and shape energy</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="1172.6" y="470.3">writes:…</text>
+</g>
+<g class="sn-diagram__edge sn-dg-c4 sn-diagram__edge--fallback" data-from="sn-fe-sets" data-to="sn-fe-sets" data-edge="P2-s6&gt;fb" tabindex="0" aria-label="Fallback branch of step 6">
+<title>Fallback branch of step 6</title>
+<path class="sn-diagram__line" d="M1248.6 507.6 L1248.6 535.6"/>
+<path class="sn-diagram__head" d="M1248.6 535.6 L1244.8 528.6 L1252.5 528.6 Z"/>
+</g>
+<g class="sn-diagram__node sn-dg-c4 sn-diagram__node--fallback" data-node="sn-fe-sets" data-fallback="6" tabindex="0" aria-label="Fallback for step 6: draft kept in memory">
+<title>Fallback for step 6: draft kept in memory</title>
+<rect class="sn-diagram__box" x="1158.6" y="535.6" width="180.0" height="61.6"/>
+<rect class="sn-diagram__stripe" x="1160.1" y="537.1" width="5" height="58.6"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="1172.6" y="559.9">If it fails: draft kept</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="1172.6" y="583.7">in memory</text>
+</g>
+<g class="sn-diagram__node sn-dg-c4 sn-diagram__node--production" data-node="sn-fe-sets" data-step="7" tabindex="0" aria-label="P2 step 7 on Set builder: save set. Trigger: Save. Writes: &#x50;UT /api/v1/library/sets/{id}; sn-music-library-sets. Fallback: sets kept on device &#x28;source device).">
+<title>P2 step 7 on Set builder: save set. Trigger: Save. Writes: &#x50;UT /api/v1/library/sets/{id}; sn-music-library-sets. Fallback: sets kept on device &#x28;source device).</title>
+<rect class="sn-diagram__box" x="1360.6" y="325.6" width="180.0" height="182.0"/>
+<rect class="sn-diagram__stripe" x="1362.1" y="327.1" width="5" height="179.0"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="1374.6" y="349.9">▶ Save</text>
+<text class="sn-diagram__t title-s" x="1374.6" y="374.8">7 · Set builder</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="1374.6" y="398.9">sets · route</text>
+<text class="sn-diagram__t body-l" x="1374.6" y="422.7">save set</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="1374.6" y="446.5">writes: &#x50;UT…</text>
+</g>
+<g class="sn-diagram__edge sn-dg-c4 sn-diagram__edge--fallback" data-from="sn-fe-sets" data-to="sn-fe-sets" data-edge="P2-s7&gt;fb" tabindex="0" aria-label="Fallback branch of step 7">
+<title>Fallback branch of step 7</title>
+<path class="sn-diagram__line" d="M1450.6 507.6 L1450.6 535.6"/>
+<path class="sn-diagram__head" d="M1450.6 535.6 L1446.8 528.6 L1454.5 528.6 Z"/>
+</g>
+<g class="sn-diagram__node sn-dg-c4 sn-diagram__node--fallback" data-node="sn-fe-sets" data-fallback="7" tabindex="0" aria-label="Fallback for step 7: sets kept on device &#x28;source device)">
+<title>Fallback for step 7: sets kept on device &#x28;source device)</title>
+<rect class="sn-diagram__box" x="1360.6" y="535.6" width="180.0" height="61.6"/>
+<rect class="sn-diagram__stripe" x="1362.1" y="537.1" width="5" height="58.6"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="1374.6" y="559.9">If it fails: sets kept</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="1374.6" y="583.7">on device &#x28;sourc…</text>
+</g>
+<g class="sn-diagram__node sn-dg-c4 sn-diagram__node--production" data-node="sn-fe-sets" data-step="8" tabindex="0" aria-label="P2 step 8 on Set builder: export or send. Trigger: Export / Send to &#x54;IDAL. Writes: download .m3u8/.csv/.json/.xml or artifact_sets.json; &#x50;OST /api/v1/tidal/sets/send. Hands off artifact_sets.json &#x28;SavedSet[]) via manual file copy to E:\musicLibrary\inbox. Fallback: download works offline; &#x54;IDAL send shows &#x48;TTP error.">
+<title>P2 step 8 on Set builder: export or send. Trigger: Export / Send to &#x54;IDAL. Writes: download .m3u8/.csv/.json/.xml or artifact_sets.json; &#x50;OST /api/v1/tidal/sets/send. Hands off artifact_sets.json &#x28;SavedSet[]) via manual file copy to E:\musicLibrary\inbox. Fallback: download works offline; &#x54;IDAL send shows &#x48;TTP error.</title>
+<rect class="sn-diagram__box" x="1562.6" y="325.6" width="180.0" height="182.0"/>
+<rect class="sn-diagram__stripe" x="1564.1" y="327.1" width="5" height="179.0"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="1576.6" y="349.9">▶ Export / Send…</text>
+<text class="sn-diagram__t title-s" x="1576.6" y="374.8">8 · Set builder</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="1576.6" y="398.9">sets · route</text>
+<text class="sn-diagram__t body-l" x="1576.6" y="422.7">export or send</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="1576.6" y="446.5">writes: downloa…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="1576.6" y="470.3">→ hands off:…</text>
+</g>
+<g class="sn-diagram__edge sn-dg-c4 sn-diagram__edge--fallback" data-from="sn-fe-sets" data-to="sn-fe-sets" data-edge="P2-s8&gt;fb" tabindex="0" aria-label="Fallback branch of step 8">
+<title>Fallback branch of step 8</title>
+<path class="sn-diagram__line" d="M1652.6 507.6 L1652.6 535.6"/>
+<path class="sn-diagram__head" d="M1652.6 535.6 L1648.8 528.6 L1656.5 528.6 Z"/>
+</g>
+<g class="sn-diagram__node sn-dg-c4 sn-diagram__node--fallback" data-node="sn-fe-sets" data-fallback="8" tabindex="0" aria-label="Fallback for step 8: download works offline; &#x54;IDAL send shows &#x48;TTP error">
+<title>Fallback for step 8: download works offline; &#x54;IDAL send shows &#x48;TTP error</title>
+<rect class="sn-diagram__box" x="1562.6" y="535.6" width="180.0" height="61.6"/>
+<rect class="sn-diagram__stripe" x="1564.1" y="537.1" width="5" height="58.6"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="1576.6" y="559.9">If it fails:</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="1576.6" y="583.7">download works…</text>
+</g>
+<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="ml-page-set-builder" data-to="ml-page-set-builder" data-edge="P2-1&gt;2" tabindex="0" aria-label="Step 1 → step 2, triggered by: user">
+<title>Step 1 → step 2, triggered by: user</title>
+<path class="sn-diagram__line" d="M328.6 62.0 L350.6 62.0"/>
+<path class="sn-diagram__head" d="M350.6 62.0 L343.6 58.1 L343.6 65.8 Z"/>
+</g>
+<g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="ml-page-set-builder" data-to="ml-agent-weekly-run" data-edge="P2-2&gt;3" tabindex="0" aria-label="Step 2 → step 3, triggered by: schedule">
+<title>Step 2 → step 3, triggered by: schedule</title>
+<path class="sn-diagram__line" d="M530.6 62.0 L541.6 62.0 L541.6 645.2 L552.6 645.2"/>
+<path class="sn-diagram__head" d="M552.6 645.2 L545.6 641.4 L545.6 649.1 Z"/>
+</g>
+<g class="sn-diagram__edge sn-dg-c4 sn-diagram__edge--built" data-from="ml-agent-weekly-run" data-to="ml-cli-sync-sets" data-edge="P2-3&gt;4" tabindex="0" aria-label="Step 3 → step 4, triggered by: schedule">
+<title>Step 3 → step 4, triggered by: schedule</title>
+<path class="sn-diagram__line" d="M732.6 645.2 L754.6 645.2"/>
+<path class="sn-diagram__head" d="M754.6 645.2 L747.6 641.4 L747.6 649.1 Z"/>
+</g>
+<g class="sn-diagram__edge sn-dg-c2 sn-diagram__edge--built" data-from="ml-cli-sync-sets" data-to="sn-fe-library" data-edge="P2-4&gt;5" tabindex="0" aria-label="Step 4 → step 5, triggered by: filter rail">
+<title>Step 4 → step 5, triggered by: filter rail</title>
+<path class="sn-diagram__line" d="M934.6 645.2 L945.6 645.2 L945.6 353.6 L956.6 353.6"/>
+<path class="sn-diagram__head" d="M956.6 353.6 L949.6 349.8 L949.6 357.5 Z"/>
+</g>
+<g class="sn-diagram__edge sn-dg-c4 sn-diagram__edge--built" data-from="sn-fe-library" data-to="sn-fe-sets" data-edge="P2-5&gt;6" tabindex="0" aria-label="Step 5 → step 6, triggered by: /sets?pool=crate&amp;…">
+<title>Step 5 → step 6, triggered by: /sets?pool=crate&amp;…</title>
+<path class="sn-diagram__line" d="M1136.6 353.6 L1158.6 353.6"/>
+<path class="sn-diagram__head" d="M1158.6 353.6 L1151.6 349.8 L1151.6 357.5 Z"/>
+</g>
+<g class="sn-diagram__edge sn-dg-c4 sn-diagram__edge--built" data-from="sn-fe-sets" data-to="sn-fe-sets" data-edge="P2-6&gt;7" tabindex="0" aria-label="Step 6 → step 7, triggered by: Save">
+<title>Step 6 → step 7, triggered by: Save</title>
+<path class="sn-diagram__line" d="M1338.6 353.6 L1360.6 353.6"/>
+<path class="sn-diagram__head" d="M1360.6 353.6 L1353.6 349.8 L1353.6 357.5 Z"/>
+</g>
+<g class="sn-diagram__edge sn-dg-c4 sn-diagram__edge--built" data-from="sn-fe-sets" data-to="sn-fe-sets" data-edge="P2-7&gt;8" tabindex="0" aria-label="Step 7 → step 8, triggered by: Export / Send to &#x54;IDAL">
+<title>Step 7 → step 8, triggered by: Export / Send to &#x54;IDAL</title>
+<path class="sn-diagram__line" d="M1540.6 353.6 L1562.6 353.6"/>
+<path class="sn-diagram__head" d="M1562.6 353.6 L1555.6 349.8 L1555.6 357.5 Z"/>
+</g>
+<g class="sn-diagram__legend" aria-label="Legend">
+<text class="sn-diagram__t title-s" x="24.0" y="933.2">Key</text>
+<rect class="sn-diagram__swatch sn-dg-c2" x="24.0" y="955.9" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="54.0" y="966.3">library</text>
+<rect class="sn-diagram__swatch sn-dg-c4" x="124.8" y="955.9" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="154.8" y="966.3">sets</text>
+<rect class="sn-diagram__swatch sn-dg-c8" x="207.4" y="955.9" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="237.4" y="966.3">ops and design</text>
+<rect class="sn-diagram__legend-box sn-diagram__node--production" x="383.4" y="952.9" width="22" height="16"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="413.4" y="966.3">Production &#x28;solid outline)</text>
+<g class="sn-diagram__edge--built"><path class="sn-diagram__line" d="M640.2 960.9 L662.2 960.9"/></g>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="670.2" y="966.3">Next step &#x28;▶ marks the trigger at the arrow head)</text>
+<g class="sn-diagram__edge--fallback"><path class="sn-diagram__line" d="M1102.7 960.9 L1124.7 960.9"/></g>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="1132.7" y="966.3">Fallback branch &#x28;dashed card: if it fails)</text>
+</g>
+</svg>

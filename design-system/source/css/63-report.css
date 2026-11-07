@@ -1,0 +1,70 @@
+/* ReportPage (1.10.0): long documents such as investigation reports and briefs.
+   Screen: .sn-page-report puts a sticky "On this page" mini table of contents (NAV-086, long documents only)
+   beside the content. Figures are .sn-figure cards: ChartFrame head, the drawing, a meta line (figure ID, n, unit,
+   state, source, method) and a Disclosure holding the data-table fallback.
+   Print: .sn-print-cover, .sn-print-toc (dot leaders and page numbers from the two-pass build) and state pills printed
+   as the word with a hairline border. Long documents print their traceability footer through the PDF renderer's footer
+   template (Print and export, "Long documents"), because Chromium clips fixed elements placed in the page margin. */
+.sn-page-report { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-8); align-items: start; }
+@media (min-width: 1100px) { .sn-page-report { grid-template-columns: var(--rail-w) minmax(0, 1fr); } }
+.sn-page-report__body { display: flex; flex-direction: column; gap: var(--space-12); min-width: 0; }
+.sn-page-report__body > .sn-page__section { scroll-margin-top: calc(var(--header-h) + var(--space-4)); }
+.sn-report-toc { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; padding: var(--space-4); background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--radius-card); }
+@media (min-width: 1100px) { .sn-report-toc { position: sticky; top: calc(var(--header-h) + var(--space-4)); max-height: calc(100vh - var(--header-h) - var(--space-8)); overflow: auto; } }
+.sn-report-toc__title { margin: 0; color: var(--fg-3); }
+.sn-report-toc ol, .sn-report-toc ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--space-2); }
+.sn-report-toc ol ol { padding-left: var(--space-3); gap: var(--space-1); }
+.sn-report-toc a[aria-current="true"] { color: var(--fg); text-decoration-thickness: 2px; }
+.sn-report-toc__num { color: var(--fg-3); font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+
+.sn-figure { margin: 0; display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; padding: var(--space-4); background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--radius-card); box-shadow: var(--shadow-1); }
+.sn-figure__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+.sn-figure__caption { margin: 0; max-width: var(--prose-max); color: var(--fg-2); }
+.sn-figure__meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-4); margin: 0; color: var(--fg-3); }
+.sn-figure__meta code { font-family: var(--font-data); }
+.sn-figure__tools { display: flex; gap: var(--space-2); align-items: center; }
+.sn-figure__canvas { position: relative; overflow: hidden; min-width: 0; border-radius: var(--radius-control); background: var(--bg); border: 1px solid var(--line); touch-action: none; }
+.sn-figure__canvas:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.sn-figure__canvas > svg { display: block; width: 100%; height: auto; transform-origin: 0 0; }
+.sn-figure__canvas[data-zoomed] { cursor: grab; }
+.sn-figure__canvas[data-dragging] { cursor: grabbing; }
+.sn-figure--chart .sn-figure__canvas { background: var(--surface-1); border: 0; }
+.sn-figure-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-6); }
+@media (min-width: 1100px) { .sn-figure-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.sn-code-block { margin: 0; padding: var(--space-3); overflow: auto; background: var(--sunk); color: var(--fg-2); border: 1px solid var(--line); border-radius: var(--radius-control); font-family: var(--font-data); font-size: 0.8125rem; line-height: 1.4; white-space: pre; tab-size: 2; }
+
+.sn-print-only { display: none; }
+.sn-print-cover { display: flex; flex-direction: column; gap: var(--space-6); }
+.sn-print-cover__eyebrow { margin: 0; color: var(--fg-3); }
+.sn-print-cover__meta { margin: 0; color: var(--fg-2); }
+.sn-print-toc { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--space-1); }
+.sn-print-toc li { display: flex; align-items: baseline; gap: var(--space-2); }
+.sn-print-toc li.sn-print-toc__sub { padding-left: var(--space-4); color: var(--fg-2); }
+.sn-print-toc a { color: inherit; text-decoration: none; }
+.sn-print-toc__fill { flex: 1 1 auto; border-bottom: 1px dotted var(--line-strong); min-width: var(--space-4); transform: translateY(calc(-1 * var(--space-1))); }
+.sn-print-toc__page { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+
+@media print {
+  .sn-print-only { display: block; }
+  .sn-page-report { display: block; }
+  .sn-report-toc, .sn-figure__tools { display: none; }
+  .sn-page-report__body { gap: var(--space-8); }
+  .sn-print-cover { break-after: page; }
+  .sn-figure { box-shadow: none; padding: 0; border: 0; break-inside: avoid; gap: var(--space-1); }
+  /* report cards (gaps, proposals, protocols) carry running text: they may split across pages; the heading stays with
+     what follows and a key-value grid or evidence list is not split */
+  .sn-page-report .sn-card { break-inside: auto; }
+  .sn-page-report .sn-card > :is(.sn-section-heading, .sn-title) { break-after: avoid; }
+  .sn-page-report .sn-card :is(.sn-key-value-grid, .sn-disclosure) { break-inside: avoid; }
+  .sn-figure__canvas { overflow: visible; border: 0; background: transparent; }
+  .sn-figure__canvas > svg { transform: none; }
+  .sn-pill { background: transparent; border: 1px solid currentColor; }
+  .sn-code-block { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .sn-page-report code { white-space: normal; overflow-wrap: anywhere; }
+  .sn-print-keep-12 { break-inside: avoid; }
+  .sn-page__section > .sn-section-heading + * { break-before: avoid; }
+}
+/* Running-text bullet list for documents: one point per item, capped at prose width. */
+.sn-prose-list { margin: 0; padding-left: var(--space-5); display: flex; flex-direction: column; gap: var(--space-2); max-width: var(--prose-max); color: var(--fg-2); }
+.sn-prose-list li::marker { color: var(--fg-3); }

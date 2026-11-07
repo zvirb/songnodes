@@ -1,0 +1,68 @@
+{
+ "1": {
+  "name": "linter",
+  "state": "pass",
+  "note": "0 findings from design-system/linters/check.py",
+  "detail": []
+ },
+ "2": {
+  "name": "tokens",
+  "state": "pass",
+  "note": "0 literal colours, sizes, spacing or radii outside design-system definitions",
+  "detail": []
+ },
+ "3": {
+  "name": "parity",
+  "state": "pass",
+  "note": "0 items missing from a figure or table in web, sheet or PDF; 0 flows undrawn",
+  "detail": []
+ },
+ "4": {
+  "name": "diagrams",
+  "state": "pass",
+  "note": "54 SVGs checked; 0 with overflow, collision or text under 9.5 px; 0 edges through nodes; crossings {'D1': 0, 'D2a': 1, 'D2b': 4, 'D2c': 5, 'D2d': 0, 'D2e': 0, 'D2f': 0, 'D2g': 0, 'D3a': 3, 'D3b': 24, 'D3c': 0, 'D3d': 19, 'D3e': 0, 'D3f': 0, 'D4a': 1, 'D4b': 3, 'D4c': 0, 'D5': 0, 'D5-P1': 0, 'D5-P2': 0, 'D5-P3': 0, 'D5-P4': 0, 'D5-P5a': 0, 'D5-P5b': 0, 'D5-P6': 0, 'D5-P7': 0, 'D5-P8': 0, 'D6a': 0, 'D6b': 0, 'D6c': 0, 'D7a': 0, 'D7b': 0, 'D7c': 0, 'D8a': 0, 'D8b': 0, 'D8c': 0, 'D8d': 0, 'D9': 0, 'D10': 0, 'D11a': 1, 'D11b': 0, 'D12': 0}",
+  "detail": null
+ },
+ "5": {
+  "name": "pdf",
+  "state": "fail",
+  "note": "299 pages; 0 portrait elements wider than the page; pages over 40% empty (pages before an orientation change exempt): [(183, 0.83), (190, 0.74), (191, 0.41), (273, 0.63)]",
+  "detail": [
+   "pages over 40% empty (pages before an orientation change exempt): [(183, 0.83), (190, 0.74), (191, 0.41), (273, 0.63)]"
+  ]
+ },
+ "6": {
+  "name": "colour",
+  "state": "pass",
+  "note": "0 module-colour uses in figures; design-system contrast report passes; greyscale shots for QA in build/evidence",
+  "detail": null
+ },
+ "7": {
+  "name": "conformance",
+  "state": "pass",
+  "note": "18 screenshots (report and reference, 3 widths × themes) for QA",
+  "detail": null
+ },
+ "8": {
+  "name": "offline",
+  "state": "pass",
+  "note": "0 console errors, 0 unresolved anchors, 0 network requests with the network blocked",
+  "detail": {
+   "console_errors": [],
+   "bad_anchors": [],
+   "network": []
+  }
+ },
+ "9": {
+  "name": "secrets",
+  "state": "pass",
+  "note": "0 secret-shaped strings in outputs",
+  "detail": []
+ },
+ "10": {
+  "name": "claims",
+  "state": "pass",
+  "note": "2 PR URLs in the handover, 0 not confirmed by the GitHub API",
+  "detail": []
+ }
+}
