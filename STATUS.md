@@ -2732,3 +2732,16 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
   - `npm run test:unit` (passed: 68 test files, 586 tests)
 - Next: merge PR and proceed to UX-T11 (Service rows tell the truth about OAuth).
 <!-- SLOT:UX-T09 END -->
+
+<!-- SLOT:SNT07 BEGIN -->
+### SNT07: Let target scrapes bypass the daily discovery quota (SN-T07)
+- Completed: 2026-11-07 (branch snt07-target-scrape-quota off origin/main ebf44357).
+- Scope: Allow targeted searches on 1001tracklists to bypass the daily discovery quota, closing gap sn-be-gap-target-scrape-quota:
+  1. `scrapers/spiders/1001tracklists_spider.py`: Set `self.force_run = True` when `search_query` or `search_mode == 'targeted'` is provided, matching MixesDB spider behavior.
+  2. `tests/unit/scrapers/test_1001tracklists_spider.py`: Added tests verifying that initializing the spider with `search_query` or `search_mode="targeted"` sets `force_run` to True.
+- Checks run and passed:
+  - `python -m pytest tests/unit/scrapers/test_1001tracklists_spider.py -k "test_search_query_sets_force_run or test_targeted_mode_sets_force_run"` (2 passed in 0.88s)
+  - `git diff --diff-filter=D --name-only origin/main...HEAD` (0 deleted files outside owned paths)
+- Note: `scripts/check_design_system.py --check` reports pre-existing un-tokenized values in `frontend/src/components/ds/EditableCell.tsx` and `frontend/src/components/ds/DataTable.tsx` introduced in commit `ebf44357` (UX-T09), which are out of scope for this backend spider package (Rule 6).
+- Next: Open PR and proceed to SN-T08 (Publish transition feed M3).
+<!-- SLOT:SNT07 END -->
