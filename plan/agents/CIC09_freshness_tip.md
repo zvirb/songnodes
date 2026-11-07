@@ -42,3 +42,5 @@ remains small. No unrelated paths may be edited.
 Receive CIC15's bounded screenshot capture to prevent SwiftShader wrapping on
 oversized pages; do not weaken image-difference tolerances.
 Review pipeline E2E output and its changed visual baselines separately.
+
+Receive CIC16–CIC19 scoped heading, action, tabs and clock fixes. CIC20 owns exactly the eight pipeline/settings dark/light desktop/phone chromium-linux PNG baselines under frontend/tests/e2e/visual.spec.ts-snapshots/.

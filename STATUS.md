@@ -3182,3 +3182,10 @@ One job: let callback lazy rendering finish before pausing its redirect clock.
 Owned paths: frontend/tests/e2e/all-pages.spec.ts, STATUS.md CIC19 slot.
 CI artifact confirms the old paused clock left callbacks at Loading page. Heading assertions remain strict; pause now occurs after the h1 appears. Next: Playwright discovery and canonical CI.
 <!-- SLOT:CIC19 END -->
+
+<!-- SLOT:CIC20 BEGIN -->
+## CIC20 — started 8 Nov 2026
+One job: refresh eight stale settings/pipeline visual baselines.
+Owned paths: frontend/tests/e2e/visual.spec.ts-snapshots/{pipeline,settings}-{dark,light}-{desktop,phone}-chromium-linux.png; STATUS.md CIC20 slot; integration brief.
+Visually reviewed all eight canonical captures from run 42346214726. Correct empty states, responsive layouts, no wrapping corruption; settings phone is a viewport capture. Tolerances unchanged. Next: checksum verification and canonical CI.
+<!-- SLOT:CIC20 END -->
