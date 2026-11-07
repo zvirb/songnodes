@@ -2714,3 +2714,21 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
   - `npm run test:unit` (passed: 68 test files, 586 tests)
 - Next: merge PR and proceed to UX-T10 (Freshness on every data page).
 <!-- SLOT:UX-T08 END -->
+
+<!-- SLOT:UX-T09 BEGIN -->
+### UX-T09: Inline editable cells for DataTable (UX-09)
+- Completed: 2026-11-07 (branch ux-t09-editable-cells-datatable off origin/main 7429821c).
+- Scope: Add EditableCell variant to DataTable supporting NumberField (1–10 with stepper), SelectField (pillar, rotation) and TextField (local path), writing through onBlur or Enter, showing a save tick and rolling back on Escape or error.
+- Changes:
+  - `frontend/src/components/ds/EditableCell.tsx`: Implemented EditableCell component with number, select, and text types, steppers, keyboard shortcuts (ArrowUp/Down, Enter, Escape rollback), save status indicator, and error recovery.
+  - `frontend/src/components/ds/DataTable.tsx`: Implemented canonical DataTable supporting sort with tiebreaks, row selection, density, keyboard focus, loading/empty/error states, and inline editable cells.
+  - `frontend/src/components/ds/index.tsx`: Re-exported DataTable and EditableCell.
+- Checks run and passed:
+  - `bash scripts/sync-design-system.sh --check` (passed: design-system 1.9.1 in sync)
+  - `python scripts/check_design_system.py --check` (passed)
+  - `python scripts/check_feature_imports.py --check` (passed: Feature boundaries OK)
+  - `npm run type-check` (passed: tsc --noEmit)
+  - `npm run lint` (passed: 0 errors)
+  - `npm run test:unit` (passed: 68 test files, 586 tests)
+- Next: merge PR and proceed to UX-T11 (Service rows tell the truth about OAuth).
+<!-- SLOT:UX-T09 END -->
