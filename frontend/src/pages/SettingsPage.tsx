@@ -9,7 +9,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { usePageHeader } from '../shell/AppShell';
 import { PageHeader } from '../shell/PageParts';
-import { SN, SnIcon, StatusPill } from '../lib/songnodes';
+import { SN, SnIcon } from '../lib/songnodes';
 import {
   Button,
   Card,
@@ -23,6 +23,7 @@ import {
   TextLink,
 } from '../components/ds';
 import { SecretField } from '../components/APIKeyManager';
+import { ServiceStatus } from '../components/ServiceStatus';
 import useStore from '../store/useStore';
 import { API_BASE_URL, oauthRedirectUri } from '../lib/apiBase';
 import {
@@ -639,68 +640,66 @@ switch (id) {
   }
 
   case 'tidal-connection': {
+    const creds = musicCredentials.tidal;
+    const isExpired = Boolean(creds?.accessToken && isTokenExpired(creds.expiresAt));
+    const isConn = isTidalConnected;
+    const statusState: 'connected' | 'expired' | 'not-connected' | 'error' = (connectError && id === 'tidal-connection')
+      ? 'error'
+      : isConn
+      ? 'connected'
+      : isExpired
+      ? 'expired'
+      : 'not-connected';
+
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-          {isTidalConnected ? (
-            <StatusPill raw="ok" label="Connected" />
-          ) : musicCredentials.tidal?.accessToken && isTokenExpired(musicCredentials.tidal?.expiresAt) ? (
-            <StatusPill raw="warn" label="Expired" />
-          ) : (
-            <StatusPill raw="not_configured" label="Not connected" />
-          )}
-          {musicCredentials.tidal?.lastValidated ? (
-            <span className="sn-muted body-s">
-              Last validated {SN.format.dateTime(new Date(musicCredentials.tidal.lastValidated))}
-            </span>
-          ) : null}
-        </div>
-        {connectError && id === 'tidal-connection' && (
-          <p className="sn-field__error" role="alert">{connectError}</p>
-        )}
-        <div>
-          <Button
-            kind="secondary"
-            onClick={connectTidal}
-          >
-            <SnIcon name="plug" />
-            {isTidalConnected ? 'Reconnect TIDAL' : 'Connect TIDAL'}
-          </Button>
-        </div>
-      </div>
+      <ServiceStatus
+        service="TIDAL"
+        state={statusState}
+        expiresAt={creds?.expiresAt}
+        detail={connectError && id === 'tidal-connection' ? connectError : undefined}
+        onConnect={connectTidal}
+        onDisconnect={() => {
+          credentials.updateCredentials('tidal', {
+            isConnected: false,
+            accessToken: undefined,
+            refreshToken: undefined,
+            expiresAt: undefined,
+          });
+          showToast('TIDAL disconnected');
+        }}
+      />
     );
   }
 
   case 'spotify-connection': {
+    const creds = musicCredentials.spotify;
+    const isExpired = Boolean(creds?.accessToken && isTokenExpired(creds.expiresAt));
+    const isConn = isSpotifyConnected;
+    const statusState: 'connected' | 'expired' | 'not-connected' | 'error' = (connectError && id === 'spotify-connection')
+      ? 'error'
+      : isConn
+      ? 'connected'
+      : isExpired
+      ? 'expired'
+      : 'not-connected';
+
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-          {isSpotifyConnected ? (
-            <StatusPill raw="ok" label="Connected" />
-          ) : musicCredentials.spotify?.accessToken && isTokenExpired(musicCredentials.spotify?.expiresAt) ? (
-            <StatusPill raw="warn" label="Expired" />
-          ) : (
-            <StatusPill raw="not_configured" label="Not connected" />
-          )}
-          {musicCredentials.spotify?.lastValidated ? (
-            <span className="sn-muted body-s">
-              Last validated {SN.format.dateTime(new Date(musicCredentials.spotify.lastValidated))}
-            </span>
-          ) : null}
-        </div>
-        {connectError && id === 'spotify-connection' && (
-          <p className="sn-field__error" role="alert">{connectError}</p>
-        )}
-        <div>
-          <Button
-            kind="secondary"
-            onClick={connectSpotify}
-          >
-            <SnIcon name="plug" />
-            {isSpotifyConnected ? 'Reconnect Spotify' : 'Connect Spotify'}
-          </Button>
-        </div>
-      </div>
+      <ServiceStatus
+        service="Spotify"
+        state={statusState}
+        expiresAt={creds?.expiresAt}
+        detail={connectError && id === 'spotify-connection' ? connectError : undefined}
+        onConnect={connectSpotify}
+        onDisconnect={() => {
+          credentials.updateCredentials('spotify', {
+            isConnected: false,
+            accessToken: undefined,
+            refreshToken: undefined,
+            expiresAt: undefined,
+          });
+          showToast('Spotify disconnected');
+        }}
+      />
     );
   }
 
