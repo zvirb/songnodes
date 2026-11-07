@@ -3159,7 +3159,7 @@ Canonical run 42344661619 settings phone captures are 390x11078 and visibly wrap
 ## CIC16 — started 8 Nov 2026
 One job: provide the graph page's missing accessible h1.
 Owned paths: frontend/src/pages/GraphPage.tsx, STATUS.md CIC16 slot; integration scope in CIC09 brief.
-Added a screen-reader heading matching the existing page identity without changing graph layout. Next: TypeScript/conformance and canonical all-page audit.
+Added a screen-reader heading matching the existing page identity without changing graph layout. TypeScript, conformance, build and all 604 unit tests passed; canonical audit remains CI.
 <!-- SLOT:CIC16 END -->
 
 <!-- SLOT:CIC17 BEGIN -->
@@ -3187,5 +3187,5 @@ CI artifact confirms the old paused clock left callbacks at Loading page. Headin
 ## CIC20 — started 8 Nov 2026
 One job: refresh eight stale settings/pipeline visual baselines.
 Owned paths: frontend/tests/e2e/visual.spec.ts-snapshots/{pipeline,settings}-{dark,light}-{desktop,phone}-chromium-linux.png; STATUS.md CIC20 slot; integration brief.
-Visually reviewed all eight canonical captures from run 42346214726. Correct empty states, responsive layouts, no wrapping corruption; settings phone is a viewport capture. Tolerances unchanged. Next: checksum verification and canonical CI.
+Visually reviewed all eight canonical captures from run 42346214726. Correct empty states, responsive layouts, no wrapping corruption; settings phone is a viewport capture. Tolerances unchanged. All eight copied PNGs passed SHA256 equality verification. TypeScript, lint (warnings only), build, conformance, design-system 1.10.0 sync and 70 unit files / 604 tests passed. Playwright discovery passes. Initial npm test -- --run was an unsupported Playwright option; corrected to test:unit. Next: canonical CI, then merge only when all checks pass.
 <!-- SLOT:CIC20 END -->
