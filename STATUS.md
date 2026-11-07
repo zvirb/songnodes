@@ -3125,3 +3125,10 @@ One job: cover every registered page in the design-system browser audit.
 Owned paths: frontend/tests/e2e/all-pages.spec.ts, frontend/tests/e2e/libraryApi.ts, STATUS.md CIC11 slot; integration ownership declared in CIC09 brief.
 Audit discovers routes from App, registry and feature route modules; checks dark/light/booth, one main/h1, one primary, honest missing values, runtime DS 1.10.0, serious/critical axe findings and phone overflow. Dynamically visits all settings links. Explicit test-only anonymous/review-empty fixtures preserve contract shapes. Passed: Playwright discovered 66 Chromium cases before run-history registration; includes all settings-card links dynamically. Initial discovery was invoked from the wrong directory; corrected frontend-root invocation passed. Actual runtime compliance is not yet claimed. Next: CI after separately scoped prerequisites CIC12–CIC14.
 <!-- SLOT:CIC11 END -->
+
+<!-- SLOT:CIC12 BEGIN -->
+## CIC12 — started 2026-11-07
+One job: make the registered login page usable and compliant.
+Owned paths: frontend/src/features/auth/route.tsx, LoginPage.tsx, LoginPage.test.tsx, STATUS.md CIC12 slot.
+Wrapped registered element in AuthProvider, used sentence-case copy and added an actual-route regression. Passed TypeScript and all 8 login tests. Initial regression omitted a test-only MemoryRouter import; adding it resolved both type-check and test failure. Next: canonical all-page CI audit.
+<!-- SLOT:CIC12 END -->

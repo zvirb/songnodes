@@ -42,7 +42,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
       <Card className="sn-page-auth__card">
         <div className="sn-card__head">
           <Title size="title-m" as="h2">
-            Sign In
+            Sign in
           </Title>
         </div>
 
@@ -51,7 +51,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
             <div className="sn-banner" data-status="ok">
               <div className="sn-banner__body">
                 <div className="sn-banner__content">
-                  <span className="sn-banner__title">Signed In:</span> {user.email}
+                  <span className="sn-banner__title">Signed in:</span> {user.email}
                 </div>
               </div>
             </div>
@@ -73,7 +73,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
               <TextField
-                label="Username or Email"
+                label="Username or email"
                 value={username}
                 onChange={setUsername}
                 type="text"
@@ -95,13 +95,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
                 busyLabel="Signing in..."
                 disabled={submitting || !username.trim() || !password}
               >
-                Sign In with Duo MFA
+                Sign in with Duo MFA
               </Button>
             </form>
 
             <div className="sn-page-auth__foot">
-              <span>SongNodes Security</span>
-              <span>Cisco Duo Two-Factor Protection</span>
+              <span>SongNodes security</span>
+              <span>Cisco Duo two-factor protection</span>
             </div>
           </>
         )}
