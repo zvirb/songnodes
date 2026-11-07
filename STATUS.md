@@ -2682,6 +2682,17 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
   - npm run test:unit (passed, 68 test files, 586 tests)
 - Next: merge PR and proceed to next conformance package.
 <!-- SLOT:DS29 END -->
+
+<!-- SLOT:UX-T10 BEGIN -->
+### UX-T10: Add FreshnessStamp to PageHeader on data pages (UX-10)
+- Completed: 2026-11-07 (branch ux-t10-freshness-stamp-data-pages off origin/main 7429821c).
+- Scope: Place FreshnessStamp in PageHeader on data pages (LibraryPage, SetBuilderPage). A stamp older than 7 days turns fg-3 with an InfoTip 'Data is more than 7 days old; run a weekly sync'.
+- Changes:
+  - `frontend/src/components/ds/FreshnessStamp.tsx`: Implemented design-system FreshnessStamp component supporting label, absolute Melbourne time and relative age, stale warning (>7 days) turning fg-3 with InfoTip, and never loaded state.
+  - `frontend/src/shell/PageParts.tsx`: Integrated FreshnessStamp into `PageHeader` for data pages, exposing `staleAfterDays` and `staleMessage`.
+  - `frontend/src/features/musicLibrary/LibraryPage.tsx`: Wired library timestamp `generated` into PageHeader with explicit unknown state.
+  - `frontend/src/features/musicLibrary/SetBuilderPage.tsx`: Wired saved doc timestamp `savedDoc?.updated` into PageHeader with draft tracks unknown state.
+  
   
 <!-- SLOT:DUO3 BEGIN -->
 ### DUO3: Cloudflare Tunnel Connector Integration
@@ -2766,6 +2777,9 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
   - `npm run type-check` (passed: tsc --noEmit)
   - `npm run lint` (passed: 0 errors)
   - `npm run test:unit` (passed: 68 test files, 586 tests)
+- Next: merge PR and proceed to UX-T09 (Inline editable cell for DataTable).
+<!-- SLOT:UX-T10 END -->
+    
 - Next: merge PR and proceed to UX-T11 (Service rows tell the truth about OAuth).
 <!-- SLOT:UX-T09 END -->
 
@@ -2789,6 +2803,24 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
 - Next: Open PR for UX-T02 and proceed to UX-T04 (Buy list).
     
 <!-- SLOT:UX-T02 END -->
+    
+<!-- SLOT:UX-T04 BEGIN -->
+### UX-T04: Build the Buy list page (UX-04)
+- Completed: 2026-11-07 (branch ux-t04-buy-list-page off origin/main ebf44357).
+- Scope: Build /library/buy page for High (1) and Standard (2) rotation tracks not yet owned, with Beatport check state, 'Mark bought' local_path modal linking to Rekordbox XML export, and assisted Beatport sync as a StagedProgress job.
+- Changes:
+  - `frontend/src/features/musicLibrary/BuyListPage.tsx`: Implemented LogPage layout with rotation and store FilterChips, selectable DataTable, bulk 'Mark bought', Mark bought dialog for local path recording, external Beatport link, and assisted catalog sync StagedProgress runner.
+  - `frontend/src/features/musicLibrary/route.tsx`: Registered `/library/buy` route with lazy import.
+- Checks run and passed:
+  - `python scripts/check_design_system.py --staged` (passed)
+  - `python scripts/check_feature_imports.py --check` (passed: Feature boundaries OK)
+  - `npm run type-check` (passed: tsc --noEmit)
+  - `npm run lint` (passed: 0 errors)
+  - `npm run test:unit` (passed: 68 test files, 586 tests)
+  - `npm run build` (passed: built client environment)
+- Next: UX-T06 (Work queue on the design system).
+    
+<!-- SLOT:UX-T04 END -->
 <!-- SLOT:CIC01 BEGIN -->
 ## CIC01 — repair shared conformance failures, started 2026-11-07
 One job: restore design-system conformance on main.
