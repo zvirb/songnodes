@@ -117,21 +117,21 @@ export function EditableCell<T extends string | number = string | number>({
   const renderStatus = () => {
     if (isSaving) {
       return (
-        <span className="sn-editable-cell__status sn-editable-cell__status--busy" aria-label="Saving">
+        <span aria-label="Saving">
           <span className="sn-spinner" aria-hidden="true" style={{ width: 12, height: 12, borderWidth: 2 }} />
         </span>
       );
     }
     if (status === 'saved') {
       return (
-        <span className="sn-editable-cell__status sn-editable-cell__status--saved" aria-label="Saved" style={{ color: 'var(--status-ok)', display: 'inline-flex', alignItems: 'center' }}>
+        <span aria-label="Saved" style={{ color: 'var(--status-ok)', display: 'inline-flex', alignItems: 'center' }}>
           <SnIcon name="check" size={14} />
         </span>
       );
     }
     if (status === 'error') {
       return (
-        <span className="sn-editable-cell__status sn-editable-cell__status--error" aria-label="Save failed" style={{ color: 'var(--status-bad)', display: 'inline-flex', alignItems: 'center' }}>
+        <span aria-label="Save failed" style={{ color: 'var(--status-bad)', display: 'inline-flex', alignItems: 'center' }}>
           <SnIcon name="alert-triangle" size={14} />
         </span>
       );
@@ -172,7 +172,7 @@ export function EditableCell<T extends string | number = string | number>({
             aria-valuemin={min}
             aria-valuemax={max}
             disabled={disabled || isSaving}
-            style={{ width: 32, height: 26, textAlign: 'center', padding: '0 2px', border: 0 }}
+            style={{ width: 32, height: 26, textAlign: 'center', padding: '0 var(--space-1)', border: 0 }}
             onChange={(e) => {
               const val = e.target.value.trim();
               if (val === '') {

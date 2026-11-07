@@ -158,7 +158,7 @@ export function DataTable<T>({
           {rows.length} {rows.length === 1 ? 'record' : 'records'}
         </span>
         {selected && selected.size > 0 && bulkActions ? (
-          <div className="sn-data-table__bulk">{bulkActions(selected)}</div>
+          <div style={{ display: 'inline-flex', gap: 'var(--space-2)' }}>{bulkActions(selected)}</div>
         ) : null}
         <div className="sn-data-table__bar-end">
           {onDensityChange ? (
