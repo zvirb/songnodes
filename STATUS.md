@@ -2747,5 +2747,17 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
 ## CIC05 — started 2026-11-07
 One job: fix CodeQL bad-tag-filter in the report verifier.
 Owned paths: documentation/data-flow-analysis/build/verify.py, STATUS.md CIC05 slot.
-Changed script stripping to accept mixed case, attributes and closing-tag whitespace. Passed: three lowercase/uppercase/mixed-case-with-attributes examples, AST syntax and whitespace. An initial verification command had shell quoting errors; corrected command passed. No generated reports changed. Next: rebase report branch and resolve only owned conflicts, then run CI.
+Changed script stripping to accept mixed case, attributes and closing-tag whitespace. Passed: three lowercase/uppercase/mixed-case-with-attributes examples, AST syntax and whitespace. An initial verification command had shell quoting errors; corrected command passed. Second CodeQL example used a permissive closing tag with whitespace and an extra attribute; widened the closing match and all four examples pass. No generated reports changed. Rebased with original report merge resolutions preserved, then merged current main (new #576 docs) preserving both status slots. Conformance still reports only shared main findings pending CIC01; sync 1.10.0 passed. Next: await CodeQL and full CI after shared baseline integration.
 <!-- SLOT:CIC05 END -->
+<!-- SLOT:DUOAUTH BEGIN -->
+### DUOAUTH: Cisco Duo 2FA and Username/Password Auth with Cloudflare Tunnel
+- Start: 2026-11-05 (branch cisco_duo_auth_guide).
+- Scope: Investigate and document Cisco Duo dual authentication along with username/password login to SongNodes frontend exposed via Cloudflare Tunnel (`song.aiwfe.com`). Provide architecture designs, step-by-step guides, online dashboard automation prompts (Computer Use), and autonomous coding agent prompts:
+  1. Investigated edge Zero Trust perimeter (Cloudflare Access + Cisco Duo SSO) vs in-app Duo Universal Prompt (Web SDK v4 OIDC).
+  2. Created comprehensive architecture and implementation documentation in `docs/security/cisco-duo-auth-guide.md`.
+  3. Formulated detailed Computer Use prompts for Cisco Duo Admin and Cloudflare Zero Trust dashboards.
+  4. Formulated autonomous agent prompts for backend, frontend, and devops integration.
+- Checks run:
+  - Document syntax and markdown validation.
+- Next: Finalize artifact report and present complete implementation package to user.
+<!-- SLOT:DUOAUTH END -->
