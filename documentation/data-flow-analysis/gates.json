@@ -19,16 +19,27 @@
  },
  "4": {
   "name": "diagrams",
-  "state": "pass",
-  "note": "51 SVGs checked; 0 with overflow, collision or text under 9.5 px; 0 edges through nodes; crossings {'D1': 0, 'D2a': 1, 'D2b': 7, 'D2c': 3, 'D2d': 0, 'D2e': 1, 'D2f': 0, 'D2g': 0, 'D3a': 2, 'D3b': 0, 'D3c': 10, 'D3d': 12, 'D3e': 0, 'D3f': 0, 'D4a': 4, 'D4b': 0, 'D4c': 0, 'D5': 0, 'D5-P1': 0, 'D5-P2': 0, 'D5-P3': 0, 'D5-P4': 0, 'D5-P5': 0, 'D5-P6': 0, 'D5-P7': 0, 'D5-P8': 0, 'D6a': 0, 'D6b': 0, 'D6c': 0, 'D7a': 0, 'D7b': 0, 'D7c': 0, 'D8a': 0, 'D8b': 0, 'D8c': 0, 'D9': 0, 'D10': 0, 'D11': 1, 'D12': 0}",
-  "detail": null
+  "state": "fail",
+  "note": "52 SVGs checked; 1 with overflow, collision or text under 9.5 px; 0 edges through nodes; crossings {'D1': 0, 'D2a': 1, 'D2b': 4, 'D2c': 5, 'D2d': 0, 'D2e': 0, 'D2f': 0, 'D2g': 0, 'D3a': 3, 'D3b': 24, 'D3c': 0, 'D3d': 19, 'D3e': 0, 'D3f': 0, 'D4a': 1, 'D4b': 3, 'D4c': 0, 'D5': 0, 'D5-P1': 0, 'D5-P2': 0, 'D5-P3': 0, 'D5-P4': 0, 'D5-P5a': 0, 'D5-P5b': 0, 'D5-P6': 0, 'D5-P7': 0, 'D5-P8': 0, 'D6a': 0, 'D6b': 0, 'D6c': 0, 'D7a': 0, 'D7b': 0, 'D7c': 0, 'D8a': 0, 'D8b': 0, 'D8c': 0, 'D9': 0, 'D10': 0, 'D11': 1, 'D12': 0}",
+  "detail": {
+   "enhanced-architecture-connections-and-gaps-b.svg": {
+    "overflow": [],
+    "collisions": [],
+    "min_px_at_print": 9.32,
+    "texts": 100,
+    "viewbox": [
+     1994,
+     976
+    ]
+   }
+  }
  },
  "5": {
   "name": "pdf",
   "state": "fail",
-  "note": "196 pages; pages over 40% empty (pages before an orientation change exempt): [(47, 0.41), (145, 0.41), (146, 0.44), (180, 0.5)]",
+  "note": "286 pages; 0 portrait elements wider than the page; pages over 40% empty (pages before an orientation change exempt): [(183, 0.83), (190, 0.74), (191, 0.41), (226, 0.43), (227, 0.44), (229, 0.48), (231, 0.46), (233, 0.5), (234, 0.41), (239, 0.5), (240, 0.46), (243, 0.52), (257, 0.51)]",
   "detail": [
-   "pages over 40% empty (pages before an orientation change exempt): [(47, 0.41), (145, 0.41), (146, 0.44), (180, 0.5)]"
+   "pages over 40% empty (pages before an orientation change exempt): [(183, 0.83), (190, 0.74), (191, 0.41), (226, 0.43), (227, 0.44), (229, 0.48), (231, 0.46), (233, 0.5), (234, 0.41), (239, 0.5), (240, 0.46), (243, 0.52), (257, 0.51)]"
   ]
  },
  "6": {

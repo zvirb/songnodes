@@ -18,6 +18,9 @@ const { chromium } = pw;
   const dir = process.argv[2];
   if (!dir) { console.error('usage: check_diagrams.mjs <dir>'); process.exit(2); }
   const PW = Number(process.argv[3] || 1032), PP = Number(process.argv[4] || 703);
+  // orientation from the figure registry (figures.json "wide"), not from the drawing's aspect ratio
+  let WIDE = {};
+  try { for (const f of JSON.parse(fs.readFileSync(dir + '/figures.json', 'utf8'))) if (f.file) WIDE[f.file] = !!f.wide; } catch (e) { /* no registry: fall back to aspect */ }
   const files = fs.readdirSync(dir).filter(f => f.endsWith('.svg')).sort();
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
@@ -27,11 +30,11 @@ const { chromium } = pw;
     const svg = fs.readFileSync(path.join(dir, f), 'utf8').replace(/^<\?xml[^>]*>\s*/, '');
     await page.setContent(`<!doctype html><html><body style="margin:0">${svg}</body></html>`, { waitUntil: 'load' });
     await page.evaluate(() => document.fonts && document.fonts.ready);
-    const r = await page.evaluate(({ PW, PP }) => {
+    const r = await page.evaluate(({ PW, PP, W }) => {
       const root = document.querySelector('svg');
       const vb = root.viewBox.baseVal;
-      const wide = vb.width >= vb.height;
-      const pw = wide ? PW : PP, aspect = wide ? 0.66 : 1.3;
+      const wide = W === null ? vb.width >= vb.height : W;
+      const pw = wide ? PW : PP, aspect = wide ? 0.55 : 1.3;   // print-wide-h / print-wide-w (150 mm / 273 mm)
       const scale = Math.min(pw / vb.width, (pw * aspect) / vb.height);
       const res = { overflow: [], collisions: [], min_px_at_print: null, texts: 0, viewbox: [vb.width, vb.height] };
       const boxes = [];
@@ -75,7 +78,7 @@ const { chromium } = pw;
       }
       res.min_px_at_print = Math.round(minFs * scale * 100) / 100;
       return res;
-    }, { PW, PP });
+    }, { PW, PP, W: f in WIDE ? WIDE[f] : null });
     out[f] = r;
     if (r.overflow.length || r.collisions.length || r.min_px_at_print < 9.5) bad = true;
   }

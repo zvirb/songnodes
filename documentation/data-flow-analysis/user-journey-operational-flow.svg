@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1290 786" role="img" aria-labelledby="D5-t D5-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1518 835" role="img" aria-labelledby="D5-t D5-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
 :root, [data-theme="dark"] {
   --bg: #222222;
   --surface-1: #2d2d2d;
@@ -445,6 +445,7 @@
   --drawer-w: 300px;
   --rail-w: 248px;
   --content-max: 1400px;
+  --print-wide-h: 150mm;
   --print-wide-w: 273mm;
   --prose-max: 68ch;
   --z-base: 0;
@@ -789,195 +790,195 @@
 .sn-chart-frame__axis-title { fill: var(--chart-axis); font-family: var(--font-body); font-size: 0.6875rem; }</style>
 <title id="D5-t">Persona overview: who acts at which loop stage</title>
 <desc id="D5-d">8 persona lanes against the six loop stages; each chip is one numbered step, coloured by the domain of the page it runs on. Stage is the page domain, or Reconciliation for override, calibrate and confirm steps.</desc>
-<rect class="sn-diagram__bg" x="0" y="0" width="1290" height="786"/>
+<rect class="sn-diagram__bg" x="0" y="0" width="1518" height="835"/>
 <text class="sn-diagram__t body-strong" x="240.0" y="39.3">1 Demand ingestion</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="240.0" y="78.2">ingest</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="240.0" y="81.3">ingest</text>
 <text class="sn-diagram__t body-strong" x="412.0" y="39.3">2 Scheduling</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="412.0" y="78.2">library</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="412.0" y="81.3">library</text>
 <text class="sn-diagram__t body-strong" x="584.0" y="39.3">3 Planning</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="584.0" y="78.2">sets</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="584.0" y="81.3">sets</text>
 <text class="sn-diagram__t body-strong" x="756.0" y="39.3">4 Floor execution</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="756.0" y="78.2">services</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="756.0" y="81.3">services</text>
 <text class="sn-diagram__t body-strong" x="928.0" y="39.3">5 Telemetry and</text>
 <text class="sn-diagram__t body-strong" x="928.0" y="60.3">audit</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="928.0" y="78.2">ops</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="928.0" y="81.3">ops</text>
 <text class="sn-diagram__t body-strong" x="1100.0" y="39.3">6 Reconciliation</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="1100.0" y="78.2">library</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1100.0" y="81.3">library</text>
 <g class="sn-diagram__node sn-dg-c3 sn-diagram__node--production" data-node="P1" tabindex="0" aria-label="P1 DJ performing &#x28;graph): Pick the next track from proven transitions while a set is playing.">
 <title>P1 DJ performing &#x28;graph): Pick the next track from proven &#116;ransitions while a set is playing.</title>
-<rect class="sn-diagram__box" x="24.0" y="92.8" width="198.0" height="51.8"/>
-<rect class="sn-diagram__stripe" x="25.5" y="94.3" width="5" height="48.8"/>
-<text class="sn-diagram__t body-strong" x="38.0" y="115.1">P1 DJ performing</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="38.0" y="133.0">graph · 3 steps</text>
+<rect class="sn-diagram__box" x="24.0" y="97.0" width="198.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="25.5" y="98.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="38.0" y="119.3">P1 DJ performing</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="38.0" y="140.3">graph · 3 steps</text>
 </g>
-<rect class="sn-diagram__cell" x="236.0" y="92.8" width="168.0" height="51.8"/>
-<rect class="sn-diagram__cell" x="408.0" y="92.8" width="168.0" height="51.8"/>
-<rect class="sn-diagram__cell" x="580.0" y="92.8" width="168.0" height="51.8"/>
-<g class="sn-diagram__edge sn-dg-c3" data-from="P1" data-to="sn-fe-graph" data-step="1" tabindex="0" aria-label="P1 step 1: load graph and select current track on Adjacency"><title>P1 step 1: load graph and select current track on Adjacency</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="588.0" y="98.8" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="603.0" y="115.1" text-anchor="middle">1</text></g></g>
-<g class="sn-diagram__edge sn-dg-c3" data-from="P1" data-to="sn-fe-graph" data-step="2" tabindex="0" aria-label="P1 step 2: open edge details on Adjacency"><title>P1 step 2: open edge details on Adjacency</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="626.0" y="98.8" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="641.0" y="115.1" text-anchor="middle">2</text></g></g>
-<g class="sn-diagram__edge sn-dg-c6" data-from="P1" data-to="sn-fe-harmony" data-step="3" tabindex="0" aria-label="P1 step 3: check Camelot moves on Camelot wheel"><title>P1 step 3: check Camelot moves on Camelot wheel</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="664.0" y="98.8" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="679.0" y="115.1" text-anchor="middle">3</text></g></g>
-<rect class="sn-diagram__cell" x="752.0" y="92.8" width="168.0" height="51.8"/>
-<rect class="sn-diagram__cell" x="924.0" y="92.8" width="168.0" height="51.8"/>
-<rect class="sn-diagram__cell" x="1096.0" y="92.8" width="168.0" height="51.8"/>
+<rect class="sn-diagram__cell" x="236.0" y="97.0" width="168.0" height="56.0"/>
+<rect class="sn-diagram__cell" x="408.0" y="97.0" width="168.0" height="56.0"/>
+<rect class="sn-diagram__cell" x="580.0" y="97.0" width="168.0" height="56.0"/>
+<g class="sn-diagram__edge sn-dg-c3" data-from="P1" data-to="sn-fe-graph" data-step="1" tabindex="0" aria-label="P1 step 1: load graph and select current track on Adjacency"><title>P1 step 1: load graph and select current track on Adjacency</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="588.0" y="103.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="603.0" y="121.3" text-anchor="middle">1</text></g></g>
+<g class="sn-diagram__edge sn-dg-c3" data-from="P1" data-to="sn-fe-graph" data-step="2" tabindex="0" aria-label="P1 step 2: open edge details on Adjacency"><title>P1 step 2: open edge details on Adjacency</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="626.0" y="103.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="641.0" y="121.3" text-anchor="middle">2</text></g></g>
+<g class="sn-diagram__edge sn-dg-c6" data-from="P1" data-to="sn-fe-harmony" data-step="3" tabindex="0" aria-label="P1 step 3: check Camelot moves on Camelot wheel"><title>P1 step 3: check Camelot moves on Camelot wheel</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="664.0" y="103.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="679.0" y="121.3" text-anchor="middle">3</text></g></g>
+<rect class="sn-diagram__cell" x="752.0" y="97.0" width="168.0" height="56.0"/>
+<rect class="sn-diagram__cell" x="924.0" y="97.0" width="168.0" height="56.0"/>
+<rect class="sn-diagram__cell" x="1096.0" y="97.0" width="168.0" height="56.0"/>
 <g class="sn-diagram__node sn-dg-c4 sn-diagram__node--production" data-node="P2" tabindex="0" aria-label="P2 Set planner &#x28;sets): Shape a wave-shaped set from the crate, check every transition and send it to &#x54;IDAL.">
 <title>P2 Set planner &#x28;sets): Shape a wave-shaped set from the crate, check every &#116;ransition and send it to &#x54;IDAL.</title>
-<rect class="sn-diagram__box" x="24.0" y="152.6" width="198.0" height="51.8"/>
-<rect class="sn-diagram__stripe" x="25.5" y="154.1" width="5" height="48.8"/>
-<text class="sn-diagram__t body-strong" x="38.0" y="174.9">P2 Set planner</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="38.0" y="192.8">sets · 8 steps</text>
+<rect class="sn-diagram__box" x="24.0" y="161.0" width="198.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="25.5" y="162.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="38.0" y="183.3">P2 Set planner</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="38.0" y="204.3">sets · 8 steps</text>
 </g>
-<rect class="sn-diagram__cell" x="236.0" y="152.6" width="168.0" height="51.8"/>
-<rect class="sn-diagram__cell" x="408.0" y="152.6" width="168.0" height="51.8"/>
-<g class="sn-diagram__edge sn-dg-c2" data-from="P2" data-to="sn-fe-library" data-step="5" tabindex="0" aria-label="P2 step 5: filter and add tracks on Melbourne crate"><title>P2 step 5: filter and add tracks on Melbourne crate</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="416.0" y="158.6" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="431.0" y="174.9" text-anchor="middle">5</text></g></g>
-<rect class="sn-diagram__cell" x="580.0" y="152.6" width="168.0" height="51.8"/>
-<g class="sn-diagram__edge sn-dg-c4" data-from="P2" data-to="ml-cli-sync-sets" data-step="4" tabindex="0" aria-label="P2 step 4: push to &#x54;IDAL on run_weekly sync-sets"><title>P2 step 4: push to &#x54;IDAL on run_weekly sync-sets</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="588.0" y="158.6" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="603.0" y="174.9" text-anchor="middle">4</text></g></g>
-<g class="sn-diagram__edge sn-dg-c4" data-from="P2" data-to="sn-fe-sets" data-step="6" tabindex="0" aria-label="P2 step 6: build from crate and shape energy on Set builder"><title>P2 step 6: build from crate and shape energy on Set builder</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="626.0" y="158.6" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="641.0" y="174.9" text-anchor="middle">6</text></g></g>
-<g class="sn-diagram__edge sn-dg-c4" data-from="P2" data-to="sn-fe-sets" data-step="7" tabindex="0" aria-label="P2 step 7: save set on Set builder"><title>P2 step 7: save set on Set builder</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="664.0" y="158.6" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="679.0" y="174.9" text-anchor="middle">7</text></g></g>
-<g class="sn-diagram__edge sn-dg-c4" data-from="P2" data-to="sn-fe-sets" data-step="8" tabindex="0" aria-label="P2 step 8: export or send on Set builder"><title>P2 step 8: export or send on Set builder</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="702.0" y="158.6" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="717.0" y="174.9" text-anchor="middle">8</text></g></g>
-<rect class="sn-diagram__cell" x="752.0" y="152.6" width="168.0" height="51.8"/>
-<rect class="sn-diagram__cell" x="924.0" y="152.6" width="168.0" height="51.8"/>
-<g class="sn-diagram__edge sn-dg-c8" data-from="P2" data-to="ml-page-set-builder" data-step="1" tabindex="0" aria-label="P2 step 1: filter and add to set on Naarm Set Builder"><title>P2 step 1: filter and add to set on Naarm Set Builder</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="932.0" y="158.6" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="947.0" y="174.9" text-anchor="middle">1</text></g></g>
-<g class="sn-diagram__edge sn-dg-c8" data-from="P2" data-to="ml-page-set-builder" data-step="2" tabindex="0" aria-label="P2 step 2: Save set with tidal flag on Naarm Set Builder"><title>P2 step 2: Save set with tidal flag on Naarm Set Builder</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="970.0" y="158.6" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="985.0" y="174.9" text-anchor="middle">2</text></g></g>
-<g class="sn-diagram__edge sn-dg-c8" data-from="P2" data-to="ml-agent-weekly-run" data-step="3" tabindex="0" aria-label="P2 step 3: export sets on Weekly run playbook"><title>P2 step 3: export sets on Weekly run playbook</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1008.0" y="158.6" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="1023.0" y="174.9" text-anchor="middle">3</text></g></g>
-<rect class="sn-diagram__cell" x="1096.0" y="152.6" width="168.0" height="51.8"/>
+<rect class="sn-diagram__cell" x="236.0" y="161.0" width="168.0" height="56.0"/>
+<rect class="sn-diagram__cell" x="408.0" y="161.0" width="168.0" height="56.0"/>
+<g class="sn-diagram__edge sn-dg-c2" data-from="P2" data-to="sn-fe-library" data-step="5" tabindex="0" aria-label="P2 step 5: filter and add tracks on Melbourne crate"><title>P2 step 5: filter and add tracks on Melbourne crate</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="416.0" y="167.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="431.0" y="185.3" text-anchor="middle">5</text></g></g>
+<rect class="sn-diagram__cell" x="580.0" y="161.0" width="168.0" height="56.0"/>
+<g class="sn-diagram__edge sn-dg-c4" data-from="P2" data-to="ml-cli-sync-sets" data-step="4" tabindex="0" aria-label="P2 step 4: push to &#x54;IDAL on run_weekly sync-sets"><title>P2 step 4: push to &#x54;IDAL on run_weekly sync-sets</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="588.0" y="167.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="603.0" y="185.3" text-anchor="middle">4</text></g></g>
+<g class="sn-diagram__edge sn-dg-c4" data-from="P2" data-to="sn-fe-sets" data-step="6" tabindex="0" aria-label="P2 step 6: build from crate and shape energy on Set builder"><title>P2 step 6: build from crate and shape energy on Set builder</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="626.0" y="167.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="641.0" y="185.3" text-anchor="middle">6</text></g></g>
+<g class="sn-diagram__edge sn-dg-c4" data-from="P2" data-to="sn-fe-sets" data-step="7" tabindex="0" aria-label="P2 step 7: save set on Set builder"><title>P2 step 7: save set on Set builder</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="664.0" y="167.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="679.0" y="185.3" text-anchor="middle">7</text></g></g>
+<g class="sn-diagram__edge sn-dg-c4" data-from="P2" data-to="sn-fe-sets" data-step="8" tabindex="0" aria-label="P2 step 8: export or send on Set builder"><title>P2 step 8: export or send on Set builder</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="702.0" y="167.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="717.0" y="185.3" text-anchor="middle">8</text></g></g>
+<rect class="sn-diagram__cell" x="752.0" y="161.0" width="168.0" height="56.0"/>
+<rect class="sn-diagram__cell" x="924.0" y="161.0" width="168.0" height="56.0"/>
+<g class="sn-diagram__edge sn-dg-c8" data-from="P2" data-to="ml-page-set-builder" data-step="1" tabindex="0" aria-label="P2 step 1: filter and add to set on Naarm Set Builder"><title>P2 step 1: filter and add to set on Naarm Set Builder</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="932.0" y="167.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="947.0" y="185.3" text-anchor="middle">1</text></g></g>
+<g class="sn-diagram__edge sn-dg-c8" data-from="P2" data-to="ml-page-set-builder" data-step="2" tabindex="0" aria-label="P2 step 2: Save set with tidal flag on Naarm Set Builder"><title>P2 step 2: Save set with tidal flag on Naarm Set Builder</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="970.0" y="167.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="985.0" y="185.3" text-anchor="middle">2</text></g></g>
+<g class="sn-diagram__edge sn-dg-c8" data-from="P2" data-to="ml-agent-weekly-run" data-step="3" tabindex="0" aria-label="P2 step 3: export sets on Weekly run playbook"><title>P2 step 3: export sets on Weekly run playbook</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1008.0" y="167.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="1023.0" y="185.3" text-anchor="middle">3</text></g></g>
+<rect class="sn-diagram__cell" x="1096.0" y="161.0" width="168.0" height="56.0"/>
 <g class="sn-diagram__node sn-dg-c2 sn-diagram__node--production" data-node="P3" tabindex="0" aria-label="P3 Library curator &#x28;library): Keep the crates right each week: review, buy, override and import.">
 <title>P3 Library curator &#x28;library): Keep the crates right each week: review, buy, override and import.</title>
-<rect class="sn-diagram__box" x="24.0" y="212.4" width="198.0" height="51.8"/>
-<rect class="sn-diagram__stripe" x="25.5" y="213.9" width="5" height="48.8"/>
-<text class="sn-diagram__t body-strong" x="38.0" y="234.7">P3 Library curator</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="38.0" y="252.6">library · 8 steps</text>
+<rect class="sn-diagram__box" x="24.0" y="225.0" width="198.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="25.5" y="226.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="38.0" y="247.3">P3 Library curator</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="38.0" y="268.3">library · 8 steps</text>
 </g>
-<rect class="sn-diagram__cell" x="236.0" y="212.4" width="168.0" height="51.8"/>
-<g class="sn-diagram__edge sn-dg-c1" data-from="P3" data-to="ml-cli-scrape" data-step="3" tabindex="0" aria-label="P3 step 3: manual adds on run_weekly scrape"><title>P3 step 3: manual adds on run_weekly scrape</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="244.0" y="218.4" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="259.0" y="234.7" text-anchor="middle">3</text></g></g>
-<g class="sn-diagram__edge sn-dg-c1" data-from="P3" data-to="sn-fe-sources-targets" data-step="8" tabindex="0" aria-label="P3 step 8: edit priorities and search on Target tracks"><title>P3 step 8: edit priorities and search on Target tracks</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="282.0" y="218.4" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="297.0" y="234.7" text-anchor="middle">8</text></g></g>
-<rect class="sn-diagram__cell" x="408.0" y="212.4" width="168.0" height="51.8"/>
-<g class="sn-diagram__edge sn-dg-c2" data-from="P3" data-to="sn-fe-library" data-step="5" tabindex="0" aria-label="P3 step 5: Import library export on Melbourne crate"><title>P3 step 5: Import library export on Melbourne crate</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="416.0" y="218.4" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="431.0" y="234.7" text-anchor="middle">5</text></g></g>
-<g class="sn-diagram__edge sn-dg-c2" data-from="P3" data-to="sn-fe-library" data-step="6" tabindex="0" aria-label="P3 step 6: review rev=true rows on Melbourne crate"><title>P3 step 6: review rev=true rows on Melbourne crate</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="454.0" y="218.4" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="469.0" y="234.7" text-anchor="middle">6</text></g></g>
-<g class="sn-diagram__edge sn-dg-c2" data-from="P3" data-to="sn-fe-library" data-step="7" tabindex="0" aria-label="P3 step 7: mark target on Melbourne crate"><title>P3 step 7: mark target on Melbourne crate</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="492.0" y="218.4" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="507.0" y="234.7" text-anchor="middle">7</text></g></g>
-<rect class="sn-diagram__cell" x="580.0" y="212.4" width="168.0" height="51.8"/>
-<rect class="sn-diagram__cell" x="752.0" y="212.4" width="168.0" height="51.8"/>
-<rect class="sn-diagram__cell" x="924.0" y="212.4" width="168.0" height="51.8"/>
-<g class="sn-diagram__edge sn-dg-c8" data-from="P3" data-to="ml-agent-weekly-run" data-step="1" tabindex="0" aria-label="P3 step 1: read summary on Weekly run playbook"><title>P3 step 1: read summary on Weekly run playbook</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="932.0" y="218.4" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="947.0" y="234.7" text-anchor="middle">1</text></g></g>
-<rect class="sn-diagram__cell" x="1096.0" y="212.4" width="168.0" height="51.8"/>
-<g class="sn-diagram__edge sn-dg-c2" data-from="P3" data-to="ml-cli-process" data-step="2" tabindex="0" aria-label="P3 step 2: review_queue.csv to overrides &#x43;SV &#x28;manual copy) on run_weekly process"><title>P3 step 2: review_queue.csv to overrides &#x43;SV &#x28;manual copy) on run_weekly process</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1104.0" y="218.4" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="1119.0" y="234.7" text-anchor="middle">2</text></g></g>
-<g class="sn-diagram__edge sn-dg-c2" data-from="P3" data-to="ml-cli-calibrate" data-step="4" tabindex="0" aria-label="P3 step 4: fit rules on calibrate"><title>P3 step 4: fit rules on calibrate</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1142.0" y="218.4" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="1157.0" y="234.7" text-anchor="middle">4</text></g></g>
+<rect class="sn-diagram__cell" x="236.0" y="225.0" width="168.0" height="56.0"/>
+<g class="sn-diagram__edge sn-dg-c1" data-from="P3" data-to="ml-cli-scrape" data-step="3" tabindex="0" aria-label="P3 step 3: manual adds on run_weekly scrape"><title>P3 step 3: manual adds on run_weekly scrape</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="244.0" y="231.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="259.0" y="249.3" text-anchor="middle">3</text></g></g>
+<g class="sn-diagram__edge sn-dg-c1" data-from="P3" data-to="sn-fe-sources-targets" data-step="8" tabindex="0" aria-label="P3 step 8: edit priorities and search on Target tracks"><title>P3 step 8: edit priorities and search on Target tracks</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="282.0" y="231.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="297.0" y="249.3" text-anchor="middle">8</text></g></g>
+<rect class="sn-diagram__cell" x="408.0" y="225.0" width="168.0" height="56.0"/>
+<g class="sn-diagram__edge sn-dg-c2" data-from="P3" data-to="sn-fe-library" data-step="5" tabindex="0" aria-label="P3 step 5: Import library export on Melbourne crate"><title>P3 step 5: Import library export on Melbourne crate</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="416.0" y="231.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="431.0" y="249.3" text-anchor="middle">5</text></g></g>
+<g class="sn-diagram__edge sn-dg-c2" data-from="P3" data-to="sn-fe-library" data-step="6" tabindex="0" aria-label="P3 step 6: review rev=true rows on Melbourne crate"><title>P3 step 6: review rev=true rows on Melbourne crate</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="454.0" y="231.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="469.0" y="249.3" text-anchor="middle">6</text></g></g>
+<g class="sn-diagram__edge sn-dg-c2" data-from="P3" data-to="sn-fe-library" data-step="7" tabindex="0" aria-label="P3 step 7: mark target on Melbourne crate"><title>P3 step 7: mark target on Melbourne crate</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="492.0" y="231.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="507.0" y="249.3" text-anchor="middle">7</text></g></g>
+<rect class="sn-diagram__cell" x="580.0" y="225.0" width="168.0" height="56.0"/>
+<rect class="sn-diagram__cell" x="752.0" y="225.0" width="168.0" height="56.0"/>
+<rect class="sn-diagram__cell" x="924.0" y="225.0" width="168.0" height="56.0"/>
+<g class="sn-diagram__edge sn-dg-c8" data-from="P3" data-to="ml-agent-weekly-run" data-step="1" tabindex="0" aria-label="P3 step 1: read summary on Weekly run playbook"><title>P3 step 1: read summary on Weekly run playbook</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="932.0" y="231.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="947.0" y="249.3" text-anchor="middle">1</text></g></g>
+<rect class="sn-diagram__cell" x="1096.0" y="225.0" width="168.0" height="56.0"/>
+<g class="sn-diagram__edge sn-dg-c2" data-from="P3" data-to="ml-cli-process" data-step="2" tabindex="0" aria-label="P3 step 2: review_queue.csv to overrides &#x43;SV &#x28;manual copy) on run_weekly process"><title>P3 step 2: review_queue.csv to overrides &#x43;SV &#x28;manual copy) on run_weekly process</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1104.0" y="231.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="1119.0" y="249.3" text-anchor="middle">2</text></g></g>
+<g class="sn-diagram__edge sn-dg-c2" data-from="P3" data-to="ml-cli-calibrate" data-step="4" tabindex="0" aria-label="P3 step 4: fit rules on calibrate"><title>P3 step 4: fit rules on calibrate</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1142.0" y="231.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="1157.0" y="249.3" text-anchor="middle">4</text></g></g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="P4" tabindex="0" aria-label="P4 Pipeline operator &#x28;ops): Keep the stack, scrapers and imports healthy.">
 <title>P4 Pipeline operator &#x28;ops): Keep the stack, scrapers and imports healthy.</title>
-<rect class="sn-diagram__box" x="24.0" y="272.2" width="198.0" height="70.4"/>
-<rect class="sn-diagram__stripe" x="25.5" y="273.7" width="5" height="67.4"/>
-<text class="sn-diagram__t body-strong" x="38.0" y="294.5">P4 Pipeline operator</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="38.0" y="312.4">ops · 10 steps</text>
+<rect class="sn-diagram__box" x="24.0" y="289.0" width="198.0" height="76.0"/>
+<rect class="sn-diagram__stripe" x="25.5" y="290.5" width="5" height="73.0"/>
+<text class="sn-diagram__t body-strong" x="38.0" y="311.3">P4 Pipeline operator</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="38.0" y="332.3">ops · 10 steps</text>
 </g>
-<rect class="sn-diagram__cell" x="236.0" y="272.2" width="168.0" height="70.4"/>
-<g class="sn-diagram__edge sn-dg-c1" data-from="P4" data-to="sn-fe-pipeline" data-step="7" tabindex="0" aria-label="P4 step 7: queue scrape on Telemetry"><title>P4 step 7: queue scrape on Telemetry</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="244.0" y="278.2" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="259.0" y="294.5" text-anchor="middle">7</text></g></g>
-<g class="sn-diagram__edge sn-dg-c1" data-from="P4" data-to="sn-fe-pipeline" data-step="8" tabindex="0" aria-label="P4 step 8: retry job on Telemetry"><title>P4 step 8: retry job on Telemetry</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="282.0" y="278.2" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="297.0" y="294.5" text-anchor="middle">8</text></g></g>
-<g class="sn-diagram__edge sn-dg-c1" data-from="P4" data-to="sn-fe-sources-import" data-step="10" tabindex="0" aria-label="P4 step 10: find and import AI setlists on Import tracklist"><title>P4 step 10: find and import AI setlists on Import tracklist</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="320.0" y="278.2" width="30.3" height="24.2"/><text class="sn-diagram__t data-strong" x="335.1" y="294.5" text-anchor="middle">10</text></g></g>
-<rect class="sn-diagram__cell" x="408.0" y="272.2" width="168.0" height="70.4"/>
-<g class="sn-diagram__edge sn-dg-c2" data-from="P4" data-to="sn-be-cli-import-music-library" data-step="2" tabindex="0" aria-label="P4 step 2: bash scripts/import-music-library.sh after the musicLibrary weekly run on import-music-library"><title>P4 step 2: bash scripts/import-music-library.sh after the musicLibrary weekly run on import-music-library</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="416.0" y="278.2" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="431.0" y="294.5" text-anchor="middle">2</text></g></g>
-<rect class="sn-diagram__cell" x="580.0" y="272.2" width="168.0" height="70.4"/>
-<rect class="sn-diagram__cell" x="752.0" y="272.2" width="168.0" height="70.4"/>
-<g class="sn-diagram__edge sn-dg-c7" data-from="P4" data-to="sn-fe-settings" data-step="9" tabindex="0" aria-label="P4 step 9: connect &#x54;IDAL on Settings"><title>P4 step 9: connect &#x54;IDAL on Settings</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="760.0" y="278.2" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="775.0" y="294.5" text-anchor="middle">9</text></g></g>
-<rect class="sn-diagram__cell" x="924.0" y="272.2" width="168.0" height="70.4"/>
-<g class="sn-diagram__edge sn-dg-c8" data-from="P4" data-to="sn-be-cli-start-dev" data-step="1" tabindex="0" aria-label="P4 step 1: git switch main &amp;&amp; git pull; bash scripts/start-dev.sh on start-dev"><title>P4 step 1: git switch main &amp;&amp; git pull; bash scripts/start-dev.sh on start-dev</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="932.0" y="278.2" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="947.0" y="294.5" text-anchor="middle">1</text></g></g>
-<g class="sn-diagram__edge sn-dg-c8" data-from="P4" data-to="sn-be-svc-worker" data-step="3" tabindex="0" aria-label="P4 step 3: worker runs library_ingest, projection and backfill follow-ups on Worker"><title>P4 step 3: worker runs library_ingest, projection and backfill follow-ups on Worker</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="970.0" y="278.2" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="985.0" y="294.5" text-anchor="middle">3</text></g></g>
-<g class="sn-diagram__edge sn-dg-c8" data-from="P4" data-to="sn-be-svc-rest-api" data-step="4" tabindex="0" aria-label="P4 step 4: &#x50;UT /api/v1/scrape/window and manage /api/v1/target-tracks on &#x52;EST &#x41;PI"><title>P4 step 4: &#x50;UT /api/v1/scrape/window and manage /api/v1/target-tracks on &#x52;EST &#x41;PI</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1008.0" y="278.2" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="1023.0" y="294.5" text-anchor="middle">4</text></g></g>
-<g class="sn-diagram__edge sn-dg-c8" data-from="P4" data-to="sn-be-svc-rest-api" data-step="5" tabindex="0" aria-label="P4 step 5: watch /api/v1/jobs and /api/v1/jobs/{id}/stages; &#x50;OST /retry for dead jobs on &#x52;EST &#x41;PI"><title>P4 step 5: watch /api/v1/jobs and /api/v1/jobs/{id}/stages; &#x50;OST /retry for dead jobs on &#x52;EST &#x41;PI</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1046.0" y="278.2" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="1061.0" y="294.5" text-anchor="middle">5</text></g></g>
-<g class="sn-diagram__edge sn-dg-c8" data-from="P4" data-to="sn-be-store-postgres" data-step="6" tabindex="0" aria-label="P4 step 6: pg_dump -Fc via compose exec on songnodes Postgres 18"><title>P4 step 6: pg_dump -Fc via compose exec on songnodes Postgres 18</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="932.0" y="308.4" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="947.0" y="324.7" text-anchor="middle">6</text></g></g>
-<rect class="sn-diagram__cell" x="1096.0" y="272.2" width="168.0" height="70.4"/>
+<rect class="sn-diagram__cell" x="236.0" y="289.0" width="168.0" height="76.0"/>
+<g class="sn-diagram__edge sn-dg-c1" data-from="P4" data-to="sn-fe-pipeline" data-step="7" tabindex="0" aria-label="P4 step 7: queue scrape on Telemetry"><title>P4 step 7: queue scrape on Telemetry</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="244.0" y="295.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="259.0" y="313.3" text-anchor="middle">7</text></g></g>
+<g class="sn-diagram__edge sn-dg-c1" data-from="P4" data-to="sn-fe-pipeline" data-step="8" tabindex="0" aria-label="P4 step 8: retry job on Telemetry"><title>P4 step 8: retry job on Telemetry</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="282.0" y="295.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="297.0" y="313.3" text-anchor="middle">8</text></g></g>
+<g class="sn-diagram__edge sn-dg-c1" data-from="P4" data-to="sn-fe-sources-import" data-step="10" tabindex="0" aria-label="P4 step 10: find and import AI setlists on Import tracklist"><title>P4 step 10: find and import AI setlists on Import tracklist</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="320.0" y="295.0" width="30.9" height="27.0"/><text class="sn-diagram__t body-strong" x="335.4" y="313.3" text-anchor="middle">10</text></g></g>
+<rect class="sn-diagram__cell" x="408.0" y="289.0" width="168.0" height="76.0"/>
+<g class="sn-diagram__edge sn-dg-c2" data-from="P4" data-to="sn-be-cli-import-music-library" data-step="2" tabindex="0" aria-label="P4 step 2: bash scripts/import-music-library.sh after the musicLibrary weekly run on import-music-library"><title>P4 step 2: bash scripts/import-music-library.sh after the musicLibrary weekly run on import-music-library</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="416.0" y="295.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="431.0" y="313.3" text-anchor="middle">2</text></g></g>
+<rect class="sn-diagram__cell" x="580.0" y="289.0" width="168.0" height="76.0"/>
+<rect class="sn-diagram__cell" x="752.0" y="289.0" width="168.0" height="76.0"/>
+<g class="sn-diagram__edge sn-dg-c7" data-from="P4" data-to="sn-fe-settings" data-step="9" tabindex="0" aria-label="P4 step 9: connect &#x54;IDAL on Settings"><title>P4 step 9: connect &#x54;IDAL on Settings</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="760.0" y="295.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="775.0" y="313.3" text-anchor="middle">9</text></g></g>
+<rect class="sn-diagram__cell" x="924.0" y="289.0" width="168.0" height="76.0"/>
+<g class="sn-diagram__edge sn-dg-c8" data-from="P4" data-to="sn-be-cli-start-dev" data-step="1" tabindex="0" aria-label="P4 step 1: git switch main &amp;&amp; git pull; bash scripts/start-dev.sh on start-dev"><title>P4 step 1: git switch main &amp;&amp; git pull; bash scripts/start-dev.sh on start-dev</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="932.0" y="295.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="947.0" y="313.3" text-anchor="middle">1</text></g></g>
+<g class="sn-diagram__edge sn-dg-c8" data-from="P4" data-to="sn-be-svc-worker" data-step="3" tabindex="0" aria-label="P4 step 3: worker runs library_ingest, projection and backfill follow-ups on Worker"><title>P4 step 3: worker runs library_ingest, projection and backfill follow-ups on Worker</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="970.0" y="295.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="985.0" y="313.3" text-anchor="middle">3</text></g></g>
+<g class="sn-diagram__edge sn-dg-c8" data-from="P4" data-to="sn-be-svc-rest-api" data-step="4" tabindex="0" aria-label="P4 step 4: &#x50;UT /api/v1/scrape/window and manage /api/v1/target-tracks on &#x52;EST &#x41;PI"><title>P4 step 4: &#x50;UT /api/v1/scrape/window and manage /api/v1/target-tracks on &#x52;EST &#x41;PI</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1008.0" y="295.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="1023.0" y="313.3" text-anchor="middle">4</text></g></g>
+<g class="sn-diagram__edge sn-dg-c8" data-from="P4" data-to="sn-be-svc-rest-api" data-step="5" tabindex="0" aria-label="P4 step 5: watch /api/v1/jobs and /api/v1/jobs/{id}/stages; &#x50;OST /retry for dead jobs on &#x52;EST &#x41;PI"><title>P4 step 5: watch /api/v1/jobs and /api/v1/jobs/{id}/stages; &#x50;OST /retry for dead jobs on &#x52;EST &#x41;PI</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1046.0" y="295.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="1061.0" y="313.3" text-anchor="middle">5</text></g></g>
+<g class="sn-diagram__edge sn-dg-c8" data-from="P4" data-to="sn-be-store-postgres" data-step="6" tabindex="0" aria-label="P4 step 6: pg_dump -Fc via compose exec on songnodes Postgres 18"><title>P4 step 6: pg_dump -Fc via compose exec on songnodes Postgres 18</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="932.0" y="328.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="947.0" y="346.3" text-anchor="middle">6</text></g></g>
+<rect class="sn-diagram__cell" x="1096.0" y="289.0" width="168.0" height="76.0"/>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="P5" tabindex="0" aria-label="P5 Developer &#x28;design): Ship one-job packages through PRs without breaking contracts or the design system.">
 <title>P5 Developer &#x28;design): Ship one-job packages through PRs without breaking contracts or the design system.</title>
-<rect class="sn-diagram__box" x="24.0" y="350.6" width="198.0" height="70.4"/>
-<rect class="sn-diagram__stripe" x="25.5" y="352.1" width="5" height="67.4"/>
-<text class="sn-diagram__t body-strong" x="38.0" y="372.9">P5 Developer</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="38.0" y="390.8">design · 8 steps</text>
+<rect class="sn-diagram__box" x="24.0" y="373.0" width="198.0" height="76.0"/>
+<rect class="sn-diagram__stripe" x="25.5" y="374.5" width="5" height="73.0"/>
+<text class="sn-diagram__t body-strong" x="38.0" y="395.3">P5 Developer</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="38.0" y="416.3">design · 8 steps</text>
 </g>
-<rect class="sn-diagram__cell" x="236.0" y="350.6" width="168.0" height="70.4"/>
-<rect class="sn-diagram__cell" x="408.0" y="350.6" width="168.0" height="70.4"/>
-<rect class="sn-diagram__cell" x="580.0" y="350.6" width="168.0" height="70.4"/>
-<rect class="sn-diagram__cell" x="752.0" y="350.6" width="168.0" height="70.4"/>
-<rect class="sn-diagram__cell" x="924.0" y="350.6" width="168.0" height="70.4"/>
-<g class="sn-diagram__edge sn-dg-c8" data-from="P5" data-to="sn-be-cli-scope-guard-g1" data-step="1" tabindex="0" aria-label="P5 step 1: branch &lt;code&gt;-&lt;slug&gt;, edit owned paths only, run scope_guard.py on scope_guard"><title>P5 step 1: branch &lt;code&gt;-&lt;slug&gt;, edit owned paths only, run scope_guard.py on scope_guard</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="932.0" y="356.6" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="947.0" y="372.9" text-anchor="middle">1</text></g></g>
-<g class="sn-diagram__edge sn-dg-c8" data-from="P5" data-to="sn-be-svc-rest-api" data-step="2" tabindex="0" aria-label="P5 step 2: add a router module with register&#x28;app) or a migration in the owned number range on &#x52;EST &#x41;PI"><title>P5 step 2: add a router module with register&#x28;app) or a migration in the owned number range on &#x52;EST &#x41;PI</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="970.0" y="356.6" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="985.0" y="372.9" text-anchor="middle">2</text></g></g>
-<g class="sn-diagram__edge sn-dg-c8" data-from="P5" data-to="sn-be-cli-start-dev" data-step="3" tabindex="0" aria-label="P5 step 3: add the migration to start-dev.sh and rebuild the stack on start-dev"><title>P5 step 3: add the migration to start-dev.sh and rebuild the stack on start-dev</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1008.0" y="356.6" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="1023.0" y="372.9" text-anchor="middle">3</text></g></g>
-<g class="sn-diagram__edge sn-dg-c8" data-from="P5" data-to="sn-be-cli-e2e-docker" data-step="4" tabindex="0" aria-label="P5 step 4: run E2E and pytest; update own &#x53;TATUS.md slot on e2e-docker"><title>P5 step 4: run E2E and pytest; update own &#x53;TATUS.md slot on e2e-docker</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1046.0" y="356.6" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="1061.0" y="372.9" text-anchor="middle">4</text></g></g>
-<g class="sn-diagram__edge sn-dg-c8" data-from="P5" data-to="sn-fe-ds-reference" data-step="5" tabindex="0" aria-label="P5 step 5: look up tokens and components on Design system reference · SongNodes"><title>P5 step 5: look up tokens and components on Design system reference · SongNodes</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="932.0" y="386.8" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="947.0" y="403.1" text-anchor="middle">5</text></g></g>
-<g class="sn-diagram__edge sn-dg-c8" data-from="P5" data-to="sn-fe-ds-violations-fixture" data-step="6" tabindex="0" aria-label="P5 step 6: lint regression on Violations fixture"><title>P5 step 6: lint regression on Violations fixture</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="970.0" y="386.8" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="985.0" y="403.1" text-anchor="middle">6</text></g></g>
-<g class="sn-diagram__edge sn-dg-c8" data-from="P5" data-to="sn-fe-work-queue-tracker" data-step="7" tabindex="0" aria-label="P5 step 7: copy job prompt on SongNodes Work Queue"><title>P5 step 7: copy job prompt on SongNodes Work Queue</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1008.0" y="386.8" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="1023.0" y="403.1" text-anchor="middle">7</text></g></g>
-<g class="sn-diagram__edge sn-dg-c8" data-from="P5" data-to="ml-page-artifact-app-entry" data-step="8" tabindex="0" aria-label="P5 step 8: node build.mjs &lt;fe&gt; &lt;out&gt; &lt;tools&gt; on Naarm Set Builder"><title>P5 step 8: node build.mjs &lt;fe&gt; &lt;out&gt; &lt;tools&gt; on Naarm Set Builder</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1046.0" y="386.8" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="1061.0" y="403.1" text-anchor="middle">8</text></g></g>
-<rect class="sn-diagram__cell" x="1096.0" y="350.6" width="168.0" height="70.4"/>
+<rect class="sn-diagram__cell" x="236.0" y="373.0" width="168.0" height="76.0"/>
+<rect class="sn-diagram__cell" x="408.0" y="373.0" width="168.0" height="76.0"/>
+<rect class="sn-diagram__cell" x="580.0" y="373.0" width="168.0" height="76.0"/>
+<rect class="sn-diagram__cell" x="752.0" y="373.0" width="168.0" height="76.0"/>
+<rect class="sn-diagram__cell" x="924.0" y="373.0" width="168.0" height="76.0"/>
+<g class="sn-diagram__edge sn-dg-c8" data-from="P5" data-to="sn-be-cli-scope-guard-g1" data-step="1" tabindex="0" aria-label="P5 step 1: branch &lt;code&gt;-&lt;slug&gt;, edit owned paths only, run scope_guard.py on scope_guard"><title>P5 step 1: branch &lt;code&gt;-&lt;slug&gt;, edit owned paths only, run scope_guard.py on scope_guard</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="932.0" y="379.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="947.0" y="397.3" text-anchor="middle">1</text></g></g>
+<g class="sn-diagram__edge sn-dg-c8" data-from="P5" data-to="sn-be-svc-rest-api" data-step="2" tabindex="0" aria-label="P5 step 2: add a router module with register&#x28;app) or a migration in the owned number range on &#x52;EST &#x41;PI"><title>P5 step 2: add a router module with register&#x28;app) or a migration in the owned number range on &#x52;EST &#x41;PI</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="970.0" y="379.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="985.0" y="397.3" text-anchor="middle">2</text></g></g>
+<g class="sn-diagram__edge sn-dg-c8" data-from="P5" data-to="sn-be-cli-start-dev" data-step="3" tabindex="0" aria-label="P5 step 3: add the migration to start-dev.sh and rebuild the stack on start-dev"><title>P5 step 3: add the migration to start-dev.sh and rebuild the stack on start-dev</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1008.0" y="379.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="1023.0" y="397.3" text-anchor="middle">3</text></g></g>
+<g class="sn-diagram__edge sn-dg-c8" data-from="P5" data-to="sn-be-cli-e2e-docker" data-step="4" tabindex="0" aria-label="P5 step 4: run E2E and pytest; update own &#x53;TATUS.md slot on e2e-docker"><title>P5 step 4: run E2E and pytest; update own &#x53;TATUS.md slot on e2e-docker</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1046.0" y="379.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="1061.0" y="397.3" text-anchor="middle">4</text></g></g>
+<g class="sn-diagram__edge sn-dg-c8" data-from="P5" data-to="sn-fe-ds-reference" data-step="5" tabindex="0" aria-label="P5 step 5: look up tokens and components on Design system reference · SongNodes"><title>P5 step 5: look up tokens and components on Design system reference · SongNodes</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="932.0" y="412.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="947.0" y="430.3" text-anchor="middle">5</text></g></g>
+<g class="sn-diagram__edge sn-dg-c8" data-from="P5" data-to="sn-fe-ds-violations-fixture" data-step="6" tabindex="0" aria-label="P5 step 6: lint regression on Violations fixture"><title>P5 step 6: lint regression on Violations fixture</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="970.0" y="412.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="985.0" y="430.3" text-anchor="middle">6</text></g></g>
+<g class="sn-diagram__edge sn-dg-c8" data-from="P5" data-to="sn-fe-work-queue-tracker" data-step="7" tabindex="0" aria-label="P5 step 7: copy job prompt on SongNodes Work Queue"><title>P5 step 7: copy job prompt on SongNodes Work Queue</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1008.0" y="412.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="1023.0" y="430.3" text-anchor="middle">7</text></g></g>
+<g class="sn-diagram__edge sn-dg-c8" data-from="P5" data-to="ml-page-artifact-app-entry" data-step="8" tabindex="0" aria-label="P5 step 8: node build.mjs &lt;fe&gt; &lt;out&gt; &lt;tools&gt; on Naarm Set Builder"><title>P5 step 8: node build.mjs &lt;fe&gt; &lt;out&gt; &lt;tools&gt; on Naarm Set Builder</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1046.0" y="412.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="1061.0" y="430.3" text-anchor="middle">8</text></g></g>
+<rect class="sn-diagram__cell" x="1096.0" y="373.0" width="168.0" height="76.0"/>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="P6" tabindex="0" aria-label="P6 Scraper &#x28;system actor) &#x28;ingest): Find complete playlists containing target tracks and persist them to bronze.">
 <title>P6 Scraper &#x28;system actor) &#x28;ingest): Find complete playlists containing target tracks and persist them to bronze.</title>
-<rect class="sn-diagram__box" x="24.0" y="429.0" width="198.0" height="72.8"/>
-<rect class="sn-diagram__stripe" x="25.5" y="430.5" width="5" height="69.8"/>
-<text class="sn-diagram__t body-strong" x="38.0" y="451.3">P6 Scraper &#x28;system</text>
-<text class="sn-diagram__t body-strong" x="38.0" y="472.3">actor)</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="38.0" y="490.2">ingest · 6 steps</text>
+<rect class="sn-diagram__box" x="24.0" y="457.0" width="198.0" height="77.0"/>
+<rect class="sn-diagram__stripe" x="25.5" y="458.5" width="5" height="74.0"/>
+<text class="sn-diagram__t body-strong" x="38.0" y="479.3">P6 Scraper &#x28;system</text>
+<text class="sn-diagram__t body-strong" x="38.0" y="500.3">actor)</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="38.0" y="521.3">ingest · 6 steps</text>
 </g>
-<rect class="sn-diagram__cell" x="236.0" y="429.0" width="168.0" height="72.8"/>
-<g class="sn-diagram__edge sn-dg-c1" data-from="P6" data-to="sn-be-svc-unified-scraper" data-step="4" tabindex="0" aria-label="P6 step 4: scrapy crawl subprocess; item pipelines persist on Unified scraper"><title>P6 step 4: scrapy crawl subprocess; item pipelines persist on Unified scraper</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="244.0" y="435.0" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="259.0" y="451.3" text-anchor="middle">4</text></g></g>
-<rect class="sn-diagram__cell" x="408.0" y="429.0" width="168.0" height="72.8"/>
-<rect class="sn-diagram__cell" x="580.0" y="429.0" width="168.0" height="72.8"/>
-<rect class="sn-diagram__cell" x="752.0" y="429.0" width="168.0" height="72.8"/>
-<rect class="sn-diagram__cell" x="924.0" y="429.0" width="168.0" height="72.8"/>
-<g class="sn-diagram__edge sn-dg-c8" data-from="P6" data-to="sn-be-svc-worker" data-step="1" tabindex="0" aria-label="P6 step 1: songnodes.schedule enqueues tick:scrape_targets:{hour} on Worker"><title>P6 step 1: songnodes.schedule enqueues tick:scrape_targets:{hour} on Worker</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="932.0" y="435.0" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="947.0" y="451.3" text-anchor="middle">1</text></g></g>
-<g class="sn-diagram__edge sn-dg-c8" data-from="P6" data-to="sn-be-svc-worker" data-step="2" tabindex="0" aria-label="P6 step 2: scrape_targets picks 2 active targets older than 7 days &#x28;&#x53;KIP &#x4c;OCKED), one scrape job per source on Worker"><title>P6 step 2: scrape_targets picks 2 active targets older than 7 days &#x28;&#x53;KIP &#x4c;OCKED), one scrape job per source on Worker</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="970.0" y="435.0" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="985.0" y="451.3" text-anchor="middle">2</text></g></g>
-<g class="sn-diagram__edge sn-dg-c8" data-from="P6" data-to="sn-be-svc-worker" data-step="3" tabindex="0" aria-label="P6 step 3: claim scrape &#x28;lease 1800s) and &#x50;OST /scrape on Worker"><title>P6 step 3: claim scrape &#x28;lease 1800s) and &#x50;OST /scrape on Worker</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1008.0" y="435.0" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="1023.0" y="451.3" text-anchor="middle">3</text></g></g>
-<g class="sn-diagram__edge sn-dg-c8" data-from="P6" data-to="sn-be-svc-worker" data-step="5" tabindex="0" aria-label="P6 step 5: record playlists_found, complete job, enqueue ingest_pending on Worker"><title>P6 step 5: record playlists_found, complete job, enqueue ingest_pending on Worker</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1046.0" y="435.0" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="1061.0" y="451.3" text-anchor="middle">5</text></g></g>
-<g class="sn-diagram__edge sn-dg-c8" data-from="P6" data-to="sn-be-svc-worker" data-step="6" tabindex="0" aria-label="P6 step 6: ingest_pending builds silver and N -&gt; N+1 transitions on Worker"><title>P6 step 6: ingest_pending builds silver and N -&gt; N+1 &#116;ransitions on Worker</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="932.0" y="465.2" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="947.0" y="481.5" text-anchor="middle">6</text></g></g>
-<rect class="sn-diagram__cell" x="1096.0" y="429.0" width="168.0" height="72.8"/>
+<rect class="sn-diagram__cell" x="236.0" y="457.0" width="168.0" height="77.0"/>
+<g class="sn-diagram__edge sn-dg-c1" data-from="P6" data-to="sn-be-svc-unified-scraper" data-step="4" tabindex="0" aria-label="P6 step 4: scrapy crawl subprocess; item pipelines persist on Unified scraper"><title>P6 step 4: scrapy crawl subprocess; item pipelines persist on Unified scraper</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="244.0" y="463.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="259.0" y="481.3" text-anchor="middle">4</text></g></g>
+<rect class="sn-diagram__cell" x="408.0" y="457.0" width="168.0" height="77.0"/>
+<rect class="sn-diagram__cell" x="580.0" y="457.0" width="168.0" height="77.0"/>
+<rect class="sn-diagram__cell" x="752.0" y="457.0" width="168.0" height="77.0"/>
+<rect class="sn-diagram__cell" x="924.0" y="457.0" width="168.0" height="77.0"/>
+<g class="sn-diagram__edge sn-dg-c8" data-from="P6" data-to="sn-be-svc-worker" data-step="1" tabindex="0" aria-label="P6 step 1: songnodes.schedule enqueues tick:scrape_targets:{hour} on Worker"><title>P6 step 1: songnodes.schedule enqueues tick:scrape_targets:{hour} on Worker</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="932.0" y="463.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="947.0" y="481.3" text-anchor="middle">1</text></g></g>
+<g class="sn-diagram__edge sn-dg-c8" data-from="P6" data-to="sn-be-svc-worker" data-step="2" tabindex="0" aria-label="P6 step 2: scrape_targets picks 2 active targets older than 7 days &#x28;&#x53;KIP &#x4c;OCKED), one scrape job per source on Worker"><title>P6 step 2: scrape_targets picks 2 active targets older than 7 days &#x28;&#x53;KIP &#x4c;OCKED), one scrape job per source on Worker</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="970.0" y="463.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="985.0" y="481.3" text-anchor="middle">2</text></g></g>
+<g class="sn-diagram__edge sn-dg-c8" data-from="P6" data-to="sn-be-svc-worker" data-step="3" tabindex="0" aria-label="P6 step 3: claim scrape &#x28;lease 1800s) and &#x50;OST /scrape on Worker"><title>P6 step 3: claim scrape &#x28;lease 1800s) and &#x50;OST /scrape on Worker</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1008.0" y="463.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="1023.0" y="481.3" text-anchor="middle">3</text></g></g>
+<g class="sn-diagram__edge sn-dg-c8" data-from="P6" data-to="sn-be-svc-worker" data-step="5" tabindex="0" aria-label="P6 step 5: record playlists_found, complete job, enqueue ingest_pending on Worker"><title>P6 step 5: record playlists_found, complete job, enqueue ingest_pending on Worker</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1046.0" y="463.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="1061.0" y="481.3" text-anchor="middle">5</text></g></g>
+<g class="sn-diagram__edge sn-dg-c8" data-from="P6" data-to="sn-be-svc-worker" data-step="6" tabindex="0" aria-label="P6 step 6: ingest_pending builds silver and N -&gt; N+1 transitions on Worker"><title>P6 step 6: ingest_pending builds silver and N -&gt; N+1 &#116;ransitions on Worker</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="932.0" y="496.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="947.0" y="514.3" text-anchor="middle">6</text></g></g>
+<rect class="sn-diagram__cell" x="1096.0" y="457.0" width="168.0" height="77.0"/>
 <g class="sn-diagram__node sn-dg-c2 sn-diagram__node--production" data-node="P7" tabindex="0" aria-label="P7 Weekly-run agent &#x28;system actor) &#x28;library): Run scrape to republish every week without a person present.">
 <title>P7 Weekly-run agent &#x28;system actor) &#x28;library): Run scrape to republish every week without a person present.</title>
-<rect class="sn-diagram__box" x="24.0" y="509.8" width="198.0" height="72.8"/>
-<rect class="sn-diagram__stripe" x="25.5" y="511.3" width="5" height="69.8"/>
-<text class="sn-diagram__t body-strong" x="38.0" y="532.1">P7 Weekly-run agent</text>
-<text class="sn-diagram__t body-strong" x="38.0" y="553.1">&#x28;system actor)</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="38.0" y="571.0">library · 3 steps</text>
+<rect class="sn-diagram__box" x="24.0" y="542.0" width="198.0" height="77.0"/>
+<rect class="sn-diagram__stripe" x="25.5" y="543.5" width="5" height="74.0"/>
+<text class="sn-diagram__t body-strong" x="38.0" y="564.3">P7 Weekly-run agent</text>
+<text class="sn-diagram__t body-strong" x="38.0" y="585.3">&#x28;system actor)</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="38.0" y="606.3">library · 3 steps</text>
 </g>
-<rect class="sn-diagram__cell" x="236.0" y="509.8" width="168.0" height="72.8"/>
-<g class="sn-diagram__edge sn-dg-c1" data-from="P7" data-to="ml-cli-resolve" data-step="1" tabindex="0" aria-label="P7 step 1: chunked resume on run_weekly resolve"><title>P7 step 1: chunked resume on run_weekly resolve</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="244.0" y="515.8" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="259.0" y="532.1" text-anchor="middle">1</text></g></g>
-<rect class="sn-diagram__cell" x="408.0" y="509.8" width="168.0" height="72.8"/>
-<rect class="sn-diagram__cell" x="580.0" y="509.8" width="168.0" height="72.8"/>
-<rect class="sn-diagram__cell" x="752.0" y="509.8" width="168.0" height="72.8"/>
-<rect class="sn-diagram__cell" x="924.0" y="509.8" width="168.0" height="72.8"/>
-<g class="sn-diagram__edge sn-dg-c8" data-from="P7" data-to="ml-cli-build-db" data-step="2" tabindex="0" aria-label="P7 step 2: rebuild on build_db"><title>P7 step 2: rebuild on build_db</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="932.0" y="515.8" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="947.0" y="532.1" text-anchor="middle">2</text></g></g>
-<g class="sn-diagram__edge sn-dg-c8" data-from="P7" data-to="ml-page-set-builder" data-step="3" tabindex="0" aria-label="P7 step 3: republish on Naarm Set Builder"><title>P7 step 3: republish on Naarm Set Builder</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="970.0" y="515.8" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="985.0" y="532.1" text-anchor="middle">3</text></g></g>
-<rect class="sn-diagram__cell" x="1096.0" y="509.8" width="168.0" height="72.8"/>
+<rect class="sn-diagram__cell" x="236.0" y="542.0" width="168.0" height="77.0"/>
+<g class="sn-diagram__edge sn-dg-c1" data-from="P7" data-to="ml-cli-resolve" data-step="1" tabindex="0" aria-label="P7 step 1: chunked resume on run_weekly resolve"><title>P7 step 1: chunked resume on run_weekly resolve</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="244.0" y="548.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="259.0" y="566.3" text-anchor="middle">1</text></g></g>
+<rect class="sn-diagram__cell" x="408.0" y="542.0" width="168.0" height="77.0"/>
+<rect class="sn-diagram__cell" x="580.0" y="542.0" width="168.0" height="77.0"/>
+<rect class="sn-diagram__cell" x="752.0" y="542.0" width="168.0" height="77.0"/>
+<rect class="sn-diagram__cell" x="924.0" y="542.0" width="168.0" height="77.0"/>
+<g class="sn-diagram__edge sn-dg-c8" data-from="P7" data-to="ml-cli-build-db" data-step="2" tabindex="0" aria-label="P7 step 2: rebuild on build_db"><title>P7 step 2: rebuild on build_db</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="932.0" y="548.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="947.0" y="566.3" text-anchor="middle">2</text></g></g>
+<g class="sn-diagram__edge sn-dg-c8" data-from="P7" data-to="ml-page-set-builder" data-step="3" tabindex="0" aria-label="P7 step 3: republish on Naarm Set Builder"><title>P7 step 3: republish on Naarm Set Builder</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="970.0" y="548.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="985.0" y="566.3" text-anchor="middle">3</text></g></g>
+<rect class="sn-diagram__cell" x="1096.0" y="542.0" width="168.0" height="77.0"/>
 <g class="sn-diagram__node sn-dg-c7 sn-diagram__node--production" data-node="P8" tabindex="0" aria-label="P8 Beatport sync &#x28;assisted) &#x28;services): Check Beatport for tracks to buy, with Markus at the laptop.">
 <title>P8 Beatport sync &#x28;assisted) &#x28;services): Check Beatport for tracks to buy, with Markus at the laptop.</title>
-<rect class="sn-diagram__box" x="24.0" y="590.6" width="198.0" height="72.8"/>
-<rect class="sn-diagram__stripe" x="25.5" y="592.1" width="5" height="69.8"/>
-<text class="sn-diagram__t body-strong" x="38.0" y="612.9">P8 Beatport sync</text>
-<text class="sn-diagram__t body-strong" x="38.0" y="633.9">&#x28;assisted)</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="38.0" y="651.8">services · 3 steps</text>
+<rect class="sn-diagram__box" x="24.0" y="627.0" width="198.0" height="77.0"/>
+<rect class="sn-diagram__stripe" x="25.5" y="628.5" width="5" height="74.0"/>
+<text class="sn-diagram__t body-strong" x="38.0" y="649.3">P8 Beatport sync</text>
+<text class="sn-diagram__t body-strong" x="38.0" y="670.3">&#x28;assisted)</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="38.0" y="691.3">services · 3 steps</text>
 </g>
-<rect class="sn-diagram__cell" x="236.0" y="590.6" width="168.0" height="72.8"/>
-<rect class="sn-diagram__cell" x="408.0" y="590.6" width="168.0" height="72.8"/>
-<g class="sn-diagram__edge sn-dg-c2" data-from="P8" data-to="ml-cli-process" data-step="2" tabindex="0" aria-label="P8 step 2: re-gate short-only songs on run_weekly process"><title>P8 step 2: re-gate short-only songs on run_weekly process</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="416.0" y="596.6" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="431.0" y="612.9" text-anchor="middle">2</text></g></g>
-<rect class="sn-diagram__cell" x="580.0" y="590.6" width="168.0" height="72.8"/>
-<rect class="sn-diagram__cell" x="752.0" y="590.6" width="168.0" height="72.8"/>
-<rect class="sn-diagram__cell" x="924.0" y="590.6" width="168.0" height="72.8"/>
-<g class="sn-diagram__edge sn-dg-c8" data-from="P8" data-to="ml-agent-beatport-sync" data-step="1" tabindex="0" aria-label="P8 step 1: playlist edits on Beatport sync playbook"><title>P8 step 1: playlist edits on Beatport sync playbook</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="932.0" y="596.6" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="947.0" y="612.9" text-anchor="middle">1</text></g></g>
-<g class="sn-diagram__edge sn-dg-c8" data-from="P8" data-to="ml-cli-confirm" data-step="3" tabindex="0" aria-label="P8 step 3: mark beatport synced on run_weekly confirm"><title>P8 step 3: mark beatport synced on run_weekly confirm</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="970.0" y="596.6" width="30.0" height="24.2"/><text class="sn-diagram__t data-strong" x="985.0" y="612.9" text-anchor="middle">3</text></g></g>
-<rect class="sn-diagram__cell" x="1096.0" y="590.6" width="168.0" height="72.8"/>
+<rect class="sn-diagram__cell" x="236.0" y="627.0" width="168.0" height="77.0"/>
+<rect class="sn-diagram__cell" x="408.0" y="627.0" width="168.0" height="77.0"/>
+<g class="sn-diagram__edge sn-dg-c2" data-from="P8" data-to="ml-cli-process" data-step="2" tabindex="0" aria-label="P8 step 2: re-gate short-only songs on run_weekly process"><title>P8 step 2: re-gate short-only songs on run_weekly process</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="416.0" y="633.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="431.0" y="651.3" text-anchor="middle">2</text></g></g>
+<rect class="sn-diagram__cell" x="580.0" y="627.0" width="168.0" height="77.0"/>
+<rect class="sn-diagram__cell" x="752.0" y="627.0" width="168.0" height="77.0"/>
+<rect class="sn-diagram__cell" x="924.0" y="627.0" width="168.0" height="77.0"/>
+<g class="sn-diagram__edge sn-dg-c8" data-from="P8" data-to="ml-agent-beatport-sync" data-step="1" tabindex="0" aria-label="P8 step 1: playlist edits on Beatport sync playbook"><title>P8 step 1: playlist edits on Beatport sync playbook</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="932.0" y="633.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="947.0" y="651.3" text-anchor="middle">1</text></g></g>
+<g class="sn-diagram__edge sn-dg-c8" data-from="P8" data-to="ml-cli-confirm" data-step="3" tabindex="0" aria-label="P8 step 3: mark beatport synced on run_weekly confirm"><title>P8 step 3: mark beatport synced on run_weekly confirm</title><g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="970.0" y="633.0" width="30.0" height="27.0"/><text class="sn-diagram__t body-strong" x="985.0" y="651.3" text-anchor="middle">3</text></g></g>
+<rect class="sn-diagram__cell" x="1096.0" y="627.0" width="168.0" height="77.0"/>
 <g class="sn-diagram__legend" aria-label="Legend">
-<text class="sn-diagram__t body-strong" x="24.0" y="698.7">Key</text>
-<rect class="sn-diagram__swatch sn-dg-c1" x="24.0" y="716.8" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="54.0" y="725.6">ingest</text>
-<rect class="sn-diagram__swatch sn-dg-c2" x="108.0" y="716.8" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="138.0" y="725.6">library</text>
-<rect class="sn-diagram__swatch sn-dg-c3" x="193.3" y="716.8" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="223.3" y="725.6">graph</text>
-<rect class="sn-diagram__swatch sn-dg-c6" x="275.7" y="716.8" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="305.7" y="725.6">harmony</text>
-<rect class="sn-diagram__swatch sn-dg-c4" x="375.6" y="716.8" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="405.6" y="725.6">sets</text>
-<rect class="sn-diagram__swatch sn-dg-c7" x="448.0" y="716.8" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="478.0" y="725.6">services</text>
-<rect class="sn-diagram__swatch sn-dg-c8" x="545.8" y="716.8" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="575.8" y="725.6">ops and design</text>
-<rect class="sn-diagram__legend-box sn-diagram__node--production" x="684.1" y="713.8" width="22" height="16"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="714.1" y="725.6">Production &#x28;solid outline)</text>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="24.0" y="740.6" width="22" height="16"/></g>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="54.0" y="752.4">Numbered chip = persona step &#x28;same number as its swimlane)</text>
+<text class="sn-diagram__t body-strong" x="24.0" y="739.3">Key</text>
+<rect class="sn-diagram__swatch sn-dg-c1" x="24.0" y="759.5" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="54.0" y="769.3">ingest</text>
+<rect class="sn-diagram__swatch sn-dg-c2" x="117.0" y="759.5" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="147.0" y="769.3">library</text>
+<rect class="sn-diagram__swatch sn-dg-c3" x="211.6" y="759.5" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="241.6" y="769.3">graph</text>
+<rect class="sn-diagram__swatch sn-dg-c6" x="302.6" y="759.5" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="332.6" y="769.3">harmony</text>
+<rect class="sn-diagram__swatch sn-dg-c4" x="415.5" y="759.5" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="445.5" y="769.3">sets</text>
+<rect class="sn-diagram__swatch sn-dg-c7" x="494.0" y="759.5" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="524.0" y="769.3">services</text>
+<rect class="sn-diagram__swatch sn-dg-c8" x="604.2" y="759.5" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="634.2" y="769.3">ops and design</text>
+<rect class="sn-diagram__legend-box sn-diagram__node--production" x="765.1" y="756.5" width="22" height="16"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="795.1" y="769.3">Production &#x28;solid outline)</text>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="24.0" y="787.5" width="22" height="16"/></g>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="54.0" y="800.3">Numbered chip = persona step &#x28;same number as its swimlane)</text>
 </g>
 </svg>

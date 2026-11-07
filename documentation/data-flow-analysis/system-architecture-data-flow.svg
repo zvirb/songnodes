@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1183 781" role="img" aria-labelledby="D2a-t D2a-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1364 601" role="img" aria-labelledby="D2a-t D2a-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
 :root, [data-theme="dark"] {
   --bg: #222222;
   --surface-1: #2d2d2d;
@@ -445,6 +445,7 @@
   --drawer-w: 300px;
   --rail-w: 248px;
   --content-max: 1400px;
+  --print-wide-h: 150mm;
   --print-wide-w: 273mm;
   --prose-max: 68ch;
   --z-base: 0;
@@ -789,184 +790,184 @@
 .sn-chart-frame__axis-title { fill: var(--chart-axis); font-family: var(--font-body); font-size: 0.6875rem; }</style>
 <title id="D2a-t">System architecture: ingest, musiclibrary flows &#x28;Built)</title>
 <desc id="D2a-d">Pages, services and stores grouped by domain stage, with every ingest flow drawn as an arrow carrying its flow number &#x28;F01 to F11 in the flow table). 13 nodes, 11 flows.</desc>
-<rect class="sn-diagram__bg" x="0" y="0" width="1183" height="781"/>
-<rect class="sn-diagram__group" x="169.9" y="48.0" width="859.0" height="497.0"/>
-<rect class="sn-diagram__group" x="606.9" y="545.0" width="206.0" height="105.0"/>
-<rect class="sn-diagram__group" x="189.4" y="545.0" width="386.5" height="105.0"/>
-<g class="sn-diagram__groups"><text class="sn-diagram__t sn-diagram__t--2 body-strong" x="179.9" y="67.3">ingest stage</text>
-<text class="sn-diagram__t sn-diagram__t--2 body-strong" x="616.9" y="564.3">services stage</text>
-<text class="sn-diagram__t sn-diagram__t--2 body-strong" x="199.4" y="564.3">ops stage</text></g>
+<rect class="sn-diagram__bg" x="0" y="0" width="1364" height="601"/>
+<rect class="sn-diagram__group" x="48.0" y="48.0" width="1078.0" height="445.0"/>
+<rect class="sn-diagram__group" x="1126.0" y="285.0" width="206.0" height="109.0"/>
+<rect class="sn-diagram__group" x="1126.0" y="58.5" width="168.0" height="218.5"/>
+<g class="sn-diagram__groups"><text class="sn-diagram__t sn-diagram__t--2 body-strong" x="58.0" y="67.3">ingest stage</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-strong" x="1136.0" y="304.3">services stage</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-strong" x="1136.0" y="77.8">ops stage</text></g>
 <g class="sn-diagram__edge sn-dg-c1 sn-diagram__edge--built" data-from="ext-3rrr" data-to="ml-cli-scrape" data-edge="F01" tabindex="0" aria-label="Flow 1 &#x28;F01): 3RRR episode pages → run_weekly scrape – 3RRR episode tracks [ingest, Built]">
 <title>Flow 1 &#x28;F01): 3RRR episode pages → run_weekly scrape – 3RRR episode tracks [ingest, Built]</title>
-<path class="sn-diagram__line" d="M363.1 113.0 L519.9 113.0 L519.9 330.9"/>
-<path class="sn-diagram__head" d="M519.9 330.9 L516.0 323.9 L523.7 323.9 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="509.8" y="210.8" width="20.1" height="22.2"/><text class="sn-diagram__t data-strong" x="519.9" y="226.1" text-anchor="middle">1</text></g>
+<path class="sn-diagram__line" d="M744.1 126.0 L728.5 126.0 L728.5 206.9"/>
+<path class="sn-diagram__head" d="M728.5 206.9 L724.6 199.9 L732.4 199.9 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="719.2" y="166.1" width="18.6" height="25.0"/><text class="sn-diagram__t body-strong" x="728.5" y="183.4" text-anchor="middle">1</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c1 sn-diagram__edge--built" data-from="ext-abc-plays" data-to="ml-cli-scrape" data-edge="F02" tabindex="0" aria-label="Flow 2 &#x28;F02): &#x41;BC plays &#x41;PI → run_weekly scrape – triple j Doof plays [ingest, Built]">
 <title>Flow 2 &#x28;F02): &#x41;BC plays &#x41;PI → run_weekly scrape – triple j Doof plays [ingest, Built]</title>
-<path class="sn-diagram__line" d="M343.7 431.0 L413.9 431.0 L413.9 383.3"/>
-<path class="sn-diagram__head" d="M413.9 383.3 L410.0 390.3 L417.7 390.3 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="368.7" y="419.9" width="20.1" height="22.2"/><text class="sn-diagram__t data-strong" x="378.8" y="435.2" text-anchor="middle">2</text></g>
+<path class="sn-diagram__line" d="M132.0 153.5 L132.0 245.0 L568.7 245.0"/>
+<path class="sn-diagram__head" d="M568.7 245.0 L561.7 241.2 L561.7 248.8 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="339.5" y="232.5" width="21.7" height="25.0"/><text class="sn-diagram__t body-strong" x="350.4" y="249.8" text-anchor="middle">2</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c1 sn-diagram__edge--built" data-from="ext-aria" data-to="ml-cli-scrape" data-edge="F03" tabindex="0" aria-label="Flow 3 &#x28;F03): &#x41;RIA Club Chart → run_weekly scrape – &#x41;RIA Club rank and weeks [ingest, Built]">
 <title>Flow 3 &#x28;F03): &#x41;RIA Club Chart → run_weekly scrape – &#x41;RIA Club rank and weeks [ingest, Built]</title>
-<path class="sn-diagram__line" d="M346.5 365.7 L408.7 365.7"/>
-<path class="sn-diagram__head" d="M408.7 365.7 L401.7 361.8 L401.7 369.6 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="367.5" y="354.6" width="20.1" height="22.2"/><text class="sn-diagram__t data-strong" x="377.6" y="369.9" text-anchor="middle">3</text></g>
+<path class="sn-diagram__line" d="M297.0 153.8 L297.0 226.0 L568.8 226.0"/>
+<path class="sn-diagram__head" d="M568.8 226.0 L561.8 222.2 L561.8 229.8 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="421.9" y="213.5" width="21.9" height="25.0"/><text class="sn-diagram__t body-strong" x="432.9" y="230.8" text-anchor="middle">3</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c1 sn-diagram__edge--built" data-from="ext-balance-wp" data-to="ml-cli-scrape" data-edge="F04" tabindex="0" aria-label="Flow 4 &#x28;F04): Balance Selections WordPress &#x41;PI → run_weekly scrape – Balance tracklists [ingest, Built]">
 <title>Flow 4 &#x28;F04): Balance Selections WordPress &#x41;PI → run_weekly scrape – Balance tracklists [ingest, Built]</title>
-<path class="sn-diagram__line" d="M351.9 308.8 L351.9 348.3 L408.8 348.3"/>
-<path class="sn-diagram__head" d="M408.8 348.3 L401.8 344.4 L401.8 352.2 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="354.9" y="317.4" width="20.1" height="22.2"/><text class="sn-diagram__t data-strong" x="364.9" y="332.7" text-anchor="middle">4</text></g>
+<path class="sn-diagram__line" d="M559.5 159.0 L575.5 159.0 L575.5 206.7"/>
+<path class="sn-diagram__head" d="M575.5 206.7 L571.6 199.7 L579.4 199.7 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="564.3" y="170.3" width="22.4" height="25.0"/><text class="sn-diagram__t body-strong" x="575.5" y="187.7" text-anchor="middle">4</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c1 sn-diagram__edge--built" data-from="ext-deezer" data-to="ml-cli-resolve" data-edge="F05" tabindex="0" aria-label="Flow 5 &#x28;F05): Deezer &#x41;PI → run_weekly resolve – Deezer versions, &#x42;PM, &#x49;SRC, genre, label [ingest, Built]">
 <title>Flow 5 &#x28;F05): Deezer &#x41;PI → run_weekly resolve – Deezer versions, &#x42;PM, &#x49;SRC, genre, label [ingest, Built]</title>
-<path class="sn-diagram__line" d="M780.1 357.0 L929.9 357.0 L929.9 404.7"/>
-<path class="sn-diagram__head" d="M929.9 404.7 L926.0 397.7 L933.7 397.7 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="844.9" y="345.9" width="20.1" height="22.2"/><text class="sn-diagram__t data-strong" x="855.0" y="361.2" text-anchor="middle">5</text></g>
+<path class="sn-diagram__line" d="M976.0 380.1 L976.0 422.8"/>
+<path class="sn-diagram__head" d="M976.0 422.8 L972.1 415.8 L979.9 415.8 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="965.1" y="389.0" width="21.8" height="25.0"/><text class="sn-diagram__t body-strong" x="976.0" y="406.3" text-anchor="middle">5</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c1 sn-diagram__edge--built" data-from="ext-metabrainz" data-to="ml-store-data" data-edge="F06" tabindex="0" aria-label="Flow 6 &#x28;F06): MetaBrainz dumps → data – MusicBrainz dumps [ingest, Built]">
 <title>Flow 6 &#x28;F06): MetaBrainz dumps → data – MusicBrainz dumps [ingest, Built]</title>
-<path class="sn-diagram__line" d="M349.9 531.1 L349.9 601.3 L421.7 601.3"/>
-<path class="sn-diagram__head" d="M421.7 601.3 L414.7 597.4 L414.7 605.1 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="375.7" y="590.2" width="20.1" height="22.2"/><text class="sn-diagram__t data-strong" x="385.8" y="605.5" text-anchor="middle">6</text></g>
+<path class="sn-diagram__line" d="M1086.5 153.8 L1086.5 226.0 L1140.0 226.0"/>
+<path class="sn-diagram__head" d="M1140.0 226.0 L1133.0 222.2 L1133.0 229.8 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1075.5" y="177.4" width="22.0" height="25.0"/><text class="sn-diagram__t body-strong" x="1086.5" y="194.7" text-anchor="middle">6</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c1 sn-diagram__edge--built" data-from="ext-pbs-airnet" data-to="ml-cli-scrape" data-edge="F07" tabindex="0" aria-label="Flow 7 &#x28;F07): &#x50;BS airnet &#x41;PI → run_weekly scrape – &#x50;BS playlists [ingest, Built]">
 <title>Flow 7 &#x28;F07): &#x50;BS airnet &#x41;PI → run_weekly scrape – &#x50;BS playlists [ingest, Built]</title>
-<path class="sn-diagram__line" d="M343.6 187.0 L464.9 187.0 L464.9 330.8"/>
-<path class="sn-diagram__head" d="M464.9 330.8 L461.0 323.8 L468.7 323.8 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="454.8" y="247.8" width="20.1" height="22.2"/><text class="sn-diagram__t data-strong" x="464.9" y="263.1" text-anchor="middle">7</text></g>
+<path class="sn-diagram__line" d="M652.0 153.7 L652.0 206.9"/>
+<path class="sn-diagram__head" d="M652.0 206.9 L648.1 199.9 L655.9 199.9 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="641.5" y="167.8" width="21.0" height="25.0"/><text class="sn-diagram__t body-strong" x="652.0" y="185.1" text-anchor="middle">7</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c1 sn-diagram__edge--built" data-from="ext-tidal" data-to="ml-cli-resolve" data-edge="F08" tabindex="0" aria-label="Flow 8 &#x28;F08): &#x54;IDAL developer &#x41;PI → run_weekly resolve – &#x54;IDAL versions [ingest, Built]">
 <title>Flow 8 &#x28;F08): &#x54;IDAL developer &#x41;PI → run_weekly resolve – &#x54;IDAL versions [ingest, Built]</title>
-<path class="sn-diagram__line" d="M794.9 583.8 L794.9 439.7 L844.8 439.7"/>
-<path class="sn-diagram__head" d="M844.8 439.7 L837.8 435.8 L837.8 443.6 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="784.8" y="500.6" width="20.1" height="22.2"/><text class="sn-diagram__t data-strong" x="794.9" y="515.9" text-anchor="middle">8</text></g>
+<path class="sn-diagram__line" d="M1140.0 352.0 L1053.5 352.0 L1053.5 422.9"/>
+<path class="sn-diagram__head" d="M1053.5 422.9 L1049.7 415.9 L1057.3 415.9 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1085.8" y="339.5" width="22.0" height="25.0"/><text class="sn-diagram__t body-strong" x="1096.8" y="356.8" text-anchor="middle">8</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c1 sn-diagram__edge--built" data-from="ml-cli-ingest" data-to="ml-cli-resolve" data-edge="F09" tabindex="0" aria-label="Flow 9 &#x28;F09): run_weekly ingest → run_weekly resolve – to_resolve list [ingest, Built]">
 <title>Flow 9 &#x28;F09): run_weekly ingest → run_weekly resolve – to_resolve list [ingest, Built]</title>
-<path class="sn-diagram__line" d="M790.6 422.3 L844.8 422.3"/>
-<path class="sn-diagram__head" d="M844.8 422.3 L837.8 418.4 L837.8 426.2 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="807.6" y="411.2" width="20.1" height="22.2"/><text class="sn-diagram__t data-strong" x="817.7" y="426.5" text-anchor="middle">9</text></g>
+<path class="sn-diagram__line" d="M782.8 352.0 L898.5 352.0 L898.5 422.9"/>
+<path class="sn-diagram__head" d="M898.5 422.9 L894.6 415.9 L902.4 415.9 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="829.7" y="339.5" width="22.0" height="25.0"/><text class="sn-diagram__t body-strong" x="840.6" y="356.8" text-anchor="middle">9</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c1 sn-diagram__edge--built" data-from="ml-cli-scrape" data-to="ml-cli-ingest" data-edge="F10" tabindex="0" aria-label="Flow 10 &#x28;F10): run_weekly scrape → run_weekly ingest – raw rows [ingest, Built]">
 <title>Flow 10 &#x28;F10): run_weekly scrape → run_weekly ingest – raw rows [ingest, Built]</title>
-<path class="sn-diagram__line" d="M575.1 357.0 L634.9 357.0 L634.9 404.7"/>
-<path class="sn-diagram__head" d="M634.9 404.7 L631.0 397.7 L638.7 397.7 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="590.8" y="345.9" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="605.0" y="361.2" text-anchor="middle">10</text></g>
+<path class="sn-diagram__line" d="M678.2 263.0 L678.2 323.8"/>
+<path class="sn-diagram__head" d="M678.2 323.8 L674.4 316.8 L682.1 316.8 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="663.8" y="280.9" width="28.9" height="25.0"/><text class="sn-diagram__t body-strong" x="678.2" y="298.2" text-anchor="middle">10</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c1 sn-diagram__edge--built" data-from="ml-store-inbox" data-to="ml-cli-scrape" data-edge="F11" tabindex="0" aria-label="Flow 11 &#x28;F11): inbox → run_weekly scrape – manual adds [ingest, Built]">
 <title>Flow 11 &#x28;F11): inbox → run_weekly scrape – manual adds [ingest, Built]</title>
-<path class="sn-diagram__line" d="M343.5 618.7 L417.9 618.7 L417.9 383.1"/>
-<path class="sn-diagram__head" d="M417.9 383.1 L414.0 390.1 L421.7 390.1 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="403.7" y="489.8" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="417.9" y="505.1" text-anchor="middle">11</text></g>
+<path class="sn-diagram__line" d="M1139.9 126.0 L1126.0 126.0 L1126.0 245.0 L735.1 245.0"/>
+<path class="sn-diagram__head" d="M735.1 245.0 L742.1 241.2 L742.1 248.8 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="918.0" y="232.5" width="25.2" height="25.0"/><text class="sn-diagram__t body-strong" x="930.5" y="249.8" text-anchor="middle">11</text></g>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="ext-3rrr" tabindex="0" aria-label="3RRR episode pages &#x28;ext-3rrr) – ingest, external-api, Production">
 <title>3RRR episode pages &#x28;ext-3rrr) – ingest, external-api, Production</title>
-<rect class="sn-diagram__box" x="183.9" y="87.0" width="179.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="185.4" y="88.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="197.9" y="109.3">3RRR episode pages</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="197.9" y="127.2">ingest · api</text>
+<rect class="sn-diagram__box" x="744.5" y="97.5" width="179.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="746.0" y="99.0" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="758.5" y="119.8">3RRR episode pages</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="758.5" y="140.8">ingest · api</text>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="ext-abc-plays" tabindex="0" aria-label="&#x41;BC plays &#x41;PI &#x28;ext-abc-plays) – ingest, external-api, Production">
 <title>&#x41;BC plays &#x41;PI &#x28;ext-abc-plays) – ingest, external-api, Production</title>
-<rect class="sn-diagram__box" x="203.4" y="405.0" width="140.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="204.9" y="406.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="217.4" y="427.3">&#x41;BC plays &#x41;PI</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="217.4" y="445.2">ingest · api</text>
+<rect class="sn-diagram__box" x="62.0" y="97.5" width="140.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="63.5" y="99.0" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="76.0" y="119.8">&#x41;BC plays &#x41;PI</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="76.0" y="140.8">ingest · api</text>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="ext-aria" tabindex="0" aria-label="&#x41;RIA Club Chart &#x28;ext-aria) – ingest, external-api, Production">
 <title>&#x41;RIA Club Chart &#x28;ext-aria) – ingest, external-api, Production</title>
-<rect class="sn-diagram__box" x="200.4" y="331.0" width="146.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="201.9" y="332.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="214.4" y="353.3">&#x41;RIA Club Chart</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="214.4" y="371.2">ingest · api</text>
+<rect class="sn-diagram__box" x="224.0" y="97.5" width="146.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="225.5" y="99.0" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="238.0" y="119.8">&#x41;RIA Club Chart</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="238.0" y="140.8">ingest · api</text>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="ext-balance-wp" tabindex="0" aria-label="Balance Selections WordPress &#x41;PI &#x28;ext-balance-wp) – ingest, external-api, Production">
 <title>Balance Selections WordPress &#x41;PI &#x28;ext-balance-wp) – ingest, external-api, Production</title>
-<rect class="sn-diagram__box" x="189.9" y="235.5" width="167.0" height="73.0"/>
-<rect class="sn-diagram__stripe" x="191.4" y="237.0" width="5" height="70.0"/>
-<text class="sn-diagram__t body-strong" x="203.9" y="257.8">Balance Selections</text>
-<text class="sn-diagram__t body-strong" x="203.9" y="278.8">WordPress &#x41;PI</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="203.9" y="296.7">ingest · api</text>
+<rect class="sn-diagram__box" x="392.5" y="87.0" width="167.0" height="77.0"/>
+<rect class="sn-diagram__stripe" x="394.0" y="88.5" width="5" height="74.0"/>
+<text class="sn-diagram__t body-strong" x="406.5" y="109.3">Balance Selections</text>
+<text class="sn-diagram__t body-strong" x="406.5" y="130.3">WordPress &#x41;PI</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="406.5" y="151.3">ingest · api</text>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="ext-deezer" tabindex="0" aria-label="Deezer &#x41;PI &#x28;ext-deezer) – ingest, external-api, Production">
 <title>Deezer &#x41;PI &#x28;ext-deezer) – ingest, external-api, Production</title>
-<rect class="sn-diagram__box" x="639.9" y="331.0" width="140.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="641.4" y="332.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="653.9" y="353.3">Deezer &#x41;PI</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="653.9" y="371.2">ingest · api</text>
+<rect class="sn-diagram__box" x="906.0" y="324.0" width="140.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="907.5" y="325.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="920.0" y="346.3">Deezer &#x41;PI</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="920.0" y="367.3">ingest · api</text>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="ext-metabrainz" tabindex="0" aria-label="MetaBrainz dumps &#x28;ext-metabrainz) – ingest, external-api, Production">
 <title>MetaBrainz dumps &#x28;ext-metabrainz) – ingest, external-api, Production</title>
-<rect class="sn-diagram__box" x="190.4" y="479.0" width="166.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="191.9" y="480.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="204.4" y="501.3">MetaBrainz dumps</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="204.4" y="519.2">ingest · api</text>
+<rect class="sn-diagram__box" x="946.0" y="97.5" width="166.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="947.5" y="99.0" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="960.0" y="119.8">MetaBrainz dumps</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="960.0" y="140.8">ingest · api</text>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="ext-pbs-airnet" tabindex="0" aria-label="&#x50;BS airnet &#x41;PI &#x28;ext-pbs-airnet) – ingest, external-api, Production">
 <title>&#x50;BS airnet &#x41;PI &#x28;ext-pbs-airnet) – ingest, external-api, Production</title>
-<rect class="sn-diagram__box" x="203.4" y="161.0" width="140.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="204.9" y="162.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="217.4" y="183.3">&#x50;BS airnet &#x41;PI</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="217.4" y="201.2">ingest · api</text>
+<rect class="sn-diagram__box" x="582.0" y="97.5" width="140.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="583.5" y="99.0" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="596.0" y="119.8">&#x50;BS airnet &#x41;PI</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="596.0" y="140.8">ingest · api</text>
 </g>
 <g class="sn-diagram__node sn-dg-c7 sn-diagram__node--production" data-node="ext-tidal" tabindex="0" aria-label="&#x54;IDAL developer &#x41;PI &#x28;ext-tidal) – services, external-api, Production">
 <title>&#x54;IDAL developer &#x41;PI &#x28;ext-tidal) – services, external-api, Production</title>
-<rect class="sn-diagram__box" x="620.9" y="584.0" width="178.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="622.4" y="585.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="634.9" y="606.3">&#x54;IDAL developer &#x41;PI</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="634.9" y="624.2">services · api</text>
+<rect class="sn-diagram__box" x="1140.0" y="324.0" width="178.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="1141.5" y="325.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="1154.0" y="346.3">&#x54;IDAL developer &#x41;PI</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1154.0" y="367.3">services · api</text>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="ml-cli-ingest" tabindex="0" aria-label="run_weekly ingest &#x28;ml-cli-ingest) – ingest, cli, Production">
 <title>run_weekly ingest &#x28;ml-cli-ingest) – ingest, cli, Production</title>
-<rect class="sn-diagram__box" x="629.4" y="405.0" width="161.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="630.9" y="406.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="643.4" y="427.3">run_weekly ingest</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="643.4" y="445.2">ingest · cli</text>
+<rect class="sn-diagram__box" x="621.5" y="324.0" width="161.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="623.0" y="325.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="635.5" y="346.3">run_weekly ingest</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="635.5" y="367.3">ingest · cli</text>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="ml-cli-resolve" tabindex="0" aria-label="run_weekly resolve &#x28;ml-cli-resolve) – ingest, cli, Production">
 <title>run_weekly resolve &#x28;ml-cli-resolve) – ingest, cli, Production</title>
-<rect class="sn-diagram__box" x="844.9" y="405.0" width="170.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="846.4" y="406.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="858.9" y="427.3">run_weekly resolve</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="858.9" y="445.2">ingest · cli</text>
+<rect class="sn-diagram__box" x="891.0" y="423.0" width="170.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="892.5" y="424.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="905.0" y="445.3">run_weekly resolve</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="905.0" y="466.3">ingest · cli</text>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="ml-cli-scrape" tabindex="0" aria-label="run_weekly scrape &#x28;ml-cli-scrape) – ingest, cli, Production">
 <title>run_weekly scrape &#x28;ml-cli-scrape) – ingest, cli, Production</title>
-<rect class="sn-diagram__box" x="408.9" y="331.0" width="166.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="410.4" y="332.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="422.9" y="353.3">run_weekly scrape</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="422.9" y="371.2">ingest · cli</text>
+<rect class="sn-diagram__box" x="569.0" y="207.0" width="166.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="570.5" y="208.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="583.0" y="229.3">run_weekly scrape</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="583.0" y="250.3">ingest · cli</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-store-data" tabindex="0" aria-label="data &#x28;ml-store-data) – ops, folder, Production">
 <title>data &#x28;ml-store-data) – ops, folder, Production</title>
-<rect class="sn-diagram__box" x="421.9" y="584.0" width="140.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="423.4" y="585.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="435.9" y="606.3">data</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="435.9" y="624.2">ops · folder</text>
+<rect class="sn-diagram__box" x="1140.0" y="207.0" width="140.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="1141.5" y="208.5" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="1154.0" y="229.3">data</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1154.0" y="250.3">ops · folder</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-store-inbox" tabindex="0" aria-label="inbox &#x28;ml-store-inbox) – ops, folder, Production">
 <title>inbox &#x28;ml-store-inbox) – ops, folder, Production</title>
-<rect class="sn-diagram__box" x="203.4" y="584.0" width="140.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="204.9" y="585.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="217.4" y="606.3">inbox</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="217.4" y="624.2">ops · folder</text>
+<rect class="sn-diagram__box" x="1140.0" y="97.5" width="140.0" height="56.0"/>
+<rect class="sn-diagram__stripe" x="1141.5" y="99.0" width="5" height="53.0"/>
+<text class="sn-diagram__t body-strong" x="1154.0" y="119.8">inbox</text>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="1154.0" y="140.8">ops · folder</text>
 </g>
 <g class="sn-diagram__legend" aria-label="Legend">
-<text class="sn-diagram__t body-strong" x="24.0" y="693.3">Key</text>
-<rect class="sn-diagram__swatch sn-dg-c1" x="24.0" y="711.4" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="54.0" y="720.2">ingest</text>
-<rect class="sn-diagram__swatch sn-dg-c7" x="108.0" y="711.4" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="138.0" y="720.2">services</text>
-<rect class="sn-diagram__swatch sn-dg-c8" x="205.8" y="711.4" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="235.8" y="720.2">ops and design</text>
-<rect class="sn-diagram__legend-box sn-diagram__node--production" x="344.1" y="708.4" width="22" height="16"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="374.1" y="720.2">Production &#x28;solid outline)</text>
-<g class="sn-diagram__edge--built"><path class="sn-diagram__line" d="M539.5 716.4 L561.5 716.4"/></g>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="569.5" y="720.2">Built flow &#x28;solid, domain colour)</text>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="773.7" y="708.4" width="22" height="16"/></g>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="803.7" y="720.2">Flow number = row in the flow table</text>
+<text class="sn-diagram__t body-strong" x="24.0" y="536.3">Key</text>
+<rect class="sn-diagram__swatch sn-dg-c1" x="24.0" y="556.5" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="54.0" y="566.3">ingest</text>
+<rect class="sn-diagram__swatch sn-dg-c7" x="117.0" y="556.5" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="147.0" y="566.3">services</text>
+<rect class="sn-diagram__swatch sn-dg-c8" x="227.2" y="556.5" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="257.2" y="566.3">ops and design</text>
+<rect class="sn-diagram__legend-box sn-diagram__node--production" x="388.1" y="553.5" width="22" height="16"/>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="418.1" y="566.3">Production &#x28;solid outline)</text>
+<g class="sn-diagram__edge--built"><path class="sn-diagram__line" d="M620.4 561.5 L642.4 561.5"/></g>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="650.4" y="566.3">Built flow &#x28;solid, domain colour)</text>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="901.1" y="553.5" width="22" height="16"/></g>
+<text class="sn-diagram__t sn-diagram__t--2 body" x="931.1" y="566.3">Flow number = row in the flow table</text>
 </g>
 </svg>
