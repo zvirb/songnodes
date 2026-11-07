@@ -32,10 +32,6 @@ async function audit(page: Page, route: string) {
   const main = page.locator('main#main');
   await expect(main).toHaveCount(1);
   await expect(main.getByRole('heading', { level: 1 })).toHaveCount(1);
-  if (route.startsWith('/callback/') || route === '/oauth/callback') {
-    // Pause only after lazy rendering; freezing earlier stalls React's scheduler.
-    await page.clock.pauseAt(await page.evaluate(() => Date.now() + 50));
-  }
   expect(await main.locator('.sn-btn--primary:visible').count()).toBeLessThanOrEqual(1);
   await expect(main).not.toContainText(/\bN\/A\b|\bUnknown\b/);
   expect(await page.evaluate(() => (window as unknown as { SongNodes: { version: string } }).SongNodes.version)).toBe('1.10.0');
@@ -51,10 +47,18 @@ for (const theme of ['dark', 'light', 'booth']) {
     test(`${route} complies in ${theme}`, async ({ page }) => {
       await prepare(page, theme);
       if (route.startsWith('/callback/') || route === '/oauth/callback') {
-        // Keep the callback's explicit missing-parameters state visible during inspection.
-        await page.clock.install({ time: new Date('2026-11-07T00:00:00Z') });
+        // Hold only the callback's three-second redirect during this content audit.
+        // React and axe must keep their normal timers. Real redirects are tested below.
+        await page.addInitScript(() => {
+          const schedule = window.setTimeout.bind(window);
+          window.setTimeout = ((handler: TimerHandler, timeout?: number, ...args: unknown[]) =>
+            schedule(handler, timeout === 3000 ? 60000 : timeout, ...args)) as typeof window.setTimeout;
+        });
       }
       await audit(page, route);
+      if (route.startsWith('/callback/') || route === '/oauth/callback') {
+        await expect(page).toHaveURL(new RegExp(`${route}$`));
+      }
     });
   }
   test(`every offered settings page complies in ${theme}`, async ({ page }) => {
@@ -65,5 +69,16 @@ for (const theme of ['dark', 'light', 'booth']) {
       [...new Set(nodes.map((node) => node.getAttribute('href')!))]);
     expect(links.length).toBeGreaterThan(0);
     for (const link of links) await audit(page, link);
+  });
+}
+
+for (const route of ['/callback/spotify', '/oauth/callback']) {
+  test(`${route} returns home after missing parameters`, async ({ page }) => {
+    await prepare(page, 'dark');
+    await page.clock.install();
+    await openRoute(page, route);
+    await expect(page.getByRole('heading', { name: 'Authentication failed' })).toBeVisible();
+    await page.clock.fastForward(3000);
+    await expect(page).toHaveURL('/');
   });
 }

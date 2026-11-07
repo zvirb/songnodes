@@ -3180,7 +3180,7 @@ Paired TabPanel IDs with both hidden/inactive panels retained, a focusable named
 ## CIC19 — started 8 Nov 2026
 One job: let callback lazy rendering finish before pausing its redirect clock.
 Owned paths: frontend/tests/e2e/all-pages.spec.ts, STATUS.md CIC19 slot.
-CI artifact confirms the old paused clock left callbacks at Loading page. Heading assertions remain strict; pause now occurs after the h1 appears. Next: Playwright discovery and canonical CI.
+CI run 42413608935 passed 223 tests (including all changed product pages and visual baselines), but 9 callback cases timed out in axe because its timers were paused too. Second fix attempt delays only the known three-second redirect in the content fixture, retains route assertions and adds two real redirect regressions. Playwright discovery passed (71 Chromium cases). A local Chrome run could not start: shared dependencies lack the Vite launcher/native Rolldown binding; no dependency changes made. Next: canonical CI; if callback audit still fails, stop and draft per rule 5.
 <!-- SLOT:CIC19 END -->
 
 <!-- SLOT:CIC20 BEGIN -->
