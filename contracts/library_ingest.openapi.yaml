@@ -25,6 +25,57 @@ paths:
                   type: array
                   items:
                     type: object
+                    properties:
+                      id:
+                        type: string
+                      artist:
+                        type: string
+                      a:
+                        type: string
+                      title:
+                        type: string
+                      t:
+                        type: string
+                      mix_name:
+                        type: string
+                      m:
+                        type: string
+                      genre:
+                        type: string
+                      g:
+                        type: string
+                      pillar:
+                        type: string
+                      p:
+                        type: string
+                      bpm:
+                        type: number
+                      key:
+                        type: string
+                      k:
+                        type: string
+                      energy:
+                        type: number
+                      e:
+                        type: number
+                      rotation:
+                        type: integer
+                      rot:
+                        type: integer
+                      isrc:
+                        type: string
+                      tidal_id:
+                        type: string
+                      tidal:
+                        type: string
+                      deezer_id:
+                        type: string
+                      dz:
+                        type: string
+                      beatport_id:
+                        type: string
+                      bp:
+                        type: string
                 appearances:
                   type: array
                   items:
@@ -73,3 +124,11 @@ paths:
                     type: string
         '409':
           description: Conflict (same idempotency key, different body)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Idempotency key was already submitted with a different payload

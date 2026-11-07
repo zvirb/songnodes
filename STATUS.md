@@ -2732,3 +2732,17 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
   - `npm run test:unit` (passed: 68 test files, 586 tests)
 - Next: merge PR and proceed to UX-T11 (Service rows tell the truth about OAuth).
 <!-- SLOT:UX-T09 END -->
+
+<!-- SLOT:SNT03 BEGIN -->
+### SNT03: Enforce library ingest idempotency contract (SN-T03)
+- Completed: 2026-11-07 (branch snt03-library-ingest-fields off origin/main ebf44357).
+- Scope: Enforce the library ingest body idempotency contract and complete OpenAPI schema, closing gap sn-be-gap-library-ingest-409:
+  1. `services/rest_api/routers/library_ingest.py`: Check existing ingestion jobs for idempotency key reuse. If submitted with an identical payload, return 202 with `created: False`. If submitted with a different payload, raise `CatalogError(409, "Idempotency key was already submitted with a different payload")`.
+  2. `contracts/library_ingest.openapi.yaml`: Documented track metadata fields (energy, rotation, pillar, isrc, tidal, deezer, beatport) and added HTTP 409 response definition with error details schema.
+  3. `tests/rest_api/test_library_ingest_idempotency.py`: Added unit tests asserting 202 (created=True) on initial request, 202 (created=False) on duplicate identical request, and 409 Conflict on duplicate key with differing payload.
+- Checks run and passed:
+  - `$env:PYTHONPATH="services;services/common;services/rest_api"; python -m pytest tests/rest_api/test_library_ingest_idempotency.py tests/contracts/test_contracts.py` (6 passed in 0.98s)
+  - `git diff --diff-filter=D --name-only origin/main...HEAD` (0 deleted files outside owned paths)
+- Note: `scripts/check_design_system.py --check` reports pre-existing un-tokenized values in `frontend/src/components/ds/EditableCell.tsx` and `frontend/src/components/ds/DataTable.tsx` introduced in commit `ebf44357` (UX-T09), which are out of scope for this backend contract package (Rule 6).
+- Next: Open PR and proceed to SN-T05 (Stop the unified scraper at bronze).
+<!-- SLOT:SNT03 END -->
