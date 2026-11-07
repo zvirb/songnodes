@@ -2732,3 +2732,18 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
   - `npm run test:unit` (passed: 68 test files, 586 tests)
 - Next: merge PR and proceed to UX-T11 (Service rows tell the truth about OAuth).
 <!-- SLOT:UX-T09 END -->
+
+<!-- SLOT:SNT04 BEGIN -->
+### SNT04: Raise frontend nginx body limit to the ingest limit (SN-T04)
+- Completed: 2026-11-07 (branch snt04-nginx-body-limit off origin/main ebf44357).
+- Scope: Raise frontend Nginx proxy body limit to 64 MB to match the 50 MB library ingest limit, closing gap sn-fe-gap-ingest-body-limit:
+  1. `frontend/Dockerfile`: Added `client_max_body_size 64m;` to Nginx `location /api/` proxy configuration block.
+  2. `frontend/src/features/musicLibrary/components/LibraryImportDialog.tsx`: Mapped HTTP 413 response status to explicit error message ('Upload exceeds the maximum file size limit (50 MB)').
+  3. `frontend/src/features/musicLibrary/components/LibraryImportDialog.test.tsx`: Added unit test asserting explicit error display upon receiving HTTP 413.
+- Checks run and passed:
+  - `npm --prefix frontend run type-check` (passed: tsc --noEmit)
+  - `npx --prefix frontend vitest run src/features/musicLibrary/components/LibraryImportDialog.test.tsx` (6 passed in 1.1s)
+  - `git diff --diff-filter=D --name-only origin/main...HEAD` (0 deleted files outside owned paths)
+- Note: `scripts/check_design_system.py --check` reports pre-existing un-tokenized values in `frontend/src/components/ds/EditableCell.tsx` and `frontend/src/components/ds/DataTable.tsx` introduced in commit `ebf44357` (UX-T09), which are out of scope for this package (Rule 6).
+- Next: Open PR and proceed to SN-T03.
+<!-- SLOT:SNT04 END -->
