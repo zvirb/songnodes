@@ -2,10 +2,12 @@
  * @vitest-environment jsdom
  */
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { LoginPage } from './LoginPage';
 import { AuthProvider, AuthContext, type AuthContextValue } from './AuthContext';
+import { route as loginRoute } from './route';
 
 describe('LoginPage', () => {
   beforeEach(() => {
@@ -15,6 +17,18 @@ describe('LoginPage', () => {
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
+  });
+
+  it('renders the registered route with its required auth provider', async () => {
+    const request = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(
+      JSON.stringify({ authenticated: false, user: null }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    ));
+    render(<MemoryRouter>{loginRoute.element}</MemoryRouter>);
+    expect(await screen.findByRole('heading', { name: 'Sign in', level: 2 })).toBeDefined();
+    await waitFor(() => expect(request).toHaveBeenCalledWith(
+      expect.stringContaining('/api/v1/auth/me'), expect.objectContaining({ method: 'GET' }),
+    ));
   });
 
   it('renders login form elements with design system components', () => {
@@ -34,7 +48,7 @@ describe('LoginPage', () => {
     );
 
     expect(screen.getByRole('heading', { name: 'SongNodes', level: 1 })).toBeDefined();
-    expect(screen.getByRole('heading', { name: 'Sign In', level: 2 })).toBeDefined();
+    expect(screen.getByRole('heading', { name: 'Sign in', level: 2 })).toBeDefined();
     expect(screen.getByLabelText(/username or email/i)).toBeDefined();
     expect(screen.getByLabelText(/password/i)).toBeDefined();
 

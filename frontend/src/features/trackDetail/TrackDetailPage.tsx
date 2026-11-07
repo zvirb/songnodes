@@ -10,21 +10,6 @@ import type { UnifiedTrack } from '../../types/unifiedTrack';
 import { usePageHeader } from '../../shell/AppShell';
 import { PageHeader } from '../../shell/PageParts';
 
-const CAMELOT_NAMES: Record<string, string> = {
-  '1A': 'A♭ minor', '1B': 'B major',
-  '2A': 'E♭ minor', '2B': 'F♯ major',
-  '3A': 'B♭ minor', '3B': 'D♭ major',
-  '4A': 'F minor', '4B': 'A♭ major',
-  '5A': 'C minor', '5B': 'E♭ major',
-  '6A': 'G minor', '6B': 'B♭ major',
-  '7A': 'D minor', '7B': 'F major',
-  '8A': 'A minor', '8B': 'C major',
-  '9A': 'E minor', '9B': 'G major',
-  '10A': 'B minor', '10B': 'D major',
-  '11A': 'F♯ minor', '11B': 'A major',
-  '12A': 'C♯ minor', '12B': 'E major',
-};
-
 function getCompatibleKeys(key: string | null): string[] {
   if (!key) return [];
   const m = key.match(/^(\d{1,2})([AB])$/i);
@@ -238,7 +223,7 @@ export const TrackDetailPage: React.FC = () => {
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
               {key ? <KeyBadge value={key} /> : <span className="sn-none">–</span>}
-              <span className="body-strong">{key && CAMELOT_NAMES[key] ? CAMELOT_NAMES[key] : '–'}</span>
+              <span className="body-strong">{key && SN.keyName(key) ? SN.keyName(key) : '–'}</span>
             </div>
           </div>
 
@@ -302,7 +287,7 @@ export const TrackDetailPage: React.FC = () => {
         {/* Left Column: Transitions, Heard on, Raw data */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
           {/* Transitions / Connected tracks */}
-          <section className="sn-card" style={{ padding: 'var(--space-4)', backgroundColor: 'var(--surface-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-card)' }}>
+          <section className="sn-card" style={{ padding: 'var(--space-4)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
               <SectionHeading
                 title="Plays well with: Connected tracks"
@@ -366,7 +351,7 @@ export const TrackDetailPage: React.FC = () => {
           </section>
 
           {/* Heard on / Sources */}
-          <section className="sn-card" style={{ padding: 'var(--space-4)', backgroundColor: 'var(--surface-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-card)' }}>
+          <section className="sn-card" style={{ padding: 'var(--space-4)' }}>
             <SectionHeading title="Heard on" count={source} />
             <div className="sn-tablebox" style={{ marginTop: 'var(--space-3)' }}>
               <table className="sn-table">
@@ -429,9 +414,9 @@ export const TrackDetailPage: React.FC = () => {
         {/* Right Column / Aside */}
         <aside className="sn-page-track__aside" aria-label="Key, identifiers and links" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
           {/* Key harmony card */}
-          <section className="sn-card sn-m-harmony" style={{ padding: 'var(--space-4)', backgroundColor: 'var(--surface-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-card)' }}>
+          <section className="sn-card sn-m-harmony" style={{ padding: 'var(--space-4)' }}>
             <h2 className="sn-title title-s" style={{ marginBottom: 'var(--space-2)' }}>
-              <span className="sn-lead">Key:</span> {key || '–'}{key && CAMELOT_NAMES[key] ? `, ${CAMELOT_NAMES[key]}` : ''}
+              <span className="sn-lead">Key:</span> {key || '–'}{key && SN.keyName(key) ? `, ${SN.keyName(key)}` : ''}
             </h2>
             <div style={{ marginTop: 'var(--space-3)' }}>
               <span className="label caption" style={{ color: 'var(--fg-3)', display: 'block', marginBottom: 'var(--space-1)' }}>
@@ -442,7 +427,7 @@ export const TrackDetailPage: React.FC = () => {
                   compatibleKeys.map((ck) => (
                     <div key={ck} style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' }}>
                       <KeyBadge value={ck} />
-                      <span className="caption">{CAMELOT_NAMES[ck] || ck}</span>
+                      <span className="caption">{SN.keyName(ck) || ck}</span>
                     </div>
                   ))
                 ) : (
@@ -453,7 +438,7 @@ export const TrackDetailPage: React.FC = () => {
           </section>
 
           {/* Identifiers card */}
-          <section className="sn-card" style={{ padding: 'var(--space-4)', backgroundColor: 'var(--surface-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-card)' }}>
+          <section className="sn-card" style={{ padding: 'var(--space-4)' }}>
             <h2 className="sn-title title-s" style={{ marginBottom: 'var(--space-3)' }}>
               Identifiers
             </h2>
@@ -470,7 +455,7 @@ export const TrackDetailPage: React.FC = () => {
           </section>
 
           {/* Listen and buy */}
-          <section className="sn-card" style={{ padding: 'var(--space-4)', backgroundColor: 'var(--surface-1)', border: '1px solid var(--line)', borderRadius: 'var(--radius-card)' }}>
+          <section className="sn-card" style={{ padding: 'var(--space-4)' }}>
             <h2 className="sn-title title-s" style={{ marginBottom: 'var(--space-3)' }}>
               Listen and buy
             </h2>
