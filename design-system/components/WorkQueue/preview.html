@@ -1,0 +1,29 @@
+<!-- @dsCard group="Data" height=300 subtitle="Work packages in one wave: code, one-job title, state as a word and pill, dependency; blocked rows name the blocker" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>WorkQueue — preview</title></head>
+<body>
+<div class="sn-preview" id="root">
+  <div class="sn-checklist-summary" id="sum"></div>
+  <table class="sn-table" id="t">
+    <caption class="sn-sr">Wave W6 work packages</caption>
+    <thead><tr><th scope="col">Code</th><th scope="col">Package</th><th scope="col">State</th><th scope="col">Depends on</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+</div>
+<script>
+  var S = window.SongNodes;
+  var rows = [
+    ["UX-T07", "Add the one-primary rule", "ok", "Merged", ""],
+    ["UX-T09", "Add inline editable cells", "ok", "Merged", ""],
+    ["UX-T04", "Build the Buy list page", "info", "In review", "UX-T09"],
+    ["UX-T06", "Build the work queue tracker", "running", "In progress", ""],
+    ["UX-T12", "Publish 1.10.0", "idle", "Proposed", "UX-T06"]
+  ];
+  document.getElementById("rows").innerHTML = rows.map(function (r) {
+    return '<tr><td class="sn-mono">' + S.esc(r[0]) + "</td><td>" + S.esc(r[1]) + '</td><td><span class="sn-pill sn-status-pill" data-status="' + r[2] + '">' + r[3] + '</span></td><td class="sn-mono">' + (r[4] ? S.esc(r[4]) : "–") + "</td></tr>";
+  }).join("");
+  document.getElementById("sum").innerHTML = '<span data-state="pass"><span class="sn-checklist-summary__n">2</span> merged</span><span data-state="warn"><span class="sn-checklist-summary__n">1</span> in review</span><span data-state="pending"><span class="sn-checklist-summary__n">2</span> not started</span>';
+</script>
+</body>
+</html>
