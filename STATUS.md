@@ -3161,3 +3161,10 @@ One job: provide the graph page's missing accessible h1.
 Owned paths: frontend/src/pages/GraphPage.tsx, STATUS.md CIC16 slot; integration scope in CIC09 brief.
 Added a screen-reader heading matching the existing page identity without changing graph layout. Next: TypeScript/conformance and canonical all-page audit.
 <!-- SLOT:CIC16 END -->
+
+<!-- SLOT:CIC17 BEGIN -->
+## CIC17 — started 8 Nov 2026
+One job: remove repeated primary styling from Buy list row actions.
+Owned paths: frontend/src/features/musicLibrary/BuyListPage.tsx, STATUS.md CIC17 slot.
+The audit counted 294 primaries, one per row. Row actions now use the existing small secondary style; the selected-row bulk action retains primary status. Checks: static conformance and whitespace; browser audit remains CI.
+<!-- SLOT:CIC17 END -->
