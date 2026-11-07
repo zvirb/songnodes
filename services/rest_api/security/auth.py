@@ -15,7 +15,8 @@ MAX_401_ATTEMPTS = 5
 BLOCK_DURATION_SEC = 60
 
 SENSITIVE_GET_PREFIXES = [
-    "/api-keys",
+    "/api/v1/api-keys",
+    "/api/v1/music-auth/spotify/token/status",
     "/api/v1/jobs",
     "/api/v1/metadata/review",
     "/api/v1/merges",
@@ -56,10 +57,10 @@ def register_security(app: FastAPI):
             x_api_token = request.headers.get("X-API-Token")
 
             token = None
-            if auth_header and auth_header.startswith("Bearer "):
-                token = auth_header[len("Bearer "):]
-            elif x_api_token:
+            if x_api_token:
                 token = x_api_token
+            elif auth_header and auth_header.startswith("Bearer "):
+                token = auth_header[len("Bearer "):]
 
             # If token is correct, reset rate limit and allow
             if token and hmac.compare_digest(token.encode("utf-8"), api_token.encode("utf-8")):

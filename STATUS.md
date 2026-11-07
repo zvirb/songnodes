@@ -2683,6 +2683,30 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
 - Next: merge PR and proceed to next conformance package.
 <!-- SLOT:DS29 END -->
 
+  
+  
+  
+  
+<!-- SLOT:UX-T11 BEGIN -->
+### UX-T11: Service rows tell the truth about OAuth (UX-11)
+- Completed: 2026-11-07 (branch ux-t11-service-rows-oauth-truth off origin/main).
+- Scope: Service rows report true connection and OAuth status (active, expired, not-connected, error) rather than "configured" when credentials exist.
+- Changes:
+  - `frontend/src/components/ServiceStatus.tsx`: Created reusable ServiceStatus component matching design-system specification (section.sn-service-status with mark, name + StatusPill, honest OAuth detail, and service-branded action buttons).
+  - `frontend/src/pages/SettingsPage.tsx`: Wired ServiceStatus into tidal-connection and spotify-connection with honest OAuth states and disconnect actions.
+  - `design-system/components/ServiceStatus/README.md`: Documented honest OAuth state rule (UX-11) prohibiting misleading "Configured" labels.
+  - `frontend/src/pages/SettingsPage.test.tsx`: Added unit test asserting honest OAuth states (Not connected, Expired with run warning, Connected with Disconnect).
+- Checks run and passed:
+  - `python scripts/check_design_system.py --check` (passed)
+  - `python scripts/check_feature_imports.py --check` (passed: Feature boundaries OK)
+  - `npm run type-check` (passed: tsc --noEmit)
+  - `npm run lint` (passed: 0 errors)
+  - `npm run test:unit` (passed: 68 test files, 587 tests)
+- Next: merge PR and proceed to Phase 3 pages in order of pain (UX-T01: Review queue).
+<!-- SLOT:UX-T11 END -->
+  
+  
+  
 <!-- SLOT:UX-T10 BEGIN -->
 ### UX-T10: Add FreshnessStamp to PageHeader on data pages (UX-10)
 - Completed: 2026-11-07 (branch ux-t10-freshness-stamp-data-pages off origin/main 7429821c).
@@ -2783,6 +2807,11 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
 - Next: merge PR and proceed to UX-T11 (Service rows tell the truth about OAuth).
 <!-- SLOT:UX-T09 END -->
 
+    
+    
+    
+    
+    
 <!-- SLOT:SNT04 BEGIN -->
 ### SNT04: Raise frontend nginx body limit to the ingest limit (SN-T04)
 - Completed: 2026-11-07 (branch snt04-nginx-body-limit off origin/main ebf44357).
@@ -2798,6 +2827,24 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
 - Next: Open PR and proceed to SN-T03.
 <!-- SLOT:SNT04 END -->
     
+    
+    
+    
+<!-- SLOT:SNT01 BEGIN -->
+### SNT01: Require the API token on write and admin routes (SN-T01)
+- Completed: 2026-11-07 (branch snt01-api-token-auth off origin/main ebf44357).
+- Scope: Enforce admin credential invariant on write and sensitive routes, closing gap sn-be-gap-auth-token-flow:
+  1. `services/rest_api/security/auth.py`: Prefer `X-API-Token` over `Authorization` so provider tokens (TIDAL/Spotify OAuth) don't conflict with admin auth. Correct prefix `"/api-keys"` to `"/api/v1/api-keys"` and add `"/api/v1/music-auth/spotify/token/status"` to `SENSITIVE_GET_PREFIXES`.
+  2. `compose.dev.yaml`: Pass `SONGNODES_API_TOKEN: ${SONGNODES_API_TOKEN:-}` and `API_KEY_ENCRYPTION_SECRET: ${API_KEY_ENCRYPTION_SECRET:-}` to `rest-api` and `worker` service environments.
+  3. `tests/security/test_rest_auth.py`: Added tests verifying `X-API-Token` priority over `Authorization`, and `/api/v1/api-keys` and `/api/v1/music-auth/spotify/token/status` protections.
+- Checks run and passed:
+  - `python -m pytest tests/security/test_rest_auth.py` (5 passed in 0.66s)
+  - `git diff --diff-filter=D --name-only origin/main...HEAD` (0 deleted files outside owned paths)
+- Note: `scripts/check_design_system.py --check` reports pre-existing un-tokenized values in `frontend/src/components/ds/EditableCell.tsx` and `frontend/src/components/ds/DataTable.tsx` introduced in commit `ebf44357` (UX-T09), which are out of scope for this backend security package (Rule 6).
+- Next: Open PR and proceed to SN-T02.
+
+<!-- SLOT:SNT01 END -->
+
 <!-- SLOT:UX-T04 BEGIN -->
 ### UX-T04: Build the Buy list page (UX-04)
 - Completed: 2026-11-07 (branch ux-t04-buy-list-page off origin/main ebf44357).

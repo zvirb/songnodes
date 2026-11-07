@@ -34,6 +34,14 @@ def create_test_app(token=None):
     def list_jobs():
         return {"jobs": []}
 
+    @app.get("/api/v1/api-keys")
+    def list_api_keys():
+        return {"keys": []}
+
+    @app.get("/api/v1/music-auth/spotify/token/status")
+    def spotify_token_status():
+        return {"status": "valid"}
+
     @app.post("/api/v1/artists/dirty")
     def write_artist():
         return {"status": "dirty"}
@@ -87,3 +95,32 @@ def test_rate_limit(clear_401_limits):
     # The 6th attempt with a correct token should now pass and reset the rate limit
     response = client.post("/api/v1/artists/dirty", headers={"Authorization": "Bearer secret-token"})
     assert response.status_code == 200
+
+def test_x_api_token_priority_over_authorization(clear_401_limits):
+    app = create_test_app(token="secret-admin-token")
+    client = TestClient(app)
+
+    # When both headers are sent (e.g. Authorization contains a provider OAuth token),
+    # X-API-Token should take precedence for admin authentication.
+    res = client.post(
+        "/api/v1/artists/dirty",
+        headers={
+            "Authorization": "Bearer oauth-provider-token-12345",
+            "X-API-Token": "secret-admin-token"
+        }
+    )
+    assert res.status_code == 200
+
+
+def test_sensitive_prefixes_protection(clear_401_limits):
+    app = create_test_app(token="secret-token")
+    client = TestClient(app)
+
+    # /api/v1/api-keys is protected
+    assert client.get("/api/v1/api-keys").status_code == 401
+    assert client.get("/api/v1/api-keys", headers={"X-API-Token": "secret-token"}).status_code == 200
+
+    # /api/v1/music-auth/spotify/token/status is protected
+    assert client.get("/api/v1/music-auth/spotify/token/status").status_code == 401
+    assert client.get("/api/v1/music-auth/spotify/token/status", headers={"X-API-Token": "secret-token"}).status_code == 200
+
