@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 688 405" role="img" aria-labelledby="D9-t D9-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 688 314" role="img" aria-labelledby="D9-t D9-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
 :root, [data-theme="dark"] {
   --bg: #222222;
   --surface-1: #2d2d2d;
@@ -445,6 +445,7 @@
   --drawer-w: 300px;
   --rail-w: 248px;
   --content-max: 1400px;
+  --print-wide-h: 150mm;
   --print-wide-w: 273mm;
   --prose-max: 68ch;
   --z-base: 0;
@@ -789,42 +790,42 @@
 .sn-chart-frame__axis-title { fill: var(--chart-axis); font-family: var(--font-body); font-size: 0.6875rem; }</style>
 <title id="D9-t">Built to Projected change map &#x28;Built)</title>
 <desc id="D9-d">Built items that queued pull requests and flows will change &#x28;amber, &apos;will change&apos;); in the Projected view the queued pages, store, pull requests and flows are added as dashed cards and arrows, and the queued work-package briefs are listed below.</desc>
-<rect class="sn-diagram__bg" x="0" y="0" width="688" height="405"/>
+<rect class="sn-diagram__bg" x="0" y="0" width="688" height="314"/>
 <g class="sn-diagram__groups"></g>
 <g class="sn-diagram__node sn-dg-c3 sn-diagram__node--changed" data-node="sn-be-svc-graph-api" tabindex="0" aria-label="Graph &#x41;PI &#x28;sn-be-svc-graph-api) – graph, service-ui, Production">
 <title>Graph &#x41;PI &#x28;sn-be-svc-graph-api) – graph, service-ui, Production</title>
-<rect class="sn-diagram__box" x="282.0" y="234.0" width="140.0" height="75.0"/>
-<rect class="sn-diagram__stripe" x="283.5" y="235.5" width="5" height="72.0"/>
-<text class="sn-diagram__t body-strong" x="296.0" y="256.3">Graph &#x41;PI</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="296.0" y="274.2">graph · service</text>
-<g class="sn-diagram__mark sn-diagram__mark--warn"><rect class="sn-diagram__mark-box" x="296.0" y="279.8" width="76.6" height="18.8"/>
-<text class="sn-diagram__t caption" x="301.0" y="293.0">will change</text></g>
+<rect class="sn-diagram__box" x="198.0" y="143.0" width="140.0" height="75.0"/>
+<rect class="sn-diagram__stripe" x="199.5" y="144.5" width="5" height="72.0"/>
+<text class="sn-diagram__t body-strong" x="212.0" y="165.3">Graph &#x41;PI</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="212.0" y="183.2">graph · service</text>
+<g class="sn-diagram__mark sn-diagram__mark--warn"><rect class="sn-diagram__mark-box" x="212.0" y="188.8" width="76.6" height="18.8"/>
+<text class="sn-diagram__t caption" x="217.0" y="202.0">will change</text></g>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--changed" data-node="sn-be-svc-rest-api" tabindex="0" aria-label="&#x52;EST &#x41;PI &#x28;sn-be-svc-rest-api) – ops, service-ui, Production">
 <title>&#x52;EST &#x41;PI &#x28;sn-be-svc-rest-api) – ops, service-ui, Production</title>
-<rect class="sn-diagram__box" x="282.0" y="137.0" width="140.0" height="75.0"/>
-<rect class="sn-diagram__stripe" x="283.5" y="138.5" width="5" height="72.0"/>
-<text class="sn-diagram__t body-strong" x="296.0" y="159.3">&#x52;EST &#x41;PI</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="296.0" y="177.2">ops · service</text>
-<g class="sn-diagram__mark sn-diagram__mark--warn"><rect class="sn-diagram__mark-box" x="296.0" y="182.8" width="76.6" height="18.8"/>
-<text class="sn-diagram__t caption" x="301.0" y="196.0">will change</text></g>
+<rect class="sn-diagram__box" x="198.0" y="40.0" width="140.0" height="75.0"/>
+<rect class="sn-diagram__stripe" x="199.5" y="41.5" width="5" height="72.0"/>
+<text class="sn-diagram__t body-strong" x="212.0" y="62.3">&#x52;EST &#x41;PI</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="212.0" y="80.2">ops · service</text>
+<g class="sn-diagram__mark sn-diagram__mark--warn"><rect class="sn-diagram__mark-box" x="212.0" y="85.8" width="76.6" height="18.8"/>
+<text class="sn-diagram__t caption" x="217.0" y="99.0">will change</text></g>
 </g>
 <g class="sn-diagram__node sn-dg-c3 sn-diagram__node--changed" data-node="sn-fe-graph" tabindex="0" aria-label="Adjacency &#x28;sn-fe-graph) – graph, route, Production">
 <title>Adjacency &#x28;sn-fe-graph) – graph, route, Production</title>
-<rect class="sn-diagram__box" x="282.0" y="40.0" width="140.0" height="75.0"/>
-<rect class="sn-diagram__stripe" x="283.5" y="41.5" width="5" height="72.0"/>
-<text class="sn-diagram__t body-strong" x="296.0" y="62.3">Adjacency</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="296.0" y="80.2">graph · route</text>
-<g class="sn-diagram__mark sn-diagram__mark--warn"><rect class="sn-diagram__mark-box" x="296.0" y="85.8" width="76.6" height="18.8"/>
-<text class="sn-diagram__t caption" x="301.0" y="99.0">will change</text></g>
+<rect class="sn-diagram__box" x="366.0" y="143.0" width="140.0" height="75.0"/>
+<rect class="sn-diagram__stripe" x="367.5" y="144.5" width="5" height="72.0"/>
+<text class="sn-diagram__t body-strong" x="380.0" y="165.3">Adjacency</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="380.0" y="183.2">graph · route</text>
+<g class="sn-diagram__mark sn-diagram__mark--warn"><rect class="sn-diagram__mark-box" x="380.0" y="188.8" width="76.6" height="18.8"/>
+<text class="sn-diagram__t caption" x="385.0" y="202.0">will change</text></g>
 </g>
 <g class="sn-diagram__legend" aria-label="Legend">
-<text class="sn-diagram__t body-strong" x="24.0" y="344.3">Key</text>
-<rect class="sn-diagram__swatch sn-dg-c3" x="24.0" y="362.4" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="54.0" y="371.2">graph</text>
-<rect class="sn-diagram__swatch sn-dg-c8" x="106.4" y="362.4" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="136.4" y="371.2">ops and design</text>
-<g class="sn-diagram__mark sn-diagram__mark--warn"><rect class="sn-diagram__mark-box" x="244.7" y="359.4" width="22" height="16"/></g>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="274.7" y="371.2">will change: built item a queued change touches</text>
+<text class="sn-diagram__t body-strong" x="24.0" y="253.3">Key</text>
+<rect class="sn-diagram__swatch sn-dg-c3" x="24.0" y="271.4" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="54.0" y="280.2">graph</text>
+<rect class="sn-diagram__swatch sn-dg-c8" x="106.4" y="271.4" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="136.4" y="280.2">ops and design</text>
+<g class="sn-diagram__mark sn-diagram__mark--warn"><rect class="sn-diagram__mark-box" x="244.7" y="268.4" width="22" height="16"/></g>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="274.7" y="280.2">will change: built item a queued change touches</text>
 </g>
 </svg>

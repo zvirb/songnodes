@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1594 1052" role="img" aria-labelledby="D3a-t D3a-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1824 1003" role="img" aria-labelledby="D3a-t D3a-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
 :root, [data-theme="dark"] {
   --bg: #222222;
   --surface-1: #2d2d2d;
@@ -445,6 +445,7 @@
   --drawer-w: 300px;
   --rail-w: 248px;
   --content-max: 1400px;
+  --print-wide-h: 150mm;
   --print-wide-w: 273mm;
   --prose-max: 68ch;
   --z-base: 0;
@@ -789,349 +790,352 @@
 .sn-chart-frame__axis-title { fill: var(--chart-axis); font-family: var(--font-body); font-size: 0.6875rem; }</style>
 <title id="D3a-t">Storage topology: musicLibrary stores</title>
 <desc id="D3a-d">12 stores with their writers &#x28;arrows in) and readers &#x28;arrows out). Cards with a padlock name their lock, lease or unique-key rule.</desc>
-<rect class="sn-diagram__bg" x="0" y="0" width="1594" height="1052"/>
+<rect class="sn-diagram__bg" x="0" y="0" width="1824" height="1003"/>
 <g class="sn-diagram__groups"></g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="ext-metabrainz" data-to="ml-store-data" data-edge="ext-metabrainz&gt;ml-store-data" tabindex="0" aria-label="MetaBrainz dumps → data &#x28;writes; flows 6)">
 <title>MetaBrainz dumps → data &#x28;writes; flows 6)</title>
-<path class="sn-diagram__line" d="M1406.0 117.1 L1406.0 191.4"/>
-<path class="sn-diagram__head" d="M1406.0 191.4 L1402.1 184.4 L1409.8 184.4 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1395.0" y="141.8" width="22.0" height="25.0"/><text class="sn-diagram__t body-strong" x="1406.0" y="159.1" text-anchor="middle">6</text></g>
+<path class="sn-diagram__line" d="M303.1 95.5 L362.9 95.5"/>
+<path class="sn-diagram__head" d="M362.9 95.5 L355.9 91.7 L355.9 99.3 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="320.9" y="80.9" width="24.2" height="29.2"/><text class="sn-diagram__t title-s" x="333.0" y="101.3" text-anchor="middle">6</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="ml-agent-weekly-run" data-to="ml-store-artifact-files" data-edge="ml-agent-weekly-run&gt;ml-store-artifact-files" tabindex="0" aria-label="Weekly run playbook → Set Builder published files &#x28;writes; flows 27)">
 <title>Weekly run playbook → Set Builder published files &#x28;writes; flows 27)</title>
-<path class="sn-diagram__line" d="M324.0 681.1 L324.0 723.9"/>
-<path class="sn-diagram__head" d="M324.0 723.9 L320.1 716.9 L327.8 716.9 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="308.6" y="690.0" width="30.7" height="25.0"/><text class="sn-diagram__t body-strong" x="324.0" y="707.3" text-anchor="middle">27</text></g>
+<path class="sn-diagram__line" d="M1256.7 337.5 L1311.2 337.5"/>
+<path class="sn-diagram__head" d="M1311.2 337.5 L1304.2 333.6 L1304.2 341.4 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1266.6" y="322.9" width="34.7" height="29.2"/><text class="sn-diagram__t title-s" x="1283.9" y="343.3" text-anchor="middle">27</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="ml-cli-build-db" data-to="ml-store-outputs" data-edge="ml-cli-build-db&gt;ml-store-outputs" tabindex="0" aria-label="build_db → outputs &#x28;writes; flows 28)">
 <title>build_db → outputs &#x28;writes; flows 28)</title>
-<path class="sn-diagram__line" d="M497.0 624.7 L497.0 571.6"/>
-<path class="sn-diagram__head" d="M497.0 571.6 L493.1 578.6 L500.8 578.6 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="481.1" y="585.7" width="31.7" height="25.0"/><text class="sn-diagram__t body-strong" x="497.0" y="603.0" text-anchor="middle">28</text></g>
+<path class="sn-diagram__line" d="M1116.5 431.0 L1052.7 431.0"/>
+<path class="sn-diagram__head" d="M1052.7 431.0 L1059.7 427.1 L1059.7 434.9 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1066.6" y="416.4" width="36.0" height="29.2"/><text class="sn-diagram__t title-s" x="1084.6" y="436.8" text-anchor="middle">28</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="ml-cli-build-db" data-to="ml-store-sqlite" data-edge="ml-cli-build-db&gt;ml-store-sqlite" tabindex="0" aria-label="build_db → dj_library.sqlite &#x28;writes; flows 29)">
 <title>build_db → dj_library.sqlite &#x28;writes; flows 29)</title>
-<path class="sn-diagram__line" d="M534.0 681.1 L534.0 723.9"/>
-<path class="sn-diagram__head" d="M534.0 723.9 L530.1 716.9 L537.8 716.9 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="518.1" y="690.0" width="31.7" height="25.0"/><text class="sn-diagram__t body-strong" x="534.0" y="707.3" text-anchor="middle">29</text></g>
+<path class="sn-diagram__line" d="M1256.7 459.5 L1311.2 459.5"/>
+<path class="sn-diagram__head" d="M1311.2 459.5 L1304.2 455.6 L1304.2 463.4 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1266.0" y="444.9" width="35.9" height="29.2"/><text class="sn-diagram__t title-s" x="1283.9" y="465.3" text-anchor="middle">29</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c2 sn-diagram__edge--built" data-from="ml-cli-process" data-to="ml-store-ledger" data-edge="ml-cli-process&gt;ml-store-ledger" tabindex="0" aria-label="run_weekly process → DJ library ledger &#x28;writes; flows 33)">
 <title>run_weekly process → DJ library ledger &#x28;writes; flows 33)</title>
-<path class="sn-diagram__line" d="M854.0 409.7 L854.0 462.9"/>
-<path class="sn-diagram__head" d="M854.0 462.9 L850.1 455.9 L857.8 455.9 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="838.0" y="423.8" width="31.9" height="25.0"/><text class="sn-diagram__t body-strong" x="854.0" y="441.1" text-anchor="middle">33</text></g>
+<path class="sn-diagram__line" d="M781.7 636.5 L864.3 636.5"/>
+<path class="sn-diagram__head" d="M864.3 636.5 L857.3 632.6 L857.3 640.4 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="804.9" y="621.9" width="36.2" height="29.2"/><text class="sn-diagram__t title-s" x="823.0" y="642.3" text-anchor="middle">33</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="ml-page-set-builder" data-to="ml-store-artifact-db" data-edge="ml-page-set-builder&gt;ml-store-artifact-db" tabindex="0" aria-label="Naarm Set Builder → Set Builder artifact database, collection sets &#x28;writes; flows 59)">
 <title>Naarm Set Builder → Set Builder artifact database, collection sets &#x28;writes; flows 59)</title>
-<path class="sn-diagram__line" d="M196.7 864.8 L196.7 571.5"/>
-<path class="sn-diagram__head" d="M196.7 571.5 L192.8 578.5 L200.5 578.5 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="180.8" y="705.6" width="31.8" height="25.0"/><text class="sn-diagram__t body-strong" x="196.7" y="722.9" text-anchor="middle">59</text></g>
+<path class="sn-diagram__line" d="M1544.4 238.4 L1060.2 238.4"/>
+<path class="sn-diagram__head" d="M1060.2 238.4 L1067.2 234.6 L1067.2 242.2 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1284.2" y="223.8" width="36.1" height="29.2"/><text class="sn-diagram__t title-s" x="1302.3" y="244.2" text-anchor="middle">59</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="ml-store-artifact-db" data-to="ml-agent-weekly-run" data-edge="ml-store-artifact-db&gt;ml-agent-weekly-run" tabindex="0" aria-label="Set Builder artifact database, collection sets → Weekly run playbook &#x28;read by; flows 60)">
 <title>Set Builder artifact database, collection sets → Weekly run playbook &#x28;read by; flows 60)</title>
-<path class="sn-diagram__line" d="M267.3 571.8 L267.3 624.8"/>
-<path class="sn-diagram__head" d="M267.3 624.8 L263.4 617.8 L271.1 617.8 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="251.1" y="585.8" width="32.3" height="25.0"/><text class="sn-diagram__t body-strong" x="267.3" y="603.1" text-anchor="middle">60</text></g>
+<path class="sn-diagram__line" d="M1060.2 302.5 L1116.5 302.5"/>
+<path class="sn-diagram__head" d="M1116.5 302.5 L1109.5 298.6 L1109.5 306.4 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1070.0" y="287.9" width="36.8" height="29.2"/><text class="sn-diagram__t title-s" x="1088.3" y="308.3" text-anchor="middle">60</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="ml-store-artifact-db" data-to="ml-page-set-builder" data-edge="ml-store-artifact-db&gt;ml-page-set-builder" tabindex="0" aria-label="Set Builder artifact database, collection sets → Naarm Set Builder &#x28;read by; listed in stores[].readers)">
 <title>Set Builder artifact database, collection sets → Naarm Set Builder &#x28;read by; listed in stores[].readers)</title>
-<path class="sn-diagram__line" d="M161.3 571.7 L161.3 864.9"/>
-<path class="sn-diagram__head" d="M161.3 864.9 L157.4 857.9 L165.1 857.9 Z"/>
+<path class="sn-diagram__line" d="M1060.3 252.8 L1544.4 252.8"/>
+<path class="sn-diagram__head" d="M1544.4 252.8 L1537.4 249.0 L1537.4 256.7 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="ml-store-artifact-files" data-to="ml-page-set-builder" data-edge="ml-store-artifact-files&gt;ml-page-set-builder" tabindex="0" aria-label="Set Builder published files → Naarm Set Builder &#x28;read by; flows 38)">
 <title>Set Builder published files → Naarm Set Builder &#x28;read by; flows 38)</title>
-<path class="sn-diagram__line" d="M259.0 822.2 L259.0 864.7"/>
-<path class="sn-diagram__head" d="M259.0 864.7 L255.1 857.7 L262.8 857.7 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="243.0" y="831.0" width="31.9" height="25.0"/><text class="sn-diagram__t body-strong" x="259.0" y="848.2" text-anchor="middle">38</text></g>
+<path class="sn-diagram__line" d="M1400.6 281.4 L1400.6 267.1 L1544.5 267.1"/>
+<path class="sn-diagram__head" d="M1544.5 267.1 L1537.5 263.2 L1537.5 271.0 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1497.6" y="252.5" width="36.3" height="29.2"/><text class="sn-diagram__t title-s" x="1515.7" y="272.9" text-anchor="middle">38</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="ml-store-config" data-to="ml-cli-build-db" data-edge="ml-store-config&gt;ml-cli-build-db" tabindex="0" aria-label="config → build_db &#x28;read by; listed in stores[].readers)">
 <title>config → build_db &#x28;read by; listed in stores[].readers)</title>
-<path class="sn-diagram__line" d="M527.0 289.9 L527.0 624.9"/>
-<path class="sn-diagram__head" d="M527.0 624.9 L523.1 617.9 L530.8 617.9 Z"/>
+<path class="sn-diagram__line" d="M550.8 568.0 L1186.6 568.0 L1186.6 491.2"/>
+<path class="sn-diagram__head" d="M1186.6 491.2 L1182.7 498.2 L1190.4 498.2 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="ml-store-config" data-to="ml-cli-process" data-edge="ml-store-config&gt;ml-cli-process" tabindex="0" aria-label="config → run_weekly process &#x28;read by; listed in stores[].readers)">
 <title>config → run_weekly process &#x28;read by; listed in stores[].readers)</title>
-<path class="sn-diagram__line" d="M606.7 289.7 L606.7 349.0 L792.8 349.4 L792.8 353.2"/>
-<path class="sn-diagram__head" d="M792.8 353.2 L788.9 346.2 L796.6 346.2 Z"/>
+<path class="sn-diagram__line" d="M550.7 630.2 L641.4 630.2"/>
+<path class="sn-diagram__head" d="M641.4 630.2 L634.4 626.4 L634.4 634.1 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="ml-store-config" data-to="ml-cli-scrape" data-edge="ml-store-config&gt;ml-cli-scrape" tabindex="0" aria-label="config → run_weekly scrape &#x28;read by; listed in stores[].readers)">
 <title>config → run_weekly scrape &#x28;read by; listed in stores[].readers)</title>
-<path class="sn-diagram__line" d="M580.3 289.8 L580.3 353.4"/>
-<path class="sn-diagram__head" d="M580.3 353.4 L576.4 346.4 L584.1 346.4 Z"/>
+<path class="sn-diagram__line" d="M551.0 554.5 L627.6 554.5 L627.6 541.2"/>
+<path class="sn-diagram__head" d="M627.6 541.2 L623.7 548.2 L631.4 548.2 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="ml-store-inbox" data-to="ml-cli-build-db" data-edge="ml-store-inbox&gt;ml-cli-build-db" tabindex="0" aria-label="inbox → build_db &#x28;read by; listed in stores[].readers)">
 <title>inbox → build_db &#x28;read by; listed in stores[].readers)</title>
-<path class="sn-diagram__line" d="M646.3 295.0 L540.5 295.0 L540.5 624.9"/>
-<path class="sn-diagram__head" d="M540.5 624.9 L536.6 617.9 L544.3 617.9 Z"/>
+<path class="sn-diagram__line" d="M547.9 457.5 L1116.5 457.5"/>
+<path class="sn-diagram__head" d="M1116.5 457.5 L1109.5 453.6 L1109.5 461.4 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="ml-store-inbox" data-to="ml-cli-process" data-edge="ml-store-inbox&gt;ml-cli-process" tabindex="0" aria-label="inbox → run_weekly process &#x28;read by; listed in stores[].readers)">
 <title>inbox → run_weekly process &#x28;read by; listed in stores[].readers)</title>
-<path class="sn-diagram__line" d="M819.2 300.3 L819.2 353.5"/>
-<path class="sn-diagram__head" d="M819.2 353.5 L815.3 346.5 L823.0 346.5 Z"/>
+<path class="sn-diagram__line" d="M547.8 509.0 L586.6 509.0 L586.6 611.3 L641.4 611.3"/>
+<path class="sn-diagram__head" d="M641.4 611.3 L634.4 607.4 L634.4 615.1 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="ml-store-inbox" data-to="ml-cli-scrape" data-edge="ml-store-inbox&gt;ml-cli-scrape" tabindex="0" aria-label="inbox → run_weekly scrape &#x28;read by; flows 11)">
 <title>inbox → run_weekly scrape &#x28;read by; flows 11)</title>
-<path class="sn-diagram__line" d="M683.3 300.3 L683.3 353.5"/>
-<path class="sn-diagram__head" d="M683.3 353.5 L679.4 346.5 L687.1 346.5 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="670.7" y="314.4" width="25.2" height="25.0"/><text class="sn-diagram__t body-strong" x="683.3" y="331.7" text-anchor="middle">11</text></g>
+<path class="sn-diagram__line" d="M547.8 493.5 L613.3 493.5"/>
+<path class="sn-diagram__head" d="M613.3 493.5 L606.3 489.6 L606.3 497.4 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="566.5" y="478.9" width="28.1" height="29.2"/><text class="sn-diagram__t title-s" x="580.5" y="499.3" text-anchor="middle">11</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c2 sn-diagram__edge--built" data-from="ml-store-ledger" data-to="ml-cli-build-db" data-edge="ml-store-ledger&gt;ml-cli-build-db" tabindex="0" aria-label="DJ library ledger → build_db &#x28;read by; flows 39)">
 <title>DJ library ledger → build_db &#x28;read by; flows 39)</title>
-<path class="sn-diagram__line" d="M760.1 577.0 L579.0 577.0 L579.0 624.7"/>
-<path class="sn-diagram__head" d="M579.0 624.7 L575.1 617.7 L582.8 617.7 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="653.6" y="564.5" width="31.9" height="25.0"/><text class="sn-diagram__t body-strong" x="669.5" y="581.8" text-anchor="middle">39</text></g>
+<path class="sn-diagram__line" d="M1056.6 581.3 L1056.6 484.5 L1116.3 484.5"/>
+<path class="sn-diagram__head" d="M1116.3 484.5 L1109.3 480.6 L1109.3 488.4 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1038.5" y="518.3" width="36.2" height="29.2"/><text class="sn-diagram__t title-s" x="1056.6" y="538.7" text-anchor="middle">39</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c2 sn-diagram__edge--built" data-from="ml-store-ledger" data-to="ml-cli-sync-tidal" data-edge="ml-store-ledger&gt;ml-cli-sync-tidal" tabindex="0" aria-label="DJ library ledger → run_weekly sync-tidal &#x28;read by; flows 40)">
 <title>DJ library ledger → run_weekly sync-tidal &#x28;read by; flows 40)</title>
-<path class="sn-diagram__line" d="M915.3 582.0 L915.3 624.9"/>
-<path class="sn-diagram__head" d="M915.3 624.9 L911.4 617.9 L919.1 617.9 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="898.9" y="591.0" width="32.7" height="25.0"/><text class="sn-diagram__t body-strong" x="915.3" y="608.2" text-anchor="middle">40</text></g>
+<path class="sn-diagram__line" d="M1061.8 696.5 L1116.3 696.5"/>
+<path class="sn-diagram__head" d="M1116.3 696.5 L1109.3 692.6 L1109.3 700.4 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="1070.4" y="681.9" width="37.3" height="29.2"/><text class="sn-diagram__t title-s" x="1089.0" y="702.3" text-anchor="middle">40</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="ml-store-outputs" data-to="ml-agent-weekly-run" data-edge="ml-store-outputs&gt;ml-agent-weekly-run" tabindex="0" aria-label="outputs → Weekly run playbook &#x28;read by; listed in stores[].readers)">
 <title>outputs → Weekly run playbook &#x28;read by; listed in stores[].readers)</title>
-<path class="sn-diagram__line" d="M364.7 571.8 L364.7 624.8"/>
-<path class="sn-diagram__head" d="M364.7 624.8 L360.8 617.8 L368.5 617.8 Z"/>
+<path class="sn-diagram__line" d="M1052.7 353.8 L1116.6 353.8"/>
+<path class="sn-diagram__head" d="M1116.6 353.8 L1109.6 349.9 L1109.6 357.7 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="ml-store-outputs" data-to="ml-cli-build-db" data-edge="ml-store-outputs&gt;ml-cli-build-db" tabindex="0" aria-label="outputs → build_db &#x28;read by; listed in stores[].readers)">
 <title>outputs → build_db &#x28;read by; listed in stores[].readers)</title>
-<path class="sn-diagram__line" d="M480.5 571.8 L480.5 624.8"/>
-<path class="sn-diagram__head" d="M480.5 624.8 L476.6 617.8 L484.3 617.8 Z"/>
+<path class="sn-diagram__line" d="M1052.7 434.0 L1116.6 434.0"/>
+<path class="sn-diagram__head" d="M1116.6 434.0 L1109.6 430.1 L1109.6 437.9 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="ml-store-overrides" data-to="ml-cli-process" data-edge="ml-store-overrides&gt;ml-cli-process" tabindex="0" aria-label="overrides → run_weekly process &#x28;read by; flows 41)">
 <title>overrides → run_weekly process &#x28;read by; flows 41)</title>
-<path class="sn-diagram__line" d="M900.3 289.8 L900.3 353.4"/>
-<path class="sn-diagram__head" d="M900.3 353.4 L896.4 346.4 L904.1 346.4 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="886.0" y="309.1" width="28.5" height="25.0"/><text class="sn-diagram__t body-strong" x="900.3" y="326.4" text-anchor="middle">41</text></g>
+<path class="sn-diagram__line" d="M559.0 671.2 L641.4 671.2"/>
+<path class="sn-diagram__head" d="M641.4 671.2 L634.4 667.4 L634.4 675.1 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="584.2" y="656.6" width="32.0" height="29.2"/><text class="sn-diagram__t title-s" x="600.2" y="677.0" text-anchor="middle">41</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="ml-store-secrets" data-to="ml-cli-sync-tidal" data-edge="ml-store-secrets&gt;ml-cli-sync-tidal" tabindex="0" aria-label="secrets → run_weekly sync-tidal &#x28;read by; listed in stores[].readers)">
 <title>secrets → run_weekly sync-tidal &#x28;read by; listed in stores[].readers)</title>
-<path class="sn-diagram__line" d="M1016.7 582.0 L1016.7 624.9"/>
-<path class="sn-diagram__head" d="M1016.7 624.9 L1012.8 617.9 L1020.5 617.9 Z"/>
+<path class="sn-diagram__line" d="M1052.4 747.0 L1116.4 747.0"/>
+<path class="sn-diagram__head" d="M1116.4 747.0 L1109.4 743.1 L1109.4 750.9 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="sn-fe-library" data-to="ml-store-inbox" data-edge="sn-fe-library&gt;ml-store-inbox" tabindex="0" aria-label="Melbourne crate → inbox &#x28;writes; flows 62)">
 <title>Melbourne crate → inbox &#x28;writes; flows 62)</title>
-<path class="sn-diagram__line" d="M797.7 117.1 L797.7 180.8"/>
-<path class="sn-diagram__head" d="M797.7 180.8 L793.8 173.8 L801.5 173.8 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="781.8" y="136.4" width="31.7" height="25.0"/><text class="sn-diagram__t body-strong" x="797.7" y="153.8" text-anchor="middle">62</text></g>
+<path class="sn-diagram__line" d="M292.7 494.2 L369.3 494.2"/>
+<path class="sn-diagram__head" d="M369.3 494.2 L362.3 490.3 L362.3 498.1 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="313.0" y="479.6" width="35.9" height="29.2"/><text class="sn-diagram__t title-s" x="331.0" y="500.0" text-anchor="middle">62</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="sn-fe-sets" data-to="ml-store-inbox" data-edge="sn-fe-sets&gt;ml-store-inbox" tabindex="0" aria-label="Set builder → inbox &#x28;writes; flows 65)">
 <title>Set builder → inbox &#x28;writes; flows 65)</title>
-<path class="sn-diagram__line" d="M691.7 117.1 L691.7 180.8"/>
-<path class="sn-diagram__head" d="M691.7 180.8 L687.8 173.8 L695.5 173.8 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="675.8" y="136.4" width="31.8" height="25.0"/><text class="sn-diagram__t body-strong" x="691.7" y="153.8" text-anchor="middle">65</text></g>
+<path class="sn-diagram__line" d="M275.4 420.8 L369.6 420.8"/>
+<path class="sn-diagram__head" d="M369.6 420.8 L362.6 416.9 L362.6 424.7 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="304.4" y="406.2" width="36.1" height="29.2"/><text class="sn-diagram__t title-s" x="322.5" y="426.6" text-anchor="middle">65</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="sn-fe-work-queue-tracker" data-to="ml-store-artifact-db" data-edge="sn-fe-work-queue-tracker&gt;ml-store-artifact-db" tabindex="0" aria-label="SongNodes Work Queue → Set Builder artifact database, collection sets &#x28;writes; flows 85)">
 <title>SongNodes Work Queue → Set Builder artifact database, collection sets &#x28;writes; flows 85)</title>
-<path class="sn-diagram__line" d="M206.0 420.0 L206.0 473.4"/>
-<path class="sn-diagram__head" d="M206.0 473.4 L202.1 466.4 L209.8 466.4 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="190.1" y="434.2" width="31.8" height="25.0"/><text class="sn-diagram__t body-strong" x="206.0" y="451.5" text-anchor="middle">85</text></g>
+<path class="sn-diagram__line" d="M803.8 255.5 L865.8 255.5"/>
+<path class="sn-diagram__head" d="M865.8 255.5 L858.8 251.7 L858.8 259.4 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="816.7" y="240.9" width="36.2" height="29.2"/><text class="sn-diagram__t title-s" x="834.8" y="261.3" text-anchor="middle">85</text></g>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="ext-metabrainz" tabindex="0" aria-label="MetaBrainz dumps &#x28;ext-metabrainz) – ingest, external-api, Production">
 <title>MetaBrainz dumps &#x28;ext-metabrainz) – ingest, external-api, Production</title>
-<rect class="sn-diagram__box" x="1323.0" y="61.0" width="166.0" height="56.0"/>
-<rect class="sn-diagram__stripe" x="1324.5" y="62.5" width="5" height="53.0"/>
-<text class="sn-diagram__t body-strong" x="1337.0" y="83.3">MetaBrainz dumps</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1337.0" y="104.3">ingest · api</text>
+<rect class="sn-diagram__box" x="107.1" y="64.0" width="196.0" height="63.0"/>
+<rect class="sn-diagram__stripe" x="108.6" y="65.5" width="5" height="60.0"/>
+<text class="sn-diagram__t title-s" x="121.1" y="89.4">MetaBrainz dumps</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="121.1" y="113.5">ingest · api</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-agent-weekly-run" tabindex="0" aria-label="Weekly run playbook &#x28;ml-agent-weekly-run) – ops, cli, Production">
 <title>Weekly run playbook &#x28;ml-agent-weekly-run) – ops, cli, Production</title>
-<rect class="sn-diagram__box" x="233.0" y="625.0" width="182.0" height="56.0"/>
-<rect class="sn-diagram__stripe" x="234.5" y="626.5" width="5" height="53.0"/>
-<text class="sn-diagram__t body-strong" x="247.0" y="647.3">Weekly run playbook</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="247.0" y="668.3">ops · cli</text>
+<rect class="sn-diagram__box" x="1116.6" y="293.5" width="140.0" height="88.0"/>
+<rect class="sn-diagram__stripe" x="1118.1" y="295.0" width="5" height="85.0"/>
+<text class="sn-diagram__t title-s" x="1130.6" y="318.9">Weekly run</text>
+<text class="sn-diagram__t title-s" x="1130.6" y="344.1">playbook</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="1130.6" y="368.2">ops · cli</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-cli-build-db" tabindex="0" aria-label="build_db &#x28;ml-cli-build-db) – ops, cli, Production">
 <title>build_db &#x28;ml-cli-build-db) – ops, cli, Production</title>
-<rect class="sn-diagram__box" x="464.0" y="625.0" width="140.0" height="56.0"/>
-<rect class="sn-diagram__stripe" x="465.5" y="626.5" width="5" height="53.0"/>
-<text class="sn-diagram__t body-strong" x="478.0" y="647.3">build_db</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="478.0" y="668.3">ops · cli</text>
+<rect class="sn-diagram__box" x="1116.6" y="428.0" width="140.0" height="63.0"/>
+<rect class="sn-diagram__stripe" x="1118.1" y="429.5" width="5" height="60.0"/>
+<text class="sn-diagram__t title-s" x="1130.6" y="453.4">build_db</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="1130.6" y="477.5">ops · cli</text>
 </g>
 <g class="sn-diagram__node sn-dg-c2 sn-diagram__node--production" data-node="ml-cli-process" tabindex="0" aria-label="run_weekly process &#x28;ml-cli-process) – library, cli, Production">
 <title>run_weekly process &#x28;ml-cli-process) – library, cli, Production</title>
-<rect class="sn-diagram__box" x="766.5" y="353.5" width="175.0" height="56.0"/>
-<rect class="sn-diagram__stripe" x="768.0" y="355.0" width="5" height="53.0"/>
-<text class="sn-diagram__t body-strong" x="780.5" y="375.8">run_weekly process</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="780.5" y="396.8">library · cli</text>
+<rect class="sn-diagram__box" x="641.6" y="592.5" width="140.0" height="88.0"/>
+<rect class="sn-diagram__stripe" x="643.1" y="594.0" width="5" height="85.0"/>
+<text class="sn-diagram__t title-s" x="655.6" y="617.9">run_weekly</text>
+<text class="sn-diagram__t title-s" x="655.6" y="643.1">process</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="655.6" y="667.2">library · cli</text>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="ml-cli-scrape" tabindex="0" aria-label="run_weekly scrape &#x28;ml-cli-scrape) – ingest, cli, Production">
 <title>run_weekly scrape &#x28;ml-cli-scrape) – ingest, cli, Production</title>
-<rect class="sn-diagram__box" x="554.0" y="353.5" width="166.0" height="56.0"/>
-<rect class="sn-diagram__stripe" x="555.5" y="355.0" width="5" height="53.0"/>
-<text class="sn-diagram__t body-strong" x="568.0" y="375.8">run_weekly scrape</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="568.0" y="396.8">ingest · cli</text>
+<rect class="sn-diagram__box" x="613.6" y="478.0" width="196.0" height="63.0"/>
+<rect class="sn-diagram__stripe" x="615.1" y="479.5" width="5" height="60.0"/>
+<text class="sn-diagram__t title-s" x="627.6" y="503.4">run_weekly scrape</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="627.6" y="527.5">ingest · cli</text>
 </g>
 <g class="sn-diagram__node sn-dg-c7 sn-diagram__node--production" data-node="ml-cli-sync-tidal" tabindex="0" aria-label="run_weekly sync-tidal &#x28;ml-cli-sync-tidal) – services, cli, Production">
 <title>run_weekly sync-tidal &#x28;ml-cli-sync-tidal) – services, cli, Production</title>
-<rect class="sn-diagram__box" x="871.0" y="625.0" width="190.0" height="56.0"/>
-<rect class="sn-diagram__stripe" x="872.5" y="626.5" width="5" height="53.0"/>
-<text class="sn-diagram__t body-strong" x="885.0" y="647.3">run_weekly sync-tidal</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="885.0" y="668.3">services · cli</text>
+<rect class="sn-diagram__box" x="1116.6" y="677.5" width="140.0" height="88.0"/>
+<rect class="sn-diagram__stripe" x="1118.1" y="679.0" width="5" height="85.0"/>
+<text class="sn-diagram__t title-s" x="1130.6" y="702.9">run_weekly</text>
+<text class="sn-diagram__t title-s" x="1130.6" y="728.1">sync-tidal</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="1130.6" y="752.2">services · cli</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-page-set-builder" tabindex="0" aria-label="Naarm Set Builder &#x28;ml-page-set-builder) – design, artifact, Production">
 <title>Naarm Set Builder &#x28;ml-page-set-builder) – design, artifact, Production</title>
-<rect class="sn-diagram__box" x="126.0" y="865.0" width="160.0" height="56.0"/>
-<rect class="sn-diagram__stripe" x="127.5" y="866.5" width="5" height="53.0"/>
-<text class="sn-diagram__t body-strong" x="140.0" y="887.3">Naarm Set Builder</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="140.0" y="908.3">design · artifact</text>
+<rect class="sn-diagram__box" x="1544.6" y="224.0" width="189.0" height="63.0"/>
+<rect class="sn-diagram__stripe" x="1546.1" y="225.5" width="5" height="60.0"/>
+<text class="sn-diagram__t title-s" x="1558.6" y="249.4">Naarm Set Builder</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="1558.6" y="273.5">design · artifact</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-store-artifact-db" tabindex="0" aria-label="Set Builder artifact database, collection sets &#x28;ml-store-artifact-db) – artifact-db at claude.ai artifact GcqZTGjk6obdpjWaU7WFRq; owner Markus via the page &#x28;only-you-write rule); concurrency: page writes queued one document at a time; init merges shared-wins-by-id with local-only uploads; weekly agent read-only">
 <title>Set Builder artifact database, collection sets &#x28;ml-store-artifact-db) – artifact-db at claude.ai artifact GcqZTGjk6obdpjWaU7WFRq; owner Markus via the page &#x28;only-you-write rule); concurrency: page writes queued one document at a time; init merges shared-wins-by-id with local-only uploads; weekly agent read-only</title>
-<rect class="sn-diagram__box" x="110.5" y="473.5" width="191.0" height="98.0"/>
-<rect class="sn-diagram__stripe" x="112.0" y="475.0" width="5" height="95.0"/>
-<text class="sn-diagram__t body-strong" x="124.5" y="495.8">Set Builder artifact</text>
-<text class="sn-diagram__t body-strong" x="124.5" y="516.8">database, collection…</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="124.5" y="537.8">ops · artifact db</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="124.5" y="558.8">claude.ai artifact…</text>
+<rect class="sn-diagram__box" x="866.1" y="199.5" width="194.0" height="112.0"/>
+<rect class="sn-diagram__stripe" x="867.6" y="201.0" width="5" height="109.0"/>
+<text class="sn-diagram__t title-s" x="880.1" y="224.9">Set Builder artifact</text>
+<text class="sn-diagram__t title-s" x="880.1" y="250.1">database,…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="880.1" y="274.2">ops · artifact db</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="880.1" y="298.0">claude.ai artifact…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-store-artifact-files" tabindex="0" aria-label="Set Builder published files &#x28;ml-store-artifact-files) – artifact-files at claude.ai artifact GcqZTGjk6obdpjWaU7WFRq: index.html, app.js, assets/*, library.json; owner weekly agent &#x28;library.json), supervised rebuild &#x28;app.js); concurrency: publish refused unless read first; agent stops if live shell differs">
 <title>Set Builder published files &#x28;ml-store-artifact-files) – artifact-files at claude.ai artifact GcqZTGjk6obdpjWaU7WFRq: index.html, app.js, assets/*, library.json; owner weekly agent &#x28;library.json), supervised rebuild &#x28;app.js); concurrency: publish refused unless read first; agent stops if live shell differs</title>
-<rect class="sn-diagram__box" x="232.0" y="724.0" width="184.0" height="98.0"/>
-<rect class="sn-diagram__stripe" x="233.5" y="725.5" width="5" height="95.0"/>
-<text class="sn-diagram__t body-strong" x="246.0" y="746.3">Set Builder published</text>
-<text class="sn-diagram__t body-strong" x="246.0" y="767.3">files</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="246.0" y="788.3">ops · artifact files</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="246.0" y="809.3">claude.ai artifact…</text>
+<rect class="sn-diagram__box" x="1311.6" y="281.5" width="178.0" height="112.0"/>
+<rect class="sn-diagram__stripe" x="1313.1" y="283.0" width="5" height="109.0"/>
+<text class="sn-diagram__t title-s" x="1325.6" y="306.9">Set Builder</text>
+<text class="sn-diagram__t title-s" x="1325.6" y="332.1">published files</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="1325.6" y="356.2">ops · artifact files</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="1325.6" y="380.0">claude.ai artifact…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-store-config" tabindex="0" aria-label="config &#x28;ml-store-config) – file at config/rules.json, config/sources.json; owner Markus &#x28;hand-edited; weekly agent must not edit thresholds); concurrency: none; read-only at run time">
 <title>config &#x28;ml-store-config) – file at config/rules.json, config/sources.json; owner Markus &#x28;hand-edited; weekly agent must not edit thresholds); concurrency: none; read-only at run time</title>
-<rect class="sn-diagram__box" x="435.0" y="191.5" width="198.0" height="98.0"/>
-<rect class="sn-diagram__stripe" x="436.5" y="193.0" width="5" height="95.0"/>
-<text class="sn-diagram__t body-strong" x="449.0" y="213.8">config</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="449.0" y="234.8">ops · file</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="449.0" y="255.8">config/rules.json,…</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="449.0" y="276.8">+2 more readers &#x28;table)</text>
+<rect class="sn-diagram__box" x="366.6" y="538.0" width="184.0" height="111.0"/>
+<rect class="sn-diagram__stripe" x="368.1" y="539.5" width="5" height="108.0"/>
+<text class="sn-diagram__t title-s" x="380.6" y="563.4">config</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="380.6" y="587.5">ops · file</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="380.6" y="611.3">config/rules.json,…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="380.6" y="635.1">+2 more readers…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-store-data" tabindex="0" aria-label="data &#x28;ml-store-data) – folder at data/: metabrainz/ &#x28;canonical, json, postgres dumps, logs), metabrainz_scratch/ &#x28;inventory, slice, sql benches, tools, a MusicBrainz server git checkout mbs/, &#x50;ROGRESS.md), ref_mb_pgdata/pgdata &#x28;Postgres cluster, postmaster.pid 2026-11-06); owner fetch_metabrainz.*, ref_mb scripts and compose, MB investigation agents; concurrency: Postgres owns pgdata; downloads resumable by size">
 <title>data &#x28;ml-store-data) – folder at data/: metabrainz/ &#x28;canonical, json, postgres dumps, logs), metabrainz_scratch/ &#x28;inventory, slice, sql benches, tools, a MusicBrainz server git checkout mbs/, &#x50;ROGRESS.md), ref_mb_pgdata/pgdata &#x28;Postgres cluster, postmaster.pid 2026-11-06); owner fetch_metabrainz.*, ref_mb scripts and compose, MB investigation agents; concurrency: Postgres owns pgdata; downloads resumable by size</title>
-<rect class="sn-diagram__box" x="1312.5" y="191.5" width="187.0" height="98.0"/>
-<rect class="sn-diagram__stripe" x="1314.0" y="193.0" width="5" height="95.0"/>
-<text class="sn-diagram__t body-strong" x="1326.5" y="213.8">data</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1326.5" y="234.8">ops · folder</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1326.5" y="255.8">data/: metabrainz/…</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1326.5" y="276.8">+1 more reader &#x28;table)</text>
+<rect class="sn-diagram__box" x="363.1" y="40.0" width="191.0" height="111.0"/>
+<rect class="sn-diagram__stripe" x="364.6" y="41.5" width="5" height="108.0"/>
+<text class="sn-diagram__t title-s" x="377.1" y="65.4">data</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="377.1" y="89.5">ops · folder</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="377.1" y="113.3">data/: metabrainz/…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="377.1" y="137.1">+1 more reader…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-store-inbox" tabindex="0" aria-label="inbox &#x28;ml-store-inbox) – folder at inbox/; owner scrape, ingest, resolve, sync-tidal, weekly agent &#x28;artifact_sets.json), beatport agent &#x28;resolved/sync_result), Markus &#x28;manual_adds.csv); concurrency: date-keyed files, whole-file overwrite &#x28;dump_json); resolved_&lt;date&gt; is incremental &#x28;load, skip done keys, flush every 20). No lock between the Beatport agent and the weekly run writing the same resolved_/sync_result_&lt;date&gt; file.">
 <title>inbox &#x28;ml-store-inbox) – folder at inbox/; owner scrape, ingest, resolve, sync-tidal, weekly agent &#x28;artifact_sets.json), beatport agent &#x28;resolved/sync_result), Markus &#x28;manual_adds.csv); concurrency: date-keyed files, whole-file overwrite &#x28;dump_json); resolved_&lt;date&gt; is incremental &#x28;load, skip done keys, flush every 20). No lock between the Beatport agent and the weekly run writing the same resolved_/sync_result_&lt;date&gt; file.</title>
-<rect class="sn-diagram__box" x="646.5" y="181.0" width="199.0" height="119.0"/>
-<rect class="sn-diagram__stripe" x="648.0" y="182.5" width="5" height="116.0"/>
-<text class="sn-diagram__t body-strong" x="660.5" y="203.3">inbox</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="660.5" y="224.3">ops · folder</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="660.5" y="245.3">inbox/</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="660.5" y="266.3">concurrency: lock</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="660.5" y="287.3">+5 more readers &#x28;table)</text>
-<path class="sn-diagram__lock" d="M2 6h8v5H2z M4 6V4a2 2 0 0 1 4 0v2" transform="translate(823.5 189.0)"/>
+<rect class="sn-diagram__box" x="369.6" y="390.5" width="178.0" height="134.0"/>
+<rect class="sn-diagram__stripe" x="371.1" y="392.0" width="5" height="131.0"/>
+<text class="sn-diagram__t title-s" x="383.6" y="415.9">inbox</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="383.6" y="440.0">ops · folder</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="383.6" y="463.8">inbox/</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="383.6" y="487.6">concurrency: lock</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="383.6" y="511.4">+5 more readers…</text>
+<path class="sn-diagram__lock" d="M2 6h8v5H2z M4 6V4a2 2 0 0 1 4 0v2" transform="translate(525.6 398.5)"/>
 </g>
 <g class="sn-diagram__node sn-dg-c2 sn-diagram__node--production" data-node="ml-store-ledger" tabindex="0" aria-label="DJ library ledger &#x28;ml-store-ledger) – file at ledger/dj_library_ledger.json &#x28;+ ledger/history/); owner run_weekly ingest/process/confirm; concurrency: single mutable &#x4a;SON document &#x28;not append-only): write to .tmp then os.replace &#x28;atomic); process copies the old file to history/ledger_before_&lt;date&gt;.json first &#x28;overwritten if process re-runs the same date). No run lock; two runs would last-writer-win.">
 <title>DJ library ledger &#x28;ml-store-ledger) – file at ledger/dj_library_ledger.json &#x28;+ ledger/history/); owner run_weekly ingest/process/confirm; concurrency: single mutable &#x4a;SON document &#x28;not append-only): write to .tmp then os.replace &#x28;atomic); process copies the old file to history/ledger_before_&lt;date&gt;.json first &#x28;overwritten if process re-runs the same date). No run lock; two runs would last-writer-win.</title>
-<rect class="sn-diagram__box" x="760.5" y="463.0" width="199.0" height="119.0"/>
-<rect class="sn-diagram__stripe" x="762.0" y="464.5" width="5" height="116.0"/>
-<text class="sn-diagram__t body-strong" x="774.5" y="485.3">DJ library ledger</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="774.5" y="506.3">library · file</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="774.5" y="527.3">ledger/dj_library_ledg…</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="774.5" y="548.3">concurrency: lock</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="774.5" y="569.3">+4 more readers &#x28;table)</text>
-<path class="sn-diagram__lock" d="M2 6h8v5H2z M4 6V4a2 2 0 0 1 4 0v2" transform="translate(937.5 471.0)"/>
+<rect class="sn-diagram__box" x="864.6" y="581.5" width="197.0" height="134.0"/>
+<rect class="sn-diagram__stripe" x="866.1" y="583.0" width="5" height="131.0"/>
+<text class="sn-diagram__t title-s" x="878.6" y="606.9">DJ library ledger</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="878.6" y="631.0">library · file</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="878.6" y="654.8">ledger/dj_library_le…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="878.6" y="678.6">concurrency: lock</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="878.6" y="702.4">+4 more readers…</text>
+<path class="sn-diagram__lock" d="M2 6h8v5H2z M4 6V4a2 2 0 0 1 4 0v2" transform="translate(1039.6 589.5)"/>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-store-outputs" tabindex="0" aria-label="outputs &#x28;ml-store-outputs) – folder at outputs/&lt;date&gt;/, outputs/crates/, outputs/artifact/library.json, outputs/rekordbox_musicLibrary.xml; owner process, build_db, calibrate; concurrency: overwrite per run; deletes avoided on the synced drive &#x28;empty crates truncated)">
 <title>outputs &#x28;ml-store-outputs) – folder at outputs/&lt;date&gt;/, outputs/crates/, outputs/artifact/library.json, outputs/rekordbox_musicLibrary.xml; owner process, build_db, calibrate; concurrency: overwrite per run; deletes avoided on the synced drive &#x28;empty crates truncated)</title>
-<rect class="sn-diagram__box" x="314.5" y="473.5" width="199.0" height="98.0"/>
-<rect class="sn-diagram__stripe" x="316.0" y="475.0" width="5" height="95.0"/>
-<text class="sn-diagram__t body-strong" x="328.5" y="495.8">outputs</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="328.5" y="516.8">ops · folder</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="328.5" y="537.8">outputs/&lt;date&gt;/,…</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="328.5" y="558.8">+3 more readers &#x28;table)</text>
+<rect class="sn-diagram__box" x="873.6" y="326.0" width="179.0" height="111.0"/>
+<rect class="sn-diagram__stripe" x="875.1" y="327.5" width="5" height="108.0"/>
+<text class="sn-diagram__t title-s" x="887.6" y="351.4">outputs</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="887.6" y="375.5">ops · folder</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="887.6" y="399.3">outputs/&lt;date&gt;/,…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="887.6" y="423.1">+3 more readers…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-store-overrides" tabindex="0" aria-label="overrides &#x28;ml-store-overrides) – folder at overrides/energy_overrides.csv, overrides/rekordbox_collection.xml &#x28;absent); owner Markus; concurrency: re-applied every process run; header only today">
 <title>overrides &#x28;ml-store-overrides) – folder at overrides/energy_overrides.csv, overrides/rekordbox_collection.xml &#x28;absent); owner Markus; concurrency: re-applied every process run; header only today</title>
-<rect class="sn-diagram__box" x="859.0" y="191.5" width="196.0" height="98.0"/>
-<rect class="sn-diagram__stripe" x="860.5" y="193.0" width="5" height="95.0"/>
-<text class="sn-diagram__t body-strong" x="873.0" y="213.8">overrides</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="873.0" y="234.8">ops · folder</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="873.0" y="255.8">overrides/energy_ove…</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="873.0" y="276.8">+1 more reader &#x28;table)</text>
+<rect class="sn-diagram__box" x="358.6" y="662.0" width="200.0" height="111.0"/>
+<rect class="sn-diagram__stripe" x="360.1" y="663.5" width="5" height="108.0"/>
+<text class="sn-diagram__t title-s" x="372.6" y="687.4">overrides</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="372.6" y="711.5">ops · folder</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="372.6" y="735.3">overrides/energy_o…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="372.6" y="759.1">+1 more reader…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-store-plan" tabindex="0" aria-label="plan &#x28;ml-store-plan) – folder at plan/; owner prompt builders and launchers; concurrency: none">
 <title>plan &#x28;ml-store-plan) – folder at plan/; owner prompt builders and launchers; concurrency: none</title>
-<rect class="sn-diagram__box" x="1122.5" y="40.0" width="187.0" height="98.0"/>
-<rect class="sn-diagram__stripe" x="1124.0" y="41.5" width="5" height="95.0"/>
-<text class="sn-diagram__t body-strong" x="1136.5" y="62.3">plan</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1136.5" y="83.3">ops · folder</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1136.5" y="104.3">plan/</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1136.5" y="125.3">+1 more reader &#x28;table)</text>
+<rect class="sn-diagram__box" x="123.1" y="140.0" width="164.0" height="111.0"/>
+<rect class="sn-diagram__stripe" x="124.6" y="141.5" width="5" height="108.0"/>
+<text class="sn-diagram__t title-s" x="137.1" y="165.4">plan</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="137.1" y="189.5">ops · folder</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="137.1" y="213.3">plan/</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="137.1" y="237.1">+1 more reader…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="ml-store-ref-mb" tabindex="0" aria-label="ref_mb Postgres &#x28;ml-store-ref-mb) – postgres at 127.0.0.1:55433, data E:\musicLibrary\data\ref_mb_pgdata; owner ref_mb load scripts; concurrency: read-only role default_transaction_read_only=on; stop with -t 600">
 <title>ref_mb Postgres &#x28;ml-store-ref-mb) – postgres at 127.0.0.1:55433, data E:\musicLibrary\data\ref_mb_pgdata; owner ref_mb load scripts; concurrency: read-only role default_transaction_read_only=on; stop with -t 600</title>
-<rect class="sn-diagram__box" x="911.0" y="40.0" width="198.0" height="98.0"/>
-<rect class="sn-diagram__stripe" x="912.5" y="41.5" width="5" height="95.0"/>
-<text class="sn-diagram__t body-strong" x="925.0" y="62.3">ref_mb Postgres</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="925.0" y="83.3">ingest · postgres</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="925.0" y="104.3">127.0.0.1:55433, data…</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="925.0" y="125.3">+2 more readers &#x28;table)</text>
+<rect class="sn-diagram__box" x="106.6" y="264.0" width="197.0" height="111.0"/>
+<rect class="sn-diagram__stripe" x="108.1" y="265.5" width="5" height="108.0"/>
+<text class="sn-diagram__t title-s" x="120.6" y="289.4">ref_mb Postgres</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="120.6" y="313.5">ingest · postgres</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="120.6" y="337.3">127.0.0.1:55433, da…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="120.6" y="361.1">+2 more readers…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-store-secrets" tabindex="0" aria-label="secrets &#x28;ml-store-secrets) – folder at secrets/ &#x28;tidal_app.json, tidal_user_token.json, tidal_pkce_pending.json, tidal_playlists.json); ref_mb/secrets/*.txt; owner tidal_cli, sync-tidal, sync-sets; Markus; concurrency: plain files, rewritten on refresh; pending cleared by writing {} &#x28;deletes blocked on synced drive). musicLibrary/secrets/ absent from this copy.">
 <title>secrets &#x28;ml-store-secrets) – folder at secrets/ &#x28;tidal_app.json, tidal_user_token.json, tidal_pkce_pending.json, tidal_playlists.json); ref_mb/secrets/*.txt; owner tidal_cli, sync-tidal, sync-sets; Markus; concurrency: plain files, rewritten on refresh; pending cleared by writing {} &#x28;deletes blocked on synced drive). musicLibrary/secrets/ absent from this copy.</title>
-<rect class="sn-diagram__box" x="972.5" y="463.0" width="199.0" height="119.0"/>
-<rect class="sn-diagram__stripe" x="974.0" y="464.5" width="5" height="116.0"/>
-<text class="sn-diagram__t body-strong" x="986.5" y="485.3">secrets</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="986.5" y="506.3">ops · folder</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="986.5" y="527.3">secrets/ &#x28;tidal_app.jso…</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="986.5" y="548.3">concurrency: lock</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="986.5" y="569.3">+3 more readers &#x28;table)</text>
-<path class="sn-diagram__lock" d="M2 6h8v5H2z M4 6V4a2 2 0 0 1 4 0v2" transform="translate(1149.5 471.0)"/>
+<rect class="sn-diagram__box" x="874.1" y="728.5" width="178.0" height="134.0"/>
+<rect class="sn-diagram__stripe" x="875.6" y="730.0" width="5" height="131.0"/>
+<text class="sn-diagram__t title-s" x="888.1" y="753.9">secrets</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="888.1" y="778.0">ops · folder</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="888.1" y="801.8">secrets/…</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="888.1" y="825.6">concurrency: lock</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="888.1" y="849.4">+3 more readers…</text>
+<path class="sn-diagram__lock" d="M2 6h8v5H2z M4 6V4a2 2 0 0 1 4 0v2" transform="translate(1030.1 736.5)"/>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="ml-store-sqlite" tabindex="0" aria-label="dj_library.sqlite &#x28;ml-store-sqlite) – sqlite at db/dj_library.sqlite; owner build_db; concurrency: full rebuild in a temp dir then shutil.copyfile over the target &#x28;copy, not atomic rename); row count and integrity_check afterwards; journal_mode &#x44;ELETE. Current: 413 tracks, 0 sets, 4 runs, v_review_queue 413.">
 <title>dj_library.sqlite &#x28;ml-store-sqlite) – sqlite at db/dj_library.sqlite; owner build_db; concurrency: full rebuild in a temp dir then shutil.copyfile over the target &#x28;copy, not atomic rename); row count and integrity_check afterwards; journal_mode &#x44;ELETE. Current: 413 tracks, 0 sets, 4 runs, v_review_queue 413.</title>
-<rect class="sn-diagram__box" x="440.5" y="724.0" width="187.0" height="98.0"/>
-<rect class="sn-diagram__stripe" x="442.0" y="725.5" width="5" height="95.0"/>
-<text class="sn-diagram__t body-strong" x="454.5" y="746.3">dj_library.sqlite</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="454.5" y="767.3">ops · sqlite</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="454.5" y="788.3">db/dj_library.sqlite</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="454.5" y="809.3">+1 more reader &#x28;table)</text>
+<rect class="sn-diagram__box" x="1311.6" y="407.0" width="178.0" height="111.0"/>
+<rect class="sn-diagram__stripe" x="1313.1" y="408.5" width="5" height="108.0"/>
+<text class="sn-diagram__t title-s" x="1325.6" y="432.4">dj_library.sqlite</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="1325.6" y="456.5">ops · sqlite</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="1325.6" y="480.3">db/dj_library.sqlite</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="1325.6" y="504.1">+1 more reader…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c2 sn-diagram__node--production" data-node="sn-fe-library" tabindex="0" aria-label="Melbourne crate &#x28;sn-fe-library) – library, route, Production">
 <title>Melbourne crate &#x28;sn-fe-library) – library, route, Production</title>
-<rect class="sn-diagram__box" x="750.0" y="61.0" width="148.0" height="56.0"/>
-<rect class="sn-diagram__stripe" x="751.5" y="62.5" width="5" height="53.0"/>
-<text class="sn-diagram__t body-strong" x="764.0" y="83.3">Melbourne crate</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="764.0" y="104.3">library · route</text>
+<rect class="sn-diagram__box" x="117.6" y="464.0" width="175.0" height="63.0"/>
+<rect class="sn-diagram__stripe" x="119.1" y="465.5" width="5" height="60.0"/>
+<text class="sn-diagram__t title-s" x="131.6" y="489.4">Melbourne crate</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="131.6" y="513.5">library · route</text>
 </g>
 <g class="sn-diagram__node sn-dg-c4 sn-diagram__node--production" data-node="sn-fe-sets" tabindex="0" aria-label="Set builder &#x28;sn-fe-sets) – sets, route, Production">
 <title>Set builder &#x28;sn-fe-sets) – sets, route, Production</title>
-<rect class="sn-diagram__box" x="597.0" y="61.0" width="140.0" height="56.0"/>
-<rect class="sn-diagram__stripe" x="598.5" y="62.5" width="5" height="53.0"/>
-<text class="sn-diagram__t body-strong" x="611.0" y="83.3">Set builder</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="611.0" y="104.3">sets · route</text>
+<rect class="sn-diagram__box" x="135.1" y="388.0" width="140.0" height="63.0"/>
+<rect class="sn-diagram__stripe" x="136.6" y="389.5" width="5" height="60.0"/>
+<text class="sn-diagram__t title-s" x="149.1" y="413.4">Set builder</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="149.1" y="437.5">sets · route</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--nonfinal" data-node="sn-fe-work-queue-tracker" tabindex="0" aria-label="SongNodes Work Queue &#x28;sn-fe-work-queue-tracker) – ops, artifact, Non-final">
 <title>SongNodes Work Queue &#x28;sn-fe-work-queue-tracker) – ops, artifact, Non-final</title>
-<rect class="sn-diagram__box" x="128.0" y="343.0" width="156.0" height="77.0"/>
-<rect class="sn-diagram__stripe" x="129.5" y="344.5" width="5" height="74.0"/>
-<text class="sn-diagram__t body-strong" x="142.0" y="365.3">SongNodes Work</text>
-<text class="sn-diagram__t body-strong" x="142.0" y="386.3">Queue</text>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="142.0" y="407.3">ops · artifact</text>
+<rect class="sn-diagram__box" x="619.6" y="211.5" width="184.0" height="88.0"/>
+<rect class="sn-diagram__stripe" x="621.1" y="213.0" width="5" height="85.0"/>
+<text class="sn-diagram__t title-s" x="633.6" y="236.9">SongNodes Work</text>
+<text class="sn-diagram__t title-s" x="633.6" y="262.1">Queue</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="633.6" y="286.2">ops · artifact</text>
 </g>
 <g class="sn-diagram__legend" aria-label="Legend">
-<text class="sn-diagram__t body-strong" x="24.0" y="956.3">Key</text>
-<rect class="sn-diagram__swatch sn-dg-c1" x="24.0" y="976.5" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="54.0" y="986.3">ingest</text>
-<rect class="sn-diagram__swatch sn-dg-c2" x="117.0" y="976.5" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="147.0" y="986.3">library</text>
-<rect class="sn-diagram__swatch sn-dg-c4" x="211.6" y="976.5" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="241.6" y="986.3">sets</text>
-<rect class="sn-diagram__swatch sn-dg-c7" x="290.1" y="976.5" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="320.1" y="986.3">services</text>
-<rect class="sn-diagram__swatch sn-dg-c8" x="400.4" y="976.5" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="430.4" y="986.3">ops and design</text>
-<rect class="sn-diagram__legend-box sn-diagram__node--production" x="561.3" y="973.5" width="22" height="16"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="591.3" y="986.3">Production &#x28;solid outline)</text>
-<rect class="sn-diagram__legend-box sn-diagram__node--nonfinal" x="793.6" y="973.5" width="22" height="16"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="823.6" y="986.3">Non-final &#x28;dotted outline)</text>
-<g class="sn-diagram__edge--built"><path class="sn-diagram__line" d="M1026.9 981.5 L1048.9 981.5"/></g>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="1056.9" y="986.3">Built flow &#x28;solid, domain colour)</text>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="24.0" y="1004.5" width="22" height="16"/></g>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="54.0" y="1017.3">Badge = flow numbers &#x28;none: reader listed on the store)</text>
-<path class="sn-diagram__lock" d="M2 6h8v5H2z M4 6V4a2 2 0 0 1 4 0v2" transform="translate(489.6 1006.5)"/>
-<text class="sn-diagram__t sn-diagram__t--2 body" x="514.6" y="1017.3">Lock, lease or unique key &#x28;word in the card)</text>
+<text class="sn-diagram__t title-s" x="24.0" y="900.9">Key</text>
+<rect class="sn-diagram__swatch sn-dg-c1" x="24.0" y="923.6" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="54.0" y="934.0">ingest</text>
+<rect class="sn-diagram__swatch sn-dg-c2" x="123.0" y="923.6" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="153.0" y="934.0">library</text>
+<rect class="sn-diagram__swatch sn-dg-c4" x="223.8" y="923.6" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="253.8" y="934.0">sets</text>
+<rect class="sn-diagram__swatch sn-dg-c7" x="306.4" y="923.6" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="336.4" y="934.0">services</text>
+<rect class="sn-diagram__swatch sn-dg-c8" x="424.9" y="923.6" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="454.9" y="934.0">ops and design</text>
+<rect class="sn-diagram__legend-box sn-diagram__node--production" x="600.9" y="920.6" width="22" height="16"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="630.9" y="934.0">Production &#x28;solid outline)</text>
+<rect class="sn-diagram__legend-box sn-diagram__node--nonfinal" x="857.8" y="920.6" width="22" height="16"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="887.8" y="934.0">Non-final &#x28;dotted outline)</text>
+<g class="sn-diagram__edge--built"><path class="sn-diagram__line" d="M1115.9 928.6 L1137.9 928.6"/></g>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="1145.9" y="934.0">Built flow &#x28;solid, domain colour)</text>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="24.0" y="954.4" width="22" height="16"/></g>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="54.0" y="967.8">Badge = flow numbers &#x28;none: reader listed on the store)</text>
+<path class="sn-diagram__lock" d="M2 6h8v5H2z M4 6V4a2 2 0 0 1 4 0v2" transform="translate(544.6 956.4)"/>
+<text class="sn-diagram__t sn-diagram__t--2 body-l" x="569.6" y="967.8">Lock, lease or unique key &#x28;word in the card)</text>
 </g>
 </svg>

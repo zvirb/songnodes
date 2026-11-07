@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 838 483" role="img" aria-labelledby="D3f-t D3f-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 877 483" role="img" aria-labelledby="D3f-t D3f-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
 :root, [data-theme="dark"] {
   --bg: #222222;
   --surface-1: #2d2d2d;
@@ -445,6 +445,7 @@
   --drawer-w: 300px;
   --rail-w: 248px;
   --content-max: 1400px;
+  --print-wide-h: 150mm;
   --print-wide-w: 273mm;
   --prose-max: 68ch;
   --z-base: 0;
@@ -789,62 +790,62 @@
 .sn-chart-frame__axis-title { fill: var(--chart-axis); font-family: var(--font-body); font-size: 0.6875rem; }</style>
 <title id="D3f-t">Storage topology: songnodes browser stores</title>
 <desc id="D3f-d">5 stores with their writers &#x28;arrows in) and readers &#x28;arrows out). Cards with a padlock name their lock, lease or unique-key rule.</desc>
-<rect class="sn-diagram__bg" x="0" y="0" width="838" height="483"/>
-<rect class="sn-diagram__group" x="48.0" y="48.0" width="758.0" height="304.0"/>
-<g class="sn-diagram__groups"><text class="sn-diagram__t sn-diagram__t--2 body-strong" x="58.0" y="67.3">Stores</text></g>
+<rect class="sn-diagram__bg" x="0" y="0" width="877" height="483"/>
+<rect class="sn-diagram__group" x="67.7" y="48.0" width="758.0" height="304.0"/>
+<g class="sn-diagram__groups"><text class="sn-diagram__t sn-diagram__t--2 body-strong" x="77.7" y="67.3">Stores</text></g>
 <g class="sn-diagram__edge sn-dg-c2 sn-diagram__edge--built" data-from="sn-fe-store-library-cache" data-to="sn-fe-store-unified-tracks" data-edge="sn-fe-store-library-cache&gt;sn-fe-store-unified-tracks" tabindex="0" aria-label="loadLibrary promise cache → useUnifiedTracksStore &#x28;read by; listed in stores[].readers)">
 <title>loadLibrary promise cache → useUnifiedTracksStore &#x28;read by; listed in stores[].readers)</title>
-<path class="sn-diagram__line" d="M524.0 201.6 L524.0 252.6"/>
-<path class="sn-diagram__head" d="M524.0 252.6 L520.1 245.6 L527.9 245.6 Z"/>
+<path class="sn-diagram__line" d="M543.7 201.6 L543.7 252.6"/>
+<path class="sn-diagram__head" d="M543.7 252.6 L539.9 245.6 L547.6 245.6 Z"/>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-fe-store-browser-ls" tabindex="0" aria-label="per-device localStorage keys &#x28;sn-fe-store-browser-ls) – localStorage at browser origin http://127.0.0.1:3006; owner see signals sn-fe-ls-*; concurrency: append/overwrite; only sn-favs-library-crate listens to storage events; token refresh uses navigator.locks with localStorage mutex fallback">
 <title>per-device localStorage keys &#x28;sn-fe-store-browser-ls) – localStorage at browser origin http://127.0.0.1:3006; owner see signals sn-fe-ls-*; concurrency: append/overwrite; only sn-favs-library-crate listens to storage events; token refresh uses navigator.locks with localStorage mutex fallback</title>
-<rect class="sn-diagram__box" x="634.0" y="87.0" width="158.0" height="123.0"/>
-<rect class="sn-diagram__stripe" x="635.5" y="88.5" width="5" height="120.0"/>
-<text class="sn-diagram__t body-strong" x="648.0" y="109.3">per-device</text>
-<text class="sn-diagram__t body-strong" x="648.0" y="130.3">localStorage keys</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="648.0" y="148.2">ops · browser</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="648.0" y="165.0">browser origin…</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="648.0" y="181.8">concurrency: lock</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="648.0" y="198.6">+1 more reader &#x28;table)</text>
-<path class="sn-diagram__lock" d="M2 6h8v5H2z M4 6V4a2 2 0 0 1 4 0v2" transform="translate(770.0 95.0)"/>
+<rect class="sn-diagram__box" x="653.7" y="87.0" width="158.0" height="123.0"/>
+<rect class="sn-diagram__stripe" x="655.2" y="88.5" width="5" height="120.0"/>
+<text class="sn-diagram__t body-strong" x="667.7" y="109.3">per-device</text>
+<text class="sn-diagram__t body-strong" x="667.7" y="130.3">localStorage keys</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="667.7" y="148.2">ops · browser</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="667.7" y="165.0">browser origin…</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="667.7" y="181.8">concurrency: lock</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="667.7" y="198.6">+1 more reader &#x28;table)</text>
+<path class="sn-diagram__lock" d="M2 6h8v5H2z M4 6V4a2 2 0 0 1 4 0v2" transform="translate(789.7 95.0)"/>
 </g>
 <g class="sn-diagram__node sn-dg-c2 sn-diagram__node--production" data-node="sn-fe-store-library-cache" tabindex="0" aria-label="loadLibrary promise cache &#x28;sn-fe-store-library-cache) – memory at module scope features/musicLibrary/data.ts; owner loadLibrary; concurrency: single shared promise, reset on error or forceRefresh">
 <title>loadLibrary promise cache &#x28;sn-fe-store-library-cache) – memory at module scope features/musicLibrary/data.ts; owner loadLibrary; concurrency: single shared promise, reset on error or forceRefresh</title>
-<rect class="sn-diagram__box" x="436.5" y="95.5" width="175.0" height="106.0"/>
-<rect class="sn-diagram__stripe" x="438.0" y="97.0" width="5" height="103.0"/>
-<text class="sn-diagram__t body-strong" x="450.5" y="117.8">loadLibrary promise</text>
-<text class="sn-diagram__t body-strong" x="450.5" y="138.8">cache</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="450.5" y="156.7">library · memory</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="450.5" y="173.5">module scope…</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="450.5" y="190.3">+3 more readers &#x28;table)</text>
+<rect class="sn-diagram__box" x="456.2" y="95.5" width="175.0" height="106.0"/>
+<rect class="sn-diagram__stripe" x="457.7" y="97.0" width="5" height="103.0"/>
+<text class="sn-diagram__t body-strong" x="470.2" y="117.8">loadLibrary promise</text>
+<text class="sn-diagram__t body-strong" x="470.2" y="138.8">cache</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="470.2" y="156.7">library · memory</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="470.2" y="173.5">module scope…</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="470.2" y="190.3">+3 more readers &#x28;table)</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-fe-store-nginx" tabindex="0" aria-label="frontend nginx &#x28;sn-fe-store-nginx) – proxy at frontend image :8080, published 127.0.0.1:3006; owner frontend/Dockerfile; concurrency: n/a; resolver 127.0.0.11 valid=10s">
 <title>frontend nginx &#x28;sn-fe-store-nginx) – proxy at frontend image :8080, published 127.0.0.1:3006; owner frontend/Dockerfile; concurrency: n/a; resolver 127.0.0.11 valid=10s</title>
-<rect class="sn-diagram__box" x="248.0" y="106.0" width="166.0" height="85.0"/>
-<rect class="sn-diagram__stripe" x="249.5" y="107.5" width="5" height="82.0"/>
-<text class="sn-diagram__t body-strong" x="262.0" y="128.3">frontend nginx</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="262.0" y="146.2">ops · proxy</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="262.0" y="163.0">frontend image :8080,…</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="262.0" y="179.8">+1 more reader &#x28;table)</text>
+<rect class="sn-diagram__box" x="267.7" y="106.0" width="166.0" height="85.0"/>
+<rect class="sn-diagram__stripe" x="269.2" y="107.5" width="5" height="82.0"/>
+<text class="sn-diagram__t body-strong" x="281.7" y="128.3">frontend nginx</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="281.7" y="146.2">ops · proxy</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="281.7" y="163.0">frontend image :8080,…</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="281.7" y="179.8">+1 more reader &#x28;table)</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-fe-store-unified-tracks" tabindex="0" aria-label="useUnifiedTracksStore &#x28;sn-fe-store-unified-tracks) – memory at browser memory; owner hooks/useUnifiedTracks.ts refresh&#x28;); concurrency: none; local sn-target-tracks-v1 overrides backend target state">
 <title>useUnifiedTracksStore &#x28;sn-fe-store-unified-tracks) – memory at browser memory; owner hooks/useUnifiedTracks.ts refresh&#x28;); concurrency: none; local sn-target-tracks-v1 overrides backend target state</title>
-<rect class="sn-diagram__box" x="425.5" y="253.0" width="197.0" height="85.0"/>
-<rect class="sn-diagram__stripe" x="427.0" y="254.5" width="5" height="82.0"/>
-<text class="sn-diagram__t body-strong" x="439.5" y="275.3">useUnifiedTracksStore</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="439.5" y="293.2">ops · memory</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="439.5" y="310.0">browser memory</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="439.5" y="326.8">+4 more readers &#x28;table)</text>
+<rect class="sn-diagram__box" x="445.2" y="253.0" width="197.0" height="85.0"/>
+<rect class="sn-diagram__stripe" x="446.7" y="254.5" width="5" height="82.0"/>
+<text class="sn-diagram__t body-strong" x="459.2" y="275.3">useUnifiedTracksStore</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="459.2" y="293.2">ops · memory</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="459.2" y="310.0">browser memory</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="459.2" y="326.8">+4 more readers &#x28;table)</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-fe-store-zustand" tabindex="0" aria-label="useStore &#x28;sn-fe-store-zustand) – localStorage at browser localStorage songnodes-store; owner frontend store slices &#x28;graph, credentials, pathfinding, search); concurrency: none: last writer per tab wins, no storage-event rehydrate across tabs">
 <title>useStore &#x28;sn-fe-store-zustand) – localStorage at browser localStorage songnodes-store; owner frontend store slices &#x28;graph, credentials, pathfinding, search); concurrency: none: last writer per tab wins, no storage-event rehydrate across tabs</title>
-<rect class="sn-diagram__box" x="62.0" y="106.0" width="164.0" height="85.0"/>
-<rect class="sn-diagram__stripe" x="63.5" y="107.5" width="5" height="82.0"/>
-<text class="sn-diagram__t body-strong" x="76.0" y="128.3">useStore</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="76.0" y="146.2">ops · browser</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="76.0" y="163.0">browser localStorage…</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="76.0" y="179.8">+3 more readers &#x28;table)</text>
+<rect class="sn-diagram__box" x="81.7" y="106.0" width="164.0" height="85.0"/>
+<rect class="sn-diagram__stripe" x="83.2" y="107.5" width="5" height="82.0"/>
+<text class="sn-diagram__t body-strong" x="95.7" y="128.3">useStore</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="95.7" y="146.2">ops · browser</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="95.7" y="163.0">browser localStorage…</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="95.7" y="179.8">+3 more readers &#x28;table)</text>
 </g>
 <g class="sn-diagram__legend" aria-label="Legend">
 <text class="sn-diagram__t body-strong" x="24.0" y="395.3">Key</text>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1077 711" role="img" aria-labelledby="D3e-t D3e-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1292 711" role="img" aria-labelledby="D3e-t D3e-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
 :root, [data-theme="dark"] {
   --bg: #222222;
   --surface-1: #2d2d2d;
@@ -445,6 +445,7 @@
   --drawer-w: 300px;
   --rail-w: 248px;
   --content-max: 1400px;
+  --print-wide-h: 150mm;
   --print-wide-w: 273mm;
   --prose-max: 68ch;
   --z-base: 0;
@@ -789,142 +790,142 @@
 .sn-chart-frame__axis-title { fill: var(--chart-axis); font-family: var(--font-body); font-size: 0.6875rem; }</style>
 <title id="D3e-t">Storage topology: songnodes services and queues</title>
 <desc id="D3e-d">6 stores with their writers &#x28;arrows in) and readers &#x28;arrows out). Cards with a padlock name their lock, lease or unique-key rule.</desc>
-<rect class="sn-diagram__bg" x="0" y="0" width="1077" height="711"/>
-<rect class="sn-diagram__group" x="83.8" y="48.0" width="433.0" height="532.0"/>
-<rect class="sn-diagram__group" x="516.8" y="75.0" width="492.0" height="360.0"/>
-<g class="sn-diagram__groups"><text class="sn-diagram__t sn-diagram__t--2 body-strong" x="93.8" y="67.3">Stores</text>
-<text class="sn-diagram__t sn-diagram__t--2 body-strong" x="526.8" y="94.3">Writers and readers</text></g>
+<rect class="sn-diagram__bg" x="0" y="0" width="1292" height="711"/>
+<rect class="sn-diagram__group" x="191.5" y="48.0" width="433.0" height="532.0"/>
+<rect class="sn-diagram__group" x="624.5" y="75.0" width="492.0" height="360.0"/>
+<g class="sn-diagram__groups"><text class="sn-diagram__t sn-diagram__t--2 body-strong" x="201.5" y="67.3">Stores</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-strong" x="634.5" y="94.3">Writers and readers</text></g>
 <g class="sn-diagram__edge sn-dg-c1 sn-diagram__edge--built" data-from="ml-svc-ref-mb" data-to="sn-be-store-refmb" data-edge="ml-svc-ref-mb&gt;sn-be-store-refmb" tabindex="0" aria-label="ref-mb Postgres → ref_mb MusicBrainz mirror &#x28;writes; flows 67)">
 <title>ref-mb Postgres → ref_mb MusicBrainz mirror &#x28;writes; flows 67)</title>
-<path class="sn-diagram__line" d="M577.8 166.0 L577.8 242.0 L291.5 242.0"/>
-<path class="sn-diagram__head" d="M291.5 242.0 L298.5 238.2 L298.5 245.8 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="506.4" y="230.9" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="520.6" y="246.2" text-anchor="middle">67</text></g>
+<path class="sn-diagram__line" d="M685.5 166.0 L685.5 242.0 L399.2 242.0"/>
+<path class="sn-diagram__head" d="M399.2 242.0 L406.2 238.2 L406.2 245.8 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="614.1" y="230.9" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="628.2" y="246.2" text-anchor="middle">67</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c1 sn-diagram__edge--built" data-from="sn-be-store-refmb" data-to="sn-be-svc-rest-api" data-edge="sn-be-store-refmb&gt;sn-be-svc-rest-api" tabindex="0" aria-label="ref_mb MusicBrainz mirror → &#x52;EST &#x41;PI &#x28;read by; listed in stores[].readers)">
 <title>ref_mb MusicBrainz mirror → &#x52;EST &#x41;PI &#x28;read by; listed in stores[].readers)</title>
-<path class="sn-diagram__line" d="M291.5 323.0 L624.3 323.0 L624.3 368.6"/>
-<path class="sn-diagram__head" d="M624.3 368.6 L620.5 361.6 L628.2 361.6 Z"/>
+<path class="sn-diagram__line" d="M399.2 323.0 L732.0 323.0 L732.0 368.6"/>
+<path class="sn-diagram__head" d="M732.0 368.6 L728.1 361.6 L735.9 361.6 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c1 sn-diagram__edge--built" data-from="sn-be-store-refmb" data-to="sn-be-svc-worker" data-edge="sn-be-store-refmb&gt;sn-be-svc-worker" tabindex="0" aria-label="ref_mb MusicBrainz mirror → Worker &#x28;read by; listed in stores[].readers)">
 <title>ref_mb MusicBrainz mirror → Worker &#x28;read by; listed in stores[].readers)</title>
-<path class="sn-diagram__line" d="M291.6 319.0 L926.8 319.0 L926.8 368.9"/>
-<path class="sn-diagram__head" d="M926.8 368.9 L923.0 361.9 L930.7 361.9 Z"/>
+<path class="sn-diagram__line" d="M399.3 319.0 L1034.5 319.0 L1034.5 368.9"/>
+<path class="sn-diagram__head" d="M1034.5 368.9 L1030.7 361.9 L1038.3 361.9 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="sn-be-svc-rest-api" data-to="sn-be-store-redis" data-edge="sn-be-svc-rest-api&gt;sn-be-store-redis" tabindex="0" aria-label="&#x52;EST &#x41;PI → Redis 8.10 &#x28;writes; flows 69)">
 <title>&#x52;EST &#x41;PI → Redis 8.10 &#x28;writes; flows 69)</title>
-<path class="sn-diagram__line" d="M600.8 421.4 L600.8 467.0 L285.6 467.0"/>
-<path class="sn-diagram__head" d="M285.6 467.0 L292.6 463.1 L292.6 470.9 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="586.7" y="433.1" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="600.8" y="448.4" text-anchor="middle">69</text></g>
+<path class="sn-diagram__line" d="M708.5 421.4 L708.5 467.0 L393.3 467.0"/>
+<path class="sn-diagram__head" d="M393.3 467.0 L400.3 463.1 L400.3 470.9 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="694.4" y="433.1" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="708.5" y="448.4" text-anchor="middle">69</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="sn-be-svc-unified-scraper" data-to="sn-be-store-redis" data-edge="sn-be-svc-unified-scraper&gt;sn-be-store-redis" tabindex="0" aria-label="Unified scraper → Redis 8.10 &#x28;writes; flows 13)">
 <title>Unified scraper → Redis 8.10 &#x28;writes; flows 13)</title>
-<path class="sn-diagram__line" d="M762.8 421.2 L762.8 470.0 L285.6 470.0"/>
-<path class="sn-diagram__head" d="M285.6 470.0 L292.6 466.1 L292.6 473.9 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="653.3" y="458.9" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="667.4" y="474.2" text-anchor="middle">13</text></g>
+<path class="sn-diagram__line" d="M870.5 421.2 L870.5 470.0 L393.3 470.0"/>
+<path class="sn-diagram__head" d="M393.3 470.0 L400.3 466.1 L400.3 473.9 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="760.9" y="458.9" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="775.1" y="474.2" text-anchor="middle">13</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--built" data-from="sn-be-svc-worker" data-to="sn-be-store-rabbitmq" data-edge="sn-be-svc-worker&gt;sn-be-store-rabbitmq" tabindex="0" aria-label="Worker → RabbitMQ 4.3 &#x28;writes; flows 83)">
 <title>Worker → RabbitMQ 4.3 &#x28;writes; flows 83)</title>
-<path class="sn-diagram__line" d="M924.8 421.0 L924.8 515.0 L502.9 515.0"/>
-<path class="sn-diagram__head" d="M502.9 515.0 L509.9 511.1 L509.9 518.9 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="699.7" y="503.9" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="713.9" y="519.2" text-anchor="middle">83</text></g>
+<path class="sn-diagram__line" d="M1032.5 421.0 L1032.5 515.0 L610.6 515.0"/>
+<path class="sn-diagram__head" d="M610.6 515.0 L617.6 511.1 L617.6 518.9 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="807.4" y="503.9" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="821.5" y="519.2" text-anchor="middle">83</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c3 sn-diagram__edge--built" data-from="sn-be-tbl-outbox" data-to="sn-be-store-memgraph" data-edge="sn-be-tbl-outbox&gt;sn-be-store-memgraph" tabindex="0" aria-label="outbox_events +2 → Memgraph &#x28;writes; flows 53)">
 <title>outbox_events +2 → Memgraph &#x28;writes; flows 53)</title>
-<path class="sn-diagram__line" d="M766.8 166.2 L766.8 281.0 L502.6 281.0"/>
-<path class="sn-diagram__head" d="M502.6 281.0 L509.6 277.1 L509.6 284.9 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="620.6" y="269.9" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="634.7" y="285.2" text-anchor="middle">53</text></g>
+<path class="sn-diagram__line" d="M874.5 166.2 L874.5 281.0 L610.3 281.0"/>
+<path class="sn-diagram__head" d="M610.3 281.0 L617.3 277.1 L617.3 284.9 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="728.3" y="269.9" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="742.4" y="285.2" text-anchor="middle">53</text></g>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="ml-svc-ref-mb" tabindex="0" aria-label="ref-mb Postgres &#x28;ml-svc-ref-mb) – ingest, service-ui, Production">
 <title>ref-mb Postgres &#x28;ml-svc-ref-mb) – ingest, service-ui, Production</title>
-<rect class="sn-diagram__box" x="531.3" y="114.0" width="147.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="532.8" y="115.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="545.3" y="136.3">ref-mb Postgres</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="545.3" y="154.2">ingest · service</text>
+<rect class="sn-diagram__box" x="639.0" y="114.0" width="147.0" height="52.0"/>
+<rect class="sn-diagram__stripe" x="640.5" y="115.5" width="5" height="49.0"/>
+<text class="sn-diagram__t body-strong" x="653.0" y="136.3">ref-mb Postgres</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="653.0" y="154.2">ingest · service</text>
 </g>
 <g class="sn-diagram__node sn-dg-c7 sn-diagram__node--queued" data-node="sn-be-q-store-cloudflare-tunnel" tabindex="0" aria-label="Cloudflare tunnel song.aiwfe.com &#x28;sn-be-q-store-cloudflare-tunnel) – external-api at cloudflared container &#x28;queued); owner operator; concurrency: n/a">
 <title>Cloudflare tunnel song.aiwfe.com &#x28;sn-be-q-store-cloudflare-tunnel) – external-api at cloudflared container &#x28;queued); owner operator; concurrency: n/a</title>
-<rect class="sn-diagram__box" x="330.8" y="87.0" width="160.0" height="106.0"/>
-<rect class="sn-diagram__stripe" x="332.3" y="88.5" width="5" height="103.0"/>
-<text class="sn-diagram__t body-strong" x="344.8" y="109.3">Cloudflare tunnel</text>
-<text class="sn-diagram__t body-strong" x="344.8" y="130.3">song.aiwfe.com</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="344.8" y="148.2">services · api</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="344.8" y="165.0">cloudflared container…</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="344.8" y="181.8">+1 more reader &#x28;table)</text>
+<rect class="sn-diagram__box" x="438.5" y="87.0" width="160.0" height="106.0"/>
+<rect class="sn-diagram__stripe" x="440.0" y="88.5" width="5" height="103.0"/>
+<text class="sn-diagram__t body-strong" x="452.5" y="109.3">Cloudflare tunnel</text>
+<text class="sn-diagram__t body-strong" x="452.5" y="130.3">song.aiwfe.com</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="452.5" y="148.2">services · api</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="452.5" y="165.0">cloudflared container…</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="452.5" y="181.8">+1 more reader &#x28;table)</text>
 </g>
 <g class="sn-diagram__node sn-dg-c3 sn-diagram__node--production" data-node="sn-be-store-memgraph" tabindex="0" aria-label="Memgraph &#x28;sn-be-store-memgraph) – external-api at bolt://memgraph:7687 &#x28;no service in compose); owner graph_projection consumer when enabled; concurrency: n/a">
 <title>Memgraph &#x28;sn-be-store-memgraph) – external-api at bolt://memgraph:7687 &#x28;no service in compose); owner graph_projection consumer when enabled; concurrency: n/a</title>
-<rect class="sn-diagram__box" x="313.3" y="246.5" width="189.0" height="69.0"/>
-<rect class="sn-diagram__stripe" x="314.8" y="248.0" width="5" height="66.0"/>
-<text class="sn-diagram__t body-strong" x="327.3" y="268.8">Memgraph</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="327.3" y="286.7">graph · api</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="327.3" y="303.5">bolt://memgraph:7687 &#x28;no…</text>
+<rect class="sn-diagram__box" x="421.0" y="246.5" width="189.0" height="69.0"/>
+<rect class="sn-diagram__stripe" x="422.5" y="248.0" width="5" height="66.0"/>
+<text class="sn-diagram__t body-strong" x="435.0" y="268.8">Memgraph</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="435.0" y="286.7">graph · api</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="435.0" y="303.5">bolt://memgraph:7687 &#x28;no…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-store-rabbitmq" tabindex="0" aria-label="RabbitMQ 4.3 &#x28;sn-be-store-rabbitmq) – rabbitmq at compose service rabbitmq, volume dev-rabbitmq-4, guest/guest; owner Celery beat in worker; concurrency: acks_late, reject_on_worker_lost, prefetch 1; task expiry; remote control/gossip/mingle off">
 <title>RabbitMQ 4.3 &#x28;sn-be-store-rabbitmq) – rabbitmq at compose service rabbitmq, volume dev-rabbitmq-4, guest/guest; owner Celery beat in worker; concurrency: acks_late, reject_on_worker_lost, prefetch 1; task expiry; remote control/gossip/mingle off</title>
-<rect class="sn-diagram__box" x="306.8" y="472.5" width="196.0" height="85.0"/>
-<rect class="sn-diagram__stripe" x="308.3" y="474.0" width="5" height="82.0"/>
-<text class="sn-diagram__t body-strong" x="320.8" y="494.8">RabbitMQ 4.3</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="320.8" y="512.7">ops · rabbitmq</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="320.8" y="529.5">compose service rabbitmq,…</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="320.8" y="546.3">+1 more reader &#x28;table)</text>
+<rect class="sn-diagram__box" x="414.5" y="472.5" width="196.0" height="85.0"/>
+<rect class="sn-diagram__stripe" x="416.0" y="474.0" width="5" height="82.0"/>
+<text class="sn-diagram__t body-strong" x="428.5" y="494.8">RabbitMQ 4.3</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="428.5" y="512.7">ops · rabbitmq</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="428.5" y="529.5">compose service rabbitmq,…</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="428.5" y="546.3">+1 more reader &#x28;table)</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-store-redis" tabindex="0" aria-label="Redis 8.10 &#x28;sn-be-store-redis) – redis at compose service redis &#x28;anonymous volume /data); owner rest-api &#x28;OAuth state), graph-api &#x28;batch status), unified-scraper spiders &#x28;quota, dedupe); concurrency: &#x54;TL keys only; no locks">
 <title>Redis 8.10 &#x28;sn-be-store-redis) – redis at compose service redis &#x28;anonymous volume /data); owner rest-api &#x28;OAuth state), graph-api &#x28;batch status), unified-scraper spiders &#x28;quota, dedupe); concurrency: &#x54;TL keys only; no locks</title>
-<rect class="sn-diagram__box" x="116.3" y="464.0" width="169.0" height="102.0"/>
-<rect class="sn-diagram__stripe" x="117.8" y="465.5" width="5" height="99.0"/>
-<text class="sn-diagram__t body-strong" x="130.3" y="486.3">Redis 8.10</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="130.3" y="504.2">ops · redis</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="130.3" y="521.0">compose service redis…</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="130.3" y="537.8">concurrency: lock</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="130.3" y="554.6">+1 more reader &#x28;table)</text>
-<path class="sn-diagram__lock" d="M2 6h8v5H2z M4 6V4a2 2 0 0 1 4 0v2" transform="translate(263.3 472.0)"/>
+<rect class="sn-diagram__box" x="224.0" y="464.0" width="169.0" height="102.0"/>
+<rect class="sn-diagram__stripe" x="225.5" y="465.5" width="5" height="99.0"/>
+<text class="sn-diagram__t body-strong" x="238.0" y="486.3">Redis 8.10</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="238.0" y="504.2">ops · redis</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="238.0" y="521.0">compose service redis…</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="238.0" y="537.8">concurrency: lock</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="238.0" y="554.6">+1 more reader &#x28;table)</text>
+<path class="sn-diagram__lock" d="M2 6h8v5H2z M4 6V4a2 2 0 0 1 4 0v2" transform="translate(371.0 472.0)"/>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="sn-be-store-refmb" tabindex="0" aria-label="ref_mb MusicBrainz mirror &#x28;sn-be-store-refmb) – postgres at host.docker.internal:55433 db ref_mb &#x28;optional, MB_LOCAL_ENABLED=false); owner external &#x28;musicLibrary fetch_metabrainz); concurrency: read-only role, 2000ms statement timeout">
 <title>ref_mb MusicBrainz mirror &#x28;sn-be-store-refmb) – postgres at host.docker.internal:55433 db ref_mb &#x28;optional, MB_LOCAL_ENABLED=false); owner external &#x28;musicLibrary fetch_metabrainz); concurrency: read-only role, 2000ms statement timeout</title>
-<rect class="sn-diagram__box" x="98.3" y="236.0" width="193.0" height="90.0"/>
-<rect class="sn-diagram__stripe" x="99.8" y="237.5" width="5" height="87.0"/>
-<text class="sn-diagram__t body-strong" x="112.3" y="258.3">ref_mb MusicBrainz</text>
-<text class="sn-diagram__t body-strong" x="112.3" y="279.3">mirror</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="112.3" y="297.2">ingest · postgres</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="112.3" y="314.0">host.docker.internal:55433…</text>
+<rect class="sn-diagram__box" x="206.0" y="236.0" width="193.0" height="90.0"/>
+<rect class="sn-diagram__stripe" x="207.5" y="237.5" width="5" height="87.0"/>
+<text class="sn-diagram__t body-strong" x="220.0" y="258.3">ref_mb MusicBrainz</text>
+<text class="sn-diagram__t body-strong" x="220.0" y="279.3">mirror</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="220.0" y="297.2">ingest · postgres</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="220.0" y="314.0">host.docker.internal:55433…</text>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="sn-be-store-scraper-progress" tabindex="0" aria-label="unified scraper in-memory progress &#x28;sn-be-store-scraper-progress) – memory at OrderedDict in unified_scraper_api process; owner unified-scraper; concurrency: ContextVar per request; lost on restart">
 <title>unified scraper in-memory progress &#x28;sn-be-store-scraper-progress) – memory at OrderedDict in unified_scraper_api process; owner unified-scraper; concurrency: ContextVar per request; lost on restart</title>
-<rect class="sn-diagram__box" x="119.8" y="87.0" width="178.0" height="106.0"/>
-<rect class="sn-diagram__stripe" x="121.3" y="88.5" width="5" height="103.0"/>
-<text class="sn-diagram__t body-strong" x="133.8" y="109.3">unified scraper</text>
-<text class="sn-diagram__t body-strong" x="133.8" y="130.3">in-memory progress</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="133.8" y="148.2">ingest · memory</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="133.8" y="165.0">OrderedDict in…</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="133.8" y="181.8">+1 more reader &#x28;table)</text>
+<rect class="sn-diagram__box" x="227.5" y="87.0" width="178.0" height="106.0"/>
+<rect class="sn-diagram__stripe" x="229.0" y="88.5" width="5" height="103.0"/>
+<text class="sn-diagram__t body-strong" x="241.5" y="109.3">unified scraper</text>
+<text class="sn-diagram__t body-strong" x="241.5" y="130.3">in-memory progress</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="241.5" y="148.2">ingest · memory</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="241.5" y="165.0">OrderedDict in…</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="241.5" y="181.8">+1 more reader &#x28;table)</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-svc-rest-api" tabindex="0" aria-label="&#x52;EST &#x41;PI &#x28;sn-be-svc-rest-api) – ops, service-ui, Production">
 <title>&#x52;EST &#x41;PI &#x28;sn-be-svc-rest-api) – ops, service-ui, Production</title>
-<rect class="sn-diagram__box" x="530.8" y="369.0" width="140.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="532.3" y="370.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="544.8" y="391.3">&#x52;EST &#x41;PI</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="544.8" y="409.2">ops · service</text>
+<rect class="sn-diagram__box" x="638.5" y="369.0" width="140.0" height="52.0"/>
+<rect class="sn-diagram__stripe" x="640.0" y="370.5" width="5" height="49.0"/>
+<text class="sn-diagram__t body-strong" x="652.5" y="391.3">&#x52;EST &#x41;PI</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="652.5" y="409.2">ops · service</text>
 </g>
 <g class="sn-diagram__node sn-dg-c1 sn-diagram__node--production" data-node="sn-be-svc-unified-scraper" tabindex="0" aria-label="Unified scraper &#x28;sn-be-svc-unified-scraper) – ingest, service-ui, Production">
 <title>Unified scraper &#x28;sn-be-svc-unified-scraper) – ingest, service-ui, Production</title>
-<rect class="sn-diagram__box" x="692.8" y="369.0" width="140.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="694.3" y="370.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="706.8" y="391.3">Unified scraper</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="706.8" y="409.2">ingest · service</text>
+<rect class="sn-diagram__box" x="800.5" y="369.0" width="140.0" height="52.0"/>
+<rect class="sn-diagram__stripe" x="802.0" y="370.5" width="5" height="49.0"/>
+<text class="sn-diagram__t body-strong" x="814.5" y="391.3">Unified scraper</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="814.5" y="409.2">ingest · service</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-svc-worker" tabindex="0" aria-label="Worker &#x28;sn-be-svc-worker) – ops, service-ui, Production">
 <title>Worker &#x28;sn-be-svc-worker) – ops, service-ui, Production</title>
-<rect class="sn-diagram__box" x="854.8" y="369.0" width="140.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="856.3" y="370.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="868.8" y="391.3">Worker</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="868.8" y="409.2">ops · service</text>
+<rect class="sn-diagram__box" x="962.5" y="369.0" width="140.0" height="52.0"/>
+<rect class="sn-diagram__stripe" x="964.0" y="370.5" width="5" height="49.0"/>
+<text class="sn-diagram__t body-strong" x="976.5" y="391.3">Worker</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="976.5" y="409.2">ops · service</text>
 </g>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--production" data-node="sn-be-tbl-outbox" tabindex="0" aria-label="outbox_events +2 &#x28;sn-be-tbl-outbox) – ops, postgres, Production">
 <title>outbox_events +2 &#x28;sn-be-tbl-outbox) – ops, postgres, Production</title>
-<rect class="sn-diagram__box" x="700.8" y="114.0" width="158.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="702.3" y="115.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="714.8" y="136.3">outbox_events +2</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="714.8" y="154.2">ops · postgres</text>
+<rect class="sn-diagram__box" x="808.5" y="114.0" width="158.0" height="52.0"/>
+<rect class="sn-diagram__stripe" x="810.0" y="115.5" width="5" height="49.0"/>
+<text class="sn-diagram__t body-strong" x="822.5" y="136.3">outbox_events +2</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="822.5" y="154.2">ops · postgres</text>
 </g>
 <g class="sn-diagram__legend" aria-label="Legend">
 <text class="sn-diagram__t body-strong" x="24.0" y="623.3">Key</text>

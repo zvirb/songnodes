@@ -1,6 +1,6 @@
 # SongNodes · Data flow report · 7 Nov 2026
 
-Built 7 Nov 2026, 10:40 AEDT by Claude (Opus 5.5) for Markus, session 01NvWNfTGjhUeGYwDZx2H948. songnodes `7429821` (docs/data-flow-investigation), musicLibrary snapshot 7 Nov 2026, `findings.json` sha256 `e469b41763f1`. Web report: `report/index.html`; PDF: `DATA_FLOW_AND_PAGE_INTERACTION_REPORT.pdf`. Every number below is computed from `findings.json`.
+Built 7 Nov 2026, 11:07 AEDT by Claude (Opus 5.5) for Markus, session 01NvWNfTGjhUeGYwDZx2H948. songnodes `7429821` (docs/data-flow-investigation), musicLibrary snapshot 7 Nov 2026, `findings.json` sha256 `e469b41763f1`. Web report: `report/index.html`; PDF: `DATA_FLOW_AND_PAGE_INTERACTION_REPORT.pdf`. Every number below is computed from `findings.json`.
 
 > Read as: one estate of two projects. songnodes (git, main @7429821) is the source of truth for SongNodes; E:\musicLibrary (no git) is read from a snapshot taken 7 Nov 2026 without its 58 GB data folder. Queued = open PRs #576–#580, musicLibrary plan/jules_payloads and unmerged briefs.
 
@@ -44,31 +44,31 @@ Built 7 Nov 2026, 10:40 AEDT by Claude (Opus 5.5) for Markus, session 01NvWNfTGj
 
 ![D2a: System architecture – ingest, musiclibrary](system-architecture-data-flow.svg)
 
-**D2a System architecture – ingest, musiclibrary.** Every ingest, musiclibrary flow, numbered as in the flow table; all of them are built. *n = 11 · flows · state built · source flows[] (n, id, from, to, label, domain, state); pages[]/stores[] (title, name, domain, kind, classification, state); domain_order; colour_map · method graphviz dot layered layout (LR, order reverse; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 1 crossings, 0 edges through nodes*
+**D2a System architecture – ingest, musiclibrary.** Every ingest, musiclibrary flow, numbered as in the flow table; all of them are built. *n = 11 · flows · state built · source flows[] (n, id, from, to, label, domain, state); pages[]/stores[] (title, name, domain, kind, classification, state); domain_order; colour_map · method graphviz dot layered layout (TB, order reverse; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 1 crossings, 0 edges through nodes*
 
 ![D2b: System architecture – ingest, songnodes](system-architecture-data-flow-b.svg)
 
-**D2b System architecture – ingest, songnodes.** Every ingest, songnodes flow, numbered as in the flow table; all of them are built. *n = 14 · flows · state built · source flows[] (n, id, from, to, label, domain, state); pages[]/stores[] (title, name, domain, kind, classification, state); domain_order; colour_map · method graphviz dot layered layout (TB, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 7 crossings, 0 edges through nodes*
+**D2b System architecture – ingest, songnodes.** Every ingest, songnodes flow, numbered as in the flow table; all of them are built. *n = 14 · flows · state built · source flows[] (n, id, from, to, label, domain, state); pages[]/stores[] (title, name, domain, kind, classification, state); domain_order; colour_map · method graphviz dot layered layout (LR, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 4 crossings, 0 edges through nodes*
 
 ![D2c: System architecture – library, musiclibrary](system-architecture-data-flow-c.svg)
 
-**D2c System architecture – library, musiclibrary.** Every library, musiclibrary flow, numbered as in the flow table; all of them are built. *n = 16 · flows · state built · source flows[] (n, id, from, to, label, domain, state); pages[]/stores[] (title, name, domain, kind, classification, state); domain_order; colour_map · method graphviz dot layered layout (LR, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 3 crossings, 0 edges through nodes*
+**D2c System architecture – library, musiclibrary.** Every library, musiclibrary flow, numbered as in the flow table; all of them are built. *n = 16 · flows · state built · source flows[] (n, id, from, to, label, domain, state); pages[]/stores[] (title, name, domain, kind, classification, state); domain_order; colour_map · method graphviz dot layered layout (TB, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 5 crossings, 0 edges through nodes*
 
 ![D2d: System architecture – library, songnodes](system-architecture-data-flow-d.svg)
 
-**D2d System architecture – library, songnodes.** Every library, songnodes flow, numbered as in the flow table; all of them are built. *n = 8 · flows · state built · source flows[] (n, id, from, to, label, domain, state); pages[]/stores[] (title, name, domain, kind, classification, state); domain_order; colour_map · method graphviz dot layered layout (LR, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes*
+**D2d System architecture – library, songnodes.** Every library, songnodes flow, numbered as in the flow table; all of them are built. *n = 8 · flows · state built · source flows[] (n, id, from, to, label, domain, state); pages[]/stores[] (title, name, domain, kind, classification, state); domain_order; colour_map · method graphviz dot layered layout (TB, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes*
 
 ![D2e: System architecture – graph and sets](system-architecture-data-flow-e.svg)
 
-**D2e System architecture – graph and sets.** Every graph and sets flow, numbered as in the flow table; 1 queued flow appears only in the Projected view. *n = 17 · flows · state built+queued · source flows[] (n, id, from, to, label, domain, state); pages[]/stores[] (title, name, domain, kind, classification, state); domain_order; colour_map · method graphviz dot layered layout (LR, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 1 crossings, 0 edges through nodes*
+**D2e System architecture – graph and sets.** Every graph and sets flow, numbered as in the flow table; 1 queued flow appears only in the Projected view. *n = 17 · flows · state built+queued · source flows[] (n, id, from, to, label, domain, state); pages[]/stores[] (title, name, domain, kind, classification, state); domain_order; colour_map · method graphviz dot layered layout (TB, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 0 crossings, 0 edges through nodes*
 
 ![D2f: System architecture – services](system-architecture-data-flow-f.svg)
 
-**D2f System architecture – services.** Every services flow, numbered as in the flow table; all of them are built. *n = 11 · flows · state built · source flows[] (n, id, from, to, label, domain, state); pages[]/stores[] (title, name, domain, kind, classification, state); domain_order; colour_map · method graphviz dot layered layout (TB, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes*
+**D2f System architecture – services.** Every services flow, numbered as in the flow table; all of them are built. *n = 11 · flows · state built · source flows[] (n, id, from, to, label, domain, state); pages[]/stores[] (title, name, domain, kind, classification, state); domain_order; colour_map · method graphviz dot layered layout (LR, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes*
 
 ![D2g: System architecture – ops and design](system-architecture-data-flow-g.svg)
 
-**D2g System architecture – ops and design.** Every ops and design flow, numbered as in the flow table; 1 queued flow appears only in the Projected view. *n = 10 · flows · state built+queued · source flows[] (n, id, from, to, label, domain, state); pages[]/stores[] (title, name, domain, kind, classification, state); domain_order; colour_map · method graphviz dot layered layout (LR, order given, components packed 4 across, ungrouped; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes*
+**D2g System architecture – ops and design.** Every ops and design flow, numbered as in the flow table; 1 queued flow appears only in the Projected view. *n = 10 · flows · state built+queued · source flows[] (n, id, from, to, label, domain, state); pages[]/stores[] (title, name, domain, kind, classification, state); domain_order; colour_map · method graphviz dot layered layout (TB, order given, components packed 4 across, ungrouped; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes*
 
 
 | Flow | From | To | Data contract | Domain | State | Evidence |
@@ -163,7 +163,7 @@ Built 7 Nov 2026, 10:40 AEDT by Claude (Opus 5.5) for Markus, session 01NvWNfTGj
 
 ![D12: Sister-project dependency graph](sister-project-dependencies.svg)
 
-**D12 Sister-project dependency graph.** Only 8 of 87 flows cross between songnodes and musicLibrary; the rest stay inside one project or reach an external service. *n = 15 · project pairs · state built · source flows[] aggregated by repo pair (pages[]/stores[].repo); tasks[].project; design-system pages · method graphviz dot layered layout (LR, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 15 units; 0 crossings, 0 edges through nodes*
+**D12 Sister-project dependency graph.** Only 8 of 87 flows cross between songnodes and musicLibrary; the rest stay inside one project or reach an external service. *n = 15 · project pairs · state built · source flows[] aggregated by repo pair (pages[]/stores[].repo); tasks[].project; design-system pages · method graphviz dot layered layout (TB, order degree; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 17 units; 0 crossings, 0 edges through nodes*
 
 
 ## 3. Page catalogue and standing rules
@@ -695,7 +695,7 @@ The full page catalogue with rule results is in `PAGE_CLASSIFICATION_AUDIT.md`.
 
 ![D7c: State machine – OAuth token](state-machine-oauth-token.svg)
 
-**D7c State machine – OAuth token.** 5 states, 7 transitions; every timing on an arrow comes from the timings table. *n = 7 · transitions · state built · source protocols sn-fe-proto-oauth, sn-be-proto-oauth-pkce, ml-proto-tidal-login; timings sn-be-t-oauth-state, sn-fe-t-token-buffer, sn-fe-t-token-check, sn-fe-t-token-default-expiry, sn-fe-t-oauth-error-redirect, ml-t-pkce-age · method graphviz dot layered layout (LR, order reverse; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes*
+**D7c State machine – OAuth token.** 5 states, 7 transitions; every timing on an arrow comes from the timings table. *n = 7 · transitions · state built · source protocols sn-fe-proto-oauth, sn-be-proto-oauth-pkce, ml-proto-tidal-login; timings sn-be-t-oauth-state, sn-fe-t-token-buffer, sn-fe-t-token-check, sn-fe-t-token-default-expiry, sn-fe-t-oauth-error-redirect, ml-t-pkce-age · method graphviz dot layered layout (LR, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes*
 
 
 **Resumable resolve** (`ml-proto-resolve-resume`, built). Participants: ml-cli-resolve, ml-agent-weekly-run. Load inbox/resolved_<date>.json if present; todo = to_resolve items whose norm_key is not yet a key; 4 worker threads; results merged in order and the whole file re-dumped every 20 songs and at the end. The agent loops 'timeout 160 ... resolve' until the final line appears. Conflicts: first result per norm_key wins; an empty result (both APIs failed or no match) is stored and never retried for that date Stale data: no TIDAL app secret: Deezer only Evidence: musicLibrary/pipeline/run_weekly.py:414-463, musicLibrary/agent/weekly_run.md:3
@@ -966,7 +966,7 @@ Objective: Shape a wave-shaped set from the crate, check every transition and se
 
 ![D5-P2: Swimlane – P2 Set planner](d5-p2-set-planner.svg)
 
-**D5-P2 Swimlane – P2 Set planner.** Set planner: 8 steps across 3 lanes; 6 steps name a fallback. *n = 8 · steps · state built · source personas[].steps[] (n, page, action, writes, trigger, handoff, fallback); pages[].domain · method hand-placed swimlane (lanes = systems, columns = steps, card width 160); orthogonal arrows in the column gaps; 0 crossings by construction*
+**D5-P2 Swimlane – P2 Set planner.** Set planner: 8 steps across 3 lanes; 6 steps name a fallback. *n = 8 · steps · state built · source personas[].steps[] (n, page, action, writes, trigger, handoff, fallback); pages[].domain · method hand-placed swimlane (lanes = systems, columns = steps, card width 180); orthogonal arrows in the column gaps; 0 crossings by construction*
 
 | Step | Page | Action | Data written | Trigger | Handoff | Fallback |
 |---|---|---|---|---|---|---|
@@ -1023,9 +1023,6 @@ Objective: Keep the stack, scrapers and imports healthy. Device: laptop tuf-boi 
 
 Objective: Ship one-job packages through PRs without breaking contracts or the design system. Device: laptop or cloud agent session (Jules/Claude) with Docker for E2E; developer workstation and claude.ai artifact viewer; laptop tuf-boi (Git Bash / Linux VM shell). Entry: `sn-be-cli-scope-guard-g1`. Basis: Inferred from pages and docs.
 
-![D5-P5: Swimlane – P5 Developer](d5-p5-developer.svg)
-
-**D5-P5 Swimlane – P5 Developer.** Developer: 8 steps across 3 lanes; 4 steps name a fallback. *n = 8 · steps · state built · source personas[].steps[] (n, page, action, writes, trigger, handoff, fallback); pages[].domain · method hand-placed swimlane (lanes = systems, columns = steps, card width 160); orthogonal arrows in the column gaps; 0 crossings by construction*
 
 | Step | Page | Action | Data written | Trigger | Handoff | Fallback |
 |---|---|---|---|---|---|---|
@@ -1161,7 +1158,7 @@ See `ARCHITECTURE_ENHANCEMENTS_AND_GAPS_REPORT.md` for the full gap analysis: 28
 
 ![D9: Built to Projected change map](built-to-projected-change-map.svg)
 
-**D9 Built to Projected change map.** Queued work adds 10 cards and 6 edges and changes 3 built items; 32 briefs wait behind them. *n = 51 · items · state built+queued · source queued[] (PR touches and effect, brief notes); flows[] and pages[]/stores[] with state queued · method graphviz dot layered layout (LR, order given; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes*
+**D9 Built to Projected change map.** Queued work adds 10 cards and 6 edges and changes 3 built items; 32 briefs wait behind them. *n = 51 · items · state built+queued · source queued[] (PR touches and effect, brief notes); flows[] and pages[]/stores[] with state queued · method graphviz dot layered layout (LR, order given, components packed 2 across; 12 rank directions and input orders tried, scored by legibility then crossings), splines=ortho, own number badges, type floor 12 units; 0 crossings, 0 edges through nodes*
 
 | ID | What | Source | Effect | Touches |
 |---|---|---|---|---|
@@ -1468,13 +1465,13 @@ See `ARCHITECTURE_ENHANCEMENTS_AND_GAPS_REPORT.md` for the full gap analysis: 28
 | 1 linter | pass | 0 findings from design-system/linters/check.py |
 | 2 tokens | pass | 0 literal colours, sizes, spacing or radii outside design-system definitions |
 | 3 parity | pass | 0 items missing from a figure or table in web, sheet or PDF; 0 flows undrawn |
-| 4 diagrams | pass | 51 SVGs checked; 0 with overflow, collision or text under 9.5 px; 0 edges through nodes; crossings {'D1': 0, 'D2a': 1, 'D2b': 7, 'D2c': 3, 'D2d': 0, 'D2e': 1, 'D2f': 0, 'D2g': 0, 'D3a': 2, 'D3b': 0, 'D3c': 10, 'D3d': 12, 'D3e': 0, 'D3f': 0, 'D4a': 4, 'D4b': 0, 'D4c': 0, 'D5': 0, 'D5-P1': 0, 'D5-P2': 0, 'D5-P3': 0, 'D5-P4': 0, 'D5-P5': 0, 'D5-P6': 0, 'D5-P7': 0, 'D5-P8': 0, 'D6a': 0, 'D6b': 0, 'D6c': 0, 'D7a': 0, 'D7b': 0, 'D7c': 0, 'D8a': 0, 'D8b': 0, 'D8c': 0, 'D9': 0, 'D10': 0, 'D11': 1, 'D12': 0} |
-| 5 pdf | fail | 196 pages; pages over 40% empty (pages before an orientation change exempt): [(47, 0.41), (145, 0.41), (146, 0.44), (180, 0.5)] |
+| 4 diagrams | fail | 52 SVGs checked; 1 with overflow, collision or text under 9.5 px; 0 edges through nodes; crossings {'D1': 0, 'D2a': 1, 'D2b': 4, 'D2c': 5, 'D2d': 0, 'D2e': 0, 'D2f': 0, 'D2g': 0, 'D3a': 3, 'D3b': 24, 'D3c': 0, 'D3d': 19, 'D3e': 0, 'D3f': 0, 'D4a': 1, 'D4b': 3, 'D4c': 0, 'D5': 0, 'D5-P1': 0, 'D5-P2': 0, 'D5-P3': 0, 'D5-P4': 0, 'D5-P5a': 0, 'D5-P5b': 0, 'D5-P6': 0, 'D5-P7': 0, 'D5-P8': 0, 'D6a': 0, 'D6b': 0, 'D6c': 0, 'D7a': 0, 'D7b': 0, 'D7c': 0, 'D8a': 0, 'D8b': 0, 'D8c': 0, 'D9': 0, 'D10': 0, 'D11': 1, 'D12': 0} |
+| 5 pdf | fail | 287 pages; 0 portrait elements wider than the page; pages over 40% empty (pages before an orientation change exempt): [(183, 0.83), (190, 0.74), (191, 0.41), (208, 0.96), (227, 0.43), (228, 0.44), (230, 0.48), (232, 0.46), (234, 0.5), (235, 0.41), (240, 0.5), (241, 0.46), (244, 0.52), (258, 0.51)] |
 | 6 colour | pass | 0 module-colour uses in figures; design-system contrast report passes; greyscale shots for QA in build/evidence |
 | 7 conformance | pass | 18 screenshots (report and reference, 3 widths × themes) for QA |
 | 8 offline | pass | 0 console errors, 0 unresolved anchors, 0 network requests with the network blocked |
 | 9 secrets | pass | 0 secret-shaped strings in outputs |
-| 10 claims | pass | 1 PR URLs in the handover, 0 not confirmed by the GitHub API |
+| 10 claims | pass | 2 PR URLs in the handover, 0 not confirmed by the GitHub API |
 
 - Publish design system 1.10.0 to the design-system artifact so it stays mirrored (task DS-T01).
 - Close the security gate before PR #577's tunnel merges (wave W1: SN-T01, SN-T02).

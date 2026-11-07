@@ -96,7 +96,7 @@ def table(tid, caption, cols, rows, sortable=True, filters=None, search=False, s
     head = []
     for cid, hdr, num in cols:
         cls = ' class="num"' if num else ""
-        if sortable:
+        if sortable and not PRINT:    # paper: plain header text that can wrap (sort buttons do not wrap and widen the table)
             head.append('<th scope="col"%s data-sortable><button type="button" data-sort="%s">%s</button></th>' % (cls, cid, E(hdr)))
         else:
             head.append('<th scope="col"%s>%s</th>' % (cls, E(hdr)))
@@ -139,11 +139,11 @@ def table(tid, caption, cols, rows, sortable=True, filters=None, search=False, s
     thead = "<thead><tr>%s</tr></thead>" % "".join(head)
     cap = '<caption class="sn-sr">%s. Column headers with buttons are sortable.</caption>' % E(caption)
     if PRINT and len(rows) > 12:
-        # print: the header and the first three rows travel together (a table's own header cannot be kept with its rows
+        # print: the heading, header and first two rows travel together (a table's own header cannot be kept with its rows
         # in Chromium); the rest continues as a second table whose header repeats on every page it reaches
         bar = '<div class="sn-data-table__bar"><span class="sn-data-table__count" aria-live="polite" data-count>%s</span></div>' % count
         boxes = ('<div class="sn-print-keep">%s%s<div class="sn-tablebox sn-data-table__box"><table class="sn-table">%s%s<tbody>%s</tbody></table></div></div>'
-                 '<div class="sn-tablebox sn-data-table__box"><table class="sn-table">%s<tbody>%s</tbody></table></div>') % (heading, bar, cap, thead, "".join(body[:3]), thead, "".join(body[3:]))
+                 '<div class="sn-tablebox sn-data-table__box"><table class="sn-table">%s<tbody>%s</tbody></table></div>') % (heading, bar, cap, thead, "".join(body[:2]), thead, "".join(body[2:]))
         return '<div class="sn-data-table%s%s" id="%s">%s%s%s</div>' % (" sn-data-table--stack" if stack else "", keep, tid, tools, boxes, nt)
     boxes = '<div class="sn-tablebox sn-data-table__box"><table class="sn-table">%s%s<tbody>%s</tbody></table></div>' % (cap, thead, "".join(body))
     return ('%s<div class="sn-data-table%s%s" id="%s">%s<div class="sn-data-table__bar"><span class="sn-data-table__count" aria-live="polite" data-count>%s</span></div>%s%s</div>') % (
@@ -172,7 +172,7 @@ def figure_html(f, mode):
     meta.append(pill(st, sw))
     if f.get("source"):
         meta.append("Source: %s" % E(f["source"]))
-    if f.get("method"):
+    if f.get("method") and not PRINT:     # paper keeps n, unit, state and source; the method is in the web report and figures.json
         meta.append("Method: %s" % E(f["method"]))
     tools = ""
     if mode == "web":
@@ -203,7 +203,7 @@ def figure_html(f, mode):
     canvas_attrs = ' tabindex="0" role="group" aria-label="%s, use plus and minus to zoom, arrow keys to pan"' % E(f["title"]) if mode == "web" else ""
     return ('<figure class="sn-figure%s%s" id="%s" data-figure="%s"%s><div class="sn-figure__head"><div class="sn-chart-frame__titles">%s</div>%s%s</div>'
             '<p class="sn-figure__caption body">%s</p><div class="sn-figure__canvas"%s>%s</div><p class="sn-figure__meta caption">%s</p>%s</figure>') % (
-        kind, wide, "fig-" + E(f["id"].lower()), E(f["id"]), filt, title(f["id"], f["title"], "title-s", "h3"), toggle, tools,
+        kind, wide, f.get("anchor") or "fig-" + E(f["id"].lower()), E(f["id"]), filt, title(f["id"], f["title"], "title-s", "h3"), toggle, tools,
         E(f["caption"]), canvas_attrs, svg, " · ".join(meta), table_html)
 
 

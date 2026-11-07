@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 862 569" role="img" aria-labelledby="D7c-t D7c-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 863 415" role="img" aria-labelledby="D7c-t D7c-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
 :root, [data-theme="dark"] {
   --bg: #222222;
   --surface-1: #2d2d2d;
@@ -445,6 +445,7 @@
   --drawer-w: 300px;
   --rail-w: 248px;
   --content-max: 1400px;
+  --print-wide-h: 150mm;
   --print-wide-w: 273mm;
   --prose-max: 68ch;
   --z-base: 0;
@@ -789,107 +790,107 @@
 .sn-chart-frame__axis-title { fill: var(--chart-axis); font-family: var(--font-body); font-size: 0.6875rem; }</style>
 <title id="D7c-t">State machine: OAuth token</title>
 <desc id="D7c-d">5 states and 7 numbered &#116;ransitions of the oauth token lifecycle, with the guard or timing of each &#116;ransition listed below.</desc>
-<rect class="sn-diagram__bg" x="0" y="0" width="862" height="569"/>
+<rect class="sn-diagram__bg" x="0" y="0" width="863" height="415"/>
 <g class="sn-diagram__groups"></g>
 <g class="sn-diagram__edge sn-dg-c7 sn-diagram__edge--built" data-from="D7c-none" data-to="D7c-authorising" data-edge="D7c-t01" tabindex="0" aria-label="T1: Not connected → Authorising – connect: state in sessionStorage, &#x50;KCE verifier in Redis &#x28;&#x54;TL 600 s)">
 <title>T1: Not connected → Authorising – connect: state in sessionStorage, &#x50;KCE verifier in Redis &#x28;&#x54;TL 600 s)</title>
-<path class="sn-diagram__line" d="M536.9 211.0 L325.4 211.0"/>
-<path class="sn-diagram__head" d="M325.4 211.0 L332.4 207.2 L332.4 214.8 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="417.0" y="199.9" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="431.1" y="215.2" text-anchor="middle">T1</text></g>
+<path class="sn-diagram__line" d="M175.1 74.7 L220.9 74.7"/>
+<path class="sn-diagram__head" d="M220.9 74.7 L213.9 70.9 L213.9 78.5 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="183.9" y="63.6" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="198.0" y="78.9" text-anchor="middle">T1</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c7 sn-diagram__edge--built" data-from="D7c-authorising" data-to="D7c-connected" data-edge="D7c-t02" tabindex="0" aria-label="T2: Authorising → Connected – callback validates state, exchanges code, stores token &#x28;default_user)">
 <title>T2: Authorising → Connected – callback validates state, exchanges code, stores token &#x28;default_user)</title>
-<path class="sn-diagram__line" d="M325.7 198.0 L431.3 198.0 L431.3 166.3"/>
-<path class="sn-diagram__head" d="M431.3 166.3 L427.4 173.3 L435.1 173.3 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="364.3" y="186.9" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="378.5" y="202.2" text-anchor="middle">T2</text></g>
+<path class="sn-diagram__line" d="M341.4 66.0 L386.9 66.0"/>
+<path class="sn-diagram__head" d="M386.9 66.0 L379.9 62.1 L379.9 69.8 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="350.0" y="54.9" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="364.1" y="70.2" text-anchor="middle">T2</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c7 sn-diagram__edge--built" data-from="D7c-authorising" data-to="D7c-none" data-edge="D7c-t03" tabindex="0" aria-label="T3: Authorising → Not connected – state expired or error: redirect after 3000 ms; musicLibrary &#x50;KCE link &gt; 900 s">
 <title>T3: Authorising → Not connected – state expired or error: redirect after 3000 ms; musicLibrary &#x50;KCE link &gt; 900 s</title>
-<path class="sn-diagram__line" d="M325.6 224.0 L537.2 224.0"/>
-<path class="sn-diagram__head" d="M537.2 224.0 L530.2 220.2 L530.2 227.8 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="385.5" y="212.9" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="399.6" y="228.2" text-anchor="middle">T3</text></g>
+<path class="sn-diagram__line" d="M220.8 57.3 L175.0 57.3"/>
+<path class="sn-diagram__head" d="M175.0 57.3 L182.0 53.4 L182.0 61.1 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="183.8" y="32.1" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="197.9" y="47.4" text-anchor="middle">T3</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c7 sn-diagram__edge--built" data-from="D7c-connected" data-to="D7c-refreshing" data-edge="D7c-t04" tabindex="0" aria-label="T4: Connected → Refreshing – checked every 60 s; 5 min before expiry &#x28;default lifetime 3600 s)">
 <title>T4: Connected → Refreshing – checked every 60 s; 5 min before expiry &#x28;default lifetime 3600 s)</title>
-<path class="sn-diagram__line" d="M370.9 130.3 L325.4 130.3"/>
-<path class="sn-diagram__head" d="M325.4 130.3 L332.4 126.5 L332.4 134.2 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="334.0" y="119.2" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="348.1" y="134.5" text-anchor="middle">T4</text></g>
+<path class="sn-diagram__line" d="M507.4 74.7 L552.9 74.7"/>
+<path class="sn-diagram__head" d="M552.9 74.7 L545.9 70.9 L545.9 78.5 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="516.0" y="63.6" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="530.1" y="78.9" text-anchor="middle">T4</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c7 sn-diagram__edge--built" data-from="D7c-refreshing" data-to="D7c-connected" data-edge="D7c-t05" tabindex="0" aria-label="T5: Refreshing → Connected – refresh under navigator.locks &#x28;localStorage mutex fallback)">
 <title>T5: Refreshing → Connected – refresh under navigator.locks &#x28;localStorage mutex fallback)</title>
-<path class="sn-diagram__line" d="M325.7 146.7 L371.2 146.7"/>
-<path class="sn-diagram__head" d="M371.2 146.7 L364.2 142.8 L364.2 150.5 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="334.3" y="149.7" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="348.4" y="165.0" text-anchor="middle">T5</text></g>
+<path class="sn-diagram__line" d="M552.6 57.3 L507.1 57.3"/>
+<path class="sn-diagram__head" d="M507.1 57.3 L514.1 53.4 L514.1 61.1 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="515.7" y="32.1" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="529.9" y="47.4" text-anchor="middle">T5</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c7 sn-diagram__edge--built" data-from="D7c-refreshing" data-to="D7c-expired" data-edge="D7c-t06" tabindex="0" aria-label="T6: Refreshing → Expired – refresh fails">
 <title>T6: Refreshing → Expired – refresh fails</title>
-<path class="sn-diagram__line" d="M265.3 111.0 L265.3 66.0 L370.9 66.0"/>
-<path class="sn-diagram__head" d="M370.9 66.0 L363.9 62.1 L363.9 69.8 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="303.9" y="54.9" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="318.1" y="70.2" text-anchor="middle">T6</text></g>
+<path class="sn-diagram__line" d="M673.4 81.0 L718.9 81.0"/>
+<path class="sn-diagram__head" d="M718.9 81.0 L711.9 77.2 L711.9 84.8 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="682.0" y="69.9" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="696.1" y="85.2" text-anchor="middle">T6</text></g>
 </g>
 <g class="sn-diagram__edge sn-dg-c7 sn-diagram__edge--built" data-from="D7c-expired" data-to="D7c-none" data-edge="D7c-t07" tabindex="0" aria-label="T7: Expired → Not connected – user signs in again">
 <title>T7: Expired → Not connected – user signs in again</title>
-<path class="sn-diagram__line" d="M491.7 66.0 L605.3 66.0 L605.3 184.7"/>
-<path class="sn-diagram__head" d="M605.3 184.7 L601.4 177.7 L609.1 177.7 Z"/>
-<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="591.1" y="114.2" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="605.3" y="129.5" text-anchor="middle">T7</text></g>
+<path class="sn-diagram__line" d="M718.9 107.0 L108.0 107.0 L108.0 92.2"/>
+<path class="sn-diagram__head" d="M108.0 92.2 L104.2 99.2 L111.8 99.2 Z"/>
+<g class="sn-diagram__badge"><rect class="sn-diagram__badge-box" x="399.3" y="95.9" width="28.3" height="22.2"/><text class="sn-diagram__t data-strong" x="413.4" y="111.2" text-anchor="middle">T7</text></g>
 </g>
 <g class="sn-diagram__node sn-dg-c7 sn-diagram__node--production" data-node="D7c-authorising" tabindex="0" aria-label="State: Authorising">
 <title>State: Authorising</title>
-<rect class="sn-diagram__box" x="205.3" y="185.0" width="120.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="206.8" y="186.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="219.3" y="207.3">Authorising</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="219.3" y="225.2">services · state</text>
+<rect class="sn-diagram__box" x="221.0" y="40.0" width="120.0" height="52.0"/>
+<rect class="sn-diagram__stripe" x="222.5" y="41.5" width="5" height="49.0"/>
+<text class="sn-diagram__t body-strong" x="235.0" y="62.3">Authorising</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="235.0" y="80.2">services · state</text>
 </g>
 <g class="sn-diagram__node sn-dg-c7 sn-diagram__node--production" data-node="D7c-connected" tabindex="0" aria-label="State: Connected">
 <title>State: Connected</title>
-<rect class="sn-diagram__box" x="371.3" y="114.0" width="120.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="372.8" y="115.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="385.3" y="136.3">Connected</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="385.3" y="154.2">services · state</text>
+<rect class="sn-diagram__box" x="387.0" y="40.0" width="120.0" height="52.0"/>
+<rect class="sn-diagram__stripe" x="388.5" y="41.5" width="5" height="49.0"/>
+<text class="sn-diagram__t body-strong" x="401.0" y="62.3">Connected</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="401.0" y="80.2">services · state</text>
 </g>
 <g class="sn-diagram__node sn-dg-c7 sn-diagram__node--production" data-node="D7c-expired" tabindex="0" aria-label="State: Expired">
 <title>State: Expired</title>
-<rect class="sn-diagram__box" x="371.3" y="40.0" width="120.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="372.8" y="41.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="385.3" y="62.3">Expired</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="385.3" y="80.2">services · state</text>
+<rect class="sn-diagram__box" x="719.0" y="70.0" width="120.0" height="52.0"/>
+<rect class="sn-diagram__stripe" x="720.5" y="71.5" width="5" height="49.0"/>
+<text class="sn-diagram__t body-strong" x="733.0" y="92.3">Expired</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="733.0" y="110.2">services · state</text>
 </g>
 <g class="sn-diagram__node sn-dg-c7 sn-diagram__node--production" data-node="D7c-none" tabindex="0" aria-label="State: Not connected">
 <title>State: Not connected</title>
-<rect class="sn-diagram__box" x="537.3" y="185.0" width="135.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="538.8" y="186.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="551.3" y="207.3">Not connected</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="551.3" y="225.2">services · state</text>
+<rect class="sn-diagram__box" x="40.0" y="40.0" width="135.0" height="52.0"/>
+<rect class="sn-diagram__stripe" x="41.5" y="41.5" width="5" height="49.0"/>
+<text class="sn-diagram__t body-strong" x="54.0" y="62.3">Not connected</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="54.0" y="80.2">services · state</text>
 </g>
 <g class="sn-diagram__node sn-dg-c7 sn-diagram__node--production" data-node="D7c-refreshing" tabindex="0" aria-label="State: Refreshing">
 <title>State: Refreshing</title>
-<rect class="sn-diagram__box" x="205.3" y="111.0" width="120.0" height="52.0"/>
-<rect class="sn-diagram__stripe" x="206.8" y="112.5" width="5" height="49.0"/>
-<text class="sn-diagram__t body-strong" x="219.3" y="133.3">Refreshing</text>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="219.3" y="151.2">services · state</text>
+<rect class="sn-diagram__box" x="553.0" y="40.0" width="120.0" height="52.0"/>
+<rect class="sn-diagram__stripe" x="554.5" y="41.5" width="5" height="49.0"/>
+<text class="sn-diagram__t body-strong" x="567.0" y="62.3">Refreshing</text>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="567.0" y="80.2">services · state</text>
 </g>
 <g class="sn-diagram__key">
-<text class="sn-diagram__t body-strong" x="24.0" y="275.3">&#84;ransitions</text>
-<text class="sn-diagram__t data-strong" x="24.0" y="298.3">T1</text>
-<text class="sn-diagram__t sn-diagram__t--2 body-s" x="52.3" y="298.3">Not connected → Authorising: connect: state in sessionStorage, &#x50;KCE verifier in Redis &#x28;&#x54;TL 600 s)</text>
-<text class="sn-diagram__t data-strong" x="24.0" y="320.5">T2</text>
-<text class="sn-diagram__t sn-diagram__t--2 body-s" x="52.3" y="320.5">Authorising → Connected: callback validates state, exchanges code, stores token &#x28;default_user)</text>
-<text class="sn-diagram__t data-strong" x="24.0" y="342.7">T3</text>
-<text class="sn-diagram__t sn-diagram__t--2 body-s" x="52.3" y="342.7">Authorising → Not connected: state expired or error: redirect after 3000 ms; musicLibrary &#x50;KCE link &gt; 900 s</text>
-<text class="sn-diagram__t data-strong" x="24.0" y="364.9">T4</text>
-<text class="sn-diagram__t sn-diagram__t--2 body-s" x="52.3" y="364.9">Connected → Refreshing: checked every 60 s; 5 min before expiry &#x28;default lifetime 3600 s)</text>
-<text class="sn-diagram__t data-strong" x="24.0" y="387.1">T5</text>
-<text class="sn-diagram__t sn-diagram__t--2 body-s" x="52.3" y="387.1">Refreshing → Connected: refresh under navigator.locks &#x28;localStorage mutex fallback)</text>
-<text class="sn-diagram__t data-strong" x="24.0" y="409.3">T6</text>
-<text class="sn-diagram__t sn-diagram__t--2 body-s" x="52.3" y="409.3">Refreshing → Expired: refresh fails</text>
-<text class="sn-diagram__t data-strong" x="24.0" y="431.5">T7</text>
-<text class="sn-diagram__t sn-diagram__t--2 body-s" x="52.3" y="431.5">Expired → Not connected: user signs in again</text>
+<text class="sn-diagram__t body-strong" x="24.0" y="158.3">&#84;ransitions</text>
+<text class="sn-diagram__t data-strong" x="24.0" y="181.3">T1</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-s" x="52.3" y="181.3">Not connected → Authorising: connect: state in sessionStorage, &#x50;KCE verifier in Redis &#x28;&#x54;TL 600 s)</text>
+<text class="sn-diagram__t data-strong" x="24.0" y="203.5">T2</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-s" x="52.3" y="203.5">Authorising → Connected: callback validates state, exchanges code, stores token &#x28;default_user)</text>
+<text class="sn-diagram__t data-strong" x="24.0" y="225.7">T3</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-s" x="52.3" y="225.7">Authorising → Not connected: state expired or error: redirect after 3000 ms; musicLibrary &#x50;KCE link &gt; 900 s</text>
+<text class="sn-diagram__t data-strong" x="24.0" y="247.9">T4</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-s" x="52.3" y="247.9">Connected → Refreshing: checked every 60 s; 5 min before expiry &#x28;default lifetime 3600 s)</text>
+<text class="sn-diagram__t data-strong" x="24.0" y="270.1">T5</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-s" x="52.3" y="270.1">Refreshing → Connected: refresh under navigator.locks &#x28;localStorage mutex fallback)</text>
+<text class="sn-diagram__t data-strong" x="24.0" y="292.3">T6</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-s" x="52.3" y="292.3">Refreshing → Expired: refresh fails</text>
+<text class="sn-diagram__t data-strong" x="24.0" y="314.5">T7</text>
+<text class="sn-diagram__t sn-diagram__t--2 body-s" x="52.3" y="314.5">Expired → Not connected: user signs in again</text>
 </g>
 <g class="sn-diagram__legend" aria-label="Legend">
-<text class="sn-diagram__t body-strong" x="24.0" y="471.7">Key</text>
-<rect class="sn-diagram__swatch sn-dg-c7" x="24.0" y="489.8" width="22" height="10"/>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="54.0" y="498.6">services</text>
-<g class="sn-diagram__edge--built"><path class="sn-diagram__line" d="M121.8 494.8 L143.8 494.8"/></g>
-<text class="sn-diagram__t sn-diagram__t--2 caption" x="151.8" y="498.6">&#84;ransition &#x28;badge T = row in the &#116;ransition list)</text>
+<text class="sn-diagram__t body-strong" x="24.0" y="354.7">Key</text>
+<rect class="sn-diagram__swatch sn-dg-c7" x="24.0" y="372.8" width="22" height="10"/>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="54.0" y="381.6">services</text>
+<g class="sn-diagram__edge--built"><path class="sn-diagram__line" d="M121.8 377.8 L143.8 377.8"/></g>
+<text class="sn-diagram__t sn-diagram__t--2 caption" x="151.8" y="381.6">&#84;ransition &#x28;badge T = row in the &#116;ransition list)</text>
 </g>
 </svg>
