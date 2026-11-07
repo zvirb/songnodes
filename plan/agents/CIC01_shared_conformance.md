@@ -12,6 +12,21 @@ Failure mode: the conformance job rejects shared frontend code.
 - `frontend/src/components/ds/DataTable.tsx`
 - `frontend/src/components/ds/EditableCell.tsx`
 - `frontend/src/features/musicLibrary/SetBuilderPage.tsx`
+- `plan/agents/CIC02_path_primary.md`
+- `plan/agents/CIC03_sets_baselines.md`
+- `frontend/src/features/pathfinder/PathfinderPage.tsx`
+- `frontend/src/features/pathfinder/PathfinderPage.test.tsx`
+- `frontend/tests/e2e/visual.spec.ts-snapshots/sets-dark-desktop-chromium-linux.png`
+- `frontend/tests/e2e/visual.spec.ts-snapshots/sets-dark-phone-chromium-linux.png`
+- `frontend/tests/e2e/visual.spec.ts-snapshots/sets-light-desktop-chromium-linux.png`
+- `frontend/tests/e2e/visual.spec.ts-snapshots/sets-light-phone-chromium-linux.png`
+
+## Integration ownership
+At the user's request to continue until all PRs merge, receive the separately
+reviewed CIC02 and CIC03 prerequisite packages through stacked PRs #599/#600.
+Each package retains its own commit, brief and task slot. Generated PNGs are
+listed separately from the non-generated diff budget. This branch integrates
+them so the shared frontend CI baseline can pass before merging into main.
 
 ## Checks
 - Design-system conformance and sync
