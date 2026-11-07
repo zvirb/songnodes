@@ -249,6 +249,13 @@ Markus's BeanAlliance decisions of 1 Nov 2026, brought into SongNodes at his req
 |---|---|
 | DR-057 | A and B both, as a **View** choice in GraphControls. **Neighbourhood** is the default: the anchor and the tracks within `graph-hood-steps` (3) links, at most `graph-hood-max` (200), strongest link first (`SongNodes.neighbourhood`). **Whole library** draws every track; its Fit may go below 25% and nodes keep a 1.5px minimum radius on screen. C is not adopted. The step and cap values are the defaults proposed on 2 Nov 2026; Markus picked the two views and did not set other values. |
 
+### DR-058 — one primary action when an empty state carries it (Melbourne, 7 Nov 2026), 1.10.0
+7 Nov 2026 · Markus. Context: Three production pages showed two primary buttons at once (Set builder, Pathfinder, Sources import) because the PageHeader primary and the EmptyState primary were both specified. R2 and 06 Interaction require one primary action per view.
+
+| # | Decision |
+|---|---|
+| DR-058 | While a page's `EmptyState` displays the primary action, the `PageHeader` primary action is not rendered (the EmptyState is the view). A page presents at most one primary button (`.sn-btn--primary`) at any time. Verified by `scripts/check_design_system.py` as a DOM and AST check on previews and page components. |
+
 ## How rules are derived
 
 1. Markus's own decisions (DR-001…DR-016) and his past corrections win.
@@ -318,6 +325,7 @@ Automated (CI on SongNodes, script on the design system):
 | Undefined classes | `scripts/check_design_system.py` | An `sn-*` class in app code that no stylesheet defines; existing debt is listed in `frontend/design-system-layout-baseline.txt`, which may only shrink |
 | Page gutter (rendered) | Playwright `design-rules.spec.ts` on every shell route except the graph | The page has no side gutter, or visible text starts within the gutter of the window edge |
 | Text inset (rendered, DR-050) | Playwright `design-rules.spec.ts` on every shell route and `/sources/import` at 390 and 1440px (SongNodes: built in INS1; geometry and exclusions in `frontend/src/lib/textInset.ts`) | Text in a box that draws an edge sits 4–7px from that edge (tight) or closer; the PR is blocked until the inset is at least `space-2` (8px) |
+| One primary action | `scripts/check_design_system.py` | More than one primary button (`.sn-btn--primary`) rendered simultaneously, or PageHeader primary rendered unconditionally while EmptyState carries a primary action (INT-001, DR-058) |
 
 Manual: run the pre-release checklist in Accessibility and quality (section 09) before each minor or major release.
 

@@ -2675,3 +2675,23 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
   - npm run test:unit (passed, 68 test files, 586 tests)
 - Next: merge PR and proceed to next conformance package.
 <!-- SLOT:DS29 END -->
+
+<!-- SLOT:UX-T07 BEGIN -->
+### UX-T07: Rule: one primary when the empty state carries it (UX-07)
+- Start: 2026-11-07 (branch ux-t07-one-primary-empty-state off origin/main 7429821c).
+- Scope: Add the design system rule that while a page's EmptyState displays the primary action, the PageHeader primary action is not rendered (the EmptyState is the view).
+  1. Added rule to `design-system/06-interaction-accessibility.md` (Primary actions and empty states).
+  2. Added atomic rule `INT-001` to `design-system/rules/rules.yaml`.
+  3. Recorded decision `DR-058` in `design-system/17-governance.md` and added to Conformance checking table.
+  4. Implemented AST/DOM check in `scripts/check_design_system.py` detecting when PageHeader unconditionally renders a primary action while EmptyState carries a primary action, and preview HTML check.
+- Verification:
+  - `python scripts/check_design_system.py --check` catches SetBuilderPage unconditional primary at line 436 (`PageHeader renders an unconditional primary action (.sn-btn--primary) while EmptyState also carries a primary action...`).
+  - Verified that guarding the header primary with `{draft.slots.length > 0 && ...}` reduces violations to 0.
+- Checks run:
+  - `scripts/sync-design-system.sh --check` (passed, in sync)
+  - `python scripts/check_feature_imports.py --check` (passed: Feature boundaries OK)
+  - `npm run type-check` (passed)
+  - `npm run lint` (passed: 0 errors)
+  - `npm run test:unit` (passed: 68 test files, 586 tests)
+- Next: Open PR for UX-T07, address SetBuilderPage / PathfinderPage in their respective feature packages (or follow-up), and proceed to UX-T08.
+<!-- SLOT:UX-T07 END -->
