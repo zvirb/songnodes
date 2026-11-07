@@ -267,7 +267,7 @@ const LibraryPage: React.FC = () => {
         desc={lib ? <>{SN.format.count(tracks.length)} tracks heard on PBS, 3RRR and triple j, plus the ARIA Club Chart, with TIDAL and Beatport links.</> : 'Every track heard on PBS, 3RRR and triple j, plus the ARIA Club Chart.'}
         stampVerb="Built"
         stamp={generated}
-        stampUnknown={!!lib}
+        stampUnknown={!generated && !!lib}
         actions={
           <>
             <button className="sn-btn sn-btn--quiet sn-page-header__secondary" type="button" onClick={() => setImportOpen(true)}>

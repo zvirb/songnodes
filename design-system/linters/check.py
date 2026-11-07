@@ -10,7 +10,7 @@ CHECKS=[ # (rule-hint, id, regex, applies-to extension tuple, message)
  ('LAY','LAY-Z',r'z-index:\s*\d+',('.css','.html'),'raw z-index'),
  ('MOT','MOT-DUR',r'(?:transition|animation)[^;{]*\b\d+(?:ms|s)\b',('.css','.html'),'raw duration'),
  ('FBK','FBK-DLG',r'\b(?:alert|confirm|prompt)\s*\(',('.js','.html'),'browser dialog'),
- ('WRT','WRT-EMO',r'[\U0001F300-\U0001FAFF☀-➿]',('.html','.js','.css','.md'),'emoji'),
+ ('WRT','WRT-EMO',r'[\U0001F300-\U0001FAFF☀-✔✖-➿]',('.html','.js','.css','.md'),'emoji'),
  ('WRT','WRT-BANG',r'>[^<>]*\w!(?:\s|<)',('.html',),'exclamation mark in copy'),
  ('WRT','WRT-DATE',r'toLocale(?:Date|Time)String',('.js','.html'),'locale date formatting instead of SongNodes.format'),
  ('A11Y','A11Y-OUTLINE',r'outline:\s*(?:none|0)\b',('.css','.html'),'focus outline removed'),

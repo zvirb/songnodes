@@ -6,6 +6,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { SN, SnIcon, MODULE_ROUTES, moduleOf, type ModuleKey } from '../lib/songnodes';
+import { FreshnessStamp } from '../components/ds/FreshnessStamp';
 
 interface PageHeaderProps {
   mod?: ModuleKey;
@@ -18,13 +19,15 @@ interface PageHeaderProps {
   stamp?: Date | string | null;
   /** Show the stamp verb with an en dash when `stamp` is missing (FreshnessStamp "never loaded"). */
   stampUnknown?: boolean;
+  staleAfterDays?: number;
+  staleMessage?: string;
   pill?: React.ReactNode;
   /** Secondary buttons, then the single primary (always last). */
   actions?: React.ReactNode;
   size?: 'title-l' | 'title-m';
 }
 
-export const PageHeader: React.FC<PageHeaderProps> = ({ mod, here, lead, title, desc, stampVerb = 'Updated', stamp, stampUnknown, pill, actions, size = 'title-l' }) => {
+export const PageHeader: React.FC<PageHeaderProps> = ({ mod, here, lead, title, desc, stampVerb = 'Updated', stamp, stampUnknown, staleAfterDays = 7, staleMessage, pill, actions, size = 'title-l' }) => {
   const m = mod ? moduleOf(mod) : null;
   const st = stamp ? new Date(stamp) : null;
   return (
@@ -43,10 +46,13 @@ export const PageHeader: React.FC<PageHeaderProps> = ({ mod, here, lead, title, 
           {st || stampUnknown || pill ? (
             <p className="sn-page-header__meta">
               {st ? (
-                <span className="sn-page-header__stamp">
-                  <SnIcon name="clock" size={14} />
-                  {stampVerb} <time dateTime={st.toISOString()}>{SN.format.stamp(st)}</time>
-                </span>
+                <FreshnessStamp
+                  className="sn-page-header__stamp"
+                  label={stampVerb}
+                  at={st}
+                  staleAfterDays={staleAfterDays}
+                  staleMessage={staleMessage}
+                />
               ) : stampUnknown ? (
                 <span className="sn-page-header__stamp">
                   <SnIcon name="clock" size={14} />
