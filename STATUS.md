@@ -556,6 +556,13 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 - Sanitized raw upstream error response detail leakage (`detail=f"YouTube API request failed: {error_text}"`) in `services/rest_api/routers/youtube_api.py`. Replaced internal detail responses with a sanitized error message ("YouTube API request failed") while preserving server-side logging. Configured endpoint to resolve API keys from database/environment fallback rather than requiring `api_key` in client query parameters.
 - Added security regression unit tests in `tests/security/test_youtube_api_security.py`.
 - Checks: `uv run --with-requirements services/rest_api/requirements.txt --with pytest python -m pytest -o addopts="" --noconftest tests/security/` passed (30/30).
+
+### SEC: REST Main Router Exception Detail Sanitization (2026-11-06)
+- Start: 2026-11-06
+- End: 2026-11-06
+- Sanitized raw exception string leakage (`detail=str(e)`) across endpoints `/api/graph/nodes`, `/api/graph/edges`, and `/api/v1/music-search/{service}` in `services/rest_api/main.py`. Replaced internal exception details with sanitized error messages while preserving server-side logging (`logger.error(..., exc_info=True)`).
+- Added security regression unit tests in `tests/security/test_rest_main_security.py`.
+- Checks: `PYTHONPATH=services/rest_api:services uv run --with-requirements services/rest_api/requirements.txt --with pytest python -m pytest -o addopts="" --noconftest tests/security/` passed (33/33).
 <!-- SLOT:SEC_SENTINEL END -->
 
 <!-- SLOT:QA1 BEGIN -->
@@ -2675,7 +2682,36 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
   - npm run test:unit (passed, 68 test files, 586 tests)
 - Next: merge PR and proceed to next conformance package.
 <!-- SLOT:DS29 END -->
+  
+<!-- SLOT:DUO3 BEGIN -->
+### DUO3: Cloudflare Tunnel Connector Integration
+- Start: 2026-11-06 (branch duo3-cloudflared-tunnel off origin/main).
+- Scope: Configure Cloudflare Tunnel (cloudflared) connector service in local Docker environment for target domain song.aiwfe.com:
+  1. compose.dev.yaml: Added cloudflared service using cloudflare/cloudflared:latest, configured with TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN:-} and dependency on frontend: { condition: service_healthy }.
+  2. docs/security/cloudflared-tunnel.md: Added comprehensive documentation covering setup, environment variables, Docker Compose vs. standalone local usage, and troubleshooting ingress to song.aiwfe.com.
+- Checks run:
+  - docker compose -f compose.dev.yaml config --quiet (passed)
+  - git diff --check (passed)
+- Next: Open and merge PR duo3-cloudflared-tunnel.
+<!-- SLOT:DUO3 END -->
 
+<!-- SLOT:DUO2 BEGIN -->
+### DUO2: Frontend Login Page and Auth Context
+- Start: 2026-11-06 (branch duo2-frontend-auth off origin/main).
+- Scope: Implement SongNodes design-system compliant Login Page and Authentication Context:
+  1. AuthContext (`frontend/src/features/auth/AuthContext.tsx`): React context provider `AuthProvider` and `useAuth()` hook managing session state (`user`, `isAuthenticated`, `isLoading`), initial session verification via `/api/v1/auth/me` (with Cloudflare Access header support), login initiating Duo MFA via `/api/v1/auth/login` and redirecting to `duo_auth_url`, and logout via `/api/v1/auth/logout`.
+  2. LoginPage (`frontend/src/features/auth/LoginPage.tsx`): Design-system compliant login view using `<Title>`, `<Card>`, `<Button>`, and `<TextField>` components, displaying error banner upon failure and authenticated state upon active session.
+  3. Route (`frontend/src/features/auth/route.tsx`): Route registration for `/login` matching G2 route discovery pattern.
+  4. Unit Tests (`frontend/src/features/auth/LoginPage.test.tsx`): Comprehensive Vitest test coverage for form rendering, input validation, submission, error handling, session check, and Duo redirect.
+- Checks run:
+  - scripts/check_design_system.py --check (passed)
+  - python design-system/source/agentconf/validate.py (passed: 1691 rules, fixture 20/20, INDEX 61 lines)
+  - cd frontend && npm run type-check (passed)
+  - cd frontend && npm run lint (passed, 0 errors)
+  - cd frontend && npm run test:unit (passed, 69 test files, 593 tests)
+- Next: open PR against main and review deployment with Duo tunnel backend.
+<!-- SLOT:DUO2 END -->
+  
 <!-- SLOT:UX-T07 BEGIN -->
 ### UX-T07: Rule: one primary when the empty state carries it (UX-07)
 - Start: 2026-11-07 (branch ux-t07-one-primary-empty-state off origin/main 7429821c).
@@ -2742,3 +2778,52 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
 - Not done: a `design-system/pages/` folder was not created; no page was needed.
 - Next: UX-T12 (close Q-PRINT-1, publish 1.10.0).
 <!-- SLOT:UX-T06 END -->
+    
+<!-- SLOT:DUO1 BEGIN -->
+### DUO1: Cisco Duo Web SDK v4 (OIDC) Universal Prompt and User Auth Router
+- Start: 2026-11-06 (branch duo1-backend-auth off origin/main).
+- Scope: Implement Cisco Duo Web SDK v4 Universal Prompt authentication router (`/api/v1/auth`) with username/password verification, Duo OIDC authorization URL generation, callback handling with token exchange and claim verification, session management via HTTP-only cookie, `/me` endpoint with Cloudflare Access header support, and `/logout`.
+- Changes:
+  1. `services/rest_api/routers/user_auth.py`: Added APIRouter with `/login`, `/duo/callback`, `/me`, and `/logout`, secure credential verification (PBKDF2/Argon2/SHA256/env), state and nonce management with Redis/in-memory fallback, Duo OIDC token exchange via httpx, JWT session cookie `songnodes_session`, and `register(app)` function.
+  2. `tests/rest_api/test_user_auth.py`: Added 20 unit tests covering password hashing, credential verification, login authorization URL generation, Duo callback code exchange and claim verification, redirect support, error handling, session cookies, Cloudflare Access headers, and logout.
+- Checks run:
+  - `python -m pytest tests/rest_api/test_user_auth.py` (passed: 20/20 tests)
+  - `python -m pytest tests/rest_api/test_router_registry.py` (passed: 4/4 tests)
+- Next: merge PR and integrate with frontend login interface.
+<!-- SLOT:DUO1 END -->
+
+<!-- SLOT:CIC04 BEGIN -->
+## CIC04 — started 2026-11-07
+One job: remove unsafe auth defaults and fix the reported auth CodeQL findings in PR 578.
+Owned paths: services/rest_api/routers/user_auth.py, tests/rest_api/test_user_auth.py, plan/agents/CIC04_auth_ci.md, STATUS.md CIC04 slot.
+Removed default admin credentials and default JWT signing secret, rejected legacy fast SHA256 hashes and restricted redirects to fixed local paths. Replaced undeclared respx with standard-library AsyncMock. Passed: 29 auth/common credential tests (7 warnings: optional timeout plugin absent, Starlette deprecation and short existing test-only keys); syntax and whitespace. Initial sandbox TestClient run interrupted; completed outside sandbox with Redis disabled. Runtime is bundled Python 3.12, so CI Python 3.15 remains authoritative. Next: rebase on main and run full CI.
+<!-- SLOT:CIC04 END -->
+    
+<!-- SLOT:ARCH1 BEGIN -->
+### ARCH1: End-to-end data-flow investigation (SongNodes + musicLibrary)
+- 7 Nov 2026: a second, fuller run (Claude session 01NvWNfTGjhUeGYwDZx2H948) was merged into this branch at the owner's request. The first run's build scripts are kept; where both runs wrote the same report file the second run's version is kept, and the first run's figures are re-verified as baseline claims (register area baseline-581).
+- Scope now: 115 pages and entry points, 404 signals, 48 stores, 87 numbered flows, 8 personas, 28 gaps, 47 debt items, 81 verified claims, 53 figures (D1-D12 with panels, C1-C12), all computed from documentation/data-flow-analysis/findings.json.
+- Design system raised to 1.10.0 at the source (print document rules, named pages @page doc / @page wide with page numbers, ReportPage, diagram and report-chart patterns, linter glyph fix); frontend copy re-synced (sync --check passes).
+- Build: `python3 documentation/data-flow-analysis/build/build.py` (findings.json -> SVGs -> Markdown -> web report -> print sheet -> two-pass PDF -> gates.json).
+- Checks: gates.json: linter, tokens, parity, colour, conformance, offline, secrets and claims pass; diagrams has one panel (D8b) at 9.32 px against the 9.5 px floor; pdf lists pages left part-empty because the next block may not split (short tables, gap cards, landscape figures). Two independent QA reviews of every PDF page; the PDF prints at true size (286 pages). scripts/check_design_system.py --check 0 findings.
+- Next: enhancement report and sister TODOs in PR feat/architecture-enhancements-and-gaps (based on this branch); publish design system 1.10.0 to the design-system artifact.
+<!-- SLOT:ARCH1 END -->
+
+<!-- SLOT:CIC05 BEGIN -->
+## CIC05 — started 2026-11-07
+One job: fix CodeQL bad-tag-filter in the report verifier.
+Owned paths: documentation/data-flow-analysis/build/verify.py, STATUS.md CIC05 slot.
+Changed script stripping to accept mixed case, attributes and closing-tag whitespace. Passed: three lowercase/uppercase/mixed-case-with-attributes examples, AST syntax and whitespace. An initial verification command had shell quoting errors; corrected command passed. Second CodeQL example used a permissive closing tag with whitespace and an extra attribute; widened the closing match and all four examples pass. No generated reports changed. Rebased with original report merge resolutions preserved, then merged current main (new #576 docs) preserving both status slots. Conformance still reports only shared main findings pending CIC01; sync 1.10.0 passed. Next: await CodeQL and full CI after shared baseline integration.
+<!-- SLOT:CIC05 END -->
+<!-- SLOT:DUOAUTH BEGIN -->
+### DUOAUTH: Cisco Duo 2FA and Username/Password Auth with Cloudflare Tunnel
+- Start: 2026-11-05 (branch cisco_duo_auth_guide).
+- Scope: Investigate and document Cisco Duo dual authentication along with username/password login to SongNodes frontend exposed via Cloudflare Tunnel (`song.aiwfe.com`). Provide architecture designs, step-by-step guides, online dashboard automation prompts (Computer Use), and autonomous coding agent prompts:
+  1. Investigated edge Zero Trust perimeter (Cloudflare Access + Cisco Duo SSO) vs in-app Duo Universal Prompt (Web SDK v4 OIDC).
+  2. Created comprehensive architecture and implementation documentation in `docs/security/cisco-duo-auth-guide.md`.
+  3. Formulated detailed Computer Use prompts for Cisco Duo Admin and Cloudflare Zero Trust dashboards.
+  4. Formulated autonomous agent prompts for backend, frontend, and devops integration.
+- Checks run:
+  - Document syntax and markdown validation.
+- Next: Finalize artifact report and present complete implementation package to user.
+<!-- SLOT:DUOAUTH END -->
