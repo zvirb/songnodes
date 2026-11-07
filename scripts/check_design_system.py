@@ -7,6 +7,7 @@ Validates tracked frontend source files for design system governance rules:
 - No emojis outside code comments
 - No browser dialogs (alert, confirm, prompt) outside code comments
 - Shrink check for frontend/design-system-pending.txt
+- One primary action when EmptyState carries it (INT-001)
 """
 
 import sys
@@ -14,6 +15,7 @@ import os
 import argparse
 import re
 import subprocess
+import glob
 from typing import List, Tuple, Set, Optional
 
 # Constants
@@ -148,6 +150,87 @@ def has_unmigrated_violations(filepath: str) -> bool:
     return len(check_file(filepath)) > 0
 
 
+
+def extract_jsx_elements(content: str, tag_name: str) -> List[Tuple[int, str]]:
+    """Extract <TagName ... /> or <TagName ...>...</TagName> with line number, tracking brace balance."""
+    elements = []
+    pattern = re.compile(rf'<{tag_name}\b')
+    for m in pattern.finditer(content):
+        start_idx = m.start()
+        line_no = content[:start_idx].count('\n') + 1
+        i = m.end()
+        brace_depth = 0
+        in_quote = None
+        while i < len(content):
+            ch = content[i]
+            if in_quote:
+                if ch == in_quote and content[i - 1] != '\\':
+                    in_quote = None
+            else:
+                if ch in ('"', "'", '`'):
+                    in_quote = ch
+                elif ch == '{':
+                    brace_depth += 1
+                elif ch == '}':
+                    brace_depth -= 1
+                elif ch == '>' and brace_depth == 0:
+                    elements.append((line_no, content[start_idx : i + 1]))
+                    break
+            i += 1
+    return elements
+
+
+def has_unconditional_header_primary(tag_text: str) -> bool:
+    """Check if PageHeader actions renders an unconditional primary button (.sn-btn--primary)."""
+    m = re.search(r'actions=\{([\s\S]*)\}', tag_text)
+    if not m:
+        return False
+    actions_body = m.group(1)
+
+    for pm in re.finditer(r'sn-btn--primary', actions_body):
+        prefix = actions_body[: pm.start()]
+        # Check dynamic className={... ? '...sn-btn--primary' : ...}
+        # If prefix ends with className={ without closing }, it is inside a dynamic className expression
+        last_class = prefix.rfind('className=')
+        if last_class != -1:
+            cls_after = prefix[last_class + len('className='):].strip()
+            if cls_after.startswith('{') and ('?' in cls_after or '&&' in cls_after):
+                continue
+        # Check conditional element rendering: {condition ? <button ...> : ...} or {condition && <button ...>}
+        last_brace = prefix.rfind('{')
+        if last_brace != -1:
+            between = prefix[last_brace:]
+            if re.search(r'\{[^{}]*(\?|&&)[^{}]*<[a-zA-Z]', between):
+                continue
+        return True
+    return False
+
+
+def empty_state_carries_primary(tag_text: str) -> bool:
+    """Check if EmptyState has a primary button in its actions prop."""
+    return bool(re.search(r'actions=\{[\s\S]*?\bsn-btn--primary\b[\s\S]*?\}', tag_text))
+
+
+def check_previews_one_primary() -> List[Tuple[str, int, str]]:
+    """DOM check on previews: a preview must not render both PageHeader primary and EmptyState primary."""
+    violations = []
+    preview_pattern = os.path.join("design-system", "components", "*", "preview.html")
+    for f in glob.glob(preview_pattern):
+        try:
+            with open(f, "r", encoding="utf-8") as fh:
+                html = fh.read()
+        except OSError:
+            continue
+        has_ph_primary = bool(re.search(r'class="[^"]*\bsn-page-header\b[^"]*"[\s\S]*?\bsn-btn--primary\b', html))
+        has_es_primary = bool(re.search(r'class="[^"]*\bsn-empty-state\b[^"]*"[\s\S]*?\bsn-btn--primary\b', html))
+        if has_ph_primary and has_es_primary:
+            violations.append((
+                f.replace("\\", "/"),
+                1,
+                "Both .sn-page-header and .sn-empty-state contain a primary button (.sn-btn--primary); while EmptyState displays the primary action, PageHeader primary shall not be rendered (design-system/06-interaction-accessibility.md, INT-001)"
+            ))
+    return violations
+
 def check_file(filepath: str) -> List[Tuple[int, str]]:
     """Check a single file for design system violations.
 
@@ -219,6 +302,18 @@ def check_file(filepath: str) -> List[Tuple[int, str]]:
                 attrs = m.group(1)
                 if not any(c in attrs for c in PAGE_CONTAINERS):
                     violations.append((i, "<main> without a page container; use className=\"sn-page__main\" (design-system/13-page-patterns.md, Page container)"))
+
+    # Rule 7: One primary action when EmptyState carries it (INT-001, DR-058)
+    if is_code_file and filepath.endswith(".tsx") and "PageHeader" in raw_content and "EmptyState" in raw_content:
+        empty_tags = extract_jsx_elements(raw_content, "EmptyState")
+        if any(empty_state_carries_primary(tag) for _, tag in empty_tags):
+            ph_tags = extract_jsx_elements(raw_content, "PageHeader")
+            for line_no, ph_tag in ph_tags:
+                if has_unconditional_header_primary(ph_tag):
+                    violations.append((
+                        line_no,
+                        "PageHeader renders an unconditional primary action (.sn-btn--primary) while EmptyState also carries a primary action; while EmptyState displays the primary action, the PageHeader primary action shall not be rendered (design-system/06-interaction-accessibility.md, INT-001)"
+                    ))
 
     return violations
 
@@ -315,6 +410,7 @@ def main():
     if mode == "check":
         baseline = load_layout_baseline()
         all_violations.extend(check_undefined_classes(files_to_check, baseline))
+        all_violations.extend(check_previews_one_primary())
         # Baseline is shrink-only: drop entries that no longer apply
         css_defined = defined_sn_classes([f for f in files_to_check if f.endswith(".css")])
         still_used = {c for f in files_to_check if f.endswith(".tsx") for _, c in used_sn_classes(f)}

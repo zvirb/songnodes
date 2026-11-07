@@ -130,3 +130,6 @@ The global set is listed in `ShortcutSheet` (open with ?).
 - **Focus return**: When navigating back from a detail sub-route (e.g. `/settings/:settingId`) to a card grid overview page (`/settings`), keyboard focus must return to the card action element (`Open setting page →`) that initiated navigation.
 - **Live result count**: Search fields that filter card grids live must announce the matching card count using an `aria-live="polite"` region.
 - **Two ways back**: Sub-route detail pages must offer both a top `PageHeader` back action button and a card-foot return link, plus support the `Escape` key to return to the parent overview page.
+
+## Primary actions and empty states
+- **One primary action when empty state carries it (INT-001, DR-058)**: A view shall present at most one primary action (`.sn-btn--primary`). While a page's `EmptyState` displays the primary action (the empty state is the primary view), the `PageHeader` primary action is not rendered. Once content exists and the empty state is dismissed or replaced by content, the `PageHeader` renders the primary action.

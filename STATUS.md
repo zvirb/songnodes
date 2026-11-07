@@ -556,6 +556,13 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 - Sanitized raw upstream error response detail leakage (`detail=f"YouTube API request failed: {error_text}"`) in `services/rest_api/routers/youtube_api.py`. Replaced internal detail responses with a sanitized error message ("YouTube API request failed") while preserving server-side logging. Configured endpoint to resolve API keys from database/environment fallback rather than requiring `api_key` in client query parameters.
 - Added security regression unit tests in `tests/security/test_youtube_api_security.py`.
 - Checks: `uv run --with-requirements services/rest_api/requirements.txt --with pytest python -m pytest -o addopts="" --noconftest tests/security/` passed (30/30).
+
+### SEC: REST Main Router Exception Detail Sanitization (2026-11-06)
+- Start: 2026-11-06
+- End: 2026-11-06
+- Sanitized raw exception string leakage (`detail=str(e)`) across endpoints `/api/graph/nodes`, `/api/graph/edges`, and `/api/v1/music-search/{service}` in `services/rest_api/main.py`. Replaced internal exception details with sanitized error messages while preserving server-side logging (`logger.error(..., exc_info=True)`).
+- Added security regression unit tests in `tests/security/test_rest_main_security.py`.
+- Checks: `PYTHONPATH=services/rest_api:services uv run --with-requirements services/rest_api/requirements.txt --with pytest python -m pytest -o addopts="" --noconftest tests/security/` passed (33/33).
 <!-- SLOT:SEC_SENTINEL END -->
 
 <!-- SLOT:QA1 BEGIN -->
@@ -2692,3 +2699,109 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
   - cd frontend && npm run test:unit (passed, 69 test files, 593 tests)
 - Next: open PR against main and review deployment with Duo tunnel backend.
 <!-- SLOT:DUO2 END -->
+  
+<!-- SLOT:UX-T07 BEGIN -->
+### UX-T07: Rule: one primary when the empty state carries it (UX-07)
+- Start: 2026-11-07 (branch ux-t07-one-primary-empty-state off origin/main 7429821c).
+- Scope: Add the design system rule that while a page's EmptyState displays the primary action, the PageHeader primary action is not rendered (the EmptyState is the view).
+  1. Added rule to `design-system/06-interaction-accessibility.md` (Primary actions and empty states).
+  2. Added atomic rule `INT-001` to `design-system/rules/rules.yaml`.
+  3. Recorded decision `DR-058` in `design-system/17-governance.md` and added to Conformance checking table.
+  4. Implemented AST/DOM check in `scripts/check_design_system.py` detecting when PageHeader unconditionally renders a primary action while EmptyState carries a primary action, and preview HTML check.
+- Verification:
+  - `python scripts/check_design_system.py --check` catches SetBuilderPage unconditional primary at line 436 (`PageHeader renders an unconditional primary action (.sn-btn--primary) while EmptyState also carries a primary action...`).
+  - Verified that guarding the header primary with `{draft.slots.length > 0 && ...}` reduces violations to 0.
+- Checks run:
+  - `scripts/sync-design-system.sh --check` (passed, in sync)
+  - `python scripts/check_feature_imports.py --check` (passed: Feature boundaries OK)
+  - `npm run type-check` (passed)
+  - `npm run lint` (passed: 0 errors)
+  - `npm run test:unit` (passed: 68 test files, 586 tests)
+- Next: Open PR for UX-T07, address SetBuilderPage / PathfinderPage in their respective feature packages (or follow-up), and proceed to UX-T08.
+<!-- SLOT:UX-T07 END -->
+
+<!-- SLOT:UX-T08 BEGIN -->
+### UX-T08: Linter: Unknown values and Title Case labels (UX-08)
+- Completed: 2026-11-07 (branch ux-t08-linter-unknown-titlecase off origin/main 7429821c).
+- Scope: Extend `linters/check.py` rule DATA-NULL to catch 'Unknown' (and 'Unknown …') in visible copy, add WRT-CASE for button/tab labels of two or more capitalised words, and register atomic rule WRT-116 in `design-system/rules/rules.yaml`.
+- Changes:
+  - `design-system/linters/check.py`: Updated `DATA-NULL` to match `Unknown` and `Unknown …` (`r'>\s*(?:N/A|null|undefined|NaN|Unknown(?:\s+[^<>]*)?)\s*<'`). Added `WRT-CASE` to `CHECKS` to detect Title Case labels in buttons and tabs of two or more capitalised words while allowing proper nouns (Spotify, Beatport, TIDAL, etc.) and sentence-case labels.
+  - `design-system/rules/rules.yaml`: Registered atomic rule `WRT-116` requiring button and tab labels to use sentence case and not Title Case.
+- Checks run and passed:
+  - `python design-system/linters/check.py fixtures/violations.html --json` (20/20 findings, matching expected checks)
+  - Custom test verifying detection of 'Unknown Date', 'Unknown algorithm', 'Unknown error', 'Run Search', 'Setlist Parameters' while allowing sentence case and proper nouns ('Connect Beatport', 'Copy prompt')
+  - `bash scripts/sync-design-system.sh --check` (in sync, design-system 1.9.1)
+  - `python scripts/check_design_system.py --check` (passed)
+  - `python scripts/check_feature_imports.py --check` (Feature boundaries OK)
+  - `npm run type-check` (passed: tsc --noEmit)
+  - `npm run lint` (passed: 0 errors)
+  - `npm run test:unit` (passed: 68 test files, 586 tests)
+- Next: merge PR and proceed to UX-T10 (Freshness on every data page).
+<!-- SLOT:UX-T08 END -->
+
+<!-- SLOT:UX-T09 BEGIN -->
+### UX-T09: Inline editable cells for DataTable (UX-09)
+- Completed: 2026-11-07 (branch ux-t09-editable-cells-datatable off origin/main 7429821c).
+- Scope: Add EditableCell variant to DataTable supporting NumberField (1–10 with stepper), SelectField (pillar, rotation) and TextField (local path), writing through onBlur or Enter, showing a save tick and rolling back on Escape or error.
+- Changes:
+  - `frontend/src/components/ds/EditableCell.tsx`: Implemented EditableCell component with number, select, and text types, steppers, keyboard shortcuts (ArrowUp/Down, Enter, Escape rollback), save status indicator, and error recovery.
+  - `frontend/src/components/ds/DataTable.tsx`: Implemented canonical DataTable supporting sort with tiebreaks, row selection, density, keyboard focus, loading/empty/error states, and inline editable cells.
+  - `frontend/src/components/ds/index.tsx`: Re-exported DataTable and EditableCell.
+- Checks run and passed:
+  - `bash scripts/sync-design-system.sh --check` (passed: design-system 1.9.1 in sync)
+  - `python scripts/check_design_system.py --check` (passed)
+  - `python scripts/check_feature_imports.py --check` (passed: Feature boundaries OK)
+  - `npm run type-check` (passed: tsc --noEmit)
+  - `npm run lint` (passed: 0 errors)
+  - `npm run test:unit` (passed: 68 test files, 586 tests)
+- Next: merge PR and proceed to UX-T11 (Service rows tell the truth about OAuth).
+<!-- SLOT:UX-T09 END -->
+
+<!-- SLOT:DUO1 BEGIN -->
+### DUO1: Cisco Duo Web SDK v4 (OIDC) Universal Prompt and User Auth Router
+- Start: 2026-11-06 (branch duo1-backend-auth off origin/main).
+- Scope: Implement Cisco Duo Web SDK v4 Universal Prompt authentication router (`/api/v1/auth`) with username/password verification, Duo OIDC authorization URL generation, callback handling with token exchange and claim verification, session management via HTTP-only cookie, `/me` endpoint with Cloudflare Access header support, and `/logout`.
+- Changes:
+  1. `services/rest_api/routers/user_auth.py`: Added APIRouter with `/login`, `/duo/callback`, `/me`, and `/logout`, secure credential verification (PBKDF2/Argon2/SHA256/env), state and nonce management with Redis/in-memory fallback, Duo OIDC token exchange via httpx, JWT session cookie `songnodes_session`, and `register(app)` function.
+  2. `tests/rest_api/test_user_auth.py`: Added 20 unit tests covering password hashing, credential verification, login authorization URL generation, Duo callback code exchange and claim verification, redirect support, error handling, session cookies, Cloudflare Access headers, and logout.
+- Checks run:
+  - `python -m pytest tests/rest_api/test_user_auth.py` (passed: 20/20 tests)
+  - `python -m pytest tests/rest_api/test_router_registry.py` (passed: 4/4 tests)
+- Next: merge PR and integrate with frontend login interface.
+<!-- SLOT:DUO1 END -->
+
+<!-- SLOT:CIC04 BEGIN -->
+## CIC04 — started 2026-11-07
+One job: remove unsafe auth defaults and fix the reported auth CodeQL findings in PR 578.
+Owned paths: services/rest_api/routers/user_auth.py, tests/rest_api/test_user_auth.py, plan/agents/CIC04_auth_ci.md, STATUS.md CIC04 slot.
+Removed default admin credentials and default JWT signing secret, rejected legacy fast SHA256 hashes and restricted redirects to fixed local paths. Replaced undeclared respx with standard-library AsyncMock. Passed: 29 auth/common credential tests (7 warnings: optional timeout plugin absent, Starlette deprecation and short existing test-only keys); syntax and whitespace. Initial sandbox TestClient run interrupted; completed outside sandbox with Redis disabled. Runtime is bundled Python 3.12, so CI Python 3.15 remains authoritative. Next: rebase on main and run full CI.
+<!-- SLOT:CIC04 END -->
+    
+<!-- SLOT:ARCH1 BEGIN -->
+### ARCH1: End-to-end data-flow investigation (SongNodes + musicLibrary)
+- 7 Nov 2026: a second, fuller run (Claude session 01NvWNfTGjhUeGYwDZx2H948) was merged into this branch at the owner's request. The first run's build scripts are kept; where both runs wrote the same report file the second run's version is kept, and the first run's figures are re-verified as baseline claims (register area baseline-581).
+- Scope now: 115 pages and entry points, 404 signals, 48 stores, 87 numbered flows, 8 personas, 28 gaps, 47 debt items, 81 verified claims, 53 figures (D1-D12 with panels, C1-C12), all computed from documentation/data-flow-analysis/findings.json.
+- Design system raised to 1.10.0 at the source (print document rules, named pages @page doc / @page wide with page numbers, ReportPage, diagram and report-chart patterns, linter glyph fix); frontend copy re-synced (sync --check passes).
+- Build: `python3 documentation/data-flow-analysis/build/build.py` (findings.json -> SVGs -> Markdown -> web report -> print sheet -> two-pass PDF -> gates.json).
+- Checks: gates.json: linter, tokens, parity, colour, conformance, offline, secrets and claims pass; diagrams has one panel (D8b) at 9.32 px against the 9.5 px floor; pdf lists pages left part-empty because the next block may not split (short tables, gap cards, landscape figures). Two independent QA reviews of every PDF page; the PDF prints at true size (286 pages). scripts/check_design_system.py --check 0 findings.
+- Next: enhancement report and sister TODOs in PR feat/architecture-enhancements-and-gaps (based on this branch); publish design system 1.10.0 to the design-system artifact.
+<!-- SLOT:ARCH1 END -->
+
+<!-- SLOT:CIC05 BEGIN -->
+## CIC05 — started 2026-11-07
+One job: fix CodeQL bad-tag-filter in the report verifier.
+Owned paths: documentation/data-flow-analysis/build/verify.py, STATUS.md CIC05 slot.
+Changed script stripping to accept mixed case, attributes and closing-tag whitespace. Passed: three lowercase/uppercase/mixed-case-with-attributes examples, AST syntax and whitespace. An initial verification command had shell quoting errors; corrected command passed. Second CodeQL example used a permissive closing tag with whitespace and an extra attribute; widened the closing match and all four examples pass. No generated reports changed. Rebased with original report merge resolutions preserved, then merged current main (new #576 docs) preserving both status slots. Conformance still reports only shared main findings pending CIC01; sync 1.10.0 passed. Next: await CodeQL and full CI after shared baseline integration.
+<!-- SLOT:CIC05 END -->
+<!-- SLOT:DUOAUTH BEGIN -->
+### DUOAUTH: Cisco Duo 2FA and Username/Password Auth with Cloudflare Tunnel
+- Start: 2026-11-05 (branch cisco_duo_auth_guide).
+- Scope: Investigate and document Cisco Duo dual authentication along with username/password login to SongNodes frontend exposed via Cloudflare Tunnel (`song.aiwfe.com`). Provide architecture designs, step-by-step guides, online dashboard automation prompts (Computer Use), and autonomous coding agent prompts:
+  1. Investigated edge Zero Trust perimeter (Cloudflare Access + Cisco Duo SSO) vs in-app Duo Universal Prompt (Web SDK v4 OIDC).
+  2. Created comprehensive architecture and implementation documentation in `docs/security/cisco-duo-auth-guide.md`.
+  3. Formulated detailed Computer Use prompts for Cisco Duo Admin and Cloudflare Zero Trust dashboards.
+  4. Formulated autonomous agent prompts for backend, frontend, and devops integration.
+- Checks run:
+  - Document syntax and markdown validation.
+- Next: Finalize artifact report and present complete implementation package to user.
+<!-- SLOT:DUOAUTH END -->
