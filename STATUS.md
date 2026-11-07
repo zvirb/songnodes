@@ -563,6 +563,13 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 - Sanitized raw exception string leakage (`detail=str(e)`) across endpoints `/api/graph/nodes`, `/api/graph/edges`, and `/api/v1/music-search/{service}` in `services/rest_api/main.py`. Replaced internal exception details with sanitized error messages while preserving server-side logging (`logger.error(..., exc_info=True)`).
 - Added security regression unit tests in `tests/security/test_rest_main_security.py`.
 - Checks: `PYTHONPATH=services/rest_api:services uv run --with-requirements services/rest_api/requirements.txt --with pytest python -m pytest -o addopts="" --noconftest tests/security/` passed (33/33).
+
+### SEC: User Auth Router Error Sanitization (2026-11-07)
+- Start: 2026-11-07
+- End: 2026-11-07
+- Sanitized raw exception strings (`detail=f"... {str(exc)}"`) and upstream error response bodies (`detail=f"... {token_resp.text[:200]}"`) in `services/rest_api/routers/user_auth.py`. Replaced internal detail responses with sanitized error messages ("Failed to communicate with Duo token endpoint", "Duo token exchange failed", "Invalid id_token claims") while preserving server-side logging (`logger.error(..., exc_info=True)`).
+- Added security regression unit tests in `tests/security/test_user_auth_security.py`.
+- Checks: `PYTHONPATH=services/rest_api:services uv run --with-requirements services/rest_api/requirements.txt --with pytest python -m pytest -o addopts="" --noconftest tests/security/test_user_auth_security.py tests/rest_api/test_user_auth.py` passed (29/29).
 <!-- SLOT:SEC_SENTINEL END -->
 
 <!-- SLOT:QA1 BEGIN -->

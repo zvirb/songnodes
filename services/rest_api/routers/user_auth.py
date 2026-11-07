@@ -363,17 +363,17 @@ async def duo_callback(
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
         except httpx.RequestError as exc:
-            logger.error(f"Duo token exchange request error: {exc}")
+            logger.error(f"Duo token exchange request error: {exc}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=f"Failed to communicate with Duo token endpoint: {str(exc)}",
+                detail="Failed to communicate with Duo token endpoint",
             )
 
     if token_resp.status_code != 200:
         logger.error(f"Duo token exchange failed ({token_resp.status_code}): {token_resp.text}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Duo token exchange failed: {token_resp.text[:200]}",
+            detail="Duo token exchange failed",
         )
 
     try:
@@ -411,9 +411,10 @@ async def duo_callback(
                 options={"verify_signature": False, "verify_aud": False},
             )
     except Exception as exc:
+        logger.error(f"Invalid id_token claims: {exc}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid id_token claims: {str(exc)}",
+            detail="Invalid id_token claims",
         )
 
     if expected_nonce and claims.get("nonce") and claims.get("nonce") != expected_nonce:
