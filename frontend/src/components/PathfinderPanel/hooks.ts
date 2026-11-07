@@ -120,6 +120,36 @@ export function usePathfinder() {
       });
       return;
     }
+
+    const stripSongPrefix = (id: string) => id.replace(/^song_/, '');
+    const ensureTrackInList = (selected: Track | null) => {
+      if (!selected) return;
+      const rawSelectedId = stripSongPrefix(selected.id);
+      const existing = tracksData.find(
+        (t) => t.id === selected.id || stripSongPrefix(t.id) === rawSelectedId
+      );
+      if (!existing) {
+        const durationMs =
+          selected.duration_ms && selected.duration_ms > 0
+            ? Math.round(selected.duration_ms)
+            : selected.duration && selected.duration > 0
+              ? Math.round(selected.duration * 1000)
+              : 240_000;
+        tracksData.push({
+          id: selected.id,
+          name: selected.name || selected.title || '–',
+          artist: selected.artist || '–',
+          duration_ms: durationMs,
+          camelot_key: selected.camelot_key || selected.camelotKey || selected.key,
+          bpm: selected.bpm,
+          energy: selected.energy,
+        });
+      }
+    };
+
+    ensureTrackInList(state.context.startTrack);
+    ensureTrackInList(state.context.endTrack);
+    state.context.waypoints.forEach((w) => ensureTrackInList(w.track));
     const edgesData = graphData.edges.map(edge => ({
       from_id: edge.source,
       to_id: edge.target,
@@ -128,7 +158,7 @@ export function usePathfinder() {
     }));
 
     send({ type: 'CALCULATE_PATH', tracks: tracksData, edges: edgesData } as any);
-  }, [graphData.nodes, graphData.edges, send]);
+  }, [graphData.nodes, graphData.edges, state.context.startTrack, state.context.endTrack, state.context.waypoints, send]);
 
   return {
     state: state.context,

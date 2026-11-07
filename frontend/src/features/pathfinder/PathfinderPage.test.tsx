@@ -17,7 +17,11 @@ beforeAll(() => {
 
 import PathfinderPage from './PathfinderPage';
 
-const view = vi.hoisted(() => ({ emptyLibrary: false, hasResult: true }));
+const view = vi.hoisted(() => ({
+  emptyLibrary: false,
+  hasResult: true,
+  availableTracks: [{ id: '1', name: 'Start', artist: 'Artist' }] as Array<Record<string, unknown>>,
+}));
 
 // Mock the hooks
 vi.mock('../../hooks/useUnifiedTracks', () => ({
@@ -50,7 +54,7 @@ vi.mock('../../components/PathfinderPanel/hooks', () => ({
       },
       error: null
     },
-    availableTracks: [{ id: '1', name: 'Start', artist: 'Artist' }],
+    availableTracks: view.availableTracks,
     isCalculating: false,
     hasResult: view.hasResult,
     hasError: false,
@@ -69,6 +73,7 @@ describe('PathfinderPage', () => {
     cleanup();
     view.emptyLibrary = false;
     view.hasResult = true;
+    view.availableTracks = [{ id: '1', name: 'Start', artist: 'Artist' }];
   });
 
   it('shows only Open library when no tracks are available', () => {
@@ -115,5 +120,33 @@ describe('PathfinderPage', () => {
     const findRouteBtn = screen.getByRole('button', { name: 'Find path' });
     fireEvent.click(findRouteBtn);
     expect(mockCalculate).toHaveBeenCalled();
+  });
+
+  it('matches song_ prefixed availableTracks IDs when selecting a library track with raw UUID (PF-01)', () => {
+    view.availableTracks = [{ id: 'song_1', track_id: '1', title: 'Track 1', artist: 'Artist 1' }];
+    mockSend.mockClear();
+    render(<MemoryRouter><PathfinderPage /></MemoryRouter>);
+    const input = screen.getByRole('combobox', { name: 'End track (optional)' });
+    fireEvent.change(input, { target: { value: 'Track' } });
+    const options = screen.getAllByRole('option');
+    fireEvent.mouseDown(options[0]);
+    expect(mockSend).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'SET_END_TRACK',
+      track: expect.objectContaining({ id: 'song_1', name: 'Track 1' }),
+    }));
+  });
+
+  it('constructs a fallback Track when selected library track is missing from availableTracks (PF-01)', () => {
+    view.availableTracks = [{ id: 'song_999', name: 'Other', artist: 'Other' }];
+    mockSend.mockClear();
+    render(<MemoryRouter><PathfinderPage /></MemoryRouter>);
+    const input = screen.getByRole('combobox', { name: 'End track (optional)' });
+    fireEvent.change(input, { target: { value: 'Track' } });
+    const options = screen.getAllByRole('option');
+    fireEvent.mouseDown(options[0]);
+    expect(mockSend).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'SET_END_TRACK',
+      track: expect.objectContaining({ id: 'song_1', track_id: '1', name: 'Track 1', artist: 'Artist 1' }),
+    }));
   });
 });
