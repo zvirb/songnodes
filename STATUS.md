@@ -2732,3 +2732,13 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
   - `npm run test:unit` (passed: 68 test files, 586 tests)
 - Next: merge PR and proceed to UX-T11 (Service rows tell the truth about OAuth).
 <!-- SLOT:UX-T09 END -->
+
+<!-- SLOT:CIC01 BEGIN -->
+## CIC01 — repair shared conformance failures, started 2026-11-07
+One job: restore design-system conformance on main.
+Owned paths: STATUS.md (CIC01 slot only), frontend/src/components/ds/DataTable.tsx, frontend/src/components/ds/EditableCell.tsx, frontend/src/features/musicLibrary/SetBuilderPage.tsx.
+Checks planned: conformance, feature boundaries, type-check, lint, focused component tests.
+Validated the three existing proposed fixes in an isolated checkout; original local edits preserved. Added plan/agents/CIC01_shared_conformance.md to the owned paths and recorded the package brief. No files deleted.
+Passed: conformance, feature boundaries, design-system sync (1.9.1), type-check, lint (warnings, zero errors), 68 unit files / 586 tests, production build and diff whitespace check. Initial host Python/WSL/Git Bash sandbox issues were resolved using bundled Python and elevated Git Bash; the first sandbox unit run passed but its subsequent build was interrupted, then the unit suite and build both passed outside the sandbox.
+Not run: full Docker E2E (Docker daemon unavailable). Remaining failures: /paths primary actions, visual snapshots, PR 578 credentials and missing respx, CodeQL findings on older PRs. Next task: review and merge CIC01, then rebase affected PRs and investigate E2E in a separate package.
+<!-- SLOT:CIC01 END -->
