@@ -2675,3 +2675,21 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
   - npm run test:unit (passed, 68 test files, 586 tests)
 - Next: merge PR and proceed to next conformance package.
 <!-- SLOT:DS29 END -->
+
+<!-- SLOT:UX-T11 BEGIN -->
+### UX-T11: Service rows tell the truth about OAuth (UX-11)
+- Completed: 2026-11-07 (branch ux-t11-service-rows-oauth-truth off origin/main).
+- Scope: Service rows report true connection and OAuth status (active, expired, not-connected, error) rather than "configured" when credentials exist.
+- Changes:
+  - `frontend/src/components/ServiceStatus.tsx`: Created reusable ServiceStatus component matching design-system specification (section.sn-service-status with mark, name + StatusPill, honest OAuth detail, and service-branded action buttons).
+  - `frontend/src/pages/SettingsPage.tsx`: Wired ServiceStatus into tidal-connection and spotify-connection with honest OAuth states and disconnect actions.
+  - `design-system/components/ServiceStatus/README.md`: Documented honest OAuth state rule (UX-11) prohibiting misleading "Configured" labels.
+  - `frontend/src/pages/SettingsPage.test.tsx`: Added unit test asserting honest OAuth states (Not connected, Expired with run warning, Connected with Disconnect).
+- Checks run and passed:
+  - `python scripts/check_design_system.py --check` (passed)
+  - `python scripts/check_feature_imports.py --check` (passed: Feature boundaries OK)
+  - `npm run type-check` (passed: tsc --noEmit)
+  - `npm run lint` (passed: 0 errors)
+  - `npm run test:unit` (passed: 68 test files, 587 tests)
+- Next: merge PR and proceed to Phase 3 pages in order of pain (UX-T01: Review queue).
+<!-- SLOT:UX-T11 END -->
