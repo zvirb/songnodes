@@ -24,6 +24,15 @@ classes, use the design-system key-name helper and canonical card styling.
 - `frontend/src/features/aiSetlists/AISetlistsPage.tsx`
 - `STATUS.md` (CIC09 slot only)
 
+- `frontend/tests/e2e/visual.spec.ts-snapshots/pipeline-dark-desktop-chromium-linux.png`
+- `frontend/tests/e2e/visual.spec.ts-snapshots/pipeline-dark-phone-chromium-linux.png`
+- `frontend/tests/e2e/visual.spec.ts-snapshots/pipeline-light-desktop-chromium-linux.png`
+- `frontend/tests/e2e/visual.spec.ts-snapshots/pipeline-light-phone-chromium-linux.png`
+- `frontend/tests/e2e/visual.spec.ts-snapshots/settings-dark-desktop-chromium-linux.png`
+- `frontend/tests/e2e/visual.spec.ts-snapshots/settings-dark-phone-chromium-linux.png`
+- `frontend/tests/e2e/visual.spec.ts-snapshots/settings-light-desktop-chromium-linux.png`
+- `frontend/tests/e2e/visual.spec.ts-snapshots/settings-light-phone-chromium-linux.png`
+
 ## Checks
 Design-system conformance, TypeScript, existing track-detail component tests,
 whitespace, scope and deletion guards. Full CI remains authoritative.
