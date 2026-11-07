@@ -2742,3 +2742,10 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
 - Checks: gates.json: linter, tokens, parity, colour, conformance, offline, secrets and claims pass; diagrams has one panel (D8b) at 9.32 px against the 9.5 px floor; pdf lists pages left part-empty because the next block may not split (short tables, gap cards, landscape figures). Two independent QA reviews of every PDF page; the PDF prints at true size (286 pages). scripts/check_design_system.py --check 0 findings.
 - Next: enhancement report and sister TODOs in PR feat/architecture-enhancements-and-gaps (based on this branch); publish design system 1.10.0 to the design-system artifact.
 <!-- SLOT:ARCH1 END -->
+
+<!-- SLOT:CIC05 BEGIN -->
+## CIC05 — started 2026-11-07
+One job: fix CodeQL bad-tag-filter in the report verifier.
+Owned paths: documentation/data-flow-analysis/build/verify.py, STATUS.md CIC05 slot.
+Changed script stripping to accept mixed case, attributes and closing-tag whitespace. Passed: three lowercase/uppercase/mixed-case-with-attributes examples, AST syntax and whitespace. An initial verification command had shell quoting errors; corrected command passed. No generated reports changed. Next: rebase report branch and resolve only owned conflicts, then run CI.
+<!-- SLOT:CIC05 END -->

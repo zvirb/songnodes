@@ -68,7 +68,7 @@ def main():
     hits = []
     def styling(t):
         """Only what can carry style: tags (attributes, inline style) and <style> blocks, never the copy between tags."""
-        t = re.sub(r"<script>.*?</script>", "", t, flags=re.S)
+        t = re.sub(r"<script\b[^>]*>.*?</script\s*>", "", t, flags=re.S | re.I)
         return "\n".join(re.findall(r"<style>.*?</style>|<[^>]+>", t, flags=re.S))
     for label, text in (("web", own_markup(web)), ("sheet", own_markup(sheet))):
         body = styling(re.sub(r"<svg class=\"sn-icon\".*?</svg>", "", text, flags=re.S))       # design-system icon markup
