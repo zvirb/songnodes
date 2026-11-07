@@ -2680,9 +2680,9 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
 <!-- SLOT:ARCH1 BEGIN -->
 ### ARCH1: End-to-end data-flow investigation (SongNodes + musicLibrary)
 - 7 Nov 2026: a second, fuller run (Claude session 01NvWNfTGjhUeGYwDZx2H948) was merged into this branch at the owner's request. The first run's build scripts are kept; where both runs wrote the same report file the second run's version is kept, and the first run's figures are re-verified as baseline claims (register area baseline-581).
-- Scope now: 115 pages and entry points, 404 signals, 48 stores, 87 numbered flows, 8 personas, 28 gaps, 47 debt items, 81 verified claims, 51 figures (D1-D12, C1-C12), all computed from documentation/data-flow-analysis/findings.json.
+- Scope now: 115 pages and entry points, 404 signals, 48 stores, 87 numbered flows, 8 personas, 28 gaps, 47 debt items, 81 verified claims, 53 figures (D1-D12 with panels, C1-C12), all computed from documentation/data-flow-analysis/findings.json.
 - Design system raised to 1.10.0 at the source (print document rules, named pages @page doc / @page wide with page numbers, ReportPage, diagram and report-chart patterns, linter glyph fix); frontend copy re-synced (sync --check passes).
 - Build: `python3 documentation/data-flow-analysis/build/build.py` (findings.json -> SVGs -> Markdown -> web report -> print sheet -> two-pass PDF -> gates.json).
-- Checks: gates.json (linter, tokens, parity, diagrams, colour, conformance, offline, secrets pass; PDF gate lists the landscape pages that hold one figure each); scripts/check_design_system.py --check 0 findings.
+- Checks: gates.json: linter, tokens, parity, colour, conformance, offline, secrets and claims pass; diagrams has one panel (D8b) at 9.32 px against the 9.5 px floor; pdf lists pages left part-empty because the next block may not split (short tables, gap cards, landscape figures). Two independent QA reviews of every PDF page; the PDF prints at true size (286 pages). scripts/check_design_system.py --check 0 findings.
 - Next: enhancement report and sister TODOs in PR feat/architecture-enhancements-and-gaps (based on this branch); publish design system 1.10.0 to the design-system artifact.
 <!-- SLOT:ARCH1 END -->
