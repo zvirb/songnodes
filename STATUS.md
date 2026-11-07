@@ -2732,3 +2732,13 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
   - `npm run test:unit` (passed: 68 test files, 586 tests)
 - Next: merge PR and proceed to UX-T11 (Service rows tell the truth about OAuth).
 <!-- SLOT:UX-T09 END -->
+
+<!-- SLOT:UX-T06 BEGIN -->
+### UX-T06: Work queue on the design system (UX-06)
+- Completed: 2026-11-07 (branch ux-t06-work-queue-tracker off origin/main).
+- Scope: WorkQueue component card (README and preview) composed from existing sn-* parts; no new CSS.
+- Changes: `design-system/components/WorkQueue/README.md`, `design-system/components/WorkQueue/preview.html`.
+- Checks run: `python design-system/linters/check.py design-system/components/WorkQueue` (0 findings). Not run: sync script (no bundle change), render_previews (needs Playwright).
+- Not done: a `design-system/pages/` folder was not created; no page was needed.
+- Next: UX-T12 (close Q-PRINT-1, publish 1.10.0).
+<!-- SLOT:UX-T06 END -->
