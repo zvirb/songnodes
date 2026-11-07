@@ -75,6 +75,14 @@ export async function useLibraryFixture(page: Page) {
       }
     }
 
+    // Fresh-library review contracts: synthetic empty data, not a production count.
+    if (method === 'GET' && path === '/api/v1/library/review-queue/count') {
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ count: 0 }) });
+    }
+    if (method === 'GET' && path === '/api/v1/library/review-queue') {
+      return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'X-Total-Count': '0' }, body: '[]' });
+    }
+
     // 404 for any other /api/v1/library/* paths
     return route.fulfill({ status: 404, body: 'Not Found' });
   });

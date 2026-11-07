@@ -3116,5 +3116,12 @@ Latest main also introduced duplicate key-name literals flagged as emoji, redund
 ## CIC10 — started 2026-11-07
 One job: fix the upload regression test's missing assertion, rejected by CI lint.
 Owned paths: frontend/src/features/musicLibrary/components/LibraryImportDialog.test.tsx, STATUS.md CIC10 slot; integration ownership declared in CIC09 brief.
-Changed the awaited error lookup into an explicit assertion. Passed: all six component tests and targeted oxlint (warnings only, zero errors) from the frontend configuration root. Initial lint command from repository root hit the nested config restriction; corrected invocation passed. This repair does not depend on design-system version. CIC09 source alignment and all-page certification await the original 1.7.0 updated today; local 1.10.0 is divergent and must not be treated as authority.
+Changed the awaited error lookup into an explicit assertion. Passed: all six component tests and targeted oxlint (warnings only, zero errors) from the frontend configuration root. Initial lint command from repository root hit the nested config restriction; corrected invocation passed. This repair does not depend on design-system version. User corrected the source history: local 1.10.0 is authoritative and most recent; the cloud copy was stale. Continue auditing against local 1.10.0.
 <!-- SLOT:CIC10 END -->
+
+<!-- SLOT:CIC11 BEGIN -->
+## CIC11 — started 2026-11-07
+One job: cover every registered page in the design-system browser audit.
+Owned paths: frontend/tests/e2e/all-pages.spec.ts, frontend/tests/e2e/libraryApi.ts, STATUS.md CIC11 slot; integration ownership declared in CIC09 brief.
+Audit discovers routes from App, registry and feature route modules; checks dark/light/booth, one main/h1, one primary, honest missing values, runtime DS 1.10.0, serious/critical axe findings and phone overflow. Dynamically visits all settings links. Explicit test-only anonymous/review-empty fixtures preserve contract shapes. Passed: Playwright discovered 66 Chromium cases before run-history registration; includes all settings-card links dynamically. Initial discovery was invoked from the wrong directory; corrected frontend-root invocation passed. Actual runtime compliance is not yet claimed. Next: CI after separately scoped prerequisites CIC12–CIC14.
+<!-- SLOT:CIC11 END -->

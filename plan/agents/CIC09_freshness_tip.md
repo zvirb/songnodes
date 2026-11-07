@@ -10,6 +10,13 @@ classes, use the design-system key-name helper and canonical card styling.
 - `frontend/src/features/trackDetail/TrackDetailPage.tsx`
 - `frontend/src/features/pipeline/RunsPage.tsx`
 - `frontend/src/features/musicLibrary/components/LibraryImportDialog.test.tsx`
+- `frontend/tests/e2e/all-pages.spec.ts`
+- `frontend/tests/e2e/libraryApi.ts`
+- `frontend/src/features/auth/route.tsx`
+- `frontend/src/features/auth/LoginPage.tsx`
+- `frontend/src/features/auth/LoginPage.test.tsx`
+- `frontend/src/features/pipeline/route.tsx`
+- `frontend/src/components/OAuthCallback.tsx`
 - `STATUS.md` (CIC09 slot only)
 
 ## Checks
@@ -21,8 +28,10 @@ Open Library with a stale data stamp. Its tooltip is still available and the
 stamp retains its absolute and relative time.
 
 ## Follow-ups
-The user identified today's original 1.7.0 as authoritative; the repository's
-1.10.0 numbering is divergent. Locate and import that exact original before
-certifying page compliance or merging these provisional component changes.
-The upload-test path is owned for the separate CIC10 CI lint repair.
+The user confirmed local 1.10.0 is authoritative; the cloud copy is stale.
+Receive scoped follow-up packages CIC10 (upload assertion), CIC11 (all registered
+page audit and fresh-library test fixtures), CIC12 (login route), CIC13 (run-history
+route) and CIC14 (callback page semantics). Each has its own commit and status
+slot; the combined audit coverage needs more than ten files, while each package
+remains small. No unrelated paths may be edited.
 Review pipeline E2E output and its changed visual baselines separately.
