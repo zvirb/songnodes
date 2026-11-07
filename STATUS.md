@@ -3132,3 +3132,10 @@ One job: make the registered login page usable and compliant.
 Owned paths: frontend/src/features/auth/route.tsx, LoginPage.tsx, LoginPage.test.tsx, STATUS.md CIC12 slot.
 Wrapped registered element in AuthProvider, used sentence-case copy and added an actual-route regression. Passed TypeScript and all 8 login tests. Initial regression omitted a test-only MemoryRouter import; adding it resolved both type-check and test failure. Next: canonical all-page CI audit.
 <!-- SLOT:CIC12 END -->
+
+<!-- SLOT:CIC13 BEGIN -->
+## CIC13 — started 2026-11-07
+One job: register the existing Run history page at /pipeline/runs.
+Owned paths: frontend/src/features/pipeline/route.tsx, frontend/src/routes/registry.test.tsx, STATUS.md CIC13 slot; integration ownership in CIC09 brief.
+Used the feature-route registry (no App.tsx edits). Added a discovery assertion for /pipeline/runs. Passed TypeScript, registry regression, feature boundaries and whitespace; all-page discovery now has 69 Chromium cases (three themes). Next: canonical all-page CI.
+<!-- SLOT:CIC13 END -->

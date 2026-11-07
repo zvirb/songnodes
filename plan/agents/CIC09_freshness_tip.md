@@ -16,6 +16,7 @@ classes, use the design-system key-name helper and canonical card styling.
 - `frontend/src/features/auth/LoginPage.tsx`
 - `frontend/src/features/auth/LoginPage.test.tsx`
 - `frontend/src/features/pipeline/route.tsx`
+- `frontend/src/routes/registry.test.tsx`
 - `frontend/src/components/OAuthCallback.tsx`
 - `STATUS.md` (CIC09 slot only)
 
