@@ -2917,3 +2917,23 @@ One job: preserve unknown transition metadata before merging PR 597.
 Owned paths: services/rest_api/routers/transitions_export.py, tests/rest_api/test_transitions_export.py, STATUS.md CIC06 slot.
 Consulted IMPLEMENTATION_PLAN WP1-WP5 and TRACK_METADATA_RETRIEVAL. Found SQL converting absent BPM difference to 0 and absent key compatibility to true. Changed two SQL expressions to preserve NULL BPM difference and harmonic compatibility. Passed: two synthetic contract cases (known and missing values), schema validation and whitespace. Test launcher isolated the unused main import with an empty module; get_pool was already mocked by the test. No live database/provider/coverage validation. Next: integrate current main and run CI before merge.
 <!-- SLOT:CIC06 END -->
+
+<!-- SLOT:UX-T03 BEGIN -->
+### UX-T03: Pipeline health page and run history (UX-03)
+- Completed: 2026-11-07 (branch ux-t03-pipeline-health-run-history off origin/main ebf44357).
+- Scope: Replace the telemetry page's head with the MonitoringPage pattern (one Banner for worst current condition, 4 FigureTiles: Last run, Resolve yield, Review queue, Last backup), move scrape controls into a Disclosure, implement RunMonitor (module M5) with yield drop detection (< 50% of previous 4 runs average), and build RunsPage with StagedProgress for run history.
+- Changes:
+  - `frontend/src/features/pipeline/RunMonitor.tsx` (new): Module M5 calculating yield metrics, rolling 4-run average, yield drop warning alert, and severity-ranked worst-condition evaluation.
+  - `frontend/src/features/pipeline/RunsPage.tsx` (new): Run history page with status filter chips, StagedProgress run inspector, and DataTable.
+  - `frontend/src/pages/ScraperProgressPage.tsx`: Converted header to Pipeline: Health, added worst-condition alert Banner linking to /pipeline/runs, added 4 FigureTiles (Last run, Resolve yield, Review queue, Last backup), moved scrape controls under `<details className="sn-disclosure">`, and added run history toggle.
+  - `frontend/src/pages/ScraperProgressPage.test.tsx`: Updated header test to Pipeline: Health and added test for yield drop alert banner and /pipeline/runs link.
+- Checks run and passed:
+  - `cd frontend && npm run type-check` (passed: tsc --noEmit)
+  - `cd frontend && npm run lint` (passed: 0 errors)
+  - `cd frontend && npm run test:unit` (passed: 68 test files, 587 tests)
+  - `cd frontend && npm run build` (passed: vite build succeeded)
+  - `bash scripts/sync-design-system.sh --check` (passed: design-system 1.9.1 in sync)
+  - `python scripts/check_feature_imports.py --check` (passed: Feature boundaries OK)
+  - `python scripts/check_design_system.py --check` (passed: 0 findings for ScraperProgressPage)
+- Next: Open PR for UX-T03 and proceed to UX-T05 (One Set builder: retire artifact behind /sets).
+<!-- SLOT:UX-T03 END -->

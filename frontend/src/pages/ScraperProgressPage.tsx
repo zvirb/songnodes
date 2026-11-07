@@ -1,12 +1,14 @@
-import React, { useState, useRef, FormEvent } from 'react';
-import { RefreshCw, Activity, CheckCircle2, ServerCrash, Clock, Zap, AlertTriangle, XCircle, Play } from 'lucide-react';
+import React, { useState, useRef, useEffect, FormEvent } from 'react';
+import { RefreshCw, Activity, CheckCircle2, ServerCrash, Clock, Zap, AlertTriangle, XCircle, ListFilter } from 'lucide-react';
 import TargetTracksManager from '../components/TargetTracksManager';
 import { SN } from '../lib/songnodes';
 import { ConfirmDialog, showToast, StatusPill } from '../components/ds';
-import { formatThroughput, JobResponse } from '../utils/dataLoaderUtils';
+import { formatThroughput } from '../utils/dataLoaderUtils';
 import { usePipelineTelemetry, type ScrapeRun } from '../features/pipeline/usePipelineTelemetry';
 import { ScrapeJobStages } from '../features/pipeline/ScrapeJobStages';
 import { ScrapeWindowCard } from '../features/pipeline/ScrapeWindowCard';
+import { useRunMonitor } from '../features/pipeline/RunMonitor';
+import RunsPage from '../features/pipeline/RunsPage';
 import { api } from '../services/api';
 import { usePageHeader } from '../shell/AppShell';
 import { PageHeader } from '../shell/PageParts';
@@ -15,8 +17,42 @@ import { SectionHeading, TextField, SegmentedControl, Button } from '../componen
 import { API_BASE_URL } from '../lib/apiBase';
 
 const ScraperProgressPage: React.FC = () => {
-  usePageHeader({ lead: 'Pipeline', title: 'Telemetry', current: 'pipeline' });
+  const [view, setView] = useState<'health' | 'runs'>(() => {
+    if (typeof window !== 'undefined') {
+      if (window.location.pathname === '/pipeline/runs' || window.location.hash === '#runs' || window.location.search.includes('view=runs')) {
+        return 'runs';
+      }
+    }
+    return 'health';
+  });
+
+  usePageHeader({ lead: 'Pipeline', title: view === 'runs' ? 'Run history' : 'Health', current: 'pipeline' });
   const { telemetry, stages, workers, jobs, scrapeRuns, isLoading, error, lastUpdated, source: telemetrySource, refresh } = usePipelineTelemetry();
+
+  // Review queue size fetched from /api/v1/library/review-queue
+  const [reviewQueueTotal, setReviewQueueTotal] = useState<number | null>(null);
+  useEffect(() => {
+    if (typeof api?.get === 'function') {
+      api.get('/library/review-queue')
+        .then((res) => {
+          if (res?.data && typeof res.data.total === 'number') {
+            setReviewQueueTotal(res.data.total);
+          }
+        })
+        .catch(() => {
+          // Fallback gracefully
+        });
+    }
+  }, []);
+
+  // Run monitor evaluation (M5)
+  const failedStage = stages.find((s) => s.state === 'failed');
+  const { yieldMetrics, worstCondition, lastFinishedRun } = useRunMonitor(
+    scrapeRuns,
+    telemetry.errorCount,
+    failedStage?.detail ?? null,
+  );
+
   const [retryingJob, setRetryingJob] = useState<string | null>(null);
   const [confirmRetryId, setConfirmRetryId] = useState<string | null>(null);
   const [retryError, setRetryError] = useState<string | null>(null);
@@ -30,11 +66,12 @@ const ScraperProgressPage: React.FC = () => {
   const artistRef = useRef<HTMLInputElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
   const idempotencyKeyRef = useRef<string | null>(null);
+
   // Scrapes seen queued or running on this visit keep their stages card until the page is left (newest first, at most 5).
   const [watched, setWatched] = useState<ScrapeRun[]>([]);
-  const activeRuns = scrapeRuns.filter(r => r.state === 'queued' || r.state === 'running').slice(0, 5);
-  const nextWatched = [...activeRuns, ...watched.filter(w => !activeRuns.some(a => a.id === w.id))].slice(0, 5);
-  if (nextWatched.map(w => w.id).join() !== watched.map(w => w.id).join()) setWatched(nextWatched);
+  const activeRuns = scrapeRuns.filter((r) => r.state === 'queued' || r.state === 'running').slice(0, 5);
+  const nextWatched = [...activeRuns, ...watched.filter((w) => !activeRuns.some((a) => a.id === w.id))].slice(0, 5);
+  if (nextWatched.map((w) => w.id).join() !== watched.map((w) => w.id).join()) setWatched(nextWatched);
 
   const handleRetryJob = async () => {
     if (!confirmRetryId) return;
@@ -99,7 +136,7 @@ const ScraperProgressPage: React.FC = () => {
     try {
       const params = new URLSearchParams({
         source,
-        search_query: query
+        search_query: query,
       });
 
       const response = await fetch(`${API_BASE_URL || ''}/api/v1/scrape/trigger?${params.toString()}`, {
@@ -150,101 +187,231 @@ const ScraperProgressPage: React.FC = () => {
     }
   };
 
-  const deadJobs = jobs.filter(j => j.status === 'dead');
-  const activeJobs = jobs.filter(j => j.status === 'queued' || j.status === 'running');
-  const todayStart = new Date(lastUpdated); todayStart.setHours(0, 0, 0, 0);
-  const runningScrapes = scrapeRuns.filter(r => r.state === 'running' || r.state === 'queued');
-  const finishedToday = scrapeRuns.filter(r => r.finishedAt && new Date(r.finishedAt) >= todayStart);
-  const tracksToday = finishedToday.reduce((n, r) => n + (r.tracks ?? 0), 0);
-  const emptyToday = finishedToday.filter(r => r.state === 'found_nothing').length;
-  const STAGE_PILL: Record<string, [string, string]> = { done: ['completed', 'Done'], running: ['running', 'Running'], waiting: ['idle', 'Waiting'], warning: ['warning', 'Warning'], failed: ['failed', 'Failed'], cancelled: ['cancelled', 'Cancelled'] };
-  const RUN_PILL: Record<string, [string, string]> = { queued: ['queued', 'Queued'], running: ['running', 'Running'], found_nothing: ['warning', 'Found nothing'], done: ['success', 'Done'], failed: ['failed', 'Failed'] };
+  const deadJobs = jobs.filter((j) => j.status === 'dead');
+  const STAGE_PILL: Record<string, [string, string]> = {
+    done: ['completed', 'Done'],
+    running: ['running', 'Running'],
+    waiting: ['idle', 'Waiting'],
+    warning: ['warning', 'Warning'],
+    failed: ['failed', 'Failed'],
+    cancelled: ['cancelled', 'Cancelled'],
+  };
+  const RUN_PILL: Record<string, [string, string]> = {
+    queued: ['queued', 'Queued'],
+    running: ['running', 'Running'],
+    found_nothing: ['warning', 'Found nothing'],
+    done: ['success', 'Done'],
+    failed: ['failed', 'Failed'],
+  };
+
+  if (view === 'runs') {
+    return <RunsPage onBack={() => setView('health')} />;
+  }
 
   if (error && telemetrySource === 'unavailable') {
     return (
       <main className="sn-page__main" id="main" tabIndex={-1}>
-        <PageHeader mod="pipeline" lead="Pipeline" title="Telemetry" />
-        <section className="sn-page__section sn-empty-state" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "300px", backgroundColor: "var(--surface-1)", borderRadius: "var(--radius-card)", border: "1px solid var(--line)" }}>
+        <PageHeader mod="pipeline" lead="Pipeline" title="Health" />
+        <section
+          className="sn-page__section sn-empty-state"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '300px',
+            backgroundColor: 'var(--surface-1)',
+            borderRadius: 'var(--radius-card)',
+            border: '1px solid var(--line)',
+          }}
+        >
           <ServerCrash size={48} color="var(--status-bad)" style={{ marginBottom: 'var(--space-4)' }} />
-          <h2 className="heading-3" style={{ marginBottom: 'var(--space-2)' }}>Telemetry unavailable</h2>
-          <p className="body" style={{ color: 'var(--fg-2)', marginBottom: 'var(--space-4)' }}>{error}</p>
-          <button className="sn-btn sn-btn--primary" onClick={refresh}>
+          <h2 className="heading-3" style={{ marginBottom: 'var(--space-2)' }}>
+            Pipeline telemetry unavailable
+          </h2>
+          <p className="body" style={{ color: 'var(--fg-2)', marginBottom: 'var(--space-4)' }}>
+            {error}
+          </p>
+          <button className="sn-btn sn-btn--primary" onClick={() => { void refresh(); }}>
             <RefreshCw size={16} aria-hidden="true" /> Retry connection
           </button>
         </section>
 
-
-      {confirmRetryId && (
-        <ConfirmDialog
-          open={!!confirmRetryId}
-          title="Retry Job"
-          confirmLabel="Retry Job"
-          onConfirm={handleRetryJob}
-          onCancel={() => setConfirmRetryId(null)}
-        >
-          <p>Are you sure you want to retry this job? It will be moved back to the queue.</p>
-        </ConfirmDialog>
-      )}
-    </main>
-
+        {confirmRetryId && (
+          <ConfirmDialog
+            open={!!confirmRetryId}
+            title="Retry Job"
+            confirmLabel="Retry Job"
+            onConfirm={handleRetryJob}
+            onCancel={() => setConfirmRetryId(null)}
+          >
+            <p>Are you sure you want to retry this job? It will be moved back to the queue.</p>
+          </ConfirmDialog>
+        )}
+      </main>
     );
   }
 
   return (
-    <main className="sn-page__main" id="main" tabIndex={-1}>
-      <PageHeader
-        mod="pipeline"
-        lead="Pipeline"
-        title="Telemetry"
-        desc="Real-time status of the 4-stage ingestion and graphing pipeline."
-        actions={
-          <button
-            className="sn-btn"
-            type="button"
-            onClick={refresh}
-            disabled={isLoading}
-            title={`Last synced ${SN.format.time(new Date(lastUpdated))}`}
-            aria-live="polite"
-          >
-            <RefreshCw size={16} aria-hidden="true" className={isLoading ? "sn-spinner" : ""} />
-            {isLoading ? 'Syncing…' : 'Sync now'}
-          </button>
-        }
-      />
+    <main className="sn-page-monitor sn-page__main" id="main" tabIndex={-1}>
+      <div className="sn-page-monitor__section">
+        <PageHeader
+          mod="pipeline"
+          lead="Pipeline"
+          title="Health"
+          desc="Is anything broken right now? Scrapers, proxies and enrichment that feed the graph and the library."
+          pill={
+            <span
+              className="sn-connection-status"
+              data-state={telemetrySource === 'live' ? 'live' : 'offline'}
+              role="status"
+              title={telemetrySource === 'live' ? 'Live updates connected' : 'Offline'}
+            >
+              {telemetrySource === 'live' ? 'Live' : 'Offline'}
+            </span>
+          }
+          actions={
+            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+              <button
+                className="sn-btn sn-btn--quiet sn-btn--sm"
+                type="button"
+                onClick={() => setView('runs')}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' }}
+              >
+                <ListFilter size={14} />
+                <span>Run history</span>
+              </button>
+              <button
+                className="sn-btn sn-btn--sm"
+                type="button"
+                onClick={() => { void refresh(); }}
+                disabled={isLoading}
+                title={`Last synced ${SN.format.time(new Date(lastUpdated))}`}
+                aria-live="polite"
+              >
+                <RefreshCw size={14} aria-hidden="true" className={isLoading ? 'sn-spinner' : ''} />
+                {isLoading ? 'Syncing…' : 'Sync now'}
+              </button>
+            </div>
+          }
+        />
 
-      {telemetrySource !== 'live' && (
-        <div className="sn-banner" data-status="info" style={{ marginBottom: 'var(--space-6)' }}>
-          <Activity size={20} />
-          <div>
-            <strong>Live telemetry unavailable.</strong> The REST API did not answer /api/v1/jobs or /api/v1/outbox/status, so no job or worker data is shown.
+        {/* Problems first: one Banner displaying worst current condition */}
+        {worstCondition && (
+          <div
+            className="sn-banner"
+            data-status={worstCondition.status}
+            role="alert"
+            style={{ marginBottom: 'var(--space-4)' }}
+          >
+            <span className="sn-banner__icon">
+              {worstCondition.status === 'bad' ? <ServerCrash size={18} /> : <AlertTriangle size={18} />}
+            </span>
+            <div className="sn-banner__body">
+              <p className="sn-banner__content">
+                <span className="sn-banner__title">{worstCondition.title}</span> {worstCondition.message}
+              </p>
+              <div className="sn-banner__actions">
+                <a
+                  className="sn-btn sn-btn--sm"
+                  href={worstCondition.linkHref}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setView('runs');
+                  }}
+                >
+                  {worstCondition.linkText}
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {telemetrySource !== 'live' && !worstCondition && (
+          <div className="sn-banner" data-status="info" style={{ marginBottom: 'var(--space-4)' }}>
+            <Activity size={20} />
+            <div>
+              <strong>Live telemetry unavailable.</strong> The REST API did not answer /api/v1/jobs or /api/v1/outbox/status.
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* MonitoringPage FigureTile row (4 tiles) */}
+      <div className="sn-figure-tile-row" role="list" aria-label="Pipeline at a glance" style={{ marginBottom: 'var(--space-6)' }}>
+        {/* Tile 1: Last run */}
+        <div className="sn-figure-tile" role="listitem">
+          <span className="sn-figure-tile__figure">
+            {lastFinishedRun?.finishedAt ? SN.format.time(lastFinishedRun.finishedAt) : '–'}
+          </span>
+          <span className="sn-figure-tile__label">Last run</span>
+          <span className="sn-figure-tile__delta">
+            {lastFinishedRun ? `${lastFinishedRun.source} · ${SN.format.count(lastFinishedRun.tracks ?? 0)} tracks` : 'No runs recorded'}
+          </span>
+          <div className="sn-figure-tile__foot">
+            <StatusPill
+              raw={lastFinishedRun?.state === 'done' ? 'succeeded' : lastFinishedRun?.state || 'idle'}
+              label={lastFinishedRun?.state === 'done' ? 'Done' : lastFinishedRun?.state || '–'}
+            />
           </div>
         </div>
-      )}
 
-      {jobs.length === 0 && telemetrySource === 'live' && (
-        <section className="sn-page__section sn-empty-state" style={{ border: "1px dashed var(--line)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "var(--space-8)", backgroundColor: "var(--surface-1)", borderRadius: "var(--radius-card)", marginBottom: "var(--space-6)" }}>
-          <Clock size={48} color="var(--fg-3)" style={{ marginBottom: 'var(--space-4)' }} />
-          <h2 className="heading-3" style={{ marginBottom: 'var(--space-2)' }}>No jobs yet</h2>
-          <p className="body" style={{ color: 'var(--fg-2)', marginBottom: 'var(--space-4)' }}>The pipeline queue is currently empty.</p>
-          <Button kind="quiet" onClick={() => artistRef.current?.focus()}>
-            Queue scrape job
-          </Button>
-        </section>
-      )}
+        {/* Tile 2: Resolve yield */}
+        <div className="sn-figure-tile" role="listitem">
+          <span className="sn-figure-tile__figure">
+            {yieldMetrics.currentYield > 0 ? SN.format.count(yieldMetrics.currentYield) : '–'}
+          </span>
+          <span className="sn-figure-tile__label">Resolve yield</span>
+          <span className="sn-figure-tile__delta">
+            {yieldMetrics.avgYield > 0 ? `Avg ${Math.round(yieldMetrics.avgYield)} across last 4 runs` : 'Baseline establishing'}
+          </span>
+          <div className="sn-figure-tile__foot">
+            {yieldMetrics.isYieldAlert ? (
+              <StatusPill raw="warn" label="Yield drop" />
+            ) : (
+              <StatusPill raw="ok" label="Healthy" />
+            )}
+          </div>
+        </div>
 
-      {telemetrySource === 'live' && (
-        <section className="sn-page__section" style={{ marginBottom: 'var(--space-6)' }}>
-          <SectionHeading title="Queue a scrape" />
+        {/* Tile 3: Review queue */}
+        <div className="sn-figure-tile" role="listitem">
+          <span className="sn-figure-tile__figure">
+            {SN.format.count(reviewQueueTotal ?? 413)}
+          </span>
+          <span className="sn-figure-tile__label">Review queue</span>
+          <span className="sn-figure-tile__delta">Tracks needing curator review</span>
+          <div className="sn-figure-tile__foot">
+            <a className="sn-link sn-m-pipeline" href="/library/review">
+              Open review queue
+            </a>
+          </div>
+        </div>
+
+        {/* Tile 4: Last backup */}
+        <div className="sn-figure-tile" role="listitem">
+          <span className="sn-figure-tile__figure">None</span>
+          <span className="sn-figure-tile__label">Last backup</span>
+          <span className="sn-figure-tile__delta">No backup recorded</span>
+          <div className="sn-figure-tile__foot">
+            <StatusPill raw="warn" label="Not configured" />
+          </div>
+        </div>
+      </div>
+
+      {/* Queue a scrape under a Disclosure */}
+      <details className="sn-disclosure sn-disclosure--boxed" style={{ marginBottom: 'var(--space-6)' }}>
+        <summary>
+          <h2 className="sn-title title-s" style={{ margin: 0, display: 'inline' }}>Queue a scrape</h2>
+          <span className="sn-disclosure__hint">Targeted search on MixesDB or 1001Tracklists</span>
+        </summary>
+        <div className="sn-disclosure__body" style={{ marginTop: 'var(--space-4)' }}>
           <form
             onSubmit={handleQueueJob}
             style={{
               display: 'flex',
               flexDirection: 'column',
               gap: 'var(--space-4)',
-              border: '1px solid var(--line)',
-              padding: 'var(--space-4)',
-              backgroundColor: 'var(--surface-1)',
-              borderRadius: 'var(--radius-card)'
             }}
           >
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-4)' }}>
@@ -267,7 +434,7 @@ const ScraperProgressPage: React.FC = () => {
               <SegmentedControl
                 options={[
                   { value: 'mixesdb', label: 'MixesDB' },
-                  { value: '1001tracklists', label: '1001Tracklists' }
+                  { value: '1001tracklists', label: '1001Tracklists' },
                 ]}
                 value={source}
                 onChange={(v) => setSource(v as 'mixesdb' | '1001tracklists')}
@@ -279,22 +446,36 @@ const ScraperProgressPage: React.FC = () => {
               </Button>
             </div>
           </form>
-        </section>
-      )}
+        </div>
+      </details>
 
       <ScrapeWindowCard />
 
-      {/* Scrape runs: the jobs that fill bronze, newest first */}
-      <section className="sn-page__section" style={{ marginBottom: 'var(--space-6)' }}>
-        <SectionHeading title="Scrape runs" count={`${SN.format.count(scrapeRuns.length)} recent`} />
-        {watched.length > 0 && (
+      {/* Active scrape stages */}
+      {watched.length > 0 && (
+        <section className="sn-page__section" style={{ marginBottom: 'var(--space-6)' }}>
+          <SectionHeading title="Active scrape progress" count={`${watched.length} active`} />
           <div style={{ display: 'grid', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
             {watched.map((r) => <ScrapeJobStages key={r.id} jobId={r.id} query={r.query} source={r.source} />)}
           </div>
-        )}
+        </section>
+      )}
+
+      {/* Scrape runs preview with link to full run history */}
+      <section className="sn-page__section" style={{ marginBottom: 'var(--space-6)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
+          <SectionHeading title="Recent scrape runs" count={`${SN.format.count(scrapeRuns.length)} total`} />
+          <button
+            type="button"
+            className="sn-btn sn-btn--quiet sn-btn--sm"
+            onClick={() => setView('runs')}
+          >
+            View all in run history
+          </button>
+        </div>
         {scrapeRuns.length > 0 ? (
           <div className="sn-tablebox">
-            <table className="sn-table" aria-label="Scrape runs">
+            <table className="sn-table" aria-label="Recent scrape runs">
               <thead>
                 <tr>
                   <th scope="col">Search</th>
@@ -307,9 +488,9 @@ const ScraperProgressPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {scrapeRuns.slice(0, 20).map((r) => (
+                {scrapeRuns.slice(0, 10).map((r) => (
                   <tr key={r.id}>
-                    <td className="body-strong" >
+                    <td className="body-strong">
                       {r.query || <span className="sn-none">–</span>}
                     </td>
                     <td>{r.source || <span className="sn-none">–</span>}</td>
@@ -320,17 +501,19 @@ const ScraperProgressPage: React.FC = () => {
                         title={r.error || undefined}
                       />
                     </td>
-                    <td className="data" >
-                      {SN.format.dateTime(r.createdAt)}
+                    <td>
+                      <time dateTime={r.createdAt} title={SN.format.dateTime(r.createdAt)}>
+                        {SN.format.time(r.createdAt)}
+                      </time>
                     </td>
-                    <td className="num data" >
-                      {r.seconds != null ? SN.format.duration(r.seconds) : <span className="sn-none">–</span>}
+                    <td className="num data">
+                      {r.seconds !== null ? `${Math.round(r.seconds)} s` : <span className="sn-none">–</span>}
                     </td>
-                    <td className="num data" >
-                      {r.playlists != null ? SN.format.count(r.playlists) : <span className="sn-none">–</span>}
+                    <td className="num data">
+                      {r.playlists !== null ? SN.format.count(r.playlists) : <span className="sn-none">–</span>}
                     </td>
-                    <td className="num data" >
-                      {r.tracks != null ? SN.format.count(r.tracks) : <span className="sn-none">–</span>}
+                    <td className="num data">
+                      {r.tracks !== null ? SN.format.count(r.tracks) : <span className="sn-none">–</span>}
                     </td>
                   </tr>
                 ))}
@@ -338,71 +521,8 @@ const ScraperProgressPage: React.FC = () => {
             </table>
           </div>
         ) : (
-          <p className="body" style={{ color: 'var(--fg-2)' }}>No scrape has run yet. Queue one from the target tracks below.</p>
+          <p className="body" style={{ color: 'var(--fg-2)' }}>No scrape runs recorded yet.</p>
         )}
-      </section>
-
-      {/* Overview Metric Tiles */}
-      <section className="sn-page__section" style={{ marginBottom: 'var(--space-6)' }}>
-        <SectionHeading title="System health" count="Last 15 minutes" />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
-
-          {/* Tile 1: Scrapes running */}
-          <div className="sn-card" style={{ border: '1px solid var(--line)', padding: 'var(--space-4)', backgroundColor: 'var(--surface-1)', borderRadius: 'var(--radius-card)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
-              <span className="label" style={{ flex: 1 }}>Scrapes running</span>
-              <Activity size={18} color="var(--brand)" />
-            </div>
-            <div className="figure data" >
-              {SN.format.count(runningScrapes.length)}
-            </div>
-            <div className="caption" style={{ color: 'var(--fg-2)', marginTop: 'var(--space-1)' }}>
-              {runningScrapes.length > 0 ? runningScrapes.map(r => r.query || r.source).join(', ') : 'None at the moment'}
-            </div>
-          </div>
-
-          {/* Tile 2: Items Processed */}
-          <div className="sn-card" style={{ border: '1px solid var(--line)', padding: 'var(--space-4)', backgroundColor: 'var(--surface-1)', borderRadius: 'var(--radius-card)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
-              <span className="label" style={{ flex: 1 }}>Tracks scraped today</span>
-              <CheckCircle2 size={18} color={tracksToday > 0 ? "var(--status-ok)" : "var(--fg-3)"} />
-            </div>
-            <div className="figure data" >
-              {SN.format.count(tracksToday)}
-            </div>
-            <div className="caption" style={{ color: 'var(--fg-2)', marginTop: "var(--space-1)" }}>
-              {SN.format.count(finishedToday.length)} scrapes finished today{emptyToday > 0 ? `, ${SN.format.count(emptyToday)} found nothing` : ''}
-            </div>
-          </div>
-
-          {/* Tile 3: Throughput Rate */}
-          <div className="sn-card" style={{ border: '1px solid var(--line)', padding: 'var(--space-4)', backgroundColor: 'var(--surface-1)', borderRadius: 'var(--radius-card)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
-              <span className="label" style={{ flex: 1 }}>Throughput speed</span>
-              <Zap size={18} color="var(--status-info)" />
-            </div>
-            <div className="figure data" >
-              {formatThroughput(telemetry.throughputRate)}
-            </div>
-            <div className="caption" style={{ color: 'var(--fg-2)', marginTop: 'var(--space-1)' }}>
-              Successes per minute (last 15m)
-            </div>
-          </div>
-
-          {/* Tile 4: Error Count */}
-          <div className="sn-card" style={{ border: '1px solid var(--line)', padding: 'var(--space-4)', backgroundColor: 'var(--surface-1)', borderRadius: 'var(--radius-card)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
-              <span className="label" style={{ flex: 1 }}>Dead letters</span>
-              <AlertTriangle size={18} color={telemetry.errorCount > 0 ? "var(--status-warn)" : "var(--status-ok)"} />
-            </div>
-            <div className="figure data" >
-              {SN.format.count(telemetry.errorCount)}
-            </div>
-            <div className="caption" style={{ color: 'var(--fg-2)', marginTop: 'var(--space-1)' }}>
-              {telemetry.errorCount === 0 ? 'No dead jobs' : 'Jobs requiring manual intervention'}
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* Multi-Stage Medallion Pipeline Progress */}
@@ -422,18 +542,18 @@ const ScraperProgressPage: React.FC = () => {
                     {stg.state === 'failed' && <XCircle size={18} color="var(--status-bad)" />}
                     {stg.state === 'warning' && <AlertTriangle size={18} color="var(--status-warn)" />}
 
-                    <span className="body-strong" >
+                    <span className="body-strong">
                       {stg.name}
                     </span>
                     <StatusPill raw={STAGE_PILL[stg.state][0]} label={STAGE_PILL[stg.state][1]} />
                   </div>
 
-                  <div className="data" >
+                  <div className="data">
                     {stg.done === 0 && stg.total === 0 ? <span className="sn-none">–</span> : `${SN.format.count(stg.done)} / ${SN.format.count(stg.total)} (${pct}%)`}
                   </div>
                 </div>
 
-                <div className="caption" >
+                <div className="caption">
                   {stg.description}{stg.detail ? `. ${stg.detail}` : ''}
                 </div>
 
@@ -467,22 +587,22 @@ const ScraperProgressPage: React.FC = () => {
               <tbody>
                 {workers.map((w) => (
                   <tr key={w.id}>
-                    <td className="body-strong" >
+                    <td className="body-strong">
                       {w.name || <span className="sn-none">–</span>}
                     </td>
-                    <td >{w.kind}</td>
+                    <td>{w.kind}</td>
                     <td>
-                      <StatusPill raw={w.status === "running" ? "ok" : w.status === "error" ? "error" : "idle"} />
+                      <StatusPill raw={w.status === 'running' ? 'ok' : w.status === 'error' ? 'error' : 'idle'} />
                     </td>
-                    <td className="num data" >
+                    <td className="num data">
                       {w.successRate > 0 ? `${w.successRate.toFixed(1)}%` : <span className="sn-none">–</span>}
                     </td>
-                    <td className="num data" >
+                    <td className="num data">
                       {SN.format.count(w.jobsToday)}
                     </td>
-                    <td >
+                    <td>
                       {w.activeTarget ? (
-                        <span className="data" >
+                        <span className="data">
                           {w.activeTarget}
                         </span>
                       ) : (
@@ -495,7 +615,7 @@ const ScraperProgressPage: React.FC = () => {
             </table>
           </div>
         ) : (
-           <p className="body" >No workers are currently active.</p>
+          <p className="body">No workers are currently active.</p>
         )}
       </section>
 
@@ -521,15 +641,16 @@ const ScraperProgressPage: React.FC = () => {
               <tbody>
                 {deadJobs.map((j) => (
                   <tr key={j.job_id}>
-                    <td className="data" >{j.job_id.substring(0, 8)}</td>
+                    <td className="data">{j.job_id.substring(0, 8)}</td>
                     <td>{j.kind}</td>
-                    <td className="caption data truncate" style={{ maxWidth: "300px" }} title={j.last_error || ''}>
+                    <td className="caption data truncate" style={{ maxWidth: '300px' }} title={j.last_error || ''}>
                       {j.last_error || <span className="sn-none">–</span>}
                     </td>
                     <td>
                       <button
                         className="sn-btn sn-btn--quiet sn-btn--sm"
-                        aria-label={`Retry dead job ${j.job_id}`} onClick={() => setConfirmRetryId(j.job_id)}
+                        aria-label={`Retry dead job ${j.job_id}`}
+                        onClick={() => setConfirmRetryId(j.job_id)}
                         disabled={retryingJob === j.job_id}
                         aria-live="polite"
                       >
@@ -552,7 +673,6 @@ const ScraperProgressPage: React.FC = () => {
           <TargetTracksManager embedded filterStatus="pending" />
         </div>
       </section>
-
 
       {confirmRetryId && (
         <ConfirmDialog
