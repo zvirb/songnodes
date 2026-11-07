@@ -2807,6 +2807,21 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
 - Next: merge PR and proceed to UX-T11 (Service rows tell the truth about OAuth).
 <!-- SLOT:UX-T09 END -->
 
+<!-- SLOT:SNT01 BEGIN -->
+### SNT01: Require the API token on write and admin routes (SN-T01)
+- Completed: 2026-11-07 (branch snt01-api-token-auth off origin/main ebf44357).
+- Scope: Enforce admin credential invariant on write and sensitive routes, closing gap sn-be-gap-auth-token-flow:
+  1. `services/rest_api/security/auth.py`: Prefer `X-API-Token` over `Authorization` so provider tokens (TIDAL/Spotify OAuth) don't conflict with admin auth. Correct prefix `"/api-keys"` to `"/api/v1/api-keys"` and add `"/api/v1/music-auth/spotify/token/status"` to `SENSITIVE_GET_PREFIXES`.
+  2. `compose.dev.yaml`: Pass `SONGNODES_API_TOKEN: ${SONGNODES_API_TOKEN:-}` and `API_KEY_ENCRYPTION_SECRET: ${API_KEY_ENCRYPTION_SECRET:-}` to `rest-api` and `worker` service environments.
+  3. `tests/security/test_rest_auth.py`: Added tests verifying `X-API-Token` priority over `Authorization`, and `/api/v1/api-keys` and `/api/v1/music-auth/spotify/token/status` protections.
+- Checks run and passed:
+  - `python -m pytest tests/security/test_rest_auth.py` (5 passed in 0.66s)
+  - `git diff --diff-filter=D --name-only origin/main...HEAD` (0 deleted files outside owned paths)
+- Note: `scripts/check_design_system.py --check` reports pre-existing un-tokenized values in `frontend/src/components/ds/EditableCell.tsx` and `frontend/src/components/ds/DataTable.tsx` introduced in commit `ebf44357` (UX-T09), which are out of scope for this backend security package (Rule 6).
+- Next: Open PR and proceed to SN-T02.
+
+<!-- SLOT:SNT01 END -->
+
 <!-- SLOT:UX-T04 BEGIN -->
 ### UX-T04: Build the Buy list page (UX-04)
 - Completed: 2026-11-07 (branch ux-t04-buy-list-page off origin/main ebf44357).
