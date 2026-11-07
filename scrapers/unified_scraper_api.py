@@ -386,7 +386,7 @@ async def _scrape_internal(request: ScrapeRequest) -> Dict[str, Any]:
         )
 
     spider_name = SPIDER_MAP[request.source]
-    task_id = request.task_id or f"{request.source}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
+    task_id = request.task_id or f"{request.source}_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
     start_time = time.time()
     status_label = "error"
 

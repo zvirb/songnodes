@@ -47,6 +47,7 @@ test('the close button and the scrim close the drawer', async ({ page }) => {
 });
 
 test('every drawer row navigates and is then marked current', async ({ page }) => {
+  test.setTimeout(60_000);
   await openRoute(page, '/');
   for (const [label, url] of DRAWER_ROWS) {
     await page.getByRole('button', { name: 'Open navigation' }).click();

@@ -19,14 +19,15 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
-COPY requirements.txt .
+COPY services/audio-analysis/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 # Essentia for analysis_modules/key_bpm.py. Pinned here, not in requirements.txt, because the work-package scope
 # guard reads only the Dockerfile from AA2's owned-paths line; move it into requirements.txt in a later change.
 RUN pip install --no-cache-dir essentia==2.1b6.dev1438
 
-# Copy application code
-COPY . .
+# Copy shared common modules and application code
+COPY services/common /app/common
+COPY services/audio-analysis/ .
 
 # Create non-root user
 RUN useradd -m -u 1000 audioanalysis && chown -R audioanalysis:audioanalysis /app

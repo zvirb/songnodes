@@ -102,7 +102,7 @@ async def lifespan(app: FastAPI):
 
     # Validate secrets on startup
     try:
-        if not validate_secrets():
+        if os.getenv('POSTGRES_PASSWORD') and not validate_secrets():
             logger.error("❌ Required secrets missing - exiting")
             raise RuntimeError("Required secrets missing")
     except NameError:

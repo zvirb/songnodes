@@ -191,7 +191,8 @@ services:
     # Key and BPM from short clips (POST /analyze-url, AA1's Essentia analyser). Called by the worker's
     # 'audio_analysis' job; needs no database or RabbitMQ for that, so neither is configured here.
     build:
-      context: services/audio-analysis
+      context: .
+      dockerfile: services/audio-analysis/Dockerfile
     mem_limit: 1g
     healthcheck:
       test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8020/health', timeout=5)"]

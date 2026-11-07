@@ -277,9 +277,11 @@ const LibraryPage: React.FC = () => {
             <div className="sn-page-header__narrow-only">
               <OverflowMenu label="More actions" heading="Library" items={[{ id: 'import', icon: 'upload', label: 'Import library' }]} onSelect={(id) => { if (id === 'import') setImportOpen(true); }} />
             </div>
-            <button className={tracks.length > 0 ? "sn-btn sn-btn--primary" : "sn-btn"} type="button" onClick={buildFromCrate} disabled={!lib || tracks.length === 0}>
-              <SnIcon name="list-music" />Build set from crate
-            </button>
+            {tracks.length > 0 && (
+              <button className="sn-btn sn-btn--primary" type="button" onClick={buildFromCrate} disabled={!lib}>
+                <SnIcon name="list-music" />Build set from crate
+              </button>
+            )}
           </>
         }
       />
