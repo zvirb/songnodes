@@ -10,6 +10,16 @@ routeable libraries show the empty-state action until results exist.
 - `frontend/src/features/pathfinder/PathfinderPage.tsx`
 - `frontend/src/features/pathfinder/PathfinderPage.test.tsx`
 
+- `plan/agents/CIC03_sets_baselines.md`
+- `frontend/tests/e2e/visual.spec.ts-snapshots/sets-dark-desktop-chromium-linux.png`
+- `frontend/tests/e2e/visual.spec.ts-snapshots/sets-dark-phone-chromium-linux.png`
+- `frontend/tests/e2e/visual.spec.ts-snapshots/sets-light-desktop-chromium-linux.png`
+- `frontend/tests/e2e/visual.spec.ts-snapshots/sets-light-phone-chromium-linux.png`
+
+## Integration ownership
+The baseline paths belong to the reviewed CIC03 prerequisite package received
+through PR #600; no unrelated files may be changed.
+
 ## Checks
 Component tests, type-check, design-system conformance and whitespace check.
 
