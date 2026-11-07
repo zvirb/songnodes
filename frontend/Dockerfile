@@ -91,6 +91,7 @@ RUN echo 'server { \
     } \
     \
     location /api/ { \
+        client_max_body_size 64m; \
         set $rest_api http://rest-api:8082; \
         proxy_pass $rest_api; \
         proxy_http_version 1.1; \
