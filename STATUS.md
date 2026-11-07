@@ -3175,3 +3175,10 @@ One job: make import-method tabs and the prompt scroll region accessible.
 Owned paths: frontend/src/features/aiSetlists/AISetlistsPage.tsx, STATUS.md CIC18 slot.
 Paired TabPanel IDs with both hidden/inactive panels retained, a focusable named prompt region, associated textarea heading and sentence-case labels. TypeScript and static conformance passed. Next: canonical axe audit.
 <!-- SLOT:CIC18 END -->
+
+<!-- SLOT:CIC19 BEGIN -->
+## CIC19 — started 8 Nov 2026
+One job: let callback lazy rendering finish before pausing its redirect clock.
+Owned paths: frontend/tests/e2e/all-pages.spec.ts, STATUS.md CIC19 slot.
+CI artifact confirms the old paused clock left callbacks at Loading page. Heading assertions remain strict; pause now occurs after the h1 appears. Next: Playwright discovery and canonical CI.
+<!-- SLOT:CIC19 END -->

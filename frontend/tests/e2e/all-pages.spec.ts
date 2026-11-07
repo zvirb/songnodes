@@ -32,6 +32,10 @@ async function audit(page: Page, route: string) {
   const main = page.locator('main#main');
   await expect(main).toHaveCount(1);
   await expect(main.getByRole('heading', { level: 1 })).toHaveCount(1);
+  if (route.startsWith('/callback/') || route === '/oauth/callback') {
+    // Pause only after lazy rendering; freezing earlier stalls React's scheduler.
+    await page.clock.pauseAt(await page.evaluate(() => Date.now() + 50));
+  }
   expect(await main.locator('.sn-btn--primary:visible').count()).toBeLessThanOrEqual(1);
   await expect(main).not.toContainText(/\bN\/A\b|\bUnknown\b/);
   expect(await page.evaluate(() => (window as unknown as { SongNodes: { version: string } }).SongNodes.version)).toBe('1.10.0');
@@ -49,7 +53,6 @@ for (const theme of ['dark', 'light', 'booth']) {
       if (route.startsWith('/callback/') || route === '/oauth/callback') {
         // Keep the callback's explicit missing-parameters state visible during inspection.
         await page.clock.install({ time: new Date('2026-11-07T00:00:00Z') });
-        await page.clock.pauseAt(new Date('2026-11-07T00:00:01Z'));
       }
       await audit(page, route);
     });
