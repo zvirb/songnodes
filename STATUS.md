@@ -2740,5 +2740,17 @@ Owned paths: STATUS.md (CIC01 slot only), frontend/src/components/ds/DataTable.t
 Checks planned: conformance, feature boundaries, type-check, lint, focused component tests.
 Validated the three existing proposed fixes in an isolated checkout; original local edits preserved. Added plan/agents/CIC01_shared_conformance.md to the owned paths and recorded the package brief. No files deleted.
 Passed: conformance, feature boundaries, design-system sync (1.9.1), type-check, lint (warnings, zero errors), 68 unit files / 586 tests, production build and diff whitespace check. Initial host Python/WSL/Git Bash sandbox issues were resolved using bundled Python and elevated Git Bash; the first sandbox unit run passed but its subsequent build was interrupted, then the unit suite and build both passed outside the sandbox.
-Not run: full Docker E2E (Docker daemon unavailable). Remaining failures: /paths primary actions, visual snapshots, PR 578 credentials and missing respx, CodeQL findings on older PRs. Next task: review and merge CIC01, then rebase affected PRs and investigate E2E in a separate package.
+Not run: full Docker E2E (Docker daemon unavailable). Remaining failures: /paths primary actions, visual snapshots, PR 578 credentials and missing respx, CodeQL findings on older PRs. Continuation: user authorized processing all PRs to merge. CIC02 (#599) and CIC03 (#600) are separate prerequisite packages; CIC03 passed canonical CI including E2E and merged into CIC02. Declared their integration ownership in this brief. Preserved #576 status after merging latest main. Next: receive green CIC02, run full CI on this integration branch, merge to main, then update dependent PRs.
 <!-- SLOT:CIC01 END -->
+<!-- SLOT:DUOAUTH BEGIN -->
+### DUOAUTH: Cisco Duo 2FA and Username/Password Auth with Cloudflare Tunnel
+- Start: 2026-11-05 (branch cisco_duo_auth_guide).
+- Scope: Investigate and document Cisco Duo dual authentication along with username/password login to SongNodes frontend exposed via Cloudflare Tunnel (`song.aiwfe.com`). Provide architecture designs, step-by-step guides, online dashboard automation prompts (Computer Use), and autonomous coding agent prompts:
+  1. Investigated edge Zero Trust perimeter (Cloudflare Access + Cisco Duo SSO) vs in-app Duo Universal Prompt (Web SDK v4 OIDC).
+  2. Created comprehensive architecture and implementation documentation in `docs/security/cisco-duo-auth-guide.md`.
+  3. Formulated detailed Computer Use prompts for Cisco Duo Admin and Cloudflare Zero Trust dashboards.
+  4. Formulated autonomous agent prompts for backend, frontend, and devops integration.
+- Checks run:
+  - Document syntax and markdown validation.
+- Next: Finalize artifact report and present complete implementation package to user.
+<!-- SLOT:DUOAUTH END -->
