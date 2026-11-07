@@ -564,8 +564,8 @@ async def get_graph_nodes(limit: int = 500, min_weight: int = 1):
             logger.info(f"Fetched {len(nodes)} graph nodes (Gold-quality, validated artist attribution)")
             return {"nodes": nodes, "total": len(nodes), "limit": limit, "offset": 0}
     except Exception as e:
-        logger.error(f"Failed to fetch graph nodes: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Failed to fetch graph nodes: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch graph nodes")
 
 @app.get("/api/graph/edges")
 async def get_graph_edges(limit: int = 5000, min_weight: int = 1):
@@ -622,8 +622,8 @@ async def get_graph_edges(limit: int = 5000, min_weight: int = 1):
             logger.info(f"Fetched {len(edges)} graph edges (Gold-quality, validated both endpoints)")
             return {"edges": edges, "total": len(edges), "limit": limit, "offset": 0}
     except Exception as e:
-        logger.error(f"Failed to fetch graph edges: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Failed to fetch graph edges: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch graph edges")
 
 # Scrape submission and job status live in routers/jobs.py (durable ingestion_jobs records).
 
@@ -713,8 +713,8 @@ async def music_search(service: str, q: str, limit: int = 20):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Music search failed for {service}: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Music search failed for {service}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Music search failed")
 
 
 # Writes register first so static paths (/artists/dirty, /tracks/missing-artist) win over the

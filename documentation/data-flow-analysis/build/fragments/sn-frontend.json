@@ -1,0 +1,5260 @@
+{
+ "agent": "sn-frontend",
+ "scope": "songnodes frontend (frontend/src routes, shell, features, store, services, hooks, lib, index.html, public), frontend nginx (frontend/Dockerfile inline conf, vite proxy, nginx/, nginx-local-proxy.conf) and every standalone .html in songnodes outside node_modules (143 files: 98 component previews, 39 source previews, 6 others)",
+ "pages": [
+  {
+   "id": "sn-fe-home",
+   "repo": "songnodes",
+   "path": "songnodes/frontend/src/pages/HomePage.tsx",
+   "title": "Home",
+   "tagline": "Jump into a module. The track graph and the Melbourne club library share one system.",
+   "description": "Launcher with one LauncherCard per module; reads library count from /api/v1/library/search and saved sets from localStorage.",
+   "module": "home",
+   "kind": "route",
+   "route": "/",
+   "dom": [
+    "PageHeader",
+    "LauncherCard grid (8 modules)"
+   ],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "static route in routes/registry.tsx STATIC_ROUTES",
+    "NavDrawer Home link (shell/AppShell.tsx:86)",
+    "live data: loadLibrary() and readSavedSets()"
+   ],
+   "evidence": [
+    "songnodes/frontend/src/routes/registry.tsx:14",
+    "songnodes/frontend/src/pages/HomePage.tsx:8-58"
+   ],
+   "state": "built",
+   "size_bytes": 3492,
+   "links_out": [
+    {
+     "to": "sn-fe-sets",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/pages/HomePage.tsx:35-56",
+      "songnodes/frontend/src/shell/PageParts.tsx"
+     ]
+    },
+    {
+     "to": "sn-fe-paths",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/pages/HomePage.tsx:35-56",
+      "songnodes/frontend/src/shell/PageParts.tsx"
+     ]
+    },
+    {
+     "to": "sn-fe-graph",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/pages/HomePage.tsx:35-56",
+      "songnodes/frontend/src/shell/PageParts.tsx"
+     ]
+    },
+    {
+     "to": "sn-fe-library",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/pages/HomePage.tsx:35-56",
+      "songnodes/frontend/src/shell/PageParts.tsx"
+     ]
+    },
+    {
+     "to": "sn-fe-harmony",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/pages/HomePage.tsx:35-56",
+      "songnodes/frontend/src/shell/PageParts.tsx"
+     ]
+    },
+    {
+     "to": "sn-fe-sources-targets",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/pages/HomePage.tsx:35-56",
+      "songnodes/frontend/src/shell/PageParts.tsx"
+     ]
+    },
+    {
+     "to": "sn-fe-pipeline",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/pages/HomePage.tsx:35-56",
+      "songnodes/frontend/src/shell/PageParts.tsx"
+     ]
+    },
+    {
+     "to": "sn-fe-settings",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/pages/HomePage.tsx:35-56",
+      "songnodes/frontend/src/shell/PageParts.tsx"
+     ]
+    },
+    {
+     "to": "NavDrawer: all 8 modules + Home + Preferences (/settings#display)",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    },
+    {
+     "to": "sn-fe-library (AppHeader search, Ctrl K)",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    },
+    {
+     "to": "external: CreditsFooter attribution links",
+     "new_tab": true,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sn-fe-graph",
+   "repo": "songnodes",
+   "path": "songnodes/frontend/src/pages/GraphPage.tsx",
+   "title": "Adjacency",
+   "tagline": "Explore which tracks DJs play next to each other.",
+   "description": "Graph module: legacy DJInterface (Play/Plan modes) with PIXI GraphVisualization, IntelligentBrowser and right-panel tabs analysis|keymood|pathfinder|tidal|spotify|targets; hosts SettingsPanel, ArtistAttributionManager and TracklistImporter modals.",
+   "module": "graph",
+   "kind": "route",
+   "route": "/graph",
+   "dom": [
+    "DJInterface",
+    "GraphVisualization (PIXI canvas)",
+    "IntelligentBrowser",
+    "right tabs",
+    "QuickSearch"
+   ],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "STATIC_ROUTES /graph and MODULE_ROUTES.graph",
+    "live data from /api/graph/data via useDataLoader",
+    "design-system/19-songnodes-migration.md phase 4 still pending (DJInterface not yet split)"
+   ],
+   "evidence": [
+    "songnodes/frontend/src/pages/GraphPage.tsx:38-58",
+    "songnodes/frontend/src/components/DJInterface.tsx:95-122",
+    "songnodes/frontend/src/hooks/useDataLoader.ts:28"
+   ],
+   "state": "built",
+   "size_bytes": 2074,
+   "links_out": [
+    {
+     "to": "external: TIDAL/Spotify playlist pages",
+     "new_tab": true,
+     "evidence": [
+      "songnodes/frontend/src/components/ServicePlaylistView.tsx:158"
+     ]
+    },
+    {
+     "to": "NavDrawer: all 8 modules + Home + Preferences (/settings#display)",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    },
+    {
+     "to": "sn-fe-library (AppHeader search, Ctrl K)",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    },
+    {
+     "to": "external: CreditsFooter attribution links",
+     "new_tab": true,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sn-fe-library",
+   "repo": "songnodes",
+   "path": "songnodes/frontend/src/features/musicLibrary/LibraryPage.tsx",
+   "title": "Melbourne crate",
+   "tagline": "Filter, search and sort the club library, then build a set from what is left.",
+   "description": "Library table of library.tracks (REST /api/v1/library/search?limit=5000) with crate filter rail, presets, row preview, target-track buttons and the library import dialog (POST /api/v1/library/ingest).",
+   "module": "library",
+   "kind": "route",
+   "route": "/library",
+   "dom": [
+    "CrateFilterRail",
+    "FilterPresets",
+    "track table",
+    "LibraryImportDialog",
+    "DiscoveryBanner",
+    "TargetActionButton"
+   ],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "self-registered in features/musicLibrary/route.tsx (G2)",
+    "live data /api/v1/library/search",
+    "header search (Ctrl K) navigates here"
+   ],
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/route.tsx:7",
+    "songnodes/frontend/src/features/musicLibrary/data.ts:114",
+    "songnodes/frontend/src/shell/AppShell.tsx:132"
+   ],
+   "state": "built",
+   "size_bytes": 27441,
+   "links_out": [
+    {
+     "to": "sn-fe-sets",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/features/musicLibrary/LibraryPage.tsx:216,313",
+      "songnodes/frontend/src/features/musicLibrary/components/ui.tsx:428"
+     ]
+    },
+    {
+     "to": "sn-fe-library",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/features/musicLibrary/LibraryPage.tsx:216,313",
+      "songnodes/frontend/src/features/musicLibrary/components/ui.tsx:428"
+     ]
+    },
+    {
+     "to": "external: TIDAL/Beatport/Deezer track links",
+     "new_tab": true,
+     "evidence": [
+      "songnodes/frontend/src/features/musicLibrary/LibraryPage.tsx:216,313",
+      "songnodes/frontend/src/features/musicLibrary/components/ui.tsx:428"
+     ]
+    },
+    {
+     "to": "NavDrawer: all 8 modules + Home + Preferences (/settings#display)",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    },
+    {
+     "to": "sn-fe-library (AppHeader search, Ctrl K)",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    },
+    {
+     "to": "external: CreditsFooter attribution links",
+     "new_tab": true,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sn-fe-sets",
+   "repo": "songnodes",
+   "path": "songnodes/frontend/src/features/musicLibrary/SetBuilderPage.tsx",
+   "title": "Set builder",
+   "tagline": "Shape a set from the crate, check every transition and save it.",
+   "description": "Builds a draft set (localStorage sn-set-draft) by energy shape, saves sets to /api/v1/library/sets with localStorage mirror, exports M3U8/CSV/JSON/Rekordbox XML and artifact_sets.json, sends to TIDAL.",
+   "module": "sets",
+   "kind": "route",
+   "route": "/sets",
+   "dom": [
+    "energy wave",
+    "slot list",
+    "saved sets list",
+    "ExportDialog",
+    "SendToTidalDialog"
+   ],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "self-registered in features/musicLibrary/route.tsx",
+    "live server sets via readSavedSetsAsync",
+    "inbound links from Library (buildFromCrate) and Home"
+   ],
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/route.tsx:8",
+    "songnodes/frontend/src/features/musicLibrary/data.ts:193-337",
+    "songnodes/frontend/src/features/musicLibrary/LibraryPage.tsx:213-217"
+   ],
+   "state": "built",
+   "size_bytes": 39010,
+   "links_out": [
+    {
+     "to": "sn-fe-library",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/features/musicLibrary/SetBuilderPage.tsx:526-633",
+      "songnodes/frontend/src/features/setBuilder/SendToTidalDialog.tsx:29"
+     ]
+    },
+    {
+     "to": "sn-fe-sets",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/features/musicLibrary/SetBuilderPage.tsx:526-633",
+      "songnodes/frontend/src/features/setBuilder/SendToTidalDialog.tsx:29"
+     ]
+    },
+    {
+     "to": "external: TIDAL playlist created",
+     "new_tab": true,
+     "evidence": [
+      "songnodes/frontend/src/features/musicLibrary/SetBuilderPage.tsx:526-633",
+      "songnodes/frontend/src/features/setBuilder/SendToTidalDialog.tsx:29"
+     ]
+    },
+    {
+     "to": "NavDrawer: all 8 modules + Home + Preferences (/settings#display)",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    },
+    {
+     "to": "sn-fe-library (AppHeader search, Ctrl K)",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    },
+    {
+     "to": "external: CreditsFooter attribution links",
+     "new_tab": true,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sn-fe-paths",
+   "repo": "songnodes",
+   "path": "songnodes/frontend/src/features/pathfinder/PathfinderPage.tsx",
+   "title": "Route finder",
+   "tagline": "Routes from one track to another through proven transitions.",
+   "description": "Pathfinder page: start/end/waypoint autocomplete over useUnifiedTracks, POST /api/v1/pathfinder/find-path via usePathfinder; links back to /graph?tab=pathfinder.",
+   "module": "paths",
+   "kind": "route",
+   "route": "/paths",
+   "dom": [
+    "AutocompleteSearchField (start, end, waypoints)",
+    "route result list"
+   ],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "features/pathfinder/route.tsx replaces the STATIC_ROUTES PlannedModulePage entry",
+    "live data /api/v1/pathfinder/find-path"
+   ],
+   "evidence": [
+    "songnodes/frontend/src/features/pathfinder/route.tsx:4",
+    "songnodes/frontend/src/routes/registry.tsx:33-45",
+    "songnodes/frontend/src/components/PathfinderPanel/pathfinder.machine.ts:47"
+   ],
+   "state": "built",
+   "size_bytes": 14782,
+   "links_out": [
+    {
+     "to": "sn-fe-graph",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/features/pathfinder/PathfinderPage.tsx:109,126"
+     ]
+    },
+    {
+     "to": "sn-fe-library",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/features/pathfinder/PathfinderPage.tsx:109,126"
+     ]
+    },
+    {
+     "to": "NavDrawer: all 8 modules + Home + Preferences (/settings#display)",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    },
+    {
+     "to": "sn-fe-library (AppHeader search, Ctrl K)",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    },
+    {
+     "to": "external: CreditsFooter attribution links",
+     "new_tab": true,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sn-fe-paths-planned",
+   "repo": "songnodes",
+   "path": "songnodes/frontend/src/pages/ModulePages.tsx",
+   "title": "Route finder (planned)",
+   "tagline": "Pathfinder lives in the graph for now",
+   "description": "PlannedModulePage placeholder for /paths; shadowed by the discovered pathfinder route, so never rendered.",
+   "module": "paths",
+   "kind": "route",
+   "route": "/paths",
+   "dom": [
+    "EmptyState"
+   ],
+   "classification": "non-final",
+   "subtype": "superseded-prototype",
+   "signals": [
+    "registry replaces the static /paths entry with features/pathfinder/route.tsx",
+    "copy says \"becomes the full route finder in migration phase 4\" which has shipped"
+   ],
+   "evidence": [
+    "songnodes/frontend/src/pages/ModulePages.tsx:29-52",
+    "songnodes/frontend/src/routes/registry.tsx:16"
+   ],
+   "state": "built",
+   "size_bytes": 3338,
+   "links_out": [
+    {
+     "to": "sn-fe-graph",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/pages/ModulePages.tsx:37,48"
+     ]
+    },
+    {
+     "to": "NavDrawer: all 8 modules + Home + Preferences (/settings#display)",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    },
+    {
+     "to": "sn-fe-library (AppHeader search, Ctrl K)",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    },
+    {
+     "to": "external: CreditsFooter attribution links",
+     "new_tab": true,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sn-fe-harmony",
+   "repo": "songnodes",
+   "path": "songnodes/frontend/src/features/camelot/CamelotPage.tsx",
+   "title": "Camelot wheel",
+   "tagline": "Keys, mood and energy across the library.",
+   "description": "Camelot wheel, key and mood panel and harmonic set over useUnifiedTracks (library + target tracks).",
+   "module": "harmony",
+   "kind": "route",
+   "route": "/harmony",
+   "dom": [
+    "CamelotWheel",
+    "KeyMoodPanel",
+    "HarmonicSet",
+    "MoveNext"
+   ],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "self-registered features/camelot/route.tsx",
+    "live data via useUnifiedTracks"
+   ],
+   "evidence": [
+    "songnodes/frontend/src/features/camelot/route.tsx:6",
+    "songnodes/frontend/src/features/camelot/CamelotPage.tsx:3-18"
+   ],
+   "state": "built",
+   "size_bytes": 9119,
+   "links_out": [
+    {
+     "to": "NavDrawer: all 8 modules + Home + Preferences (/settings#display)",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    },
+    {
+     "to": "sn-fe-library (AppHeader search, Ctrl K)",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    },
+    {
+     "to": "external: CreditsFooter attribution links",
+     "new_tab": true,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sn-fe-sources-targets",
+   "repo": "songnodes",
+   "path": "songnodes/frontend/src/pages/ModulePages.tsx",
+   "title": "Target tracks",
+   "tagline": "Tracks SongNodes is hunting for in tracklists, with their priority and search state.",
+   "description": "Sources index (redirect /sources -> /sources/targets) hosting TargetTracksManager (CRUD /api/v1/target-tracks, suggestions, music-service search).",
+   "module": "sources",
+   "kind": "route",
+   "route": "/sources/targets",
+   "dom": [
+    "TargetTracksManager",
+    "MusicServiceSearch",
+    "suggestions"
+   ],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "STATIC_ROUTES /sources/targets and Navigate from /sources",
+    "live data /api/v1/target-tracks"
+   ],
+   "evidence": [
+    "songnodes/frontend/src/routes/registry.tsx:17-18",
+    "songnodes/frontend/src/pages/ModulePages.tsx:11-27",
+    "songnodes/frontend/src/components/TargetTracksManager.tsx:97-317"
+   ],
+   "state": "built",
+   "size_bytes": 3338,
+   "links_out": [
+    {
+     "to": "sn-fe-sources-import",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/pages/ModulePages.tsx:22"
+     ]
+    },
+    {
+     "to": "NavDrawer: all 8 modules + Home + Preferences (/settings#display)",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    },
+    {
+     "to": "sn-fe-library (AppHeader search, Ctrl K)",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    },
+    {
+     "to": "external: CreditsFooter attribution links",
+     "new_tab": true,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sn-fe-sources-import",
+   "repo": "songnodes",
+   "path": "songnodes/frontend/src/features/aiSetlists/AISetlistsPage.tsx",
+   "title": "Import tracklist",
+   "tagline": "Find and import real, documented DJ setlists using AI providers.",
+   "description": "AI setlist finder: prompts AI via /api/v1/ai/complete, dedupes against /api/v1/setlists and a localStorage ledger, imports via POST /api/v1/tracks/import-tracklist.",
+   "module": "sources",
+   "kind": "route",
+   "route": "/sources/import",
+   "dom": [
+    "provider picker",
+    "results list",
+    "ConfirmDialog import"
+   ],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "self-registered features/aiSetlists/route.tsx",
+    "inbound link from Target tracks page actions",
+    "live endpoints /api/v1/ai/complete and /api/v1/tracks/import-tracklist"
+   ],
+   "evidence": [
+    "songnodes/frontend/src/features/aiSetlists/route.tsx:7",
+    "songnodes/frontend/src/pages/ModulePages.tsx:22",
+    "songnodes/frontend/src/features/aiSetlists/api/importRun.ts:29"
+   ],
+   "state": "built",
+   "size_bytes": 18853,
+   "links_out": [
+    {
+     "to": "external: setlist source_url",
+     "new_tab": true,
+     "evidence": [
+      "songnodes/frontend/src/features/aiSetlists/AISetlistsPage.tsx:339"
+     ]
+    },
+    {
+     "to": "NavDrawer: all 8 modules + Home + Preferences (/settings#display)",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    },
+    {
+     "to": "sn-fe-library (AppHeader search, Ctrl K)",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    },
+    {
+     "to": "external: CreditsFooter attribution links",
+     "new_tab": true,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sn-fe-pipeline",
+   "repo": "songnodes",
+   "path": "songnodes/frontend/src/pages/ScraperProgressPage.tsx",
+   "title": "Telemetry",
+   "tagline": "Real-time status of the 4-stage ingestion and graphing pipeline.",
+   "description": "Pipeline module: queue a scrape (POST /api/v1/scrape/trigger with Idempotency-Key), scrape window card, job list with retry, medallion stage cards, polled every 10 s; embeds TargetTracksManager.",
+   "module": "pipeline",
+   "kind": "route",
+   "route": "/pipeline",
+   "dom": [
+    "scrape form",
+    "ScrapeWindowCard",
+    "ScrapeJobStages",
+    "job table",
+    "TargetTracksManager"
+   ],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "STATIC_ROUTES /pipeline and MODULE_ROUTES.pipeline",
+    "live polling of /api/v1/jobs and /api/v1/outbox/status"
+   ],
+   "evidence": [
+    "songnodes/frontend/src/pages/ScraperProgressPage.tsx:18-120",
+    "songnodes/frontend/src/features/pipeline/usePipelineTelemetry.ts:275-322"
+   ],
+   "state": "built",
+   "size_bytes": 26117,
+   "links_out": [
+    {
+     "to": "NavDrawer: all 8 modules + Home + Preferences (/settings#display)",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    },
+    {
+     "to": "sn-fe-library (AppHeader search, Ctrl K)",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    },
+    {
+     "to": "external: CreditsFooter attribution links",
+     "new_tab": true,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sn-fe-settings",
+   "repo": "songnodes",
+   "path": "songnodes/frontend/src/pages/SettingsPage.tsx",
+   "title": "Settings",
+   "tagline": "Spotify, TIDAL, API keys, theme, text size and density.",
+   "description": "Settings index and /settings/:settingId detail pages (theme, text-size, row-density, reduce-motion, tidal-connection, spotify-connection, preferred-ai-provider, anthropic/openai/gemini keys, data-storage, about-system, scraper-keys). Preferences link /settings#display.",
+   "module": "services",
+   "kind": "route",
+   "route": "/settings, /settings/:settingId",
+   "dom": [
+    "settings index list",
+    "setting detail",
+    "APIKeyManager",
+    "ConfirmDialog"
+   ],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "STATIC_ROUTES /settings and /settings/:settingId",
+    "NavDrawer Preferences link to /settings#display",
+    "live endpoints /api/v1/api-keys, /api/v1/music-auth/*"
+   ],
+   "evidence": [
+    "songnodes/frontend/src/routes/registry.tsx:20-21",
+    "songnodes/frontend/src/pages/SettingsPage.tsx:49-137",
+    "songnodes/frontend/src/shell/AppShell.tsx:100"
+   ],
+   "state": "built",
+   "size_bytes": 44111,
+   "links_out": [
+    {
+     "to": "sn-fe-settings",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/pages/SettingsPage.tsx:388-394,1030,1133",
+      "songnodes/frontend/src/components/APIKeyManager.tsx:597"
+     ]
+    },
+    {
+     "to": "external: provider OAuth authorise page (same window)",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/pages/SettingsPage.tsx:388-394,1030,1133",
+      "songnodes/frontend/src/components/APIKeyManager.tsx:597"
+     ]
+    },
+    {
+     "to": "external: API key documentation_url",
+     "new_tab": true,
+     "evidence": [
+      "songnodes/frontend/src/pages/SettingsPage.tsx:388-394,1030,1133",
+      "songnodes/frontend/src/components/APIKeyManager.tsx:597"
+     ]
+    },
+    {
+     "to": "NavDrawer: all 8 modules + Home + Preferences (/settings#display)",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    },
+    {
+     "to": "sn-fe-library (AppHeader search, Ctrl K)",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    },
+    {
+     "to": "external: CreditsFooter attribution links",
+     "new_tab": true,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sn-fe-oauth-callback",
+   "repo": "songnodes",
+   "path": "songnodes/frontend/src/components/OAuthCallback.tsx",
+   "title": "Service sign-in return",
+   "tagline": "Finishing the connection",
+   "description": "Shell-less OAuth return page for /callback/spotify, /oauth/callback and /callback/:service; validates state, calls backend callback, stores tokens and posts a message to the opener.",
+   "module": "services",
+   "kind": "route",
+   "route": "/callback/spotify, /oauth/callback, /callback/:service",
+   "dom": [
+    "status message",
+    "close button"
+   ],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "registered directly in App.tsx outside AppShell",
+    "redirect target built by oauthRedirectUri() in SettingsPage connect flows"
+   ],
+   "evidence": [
+    "songnodes/frontend/src/App.tsx:30-33",
+    "songnodes/frontend/src/pages/SettingsPage.tsx:362-394"
+   ],
+   "state": "built",
+   "size_bytes": 13171,
+   "links_out": [
+    {
+     "to": "sn-fe-home",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/components/OAuthCallback.tsx:270,309"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sn-fe-notfound",
+   "repo": "songnodes",
+   "path": "songnodes/frontend/src/pages/ModulePages.tsx",
+   "title": "Page not found",
+   "tagline": "There is no page here",
+   "description": "404 page for any unknown route.",
+   "module": "home",
+   "kind": "route",
+   "route": "*",
+   "dom": [
+    "sn-page-error"
+   ],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "STATIC_ROUTES * entry",
+    "registry.test asserts \"There is no page here\""
+   ],
+   "evidence": [
+    "songnodes/frontend/src/routes/registry.tsx:22",
+    "songnodes/frontend/src/pages/ModulePages.tsx:55-70"
+   ],
+   "state": "built",
+   "size_bytes": 3338,
+   "links_out": [
+    {
+     "to": "sn-fe-home",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/pages/ModulePages.tsx:66"
+     ]
+    },
+    {
+     "to": "NavDrawer: all 8 modules + Home + Preferences (/settings#display)",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    },
+    {
+     "to": "sn-fe-library (AppHeader search, Ctrl K)",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    },
+    {
+     "to": "external: CreditsFooter attribution links",
+     "new_tab": true,
+     "evidence": [
+      "songnodes/frontend/src/shell/AppShell.tsx:62-133",
+      "songnodes/frontend/src/shell/CreditsFooter.tsx:57"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sn-fe-index-html",
+   "repo": "songnodes",
+   "path": "songnodes/frontend/index.html",
+   "title": "SongNodes",
+   "tagline": null,
+   "description": "SPA entry: inline pre-paint script reads sn-theme, sn-text-size, sn-density, sn-motion, then loads /src/main.tsx.",
+   "module": "shell",
+   "kind": "static-html",
+   "route": null,
+   "dom": [
+    "#root"
+   ],
+   "classification": "production",
+   "subtype": null,
+   "signals": [
+    "Vite entry point built into the frontend image",
+    "mirrors SN.prefs.init in design-system bundle.js"
+   ],
+   "evidence": [
+    "songnodes/frontend/index.html:9-20",
+    "songnodes/design-system/components/bundle.js:611-624"
+   ],
+   "state": "built",
+   "size_bytes": 1304,
+   "links_out": []
+  },
+  {
+   "id": "sn-fe-ds-reference",
+   "repo": "songnodes",
+   "path": "songnodes/docs/design-system/reference.html",
+   "title": "Design system reference · SongNodes",
+   "tagline": "Rendered reference of the SongNodes design system",
+   "description": "Rendered examples of tokens, type, icons, components and helpers; links the design-system source CSS/JS by relative path. Writes sn-density on load (Playwright).",
+   "module": "design",
+   "kind": "static-html",
+   "route": null,
+   "dom": [
+    "token swatches",
+    "component examples"
+   ],
+   "classification": "non-final",
+   "subtype": "doc-reference",
+   "signals": [
+    "lives under docs/, linked from CLAUDE.md as a quick reference",
+    "not served by the frontend image or any route",
+    "Playwright render: no network, only sn-density written"
+   ],
+   "evidence": [
+    "songnodes/docs/design-system/reference.html",
+    "songnodes/CLAUDE.md §4"
+   ],
+   "state": "built",
+   "size_bytes": 93789,
+   "links_out": [
+    {
+     "to": "external: www.1001tracklists.com (example link)",
+     "new_tab": false,
+     "evidence": [
+      "songnodes/docs/design-system/reference.html"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sn-fe-ds-reference-standalone",
+   "repo": "songnodes",
+   "path": "songnodes/docs/design-system/reference.standalone.html",
+   "title": "Design system reference · SongNodes (standalone)",
+   "tagline": "Same as reference.html with assets inlined",
+   "description": "Self-contained 633 KB copy of the reference page with CSS/JS inlined; excluded from CodeQL.",
+   "module": "design",
+   "kind": "static-html",
+   "route": null,
+   "dom": [
+    "token swatches",
+    "component examples"
+   ],
+   "classification": "non-final",
+   "subtype": "doc-reference",
+   "signals": [
+    "inlined copy of reference.html for offline viewing",
+    "listed in .github/codeql/codeql-config.yml paths-ignore",
+    "Playwright: same storage behaviour as reference.html (sn-density)"
+   ],
+   "evidence": [
+    "songnodes/docs/design-system/reference.standalone.html",
+    "songnodes/.github/codeql/codeql-config.yml:13"
+   ],
+   "state": "built",
+   "size_bytes": 633370,
+   "links_out": []
+  },
+  {
+   "id": "sn-fe-ds-component-previews",
+   "repo": "songnodes",
+   "path": "songnodes/design-system/components/*/preview.html",
+   "title": "Component previews (98 files)",
+   "tagline": "One @dsCard preview per design-system component",
+   "description": "98 preview.html fragments, one per component folder (AppHeader … WeeklyGridPage). They expect window.SongNodes injected by the card renderer; standalone render throws (Disclosure, PreferencesPanel, RetiredPageNotice tested). Some persist preview state: sn-disclosure:<name>, sn-motion, sn-skip-moved-targets.",
+   "module": "design",
+   "kind": "static-html",
+   "route": null,
+   "dom": [
+    "sn-preview"
+   ],
+   "classification": "non-final",
+   "subtype": "doc-reference",
+   "signals": [
+    "@dsCard header comment marks them as design-system cards",
+    "no doctype stylesheet links; Playwright standalone render fails with \"Cannot read properties of undefined (reading icon/prefs)\"",
+    "not routed or linked from the app"
+   ],
+   "evidence": [
+    "songnodes/design-system/components/Toast/preview.html:1",
+    "songnodes/design-system/components/Disclosure/preview.html:42-50",
+    "songnodes/design-system/components/PreferencesPanel/preview.html:141-144"
+   ],
+   "state": "built",
+   "size_bytes": 1068167,
+   "links_out": []
+  },
+  {
+   "id": "sn-fe-ds-source-previews",
+   "repo": "songnodes",
+   "path": "songnodes/design-system/source/previews/{navsrc,charts-src,pagesA/src,pagesb/src}/*.html",
+   "title": "Design-system source previews (39 files)",
+   "tagline": "Source fragments for the component previews",
+   "description": "39 source HTML fragments (navsrc 14, charts-src 10, pagesb 8, pagesA 7) used to build component previews.",
+   "module": "design",
+   "kind": "static-html",
+   "route": null,
+   "dom": [],
+   "classification": "non-final",
+   "subtype": "doc-reference",
+   "signals": [
+    "under design-system/source/ (build inputs per CLAUDE.md \"Changing the system\")",
+    "duplicates of preview content (e.g. navsrc/PreferencesPanel.html, pagesb/src/RetiredPageNotice.html share the same storage code)"
+   ],
+   "evidence": [
+    "songnodes/design-system/source/previews/navsrc/PreferencesPanel.html",
+    "songnodes/design-system/source/previews/pagesb/src/RetiredPageNotice.html"
+   ],
+   "state": "built",
+   "size_bytes": 403625,
+   "links_out": []
+  },
+  {
+   "id": "sn-fe-ds-violations-fixture",
+   "repo": "songnodes",
+   "path": "songnodes/design-system/fixtures/violations.html",
+   "title": "Violations fixture",
+   "tagline": null,
+   "description": "20 seeded design-system violations (hex, px, emoji, alert, N/A) used as the linter regression fixture.",
+   "module": "design",
+   "kind": "static-html",
+   "route": null,
+   "dom": [],
+   "classification": "non-final",
+   "subtype": "test-harness",
+   "signals": [
+    "design-system/INDEX.md: \"Regression fixture … 20 seeded violations\"",
+    "consumed by design-system/source/agentconf/validate.py via linters/check.py"
+   ],
+   "evidence": [
+    "songnodes/design-system/INDEX.md:50",
+    "songnodes/design-system/source/agentconf/validate.py:9"
+   ],
+   "state": "built",
+   "size_bytes": 568,
+   "links_out": []
+  },
+  {
+   "id": "sn-fe-work-queue-tracker",
+   "repo": "songnodes",
+   "path": "songnodes/plan/work-queue-2026-10-30/tracker.html",
+   "title": "SongNodes Work Queue",
+   "tagline": null,
+   "description": "claude.ai artifact source for the 30 Oct work queue: reads window.claude db collections meta and tasks (seeded by seed.py -> seed.json ArtifactData batch); copy-to-clipboard of prompts. Uses its own hex palette, not design-system tokens.",
+   "module": "ops",
+   "kind": "artifact",
+   "route": null,
+   "dom": [
+    "summary strip",
+    "job rows",
+    "copy prompt buttons"
+   ],
+   "classification": "non-final",
+   "subtype": "dev-tool",
+   "signals": [
+    "dated plan folder, generated by seed.py from tasks.py",
+    "uses window.claude.use db API, only works as a published artifact (Playwright: no storage, only Google Fonts requests)",
+    "hex tokens violate design-system rule"
+   ],
+   "evidence": [
+    "songnodes/plan/work-queue-2026-10-30/tracker.html",
+    "songnodes/plan/work-queue-2026-10-30/seed.py:1-20"
+   ],
+   "state": "built",
+   "size_bytes": 11468,
+   "links_out": []
+  },
+  {
+   "id": "sn-fe-mixesdb-fixture",
+   "repo": "songnodes",
+   "path": "songnodes/tests/unit/scrapers/fixtures/mixesdb_two_lists.html",
+   "title": "Test DJ - Awesome Mix | MixesDB",
+   "tagline": null,
+   "description": "Synthetic MixesDB page for scraper unit tests.",
+   "module": "ingest",
+   "kind": "static-html",
+   "route": null,
+   "dom": [],
+   "classification": "non-final",
+   "subtype": "test-harness",
+   "signals": [
+    "under tests/unit/scrapers/fixtures",
+    "created by plan/agents/SC3_mixesdb_every_track.md as \"small synthetic page\""
+   ],
+   "evidence": [
+    "songnodes/plan/agents/SC3_mixesdb_every_track.md:19"
+   ],
+   "state": "built",
+   "size_bytes": 849,
+   "links_out": []
+  },
+  {
+   "id": "sn-fe-login",
+   "repo": "songnodes",
+   "path": "songnodes/frontend/src/features/auth/LoginPage.tsx",
+   "title": "Sign in",
+   "tagline": null,
+   "description": "Duo-backed login page and AuthContext (GET /api/v1/auth/me, POST /api/v1/auth/login, POST /api/v1/auth/logout with credentials: include); self-registers /login via features/auth/route.tsx.",
+   "module": "services",
+   "kind": "route",
+   "route": "/login",
+   "dom": [
+    "sign-in form",
+    "banner"
+   ],
+   "classification": "non-final",
+   "subtype": "trial-fork",
+   "signals": [
+    "exists only in open PR #579 (DUO2), not on main @7429821",
+    "depends on unmerged rest-api router PR #578 (user_auth.py)"
+   ],
+   "evidence": [
+    "gh api repos/zvirb/songnodes/pulls/579/files: frontend/src/features/auth/{AuthContext.tsx,LoginPage.tsx,route.tsx}",
+    "PR #579 AuthContext.tsx:40-115"
+   ],
+   "state": "queued",
+   "size_bytes": null,
+   "links_out": []
+  }
+ ],
+ "signals": [
+  {
+   "id": "sn-fe-ls-prefs",
+   "type": "localStorage",
+   "name": "sn-theme, sn-text-size, sn-density, sn-motion",
+   "direction": "both",
+   "from": "sn-fe-settings",
+   "to": "sn-fe-index-html",
+   "format": "string",
+   "schema": "theme dark|light|booth|system; text size; density comfortable|compact; motion system|reduce|full",
+   "evidence": [
+    "songnodes/design-system/components/bundle.js:611-624",
+    "songnodes/frontend/index.html:13-19",
+    "songnodes/frontend/src/main.tsx:14"
+   ],
+   "methods": [
+    "M1",
+    "M2",
+    "M3"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-ls-zustand",
+   "type": "localStorage",
+   "name": "songnodes-store",
+   "direction": "both",
+   "from": "sn-fe-store-zustand",
+   "to": "sn-fe-store-zustand",
+   "format": "json",
+   "schema": "zustand persist v6: panelState, viewState (sets as arrays), searchFilters, savedSetlists, pathfindingState, musicCredentials (access/refresh tokens, client id/secret)",
+   "evidence": [
+    "songnodes/frontend/src/store/useStore.ts:1478-1545"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-ls-saved-sets",
+   "type": "localStorage",
+   "name": "sn-music-library-sets",
+   "direction": "both",
+   "from": "sn-fe-sets",
+   "to": "sn-fe-home",
+   "format": "json",
+   "schema": "SavedSet[] {id,name,shape,minutes,mix,pool,seed,tracks[{id,tgt,a,t,m,e,k,bpm,tidal,move,track_id}],updated,created,description}",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/data.ts:138,343-357",
+    "songnodes/frontend/src/pages/HomePage.tsx:11"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-ls-set-draft",
+   "type": "localStorage",
+   "name": "sn-set-draft",
+   "direction": "both",
+   "from": "sn-fe-library",
+   "to": "sn-fe-sets",
+   "format": "json",
+   "schema": "Draft {id,name,shape,minutes,mix,pool,slots,seed,crate} via sanitiseDraft",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/storage.ts:24-27",
+    "songnodes/frontend/src/features/musicLibrary/data.ts:180-183"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-ls-filters-library",
+   "type": "localStorage",
+   "name": "sn-filters-library",
+   "direction": "both",
+   "from": "sn-fe-library",
+   "to": "sn-fe-library",
+   "format": "json",
+   "schema": "{filters: CrateFilters, sort:{key,dir}}; URL params win (design-system/12-inputs.md:64)",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/storage.ts:22",
+    "songnodes/frontend/src/features/musicLibrary/LibraryPage.tsx:78-120"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-ls-banner",
+   "type": "localStorage",
+   "name": "sn-banner-keyed-library, sn-banner-keyed-sets",
+   "direction": "both",
+   "from": "sn-fe-library",
+   "to": "sn-fe-sets",
+   "format": "json number",
+   "schema": "count of keyed tracks at dismissal",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/storage.ts:30",
+    "songnodes/frontend/src/features/musicLibrary/LibraryPage.tsx:91,335",
+    "songnodes/frontend/src/features/musicLibrary/SetBuilderPage.tsx:63,456"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-ls-favs",
+   "type": "localStorage",
+   "name": "sn-favs-library-crate, sn-favs-pathfinder-waypoints",
+   "direction": "both",
+   "from": "sn-fe-library",
+   "to": "sn-fe-paths",
+   "format": "json",
+   "schema": "FavoriteItem<T>[]",
+   "evidence": [
+    "songnodes/frontend/src/utils/favoriteQueries.ts:8-101",
+    "songnodes/frontend/src/features/musicLibrary/components/CrateFilterRail.tsx:248",
+    "songnodes/frontend/src/features/pathfinder/PathfinderPage.tsx:162,187"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-ls-recent",
+   "type": "localStorage",
+   "name": "sn-recent-quick-search, sn-recent-music-service (and per-namespace AutocompleteSearchField)",
+   "direction": "both",
+   "from": "sn-fe-graph",
+   "to": "sn-fe-graph",
+   "format": "json",
+   "schema": "recent search strings",
+   "evidence": [
+    "songnodes/frontend/src/utils/recentSearches.ts:5-103",
+    "songnodes/frontend/src/components/QuickSearch.tsx:159",
+    "songnodes/frontend/src/components/MusicServiceSearch.tsx:52"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-ls-graph-view",
+   "type": "localStorage",
+   "name": "sn-graph-view",
+   "direction": "both",
+   "from": "sn-fe-graph",
+   "to": "sn-fe-graph",
+   "format": "string",
+   "schema": "library|neighbourhood",
+   "evidence": [
+    "songnodes/frontend/src/lib/graphView.ts:18-30"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-ls-target-tracks",
+   "type": "localStorage",
+   "name": "sn-target-tracks-v1",
+   "direction": "both",
+   "from": "sn-fe-library",
+   "to": "sn-fe-harmony",
+   "format": "json",
+   "schema": "Record<libraryTrackId,{isTarget,priority,pendingSync}>",
+   "evidence": [
+    "songnodes/frontend/src/services/trackSyncAdapter.ts:3-100",
+    "songnodes/frontend/src/hooks/useUnifiedTracks.ts:93-103"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-ls-dismissed-suggestions",
+   "type": "localStorage",
+   "name": "sn-dismissed-suggestions",
+   "direction": "both",
+   "from": "sn-fe-sources-targets",
+   "to": "sn-fe-sources-targets",
+   "format": "json",
+   "schema": "string[] of suggestion ids",
+   "evidence": [
+    "songnodes/frontend/src/hooks/useTargetSuggestions.ts:23-40"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-ls-ai-ledger",
+   "type": "localStorage",
+   "name": "songnodes_ai_setlists_ledger",
+   "direction": "both",
+   "from": "sn-fe-sources-import",
+   "to": "sn-fe-sources-import",
+   "format": "json",
+   "schema": "array of imported AI setlist ledger entries",
+   "evidence": [
+    "songnodes/frontend/src/features/aiSetlists/AISetlistsPage.tsx:57,147"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-ls-ai-config",
+   "type": "localStorage",
+   "name": "songnodes_ai_key_config, songnodes_ai_keys_server_v1",
+   "direction": "both",
+   "from": "sn-fe-settings",
+   "to": "sn-fe-sources-import",
+   "format": "json",
+   "schema": "AIKeyConfig (preferred provider, no raw keys); migration flag removes legacy raw keys songnodes_key_*, ai_key_*, apiKey_*",
+   "evidence": [
+    "songnodes/frontend/src/services/apiKeyService.ts:10,170-223"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-ls-ai-history",
+   "type": "localStorage",
+   "name": "songnodes_ai_prompt_history",
+   "direction": "both",
+   "from": "sn-fe-graph",
+   "to": "sn-fe-graph",
+   "format": "json",
+   "schema": "AIPromptHistoryItem[]; only used by unreachable AIAssistantModal",
+   "evidence": [
+    "songnodes/frontend/src/services/aiService.ts:62,373-395"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-ls-legacy-tokens",
+   "type": "localStorage",
+   "name": "tidal_oauth_tokens, spotify_oauth_tokens",
+   "direction": "read",
+   "from": "sn-fe-oauth-callback",
+   "to": "sn-fe-graph",
+   "format": "json",
+   "schema": "{access_token,refresh_token,expires_at}; legacy, migrated into songnodes-store then removed",
+   "evidence": [
+    "songnodes/frontend/src/pages/GraphPage.tsx:15-33",
+    "songnodes/frontend/src/components/SettingsPanel.tsx:151-190",
+    "songnodes/frontend/src/components/OAuthCallback.tsx:229"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-ls-mutex",
+   "type": "localStorage",
+   "name": "mutex_lock_token_refresh_<service>",
+   "direction": "both",
+   "from": "sn-fe-graph",
+   "to": "sn-fe-graph",
+   "format": "json",
+   "schema": "{id,expiresAt}; fallback only when navigator.locks is missing",
+   "evidence": [
+    "songnodes/frontend/src/hooks/useTokenRefresh.ts:43-95"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-ls-ds-previews",
+   "type": "localStorage",
+   "name": "sn-disclosure:<name>, sn-skip-moved-targets",
+   "direction": "both",
+   "from": "sn-fe-ds-component-previews",
+   "to": "sn-fe-ds-component-previews",
+   "format": "string",
+   "schema": "preview-only state; no app code reads them",
+   "evidence": [
+    "songnodes/design-system/components/Disclosure/preview.html:46-49",
+    "songnodes/design-system/components/RetiredPageNotice/preview.html"
+   ],
+   "methods": [
+    "M1",
+    "M3"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-ss-auth-state",
+   "type": "sessionStorage",
+   "name": "spotify_auth_state (also checks <service>_auth_state, tidal_auth_state)",
+   "direction": "both",
+   "from": "sn-fe-settings",
+   "to": "sn-fe-oauth-callback",
+   "format": "string",
+   "schema": "64 hex chars CSRF state",
+   "evidence": [
+    "songnodes/frontend/src/pages/SettingsPage.tsx:381-386",
+    "songnodes/frontend/src/components/SettingsPanel.tsx:254",
+    "songnodes/frontend/src/components/OAuthCallback.tsx:114-130"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-ss-oauth-tokens",
+   "type": "sessionStorage",
+   "name": "<service>_oauth_tokens",
+   "direction": "write",
+   "from": "sn-fe-oauth-callback",
+   "to": null,
+   "format": "json",
+   "schema": "{access_token,refresh_token,expires_in,expires_at,token_type,scope}; no reader",
+   "evidence": [
+    "songnodes/frontend/src/components/OAuthCallback.tsx:227-229"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-pm-oauth",
+   "type": "postMessage",
+   "name": "oauth-success | oauth-error",
+   "direction": "write",
+   "from": "sn-fe-oauth-callback",
+   "to": "sn-fe-settings",
+   "format": "json",
+   "schema": "{type, service, tokens|error}; targetOrigin window.location.origin; receiver checks event.origin",
+   "evidence": [
+    "songnodes/frontend/src/components/OAuthCallback.tsx:56-61,258-266",
+    "songnodes/frontend/src/pages/SettingsPage.tsx:330-352",
+    "songnodes/frontend/src/components/SettingsPanel.tsx:104-142"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-storage-event-presets",
+   "type": "storage-event",
+   "name": "sn-favs-library-crate",
+   "direction": "read",
+   "from": "sn-fe-library",
+   "to": "sn-fe-library",
+   "format": "json",
+   "schema": "cross-tab refresh of filter presets",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/components/FilterPresets.tsx:38-45"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-url-library",
+   "type": "url-param",
+   "name": "/library?q,rot,pillar,tier,tags,src,checks,rev,sort,focus=search",
+   "direction": "both",
+   "from": "sn-fe-sets",
+   "to": "sn-fe-library",
+   "format": "query string",
+   "schema": "filtersToParams/filtersFromParams; focus=search from AppHeader",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/LibraryPage.tsx:71-140",
+    "songnodes/frontend/src/shell/AppShell.tsx:132,166"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-url-sets",
+   "type": "url-param",
+   "name": "/sets?open=<setId>&pool=crate&<crate filters>",
+   "direction": "read",
+   "from": "sn-fe-library",
+   "to": "sn-fe-sets",
+   "format": "query string",
+   "schema": "open set id or crate pool built from library filters",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/SetBuilderPage.tsx:51,120,633",
+    "songnodes/frontend/src/features/musicLibrary/LibraryPage.tsx:213-217"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-url-graph",
+   "type": "url-param",
+   "name": "/graph?mode=play|plan&tab=analysis|keymood|pathfinder|tidal|spotify|targets",
+   "direction": "read",
+   "from": "sn-fe-paths",
+   "to": "sn-fe-graph",
+   "format": "query string",
+   "schema": "tab implies plan mode",
+   "evidence": [
+    "songnodes/frontend/src/components/DJInterface.tsx:95-122",
+    "songnodes/frontend/src/features/pathfinder/PathfinderPage.tsx:109"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-url-settings",
+   "type": "url-param",
+   "name": "/settings/:settingId and /settings#display",
+   "direction": "read",
+   "from": "sn-fe-settings",
+   "to": "sn-fe-settings",
+   "format": "path",
+   "schema": "settingId in SETTINGS ids",
+   "evidence": [
+    "songnodes/frontend/src/pages/SettingsPage.tsx:265",
+    "songnodes/frontend/src/shell/AppShell.tsx:100"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-url-oauth",
+   "type": "url-param",
+   "name": "?code&state (callback query)",
+   "direction": "read",
+   "from": null,
+   "to": "sn-fe-oauth-callback",
+   "format": "query string",
+   "schema": "OAuth authorisation code",
+   "evidence": [
+    "songnodes/frontend/src/components/OAuthCallback.tsx:68-76"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-file-library-export",
+   "type": "file-read",
+   "name": "library export .json (musicLibrary outputs/artifact/library.json)",
+   "direction": "read",
+   "from": null,
+   "to": "sn-fe-library",
+   "format": "json",
+   "schema": "LibraryFile {generated,ledger_updated,counts,sources,runs,tracks[]} max 50 MB; hashed to Idempotency-Key import-sha256-<hex>",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/components/LibraryImportDialog.tsx:6-24,114-130",
+    "songnodes/plan/agents/L8_library_import_dialog.md:9"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-file-tracklist",
+   "type": "file-read",
+   "name": "tracklist .txt/.csv",
+   "direction": "read",
+   "from": null,
+   "to": "sn-fe-graph",
+   "format": "text",
+   "schema": "pasted/uploaded tracklist read with FileReader then POST /api/v1/tracks/import-tracklist",
+   "evidence": [
+    "songnodes/frontend/src/components/TracklistImporter.tsx:172,220,305"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-dl-set-export",
+   "type": "file-write",
+   "name": "<set>.m3u8 | .csv | .json | .xml (Rekordbox)",
+   "direction": "write",
+   "from": "sn-fe-sets",
+   "to": null,
+   "format": "m3u8/csv/json/xml",
+   "schema": "exporters.ts exportM3U8, exportRekordbox; ExportDialog exportCsv/exportJson",
+   "evidence": [
+    "songnodes/frontend/src/features/setBuilder/ExportDialog.tsx:70-98",
+    "songnodes/frontend/src/features/setBuilder/exporters.ts:20-96"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-dl-artifact-sets",
+   "type": "file-write",
+   "name": "artifact_sets.json",
+   "direction": "write",
+   "from": "sn-fe-sets",
+   "to": "ml-inbox-artifact-sets",
+   "format": "json",
+   "schema": "SavedSet[] (plain list, no tidal flag)",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/SetBuilderPage.tsx:223-226",
+    "songnodes/frontend/src/features/musicLibrary/storage.ts:57-68",
+    "musicLibrary/pipeline/build_db.py:93-106"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-dl-pathfinder",
+   "type": "file-write",
+   "name": "pathfinder-result.json | pathfinder-playlist.m3u | pathfinder-result.csv",
+   "direction": "write",
+   "from": "sn-fe-graph",
+   "to": null,
+   "format": "json/m3u/csv",
+   "schema": "path segments with track name, artist, bpm, camelot_key, durations",
+   "evidence": [
+    "songnodes/frontend/src/components/PathfinderPanel/pathfinder.machine.ts:69-111"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-clipboard",
+   "type": "clipboard",
+   "name": "navigator.clipboard.writeText",
+   "direction": "write",
+   "from": "sn-fe-library",
+   "to": null,
+   "format": "text",
+   "schema": "copy track/tracklist text (musicLibrary ui.tsx), AI setlist values, lib/utils copyToClipboard; tracker.html copies prompts",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/components/ui.tsx:164",
+    "songnodes/frontend/src/features/aiSetlists/components/ui.tsx:18",
+    "songnodes/frontend/src/lib/utils.ts:233-241",
+    "songnodes/plan/work-queue-2026-10-30/tracker.html"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-env-api-base",
+   "type": "env",
+   "name": "VITE_API_BASE_URL, VITE_ALLOWED_ORIGINS, VITE_OAUTH_REDIRECT_ORIGIN",
+   "direction": "read",
+   "from": null,
+   "to": "sn-fe-shell",
+   "format": "string",
+   "schema": "default same-origin /api",
+   "evidence": [
+    "songnodes/frontend/src/lib/apiBase.ts:1-100"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-fetch-library-search",
+   "type": "fetch",
+   "name": "GET /api/v1/library/search?limit=5000",
+   "direction": "read",
+   "from": "sn-fe-library",
+   "to": "sn-be-rest-api",
+   "format": "json",
+   "schema": "row -> LibraryTrack compact keys a,t,m,d,bpm,k,e,p,rot,tags,src,first,last,g,lbl,sync,tidal,dz,bp,chart,rev,ovr,local,mbid",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/data.ts:114"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-fetch-library-sets",
+   "type": "fetch",
+   "name": "GET/PUT/DELETE /api/v1/library/sets[/{id}] (PUT /0 creates)",
+   "direction": "both",
+   "from": "sn-fe-sets",
+   "to": "sn-be-rest-api",
+   "format": "json",
+   "schema": "PUT body {name,description,tracks[{track_id}]} -> {id}",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/data.ts:196,264,290"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-fetch-library-ingest",
+   "type": "fetch",
+   "name": "POST /api/v1/library/ingest (Idempotency-Key) + GET /api/v1/jobs/{id} + POST /api/v1/jobs/{id}/retry",
+   "direction": "both",
+   "from": "sn-fe-library",
+   "to": "sn-be-rest-api",
+   "format": "json",
+   "schema": "{job_id,status,created}; poll every 2 s",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/components/LibraryImportDialog.tsx:114,136,150"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-fetch-library-preview",
+   "type": "fetch",
+   "name": "GET /api/v1/library/tracks/{id}/preview",
+   "direction": "read",
+   "from": "sn-fe-library",
+   "to": "sn-be-rest-api",
+   "format": "json",
+   "schema": "",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/components/LibraryRowPreview.tsx:27"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-fetch-target-tracks",
+   "type": "fetch",
+   "name": "GET/POST/PUT/DELETE /api/v1/target-tracks[/{id}], POST /{id}/search, GET /suggestions",
+   "direction": "both",
+   "from": "sn-fe-sources-targets",
+   "to": "sn-be-rest-api",
+   "format": "json",
+   "schema": "{track_id,artist,title,priority,is_active,search_terms,genres,archived}",
+   "evidence": [
+    "songnodes/frontend/src/components/TargetTracksManager.tsx:97-317",
+    "songnodes/frontend/src/services/trackSyncAdapter.ts:43,80",
+    "songnodes/frontend/src/services/unifiedTrackService.ts:8",
+    "songnodes/frontend/src/hooks/useTargetSuggestions.ts:61,85,112",
+    "songnodes/frontend/src/features/musicLibrary/targetAction/TargetActionButton.tsx:45",
+    "songnodes/frontend/src/features/musicLibrary/targetAction/DiscoveryBanner.tsx:42"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-fetch-music-search",
+   "type": "fetch",
+   "name": "GET /api/v1/music-search/{service}",
+   "direction": "read",
+   "from": "sn-fe-sources-targets",
+   "to": "sn-be-rest-api",
+   "format": "json",
+   "schema": "",
+   "evidence": [
+    "songnodes/frontend/src/components/MusicServiceSearch.tsx:73"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-fetch-graph-data",
+   "type": "fetch",
+   "name": "GET /api/graph/data?limit=10000 (fallback GET /api/graph)",
+   "direction": "read",
+   "from": "sn-fe-graph",
+   "to": "sn-be-graph-api",
+   "format": "json",
+   "schema": "{nodes[],edges[{id,source,target,weight,distance,type|edge_type}]}",
+   "evidence": [
+    "songnodes/frontend/src/hooks/useDataLoader.ts:28,82",
+    "songnodes/frontend/Dockerfile:81"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-fetch-graph-edges",
+   "type": "fetch",
+   "name": "GET /api/graph/edges?node_ids=…&limit=2",
+   "direction": "read",
+   "from": "sn-fe-graph",
+   "to": "sn-be-graph-api",
+   "format": "json",
+   "schema": "",
+   "evidence": [
+    "songnodes/frontend/src/components/EdgeDetailsModal.tsx:29"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-fetch-pathfinder",
+   "type": "fetch",
+   "name": "POST /api/v1/pathfinder/find-path",
+   "direction": "both",
+   "from": "sn-fe-paths",
+   "to": "sn-be-rest-api",
+   "format": "json",
+   "schema": "",
+   "evidence": [
+    "songnodes/frontend/src/components/PathfinderPanel/pathfinder.machine.ts:47",
+    "songnodes/frontend/src/components/PathfinderPanel.tsx:105"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-fetch-scrape-trigger",
+   "type": "fetch",
+   "name": "POST /api/v1/scrape/trigger?source&search_query (Idempotency-Key)",
+   "direction": "both",
+   "from": "sn-fe-pipeline",
+   "to": "sn-be-rest-api",
+   "format": "json",
+   "schema": "202 {created}",
+   "evidence": [
+    "songnodes/frontend/src/pages/ScraperProgressPage.tsx:105"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-fetch-scrape-window",
+   "type": "fetch",
+   "name": "GET/PUT /api/v1/scrape/window",
+   "direction": "both",
+   "from": "sn-fe-pipeline",
+   "to": "sn-be-rest-api",
+   "format": "json",
+   "schema": "{starts_on,ends_on,updated_at}",
+   "evidence": [
+    "songnodes/frontend/src/features/pipeline/ScrapeWindowCard.tsx:5,22"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-fetch-jobs",
+   "type": "fetch",
+   "name": "GET /api/v1/jobs?limit=200, ?kind=scrape&limit=50, GET /api/v1/outbox/status, GET /api/v1/jobs/{id}/stages, POST /jobs/{id}/retry",
+   "direction": "both",
+   "from": "sn-fe-pipeline",
+   "to": "sn-be-rest-api",
+   "format": "json",
+   "schema": "polled 10 s, visibility refresh",
+   "evidence": [
+    "songnodes/frontend/src/features/pipeline/usePipelineTelemetry.ts:275-277",
+    "songnodes/frontend/src/features/pipeline/jobStages.ts:101",
+    "songnodes/frontend/src/pages/ScraperProgressPage.tsx:46"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-fetch-api-keys",
+   "type": "fetch",
+   "name": "GET/POST /api/v1/api-keys, GET /requirements, POST /test, DELETE /{service}/{key}",
+   "direction": "both",
+   "from": "sn-fe-settings",
+   "to": "sn-be-rest-api",
+   "format": "json",
+   "schema": "",
+   "evidence": [
+    "songnodes/frontend/src/pages/SettingsPage.tsx:306-442",
+    "songnodes/frontend/src/services/apiKeyService.ts:17-89",
+    "songnodes/frontend/src/components/APIKeyManager.tsx:265-389"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-fetch-music-auth",
+   "type": "fetch",
+   "name": "POST /api/v1/music-auth/tidal/oauth/init, GET spotify/authorize (navigation), GET spotify/callback | tidal/oauth/callback, POST store-token, POST {service}/refresh, POST test/{tidal|spotify}",
+   "direction": "both",
+   "from": "sn-fe-settings",
+   "to": "sn-be-rest-api",
+   "format": "json",
+   "schema": "",
+   "evidence": [
+    "songnodes/frontend/src/pages/SettingsPage.tsx:362-394",
+    "songnodes/frontend/src/components/OAuthCallback.tsx:166-245",
+    "songnodes/frontend/src/hooks/useTokenRefresh.ts:164-210",
+    "songnodes/frontend/src/store/useStore.ts:1095,1125"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-fetch-tidal-spotify-playlists",
+   "type": "fetch",
+   "name": "/api/v1/{tidal|spotify}/playlists/list|create|{id}/tracks, /tracks/search, /tracks/check-availability",
+   "direction": "both",
+   "from": "sn-fe-graph",
+   "to": "sn-be-rest-api",
+   "format": "json",
+   "schema": "",
+   "evidence": [
+    "songnodes/frontend/src/components/TidalPlaylistManager.tsx:80-240",
+    "songnodes/frontend/src/components/SpotifyPlaylistManager.tsx:71-235"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-fetch-tidal-send-set",
+   "type": "fetch",
+   "name": "POST /api/v1/tidal/sets/send (Bearer browser-held TIDAL token)",
+   "direction": "both",
+   "from": "sn-fe-sets",
+   "to": "sn-be-rest-api",
+   "format": "json",
+   "schema": "{name,description,tracks[{…,tidal}]}",
+   "evidence": [
+    "songnodes/frontend/src/features/setBuilder/sendToTidal.ts:38-44"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-fetch-ai-complete",
+   "type": "fetch",
+   "name": "POST /api/v1/ai/complete",
+   "direction": "both",
+   "from": "sn-fe-sources-import",
+   "to": "sn-be-rest-api",
+   "format": "json",
+   "schema": "",
+   "evidence": [
+    "songnodes/frontend/src/services/aiProxyClient.ts:32"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-fetch-setlists",
+   "type": "fetch",
+   "name": "GET /api/v1/setlists",
+   "direction": "read",
+   "from": "sn-fe-sources-import",
+   "to": "sn-be-rest-api",
+   "format": "json",
+   "schema": "",
+   "evidence": [
+    "songnodes/frontend/src/features/aiSetlists/AISetlistsPage.tsx:61"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-fetch-import-tracklist",
+   "type": "fetch",
+   "name": "POST /api/v1/tracks/import-tracklist",
+   "direction": "both",
+   "from": "sn-fe-sources-import",
+   "to": "sn-be-rest-api",
+   "format": "json",
+   "schema": "",
+   "evidence": [
+    "songnodes/frontend/src/features/aiSetlists/api/importRun.ts:29",
+    "songnodes/frontend/src/components/TracklistImporter.tsx:220"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-fetch-artists",
+   "type": "fetch",
+   "name": "GET /api/v1/tracks/missing-artist, /artists/search, /artists/dirty; POST /tracks/{id}/assign-artist, /artists, /artists/{id}/merge|rename; DELETE /artists/{id}",
+   "direction": "both",
+   "from": "sn-fe-graph",
+   "to": "sn-be-rest-api",
+   "format": "json",
+   "schema": "",
+   "evidence": [
+    "songnodes/frontend/src/components/ArtistAttributionManager.tsx:92-350"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-fetch-attributions",
+   "type": "fetch",
+   "name": "GET /api/v1/attributions",
+   "direction": "read",
+   "from": "sn-fe-shell",
+   "to": "sn-be-rest-api",
+   "format": "json",
+   "schema": "",
+   "evidence": [
+    "songnodes/frontend/src/utils/attributions.ts:28",
+    "songnodes/frontend/src/shell/CreditsFooter.tsx"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-fetch-scrapers-legacy",
+   "type": "fetch",
+   "name": "POST /api/v1/scrapers/target-tracks/search, POST /api/v1/scrapers/queue/clear",
+   "direction": "both",
+   "from": "sn-fe-graph",
+   "to": "sn-be-rest-api",
+   "format": "json",
+   "schema": "no matching backend route",
+   "evidence": [
+    "songnodes/frontend/src/components/DJInterface.tsx:360,395,432"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": false,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-fetch-dead-api-ts",
+   "type": "fetch",
+   "name": "/api/v1/search/*, /api/v1/pathfinding/*, /api/v1/tracks/batch, /api/v1/setlists POST/DELETE/export, /api/graph/tracks, /api/graph/positions, /api/v1/tracks/{id}/preview",
+   "direction": "both",
+   "from": "sn-fe-graph",
+   "to": "sn-be-rest-api",
+   "format": "json",
+   "schema": "graphApi/searchApi/pathfindingApi/setlistApi exported but not called (only trackApi via unreachable NowPlayingDeck)",
+   "evidence": [
+    "songnodes/frontend/src/services/api.ts:242-556"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-ws-live",
+   "type": "websocket",
+   "name": "/api/ws",
+   "direction": "read",
+   "from": "sn-fe-graph",
+   "to": "sn-be-rest-api",
+   "format": "json",
+   "schema": "LiveDataLoader graph updates; component not imported anywhere",
+   "evidence": [
+    "songnodes/frontend/src/components/LiveDataLoader.tsx:138-140"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-fetch-edit-track",
+   "type": "fetch",
+   "name": "PATCH /api/tracks/{id}",
+   "direction": "write",
+   "from": "sn-fe-graph",
+   "to": "sn-be-rest-api",
+   "format": "json",
+   "schema": "EditTrackModal (unreachable)",
+   "evidence": [
+    "songnodes/frontend/src/components/EditTrackModal.tsx:57"
+   ],
+   "methods": [
+    "M1",
+    "M2"
+   ],
+   "verified": true,
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-fetch-auth",
+   "type": "fetch",
+   "name": "GET /api/v1/auth/me, POST /api/v1/auth/login, POST /api/v1/auth/logout (cookie, credentials: include)",
+   "direction": "both",
+   "to": "sn-be-rest-api",
+   "format": "json",
+   "schema": "session cookie; user {email}",
+   "evidence": [
+    "PR #579 frontend/src/features/auth/AuthContext.tsx:40-115",
+    "PR #578 services/rest_api/routers/user_auth.py"
+   ],
+   "methods": [
+    "M1"
+   ],
+   "verified": false,
+   "state": "queued",
+   "from": "sn-fe-login"
+  },
+  {
+   "id": "sn-fe-event-toast",
+   "type": "postMessage",
+   "name": "window CustomEvent 'sn-toast'",
+   "direction": "both",
+   "to": "sn-fe-shell",
+   "format": "js object",
+   "schema": "{id,text,action}",
+   "evidence": [
+    "songnodes/frontend/src/components/ds/index.tsx:1423-1454"
+   ],
+   "methods": [
+    "M1"
+   ],
+   "verified": true,
+   "state": "built",
+   "from": "any page (showToast)"
+  }
+ ],
+ "stores": [
+  {
+   "id": "sn-fe-store-zustand",
+   "repo": "songnodes",
+   "name": "useStore (Zustand, persist songnodes-store, devtools \"SongNodes Store\")",
+   "kind": "localStorage",
+   "location": "browser localStorage songnodes-store",
+   "owner": "frontend store slices (graph, credentials, pathfinding, search)",
+   "readers": [
+    "sn-fe-graph",
+    "sn-fe-settings",
+    "sn-fe-sets"
+   ],
+   "concurrency": "none: last writer per tab wins, no storage-event rehydrate across tabs",
+   "evidence": [
+    "songnodes/frontend/src/store/useStore.ts:340,1478-1553"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-store-unified-tracks",
+   "repo": "songnodes",
+   "name": "useUnifiedTracksStore (in-memory zustand)",
+   "kind": "memory",
+   "location": "browser memory",
+   "owner": "hooks/useUnifiedTracks.ts refresh()",
+   "readers": [
+    "sn-fe-paths",
+    "sn-fe-harmony",
+    "sn-fe-sources-import",
+    "sn-fe-library"
+   ],
+   "concurrency": "none; local sn-target-tracks-v1 overrides backend target state",
+   "evidence": [
+    "songnodes/frontend/src/hooks/useUnifiedTracks.ts:62-110"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-store-library-cache",
+   "repo": "songnodes",
+   "name": "loadLibrary() promise cache",
+   "kind": "memory",
+   "location": "module scope features/musicLibrary/data.ts",
+   "owner": "loadLibrary",
+   "readers": [
+    "sn-fe-home",
+    "sn-fe-library",
+    "sn-fe-sets",
+    "sn-fe-store-unified-tracks"
+   ],
+   "concurrency": "single shared promise, reset on error or forceRefresh",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/data.ts:71,107-135"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-store-browser-ls",
+   "repo": "songnodes",
+   "name": "per-device localStorage keys (sn-*, songnodes_*)",
+   "kind": "localStorage",
+   "location": "browser origin http://127.0.0.1:3006",
+   "owner": "see signals sn-fe-ls-*",
+   "readers": [
+    "all routes"
+   ],
+   "concurrency": "append/overwrite; only sn-favs-library-crate listens to storage events; token refresh uses navigator.locks with localStorage mutex fallback",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/storage.ts:8-19",
+    "songnodes/frontend/src/hooks/useTokenRefresh.ts:43-95"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-store-nginx",
+   "repo": "songnodes",
+   "name": "frontend nginx (inline default.conf)",
+   "kind": "proxy",
+   "location": "frontend image :8080, published 127.0.0.1:3006",
+   "owner": "frontend/Dockerfile",
+   "readers": [
+    "browser"
+   ],
+   "concurrency": "n/a; resolver 127.0.0.11 valid=10s",
+   "evidence": [
+    "songnodes/frontend/Dockerfile:28-102",
+    "songnodes/compose.dev.yaml:200-202"
+   ],
+   "state": "built"
+  }
+ ],
+ "edges": [
+  {
+   "from": "sn-fe-library",
+   "to": "sn-fe-sets",
+   "label": "crate filters + pool=crate in URL; draft slots in sn-set-draft",
+   "channel": "sn-fe-url-sets",
+   "domain": "sets",
+   "state": "built"
+  },
+  {
+   "from": "sn-fe-sets",
+   "to": "sn-be-rest-api",
+   "label": "SavedSet upsert {name,description,tracks[{track_id}]}",
+   "channel": "sn-fe-fetch-library-sets",
+   "domain": "sets",
+   "state": "built"
+  },
+  {
+   "from": "sn-fe-sets",
+   "to": "ml-inbox-artifact-sets",
+   "label": "artifact_sets.json download (manual copy to musicLibrary inbox)",
+   "channel": "sn-fe-dl-artifact-sets",
+   "domain": "sets",
+   "state": "built"
+  },
+  {
+   "from": "sn-fe-sets",
+   "to": "sn-be-rest-api",
+   "label": "send set to TIDAL",
+   "channel": "sn-fe-fetch-tidal-send-set",
+   "domain": "services",
+   "state": "built"
+  },
+  {
+   "from": "sn-be-rest-api",
+   "to": "sn-fe-library",
+   "label": "library.tracks rows (compact keys)",
+   "channel": "sn-fe-fetch-library-search",
+   "domain": "library",
+   "state": "built"
+  },
+  {
+   "from": "sn-fe-library",
+   "to": "sn-be-rest-api",
+   "label": "musicLibrary library.json export -> ingest job",
+   "channel": "sn-fe-fetch-library-ingest",
+   "domain": "ingest",
+   "state": "built"
+  },
+  {
+   "from": "sn-be-graph-api",
+   "to": "sn-fe-graph",
+   "label": "graph nodes/edges for PIXI",
+   "channel": "sn-fe-fetch-graph-data",
+   "domain": "graph",
+   "state": "built"
+  },
+  {
+   "from": "sn-fe-pipeline",
+   "to": "sn-be-rest-api",
+   "label": "scrape trigger (source, search_query, Idempotency-Key)",
+   "channel": "sn-fe-fetch-scrape-trigger",
+   "domain": "ingest",
+   "state": "built"
+  },
+  {
+   "from": "sn-be-rest-api",
+   "to": "sn-fe-pipeline",
+   "label": "jobs, outbox status, stages (polled)",
+   "channel": "sn-fe-fetch-jobs",
+   "domain": "ops",
+   "state": "built"
+  },
+  {
+   "from": "sn-fe-sources-targets",
+   "to": "sn-be-rest-api",
+   "label": "target track CRUD",
+   "channel": "sn-fe-fetch-target-tracks",
+   "domain": "ingest",
+   "state": "built"
+  },
+  {
+   "from": "sn-fe-library",
+   "to": "sn-be-rest-api",
+   "label": "mark library track as target (+ local sn-target-tracks-v1)",
+   "channel": "sn-fe-ls-target-tracks",
+   "domain": "ingest",
+   "state": "built"
+  },
+  {
+   "from": "sn-fe-sources-import",
+   "to": "sn-be-rest-api",
+   "label": "AI-found setlists -> import-tracklist",
+   "channel": "sn-fe-fetch-import-tracklist",
+   "domain": "ingest",
+   "state": "built"
+  },
+  {
+   "from": "sn-fe-settings",
+   "to": "sn-fe-oauth-callback",
+   "label": "OAuth redirect with state in sessionStorage",
+   "channel": "sn-fe-ss-auth-state",
+   "domain": "services",
+   "state": "built"
+  },
+  {
+   "from": "sn-fe-oauth-callback",
+   "to": "sn-be-rest-api",
+   "label": "tokens stored server-side for enrichment",
+   "channel": "sn-fe-fetch-music-auth",
+   "domain": "services",
+   "state": "built"
+  },
+  {
+   "from": "sn-fe-oauth-callback",
+   "to": "sn-fe-settings",
+   "label": "oauth-success tokens (pop-up only)",
+   "channel": "sn-fe-pm-oauth",
+   "domain": "services",
+   "state": "built"
+  },
+  {
+   "from": "sn-fe-settings",
+   "to": "sn-fe-index-html",
+   "label": "display prefs read before first paint",
+   "channel": "sn-fe-ls-prefs",
+   "domain": "design",
+   "state": "built"
+  },
+  {
+   "from": "sn-fe-paths",
+   "to": "sn-fe-graph",
+   "label": "Open Pathfinder in Graph",
+   "channel": "sn-fe-url-graph",
+   "domain": "graph",
+   "state": "built"
+  },
+  {
+   "from": "sn-fe-shell",
+   "to": "sn-fe-library",
+   "label": "AppHeader search / Ctrl K -> /library?focus=search",
+   "channel": "sn-fe-url-library",
+   "domain": "library",
+   "state": "built"
+  },
+  {
+   "from": "sn-fe-sources-targets",
+   "to": "sn-fe-sources-import",
+   "label": "Import a tracklist with AI link",
+   "channel": null,
+   "domain": "ingest",
+   "state": "built"
+  },
+  {
+   "from": "sn-fe-home",
+   "to": "sn-fe-sets",
+   "label": "LauncherCard links to every module via MODULE_ROUTES",
+   "channel": null,
+   "domain": "ops",
+   "state": "built"
+  },
+  {
+   "from": "sn-fe-work-queue-tracker",
+   "to": "claude-artifact-db",
+   "label": "window.claude db collections meta, tasks (seeded from seed.json)",
+   "channel": null,
+   "domain": "ops",
+   "state": "built"
+  },
+  {
+   "state": "queued",
+   "label": "neighbourhood view loaded from API (view=neighbourhood&center&steps&max) instead of full graph",
+   "channel": "sn-fe-fetch-graph-data",
+   "domain": "graph",
+   "to": "sn-fe-graph",
+   "from": "sn-be-graph-api",
+   "evidence": [
+    "songnodes/STATUS.md:2505 (GV2 Next)",
+    "songnodes/STATUS.md:2431 (GV3 endpoint)",
+    "songnodes/frontend/src/hooks/useDataLoader.ts:28"
+   ]
+  }
+ ],
+ "personas": [
+  {
+   "id": "sn-fe-persona-dj",
+   "name": "DJ performing",
+   "objective": "Pick the next track live from proven transitions and compatible keys.",
+   "entry": "sn-fe-graph",
+   "routine": [
+    "open /graph?mode=play",
+    "search a track (QuickSearch / Ctrl K)",
+    "read neighbours and edge details",
+    "check key on /harmony"
+   ],
+   "journey": [
+    {
+     "page": "sn-fe-graph",
+     "action": "load graph and select current track",
+     "writes": "songnodes-store viewState, sn-graph-view, sn-recent-quick-search",
+     "trigger": "open /graph"
+    },
+    {
+     "page": "sn-fe-graph",
+     "action": "open edge details",
+     "writes": null,
+     "trigger": "pointer on edge -> GET /api/graph/edges"
+    },
+    {
+     "page": "sn-fe-harmony",
+     "action": "check Camelot moves",
+     "writes": null,
+     "trigger": "NavDrawer Harmony"
+    }
+   ],
+   "handoffs": [
+    {
+     "to": "sn-fe-persona-planner",
+     "shape": "track id in route / set draft",
+     "via": "/paths or Library add-to-set"
+    }
+   ],
+   "failure_modes": [
+    "graph API down: useDataLoader falls back to /api/graph then shows error",
+    "TIDAL token expired: useTokenRefresh refresh under lock"
+   ],
+   "evidence": [
+    "songnodes/frontend/src/components/DJInterface.tsx:95-122",
+    "songnodes/frontend/src/hooks/useDataLoader.ts"
+   ],
+   "state": "built",
+   "device": "laptop in the DJ booth (desktop browser, booth theme available)",
+   "steps": [
+    {
+     "n": 1,
+     "page": "sn-fe-graph",
+     "action": "load graph and select current track",
+     "writes": "songnodes-store viewState, sn-graph-view, sn-recent-quick-search",
+     "trigger": "open /graph",
+     "handoff": null,
+     "fallback": "/api/graph fallback, then error state"
+    },
+    {
+     "n": 2,
+     "page": "sn-fe-graph",
+     "action": "open edge details",
+     "writes": null,
+     "trigger": "pointer on edge -> GET /api/graph/edges",
+     "handoff": null,
+     "fallback": "none"
+    },
+    {
+     "n": 3,
+     "page": "sn-fe-harmony",
+     "action": "check Camelot moves",
+     "writes": null,
+     "trigger": "NavDrawer Harmony",
+     "handoff": {
+      "shape": "track id in route / set draft",
+      "via": "/paths or Library add-to-set"
+     },
+     "fallback": "none"
+    }
+   ]
+  },
+  {
+   "id": "sn-fe-persona-planner",
+   "name": "Set planner",
+   "objective": "Shape a timed set from the crate and get it onto TIDAL or Rekordbox.",
+   "entry": "sn-fe-library",
+   "routine": [
+    "filter the crate on /library",
+    "Build set from crate",
+    "shape and reorder on /sets",
+    "save, export, send to TIDAL"
+   ],
+   "journey": [
+    {
+     "page": "sn-fe-library",
+     "action": "filter and add tracks",
+     "writes": "sn-filters-library, sn-set-draft, sn-favs-library-crate",
+     "trigger": "filter rail"
+    },
+    {
+     "page": "sn-fe-sets",
+     "action": "build from crate and shape energy",
+     "writes": "sn-set-draft",
+     "trigger": "/sets?pool=crate&…"
+    },
+    {
+     "page": "sn-fe-sets",
+     "action": "save set",
+     "writes": "PUT /api/v1/library/sets/{id}; sn-music-library-sets",
+     "trigger": "Save"
+    },
+    {
+     "page": "sn-fe-sets",
+     "action": "export or send",
+     "writes": "download .m3u8/.csv/.json/.xml or artifact_sets.json; POST /api/v1/tidal/sets/send",
+     "trigger": "Export / Send to TIDAL"
+    }
+   ],
+   "handoffs": [
+    {
+     "to": "musicLibrary weekly run",
+     "shape": "artifact_sets.json (SavedSet[])",
+     "via": "manual file copy to E:\\musicLibrary\\inbox"
+    }
+   ],
+   "failure_modes": [
+    "server unreachable: sets kept on device and merged by content later",
+    "set created twice if PUT /0 returns no id (content match fixes on next read)"
+   ],
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/data.ts:193-337",
+    "songnodes/frontend/src/features/musicLibrary/SetBuilderPage.tsx:223"
+   ],
+   "state": "built",
+   "device": "desktop browser at home (127.0.0.1:3006)",
+   "steps": [
+    {
+     "n": 1,
+     "page": "sn-fe-library",
+     "action": "filter and add tracks",
+     "writes": "sn-filters-library, sn-set-draft, sn-favs-library-crate",
+     "trigger": "filter rail",
+     "handoff": null,
+     "fallback": "filters kept in memory if storage blocked"
+    },
+    {
+     "n": 2,
+     "page": "sn-fe-sets",
+     "action": "build from crate and shape energy",
+     "writes": "sn-set-draft",
+     "trigger": "/sets?pool=crate&…",
+     "handoff": null,
+     "fallback": "draft kept in memory"
+    },
+    {
+     "n": 3,
+     "page": "sn-fe-sets",
+     "action": "save set",
+     "writes": "PUT /api/v1/library/sets/{id}; sn-music-library-sets",
+     "trigger": "Save",
+     "handoff": null,
+     "fallback": "sets kept on device (source device)"
+    },
+    {
+     "n": 4,
+     "page": "sn-fe-sets",
+     "action": "export or send",
+     "writes": "download .m3u8/.csv/.json/.xml or artifact_sets.json; POST /api/v1/tidal/sets/send",
+     "trigger": "Export / Send to TIDAL",
+     "handoff": {
+      "shape": "artifact_sets.json (SavedSet[])",
+      "via": "manual file copy to E:\\musicLibrary\\inbox"
+     },
+     "fallback": "download works offline; TIDAL send shows HTTP error"
+    }
+   ]
+  },
+  {
+   "id": "sn-fe-persona-curator",
+   "name": "Library curator",
+   "objective": "Keep the Melbourne crate current and flag tracks to hunt for.",
+   "entry": "sn-fe-library",
+   "routine": [
+    "import the weekly library.json export",
+    "review tracks needing an energy check",
+    "mark missing tracks as targets",
+    "manage targets on /sources/targets"
+   ],
+   "journey": [
+    {
+     "page": "sn-fe-library",
+     "action": "Import library export",
+     "writes": "POST /api/v1/library/ingest; job polled",
+     "trigger": "Import dialog FileDrop .json"
+    },
+    {
+     "page": "sn-fe-library",
+     "action": "review rev=true rows",
+     "writes": "sn-filters-library",
+     "trigger": "Banner Review link"
+    },
+    {
+     "page": "sn-fe-library",
+     "action": "mark target",
+     "writes": "POST /api/v1/target-tracks; sn-target-tracks-v1",
+     "trigger": "TargetActionButton"
+    },
+    {
+     "page": "sn-fe-sources-targets",
+     "action": "edit priorities and search",
+     "writes": "PUT/POST /api/v1/target-tracks",
+     "trigger": "NavDrawer Sources"
+    }
+   ],
+   "handoffs": [
+    {
+     "to": "sn-fe-persona-operator",
+     "shape": "target_tracks rows",
+     "via": "/api/v1/target-tracks -> scrape jobs"
+    }
+   ],
+   "failure_modes": [
+    "failed target sync stays pendingSync=true forever",
+    "ingest job dead: Retry button"
+   ],
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/components/LibraryImportDialog.tsx",
+    "songnodes/frontend/src/services/trackSyncAdapter.ts"
+   ],
+   "state": "built",
+   "device": "desktop browser on the machine running the Compose stack",
+   "steps": [
+    {
+     "n": 1,
+     "page": "sn-fe-library",
+     "action": "Import library export",
+     "writes": "POST /api/v1/library/ingest; job polled",
+     "trigger": "Import dialog FileDrop .json",
+     "handoff": null,
+     "fallback": "Retry on dead job"
+    },
+    {
+     "n": 2,
+     "page": "sn-fe-library",
+     "action": "review rev=true rows",
+     "writes": "sn-filters-library",
+     "trigger": "Banner Review link",
+     "handoff": null,
+     "fallback": "none"
+    },
+    {
+     "n": 3,
+     "page": "sn-fe-library",
+     "action": "mark target",
+     "writes": "POST /api/v1/target-tracks; sn-target-tracks-v1",
+     "trigger": "TargetActionButton",
+     "handoff": null,
+     "fallback": "pendingSync=true kept locally"
+    },
+    {
+     "n": 4,
+     "page": "sn-fe-sources-targets",
+     "action": "edit priorities and search",
+     "writes": "PUT/POST /api/v1/target-tracks",
+     "trigger": "NavDrawer Sources",
+     "handoff": {
+      "shape": "target_tracks rows",
+      "via": "/api/v1/target-tracks -> scrape jobs"
+     },
+     "fallback": "toast error"
+    }
+   ]
+  },
+  {
+   "id": "sn-fe-persona-operator",
+   "name": "Pipeline operator",
+   "objective": "Queue scrapes, watch jobs and keep credentials working.",
+   "entry": "sn-fe-pipeline",
+   "routine": [
+    "queue a scrape for a target",
+    "watch medallion stages and jobs",
+    "retry dead jobs",
+    "set scrape window",
+    "connect TIDAL/Spotify and API keys in Settings",
+    "import AI-found setlists"
+   ],
+   "journey": [
+    {
+     "page": "sn-fe-pipeline",
+     "action": "queue scrape",
+     "writes": "POST /api/v1/scrape/trigger",
+     "trigger": "scrape form"
+    },
+    {
+     "page": "sn-fe-pipeline",
+     "action": "retry job",
+     "writes": "POST /api/v1/jobs/{id}/retry",
+     "trigger": "ConfirmDialog"
+    },
+    {
+     "page": "sn-fe-settings",
+     "action": "connect TIDAL",
+     "writes": "sessionStorage state; backend token store",
+     "trigger": "/settings/tidal-connection"
+    },
+    {
+     "page": "sn-fe-sources-import",
+     "action": "find and import AI setlists",
+     "writes": "POST /api/v1/tracks/import-tracklist; songnodes_ai_setlists_ledger",
+     "trigger": "/sources/import"
+    }
+   ],
+   "handoffs": [
+    {
+     "to": "worker",
+     "shape": "job rows",
+     "via": "REST -> RabbitMQ/Celery (backend scope)"
+    }
+   ],
+   "failure_modes": [
+    "polling backoff never engages (stale error closure)",
+    "same-window OAuth leaves browser store without tokens"
+   ],
+   "evidence": [
+    "songnodes/frontend/src/features/pipeline/usePipelineTelemetry.ts:317-322",
+    "songnodes/frontend/src/components/OAuthCallback.tsx:227-270"
+   ],
+   "state": "built",
+   "device": "desktop browser on the Docker host",
+   "steps": [
+    {
+     "n": 1,
+     "page": "sn-fe-pipeline",
+     "action": "queue scrape",
+     "writes": "POST /api/v1/scrape/trigger",
+     "trigger": "scrape form",
+     "handoff": null,
+     "fallback": "toast with HTTP detail"
+    },
+    {
+     "n": 2,
+     "page": "sn-fe-pipeline",
+     "action": "retry job",
+     "writes": "POST /api/v1/jobs/{id}/retry",
+     "trigger": "ConfirmDialog",
+     "handoff": null,
+     "fallback": "none"
+    },
+    {
+     "n": 3,
+     "page": "sn-fe-settings",
+     "action": "connect TIDAL",
+     "writes": "sessionStorage state; backend token store",
+     "trigger": "/settings/tidal-connection",
+     "handoff": null,
+     "fallback": "error banner on Settings"
+    },
+    {
+     "n": 4,
+     "page": "sn-fe-sources-import",
+     "action": "find and import AI setlists",
+     "writes": "POST /api/v1/tracks/import-tracklist; songnodes_ai_setlists_ledger",
+     "trigger": "/sources/import",
+     "handoff": {
+      "shape": "job rows",
+      "via": "REST -> RabbitMQ/Celery (backend scope)"
+     },
+     "fallback": "ledger kept locally"
+    }
+   ]
+  },
+  {
+   "id": "sn-fe-persona-developer",
+   "name": "Developer / design-system maintainer",
+   "objective": "Build pages that conform to the design system and run agent work packages.",
+   "entry": "sn-fe-ds-reference",
+   "routine": [
+    "read docs/design-system/reference.html",
+    "check component previews",
+    "run the violations fixture through the linter",
+    "track work packages on the work-queue artifact"
+   ],
+   "journey": [
+    {
+     "page": "sn-fe-ds-reference",
+     "action": "look up tokens and components",
+     "writes": "sn-density",
+     "trigger": "open file"
+    },
+    {
+     "page": "sn-fe-ds-violations-fixture",
+     "action": "lint regression",
+     "writes": null,
+     "trigger": "validate.py"
+    },
+    {
+     "page": "sn-fe-work-queue-tracker",
+     "action": "copy job prompt",
+     "writes": "artifact db tasks.note",
+     "trigger": "artifact page"
+    }
+   ],
+   "handoffs": [
+    {
+     "to": "Jules / Claude work packages",
+     "shape": "prompt text",
+     "via": "clipboard"
+    }
+   ],
+   "failure_modes": [
+    "previews fail standalone without injected window.SongNodes"
+   ],
+   "evidence": [
+    "songnodes/CLAUDE.md §4",
+    "songnodes/plan/work-queue-2026-10-30/seed.py"
+   ],
+   "state": "built",
+   "device": "developer workstation and claude.ai artifact viewer",
+   "steps": [
+    {
+     "n": 1,
+     "page": "sn-fe-ds-reference",
+     "action": "look up tokens and components",
+     "writes": "sn-density",
+     "trigger": "open file",
+     "handoff": null,
+     "fallback": "none"
+    },
+    {
+     "n": 2,
+     "page": "sn-fe-ds-violations-fixture",
+     "action": "lint regression",
+     "writes": null,
+     "trigger": "validate.py",
+     "handoff": null,
+     "fallback": "none"
+    },
+    {
+     "n": 3,
+     "page": "sn-fe-work-queue-tracker",
+     "action": "copy job prompt",
+     "writes": "artifact db tasks.note",
+     "trigger": "artifact page",
+     "handoff": {
+      "shape": "prompt text",
+      "via": "clipboard"
+     },
+     "fallback": "none"
+    }
+   ]
+  }
+ ],
+ "protocols": [
+  {
+   "id": "sn-fe-proto-saved-sets-sync",
+   "name": "Saved sets server/device merge",
+   "participants": [
+    "sn-fe-sets",
+    "sn-fe-home",
+    "sn-be-rest-api",
+    "localStorage sn-music-library-sets",
+    "sn-set-draft"
+   ],
+   "algorithm": "readSavedSetsAsync: GET /api/v1/library/sets; pair each server set with a local copy by id, else by content (name + ordered track ids) for local ids (non-numeric); server fields win; unpaired local-id sets kept; numeric ids missing on server dropped (deleted elsewhere); write merged list to localStorage and remap draft id. writeSavedSetsAsync diffs against serverSetsCache: DELETE removed, PUT changed (updated or name differs), PUT /0 creates and expects {id}; pendingCreates map dedupes concurrent creates in-tab.",
+   "conflict_resolution": "server wins on name, description, tracks; local-only fields (shape, minutes, mix, pool, seed) kept from local copy",
+   "stale_fallback": "GET failure -> device copy, source \"device\"",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/data.ts:166-337"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-proto-target-sync",
+   "name": "Library target flag sync",
+   "participants": [
+    "sn-fe-library",
+    "sn-fe-store-unified-tracks",
+    "sn-be-rest-api"
+   ],
+   "algorithm": "syncTargetTrack POSTs /api/v1/target-tracks (or DELETEs by UUID) and records {isTarget,priority,pendingSync} in sn-target-tracks-v1; useUnifiedTracks hydrates library rows from local state first, then backend targets matched by lower-case artist|title.",
+   "conflict_resolution": "local entry always beats backend state",
+   "stale_fallback": "failure leaves pendingSync=true; no retry loop",
+   "evidence": [
+    "songnodes/frontend/src/services/trackSyncAdapter.ts:31-100",
+    "songnodes/frontend/src/hooks/useUnifiedTracks.ts:88-110"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-proto-oauth",
+   "name": "OAuth connect and token handoff",
+   "participants": [
+    "sn-fe-settings",
+    "sn-fe-oauth-callback",
+    "sn-be-rest-api",
+    "sn-fe-store-zustand"
+   ],
+   "algorithm": "Spotify: random 32-byte state in sessionStorage, navigate to /api/v1/music-auth/spotify/authorize; TIDAL: POST tidal/oauth/init then navigate. Callback page validates state, GETs backend callback, stores tokens in sessionStorage <service>_oauth_tokens, POSTs store-token, then postMessage to opener (same origin) or redirects to /.",
+   "conflict_resolution": "n/a",
+   "stale_fallback": "useTokenRefresh refreshes under navigator.locks (localStorage mutex fallback)",
+   "evidence": [
+    "songnodes/frontend/src/pages/SettingsPage.tsx:329-394",
+    "songnodes/frontend/src/components/OAuthCallback.tsx:60-290",
+    "songnodes/frontend/src/hooks/useTokenRefresh.ts:43-210"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-proto-pipeline-poll",
+   "name": "Pipeline telemetry polling",
+   "participants": [
+    "sn-fe-pipeline",
+    "sn-be-rest-api"
+   ],
+   "algorithm": "fetch jobs (200), scrape jobs (50), outbox status in parallel; setTimeout chain 10 s (30 s intended on error); refetch on visibilitychange.",
+   "conflict_resolution": "n/a",
+   "stale_fallback": "source 'unavailable' with explicit error",
+   "evidence": [
+    "songnodes/frontend/src/features/pipeline/usePipelineTelemetry.ts:270-335"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-proto-idempotent-ingest",
+   "name": "Idempotent library ingest and scrape trigger",
+   "participants": [
+    "sn-fe-library",
+    "sn-fe-pipeline",
+    "sn-be-rest-api"
+   ],
+   "algorithm": "library: Idempotency-Key import-sha256-<file hash> so the same file is never imported twice (matches scripts/import-music-library.sh scheme intent); scrape: one crypto.randomUUID per form submission reused on retry; 202 created=false shows \"Already queued\".",
+   "conflict_resolution": "server-side idempotency (backend scope)",
+   "stale_fallback": "job retry endpoint",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/components/LibraryImportDialog.tsx:15-21,114",
+    "songnodes/frontend/src/pages/ScraperProgressPage.tsx:94-128",
+    "songnodes/plan/agents/L8_library_import_dialog.md:9"
+   ],
+   "state": "built"
+  }
+ ],
+ "debt": [
+  {
+   "id": "sn-fe-debt-creds-localstorage",
+   "title": "OAuth tokens and client secrets persisted in localStorage and exposed on window.debugZustand",
+   "severity": "high",
+   "kind": "security",
+   "detail": "songnodes-store partialize persists musicCredentials (access/refresh tokens, clientId/clientSecret); window.debugZustand.getMusicCredentials and injectTestCredentials ship in production builds. OAuthCallback deliberately moved tokens to sessionStorage, so the two disagree.",
+   "evidence": [
+    "songnodes/frontend/src/store/useStore.ts:1507-1508,1566-1590",
+    "songnodes/frontend/src/components/OAuthCallback.tsx:226-229"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-debt-dead-graph-modules",
+   "title": "Unreachable modules still carrying endpoints",
+   "severity": "medium",
+   "kind": "orphaned-data",
+   "detail": "Import-graph walk from main.tsx: 50 of 184 non-test modules unreachable, including LiveDataLoader (/api/ws WebSocket), EditTrackModal (PATCH /api/tracks/{id}), NowPlayingDeck (trackApi preview), AIAssistantModal (songnodes_ai_prompt_history), StatsPanel (stats JSON/CSV download), PreferencesPanel, AITransitionHelper, useLiveDataLoader, useKeyboardShortcuts.",
+   "evidence": [
+    "/home/claude/dfa/scratch/sn-frontend/unreachable.txt",
+    "songnodes/frontend/src/components/LiveDataLoader.tsx:138"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-debt-api-ts-dead",
+   "title": "services/api.ts declares many clients for endpoints that do not exist",
+   "severity": "medium",
+   "kind": "drift",
+   "detail": "searchApi (/api/v1/search/*; backend has /api/search/tracks), pathfindingApi (/api/v1/pathfinding/*; backend is /api/v1/pathfinder/find-path), setlistApi POST/DELETE/export, /api/v1/tracks/batch, /api/graph/tracks, /api/graph/positions have no backend route and no caller.",
+   "evidence": [
+    "songnodes/frontend/src/services/api.ts:242-556",
+    "/home/claude/dfa/scratch/sn-frontend/backend_routes.tsv"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-debt-poll-backoff",
+   "title": "Pipeline poll backoff reads a stale error value",
+   "severity": "low",
+   "kind": "polling",
+   "detail": "startPolling(error ? 30000 : 10000) captures error from the first render inside useEffect, so the 30 s backoff never engages.",
+   "evidence": [
+    "songnodes/frontend/src/features/pipeline/usePipelineTelemetry.ts:317-322"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-debt-source-label",
+   "title": "Library rows always labelled 'library-fixture'",
+   "severity": "low",
+   "kind": "drift",
+   "detail": "fromLibraryRow sets source 'library-fixture' on every row although loadLibrary only reads the backend (_source 'backend'); CamelotPage shows 'Music library'. DB1 brief planned the fixture fallback; current code has neither the fallback nor public/data/music-library.json.",
+   "evidence": [
+    "songnodes/frontend/src/services/unifiedTrackService.ts:31-64",
+    "songnodes/frontend/src/features/camelot/CamelotPage.tsx:144",
+    "songnodes/plan/agents/DB1_one_track_source.md:9,23"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-debt-proxy-drift",
+   "title": "Vite dev proxy and nginx route graph traffic differently",
+   "severity": "low",
+   "kind": "drift",
+   "detail": "nginx sends /api/(graph|v1/visualization|user-setlists) to graph-api; Vite sends only /api/graph and /api/v1/graph (rewritten) to 8084, so /api/v1/visualization and /api/user-setlists hit rest-api in dev. rest-api also defines /api/graph/nodes and /api/graph/edges that nginx never reaches.",
+   "evidence": [
+    "songnodes/frontend/Dockerfile:81-91",
+    "songnodes/frontend/vite.config.ts:31-47",
+    "/home/claude/dfa/scratch/sn-frontend/backend_routes.tsv"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-debt-unused-nginx",
+   "title": "nginx/ and nginx-local-proxy.conf are not used by the Compose stack",
+   "severity": "low",
+   "kind": "drift",
+   "detail": "compose.dev.yaml builds the frontend with an inline default.conf; nginx/conf.d/frontend.conf proxies to api-gateway:8080 and websocket-api:8083, nginx-local-proxy.conf to host.docker.internal:8088 — none exist in compose.dev.yaml. Design-system docs (13-page-patterns, 16-platform) still cite nginx/nginx.conf for error pages and frame headers.",
+   "evidence": [
+    "songnodes/nginx/conf.d/frontend.conf:63-86",
+    "songnodes/nginx-local-proxy.conf:7-38",
+    "songnodes/compose.dev.yaml:200-202",
+    "songnodes/design-system/16-platform.md:72"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-debt-tracker-hex",
+   "title": "Work-queue tracker uses its own hex palette",
+   "severity": "low",
+   "kind": "drift",
+   "detail": "plan/work-queue-2026-10-30/tracker.html defines --bg:#f6f5f9 etc. instead of design-system tokens, against CLAUDE.md §4.",
+   "evidence": [
+    "songnodes/plan/work-queue-2026-10-30/tracker.html"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-debt-test-key-drift",
+   "title": "registry.test seeds 'sn-saved-sets' but code reads 'sn-music-library-sets'",
+   "severity": "low",
+   "kind": "drift",
+   "detail": "Test mock storage key does not match SAVED_SETS_KEY, so the test never exercises saved sets on Home.",
+   "evidence": [
+    "songnodes/frontend/src/routes/registry.test.tsx",
+    "songnodes/frontend/src/features/musicLibrary/data.ts:138"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-debt-presets-only-cross-tab",
+   "title": "Only filter presets react to other tabs",
+   "severity": "low",
+   "kind": "race",
+   "detail": "sn-set-draft and sn-music-library-sets are written by Library and Set builder without storage-event listeners; two tabs overwrite each other’s draft (last write wins).",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/components/FilterPresets.tsx:38-45",
+    "songnodes/frontend/src/features/musicLibrary/storage.ts:26-27"
+   ],
+   "state": "built"
+  }
+ ],
+ "gaps": [
+  {
+   "id": "sn-fe-gap-oauth-session-tokens",
+   "title": "OAuth tokens written to sessionStorage have no reader",
+   "detail": "Settings connects in the same window (window.location.href), so OAuthCallback has no opener: it writes sessionStorage <service>_oauth_tokens and redirects to /. GraphPage and SettingsPanel only read localStorage tidal_oauth_tokens/spotify_oauth_tokens (which OAuthCallback removes), so the browser store never receives the tokens; sendToTidal and useTokenRefresh then lack an access token.",
+   "fix": "In OAuthCallback, when window.opener is null, call useStore.getState().credentials.updateCredentials(service,{accessToken,refreshToken,expiresAt,isConnected:true}) before redirecting to /settings/<service>-connection, and delete the sessionStorage write; or have SettingsPage read and clear sessionStorage '<service>_oauth_tokens' on mount.",
+   "contract": "oauth-handoff/v1: {service, access_token, refresh_token, expires_at} consumed exactly once by the credentials slice",
+   "affects": [
+    "songnodes/frontend/src/components/OAuthCallback.tsx",
+    "songnodes/frontend/src/pages/SettingsPage.tsx"
+   ],
+   "evidence": [
+    "songnodes/frontend/src/components/OAuthCallback.tsx:226-270",
+    "songnodes/frontend/src/pages/SettingsPage.tsx:362-394",
+    "songnodes/frontend/src/pages/GraphPage.tsx:15-33"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-gap-scrapers-endpoints",
+   "title": "Graph page calls scraper endpoints that do not exist",
+   "detail": "DJInterface posts to /api/v1/scrapers/target-tracks/search and /api/v1/scrapers/queue/clear; no rest-api route matches (route scan of services/rest_api).",
+   "fix": "Point the actions at POST /api/v1/target-tracks/{id}/search and POST /api/v1/scrape/trigger, or remove the buttons; add a contract test listing every frontend path against the FastAPI OpenAPI document.",
+   "contract": "frontend-endpoint-manifest.json checked against rest-api /openapi.json in CI",
+   "affects": [
+    "songnodes/frontend/src/components/DJInterface.tsx"
+   ],
+   "evidence": [
+    "songnodes/frontend/src/components/DJInterface.tsx:360,395,432",
+    "/home/claude/dfa/scratch/sn-frontend/backend_routes.tsv"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-gap-indexeddb-cache",
+   "title": "No IndexedDB last-good-data cache despite design-system rule",
+   "detail": "design-system/16-platform.md:50 says SongNodes keeps the last graph, library and saved sets in IndexedDB and shows them with FreshnessStamp when the API is unreachable. No indexedDB usage exists in frontend/src; library load just errors and Home shows a dash.",
+   "fix": "Add frontend/src/lib/offlineCache.ts (idb-keyval style store \"sn-cache\" with keys graph, library, sets, each {data, fetchedAt}); write on successful loadLibrary/useDataLoader/readSavedSetsAsync, read on failure and pass fetchedAt to FreshnessStamp.",
+   "contract": "sn-cache/v1 {key, data, fetchedAt ISO, apiVersion}",
+   "affects": [
+    "songnodes/frontend/src/features/musicLibrary/data.ts",
+    "songnodes/frontend/src/hooks/useDataLoader.ts"
+   ],
+   "evidence": [
+    "songnodes/design-system/16-platform.md:50",
+    "songnodes/frontend/src/features/musicLibrary/data.ts:107-135"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-gap-artifact-sets-tidal-flag",
+   "title": "artifact_sets.json lacks the tidal flag musicLibrary needs",
+   "detail": "Set builder exports SavedSet[] without a 'tidal' field; musicLibrary run_weekly.py sync-sets filters sets by s.get('tidal'), so sets exported from songnodes are never pushed to TIDAL by the weekly run (songnodes has its own Send to TIDAL instead). The file is also only a browser download that has to be copied by hand.",
+   "fix": "Either add 'tidal: boolean' (set when Send to TIDAL is requested) to SavedSet and the export, or document that songnodes sets go to TIDAL through /api/v1/tidal/sets/send and drop the inbox path; better, have musicLibrary read GET /api/v1/library/sets/export (exists, unused by the frontend).",
+   "contract": "artifact_sets/v2: SavedSet[] + {tidal:boolean}",
+   "affects": [
+    "songnodes/frontend/src/features/musicLibrary/SetBuilderPage.tsx",
+    "musicLibrary/pipeline/run_weekly.py"
+   ],
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/SetBuilderPage.tsx:223-226",
+    "musicLibrary/pipeline/run_weekly.py:529",
+    "musicLibrary/pipeline/build_db.py:93-106"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-gap-target-pending-sync",
+   "title": "Pending target syncs are never retried and override the server",
+   "detail": "A failed POST/DELETE leaves pendingSync=true in sn-target-tracks-v1; nothing reads pendingSync, and useUnifiedTracks prefers the local entry over backend state, so the device can disagree with target_tracks forever.",
+   "fix": "On useUnifiedTracks.refresh(), replay entries with pendingSync=true through syncTargetTrack, and drop local entries whose backend match agrees; show a count of unsynced targets.",
+   "contract": "sn-target-tracks-v2 {isTarget, priority, pendingSync, lastAttempt}",
+   "affects": [
+    "songnodes/frontend/src/services/trackSyncAdapter.ts",
+    "songnodes/frontend/src/hooks/useUnifiedTracks.ts"
+   ],
+   "evidence": [
+    "songnodes/frontend/src/services/trackSyncAdapter.ts:31-100",
+    "songnodes/frontend/src/hooks/useUnifiedTracks.ts:93-103"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-gap-library-generated",
+   "title": "Library freshness stamp is always unknown",
+   "detail": "loadLibrary sets generated: null and runs: [] because /api/v1/library/search returns rows only; Home and Library show an en dash for 'Library data from' and the weekly-run launcher summary never appears.",
+   "fix": "Add GET /api/v1/library/meta returning {generated, ledger_updated, counts, sources, runs} from the ingest job result and merge it in loadLibrary.",
+   "contract": "library-meta/v1 = LibraryFile minus tracks",
+   "affects": [
+    "songnodes/frontend/src/features/musicLibrary/data.ts",
+    "songnodes/services/rest_api/routers/library_search.py"
+   ],
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/data.ts:120-130",
+    "songnodes/frontend/src/pages/HomePage.tsx:22-46"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-gap-graph-ws",
+   "title": "Graph WebSocket has a server but no client",
+   "detail": "graph-api exposes WEBSOCKET /api/graph/ws/{room_id} (nginx passes Upgrade headers for /api/graph). The only frontend WebSocket client (LiveDataLoader, /api/ws) is unreachable and targets a path rest-api does not serve.",
+   "fix": "Delete LiveDataLoader/useLiveDataLoader, or rewire it to /api/graph/ws/<room> and mount it from GraphPage.",
+   "contract": "graph-ws/v1 message {type: nodes|edges|delta, payload}",
+   "affects": [
+    "songnodes/frontend/src/components/LiveDataLoader.tsx"
+   ],
+   "evidence": [
+    "songnodes/frontend/src/components/LiveDataLoader.tsx:138-140",
+    "songnodes/frontend/Dockerfile:81-91"
+   ],
+   "state": "built"
+  },
+  {
+   "id": "sn-fe-gap-ingest-body-limit",
+   "state": "built",
+   "title": "Library ingest allows 50 MB but frontend nginx accepts 1 MB",
+   "detail": "LibraryImportDialog FileDrop limit is 50 MB and the body is the whole export; the frontend image nginx config sets no client_max_body_size, so nginx default 1 MB returns 413 for any larger export. STATUS.md already lists it as a follow-up.",
+   "fix": "Add client_max_body_size 64m; inside location /api/ (or a dedicated location = /api/v1/library/ingest) in the frontend Dockerfile default.conf, and map HTTP 413 to an explicit error in LibraryImportDialog.",
+   "contract": "ingest upload limit = FileDrop maxMb = nginx client_max_body_size = rest-api request limit",
+   "affects": [
+    "songnodes/frontend/Dockerfile",
+    "songnodes/frontend/src/features/musicLibrary/components/LibraryImportDialog.tsx"
+   ],
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/components/LibraryImportDialog.tsx:23-24",
+    "songnodes/frontend/Dockerfile:91-99",
+    "songnodes/STATUS.md:1899"
+   ]
+  }
+ ],
+ "method_notes": [
+  {
+   "item": "routes",
+   "methods_used": [
+    "M1",
+    "M2"
+   ],
+   "agreement": "disagree",
+   "note": "Grep finds PlannedModulePage for /paths in STATIC_ROUTES; registry replacement logic (M2) shows features/pathfinder/route.tsx overrides it, so the planned page is dead."
+  },
+  {
+   "item": "LiveDataLoader /api/ws",
+   "methods_used": [
+    "M1",
+    "M2"
+   ],
+   "agreement": "disagree",
+   "note": "Grep finds a WebSocket client; import graph from main.tsx shows LiveDataLoader and useLiveDataLoader are never imported."
+  },
+  {
+   "item": "services/api.ts clients",
+   "methods_used": [
+    "M1",
+    "M2"
+   ],
+   "agreement": "disagree",
+   "note": "Grep lists ~20 endpoints; only api.get/post/put/delete (target-tracks client) and trackApi (from unreachable NowPlayingDeck) are imported; backend route scan shows most paths do not exist."
+  },
+  {
+   "item": "songnodes_ai_prompt_history",
+   "methods_used": [
+    "M1",
+    "M2"
+   ],
+   "agreement": "disagree",
+   "note": "Key found by grep; its only consumer AIAssistantModal is unreachable."
+  },
+  {
+   "item": "OAuth token storage",
+   "methods_used": [
+    "M1",
+    "M2"
+   ],
+   "agreement": "disagree",
+   "note": "Writers use sessionStorage <service>_oauth_tokens; readers use localStorage tidal_oauth_tokens; same-window redirect means no postMessage path."
+  },
+  {
+   "item": "display preference keys",
+   "methods_used": [
+    "M1",
+    "M3"
+   ],
+   "agreement": "agree",
+   "note": "bundle.js and index.html both use sn-theme/sn-text-size/sn-density/sn-motion; Playwright render of reference.html wrote sn-density only."
+  },
+  {
+   "item": "design-system previews",
+   "methods_used": [
+    "M1",
+    "M3"
+   ],
+   "agreement": "disagree",
+   "note": "Grep shows previews write sn-disclosure:* and sn-skip-moved-targets; Playwright standalone render throws before writing because window.SongNodes is injected by the card host."
+  },
+  {
+   "item": "nginx proxy target",
+   "methods_used": [
+    "M2"
+   ],
+   "agreement": "agree",
+   "note": "compose.dev.yaml builds frontend/Dockerfile whose inline default.conf is the only live proxy; nginx/ and nginx-local-proxy.conf are not referenced by compose (only Helm values mount a default.conf)."
+  },
+  {
+   "item": "frontend endpoints vs backend",
+   "methods_used": [
+    "M1",
+    "M2"
+   ],
+   "agreement": "disagree",
+   "note": "Static route scan of services/rest_api and graph-visualization-api (120 decorators) found no match for /api/v1/scrapers/*, /api/v1/search/*, /api/v1/pathfinding/*, /api/graph/tracks|positions, /api/ws; prefixes defined via include_router in main.py were not resolved, so a few may exist (see unverified)."
+  },
+  {
+   "item": "public/data/music-library.json",
+   "methods_used": [
+    "M1",
+    "M2"
+   ],
+   "agreement": "disagree",
+   "note": "Plan briefs (DB1, L8, QA7) describe the static file and its fallback; the file is absent from frontend/public and no code fetches /data/*.json. Only tests/e2e/data/library.fixture.json remains (test-only)."
+  },
+  {
+   "item": "R2/R5 conformance",
+   "methods_used": [
+    "M1",
+    "repo checker"
+   ],
+   "agreement": "disagree",
+   "note": "check_design_system.py --check and design-system/linters/check.py report 0 findings on all route page files, but grep finds two simultaneous primaries (Set builder, Pathfinder), Title Case labels and \"Unknown\" fallbacks."
+  },
+  {
+   "item": "static HTML conformance",
+   "methods_used": [
+    "design-system linter",
+    "M3 Playwright"
+   ],
+   "agreement": "agree",
+   "note": "linter flags tracker.html hex (12) and reference.html emoji/caps; Playwright shows tracker loads only Google Fonts and needs the artifact runtime."
+  }
+ ],
+ "unverified": [
+  "Backend route existence was checked by decorator scan only; routers mounted with include_router(prefix=…) in services/rest_api/main.py were not resolved, so /api/v1/scrapers/* could exist under a different mount.",
+  "Whether sendToTidal reads the token from songnodes-store musicCredentials.tidal.accessToken was inferred from the Authorization header code path, not traced to its caller.",
+  "Behaviour of POST /api/v1/library/ingest (writes library.tracks) belongs to the backend agent.",
+  "design-system/source/previews files were grouped by folder count; individual titles not extracted.",
+  "Pathfinder export JSON branch content (pathfinder.machine.ts:80-90) not read in full.",
+  "PR #579 login page reviewed by grep of its files at the PR head only; not rendered.",
+  "sn-fe-sources-import R2 third-primary visibility inferred from markup, not rendered."
+ ],
+ "timings": [
+  {
+   "id": "sn-fe-t-pipeline-poll",
+   "name": "pipeline telemetry poll",
+   "value_ms": 10000,
+   "raw": "startPolling(interval = 10000)",
+   "where": "sn-fe-pipeline",
+   "kind": "poll",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/features/pipeline/usePipelineTelemetry.ts:317"
+   ]
+  },
+  {
+   "id": "sn-fe-t-pipeline-backoff",
+   "name": "pipeline poll backoff on error (never engages, stale closure)",
+   "value_ms": 30000,
+   "raw": "error ? 30000 : 10000",
+   "where": "sn-fe-pipeline",
+   "kind": "retry",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/features/pipeline/usePipelineTelemetry.ts:321"
+   ]
+  },
+  {
+   "id": "sn-fe-t-stall",
+   "name": "job stall threshold",
+   "value_ms": 600000,
+   "raw": "STALL_MS = 10 * 60 * 1000",
+   "where": "sn-fe-pipeline",
+   "kind": "timeout",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/features/pipeline/usePipelineTelemetry.ts:109"
+   ]
+  },
+  {
+   "id": "sn-fe-t-stages-poll",
+   "name": "scrape job stages poll (tab visible)",
+   "value_ms": 5000,
+   "raw": "STAGES_POLL_MS = 5000",
+   "where": "sn-fe-pipeline",
+   "kind": "poll",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/features/pipeline/ScrapeJobStages.tsx:10"
+   ]
+  },
+  {
+   "id": "sn-fe-t-targets-poll",
+   "name": "target tracks search-state poll",
+   "value_ms": 10000,
+   "raw": "SEARCH_POLL_MS = 10_000",
+   "where": "sn-fe-sources-targets",
+   "kind": "poll",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/components/TargetTracksManager.tsx:28,90"
+   ]
+  },
+  {
+   "id": "sn-fe-t-ingest-poll",
+   "name": "library ingest job poll",
+   "value_ms": 2000,
+   "raw": "pollMs = 2000",
+   "where": "sn-fe-library",
+   "kind": "poll",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/components/LibraryImportDialog.tsx:33,172"
+   ]
+  },
+  {
+   "id": "sn-fe-t-tracklist-stall",
+   "name": "tracklist import stall",
+   "value_ms": 60000,
+   "raw": "STALL_MS = 60_000",
+   "where": "sn-fe-graph",
+   "kind": "timeout",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/components/TracklistImporter.tsx:35"
+   ]
+  },
+  {
+   "id": "sn-fe-t-api-timeout",
+   "name": "ApiClient default request timeout",
+   "value_ms": 30000,
+   "raw": "timeout: 30000 (DEFAULT_CONFIG.api.timeout)",
+   "where": "sn-fe-shell",
+   "kind": "timeout",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/types/index.ts:379",
+    "songnodes/frontend/src/services/api.ts:91-104"
+   ]
+  },
+  {
+   "id": "sn-fe-t-token-buffer",
+   "name": "token refresh buffer before expiry",
+   "value_ms": 300000,
+   "raw": "REFRESH_BUFFER_MS = 5 * 60 * 1000",
+   "where": "sn-fe-store-zustand",
+   "kind": "expiry",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/hooks/useTokenRefresh.ts:35",
+    "songnodes/frontend/src/pages/SettingsPage.tsx:261"
+   ]
+  },
+  {
+   "id": "sn-fe-t-token-check",
+   "name": "token expiry check interval",
+   "value_ms": 60000,
+   "raw": "CHECK_INTERVAL_MS = 60 * 1000",
+   "where": "sn-fe-store-zustand",
+   "kind": "poll",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/hooks/useTokenRefresh.ts:38,312"
+   ]
+  },
+  {
+   "id": "sn-fe-t-lock-lease",
+   "name": "localStorage mutex lease",
+   "value_ms": 10000,
+   "raw": "lockTimeoutMs = 10000",
+   "where": "sn-fe-store-browser-ls",
+   "kind": "lease",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/hooks/useTokenRefresh.ts:53"
+   ]
+  },
+  {
+   "id": "sn-fe-t-lock-wait",
+   "name": "mutex acquire give-up",
+   "value_ms": 12000,
+   "raw": "Date.now() - start > 12000",
+   "where": "sn-fe-store-browser-ls",
+   "kind": "timeout",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/hooks/useTokenRefresh.ts:74-76"
+   ]
+  },
+  {
+   "id": "sn-fe-t-lock-spin",
+   "name": "mutex retry spin",
+   "value_ms": 100,
+   "raw": "setTimeout(res, 100)",
+   "where": "sn-fe-store-browser-ls",
+   "kind": "retry",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/hooks/useTokenRefresh.ts:78"
+   ]
+  },
+  {
+   "id": "sn-fe-t-token-default-expiry",
+   "name": "default token lifetime when expires_in missing",
+   "value_ms": 3600000,
+   "raw": "(tokenData.expires_in || 3600) * 1000",
+   "where": "sn-fe-oauth-callback",
+   "kind": "expiry",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/components/OAuthCallback.tsx:212",
+    "songnodes/frontend/src/hooks/useTokenRefresh.ts:184"
+   ]
+  },
+  {
+   "id": "sn-fe-t-oauth-close",
+   "name": "callback pop-up close / redirect delay",
+   "value_ms": 1500,
+   "raw": "setTimeout(..., 1500)",
+   "where": "sn-fe-oauth-callback",
+   "kind": "timeout",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/components/OAuthCallback.tsx:267-270"
+   ]
+  },
+  {
+   "id": "sn-fe-t-oauth-error-redirect",
+   "name": "callback error redirect delay",
+   "value_ms": 3000,
+   "raw": "setTimeout(..., 3000)",
+   "where": "sn-fe-oauth-callback",
+   "kind": "timeout",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/components/OAuthCallback.tsx:109,287"
+   ]
+  },
+  {
+   "id": "sn-fe-t-toast",
+   "name": "toast visible time (8 s with action)",
+   "value_ms": 4000,
+   "raw": "left = current.action ? 8000 : 4000",
+   "where": "sn-fe-shell",
+   "kind": "timeout",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/components/ds/index.tsx:1454"
+   ]
+  },
+  {
+   "id": "sn-fe-t-slow-loading",
+   "name": "\"slow\" loading hint",
+   "value_ms": 1000,
+   "raw": "setTimeout(() => setSlow(true), 1000)",
+   "where": "sn-fe-library",
+   "kind": "timeout",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/LibraryPage.tsx:99",
+    "songnodes/frontend/src/components/ds/index.tsx:1594"
+   ]
+  },
+  {
+   "id": "sn-fe-t-arm-clear",
+   "name": "clear-draft double-press window",
+   "value_ms": 3000,
+   "raw": "setTimeout(() => setArmedNew(false), 3000)",
+   "where": "sn-fe-sets",
+   "kind": "timeout",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/SetBuilderPage.tsx:228"
+   ]
+  },
+  {
+   "id": "sn-fe-t-minimap-debounce",
+   "name": "minimap viewport debounce",
+   "value_ms": 100,
+   "raw": "VIEWPORT_UPDATE_DEBOUNCE_MS = 100",
+   "where": "sn-fe-graph",
+   "kind": "debounce",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/components/GraphMiniMap.tsx:16"
+   ]
+  },
+  {
+   "id": "sn-fe-t-infotip-hover",
+   "name": "InfoTip hover delay",
+   "value_ms": 500,
+   "raw": "HOVER_DELAY = 500",
+   "where": "sn-fe-shell",
+   "kind": "debounce",
+   "state": "built",
+   "evidence": [
+    "songnodes/design-system/components/bundle.js:657"
+   ]
+  },
+  {
+   "id": "sn-fe-t-pixi-init",
+   "name": "PIXI init retry delay",
+   "value_ms": 100,
+   "raw": "setTimeout(() => initializePixi(), 100)",
+   "where": "sn-fe-graph",
+   "kind": "retry",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/components/GraphVisualization.tsx:755"
+   ]
+  },
+  {
+   "id": "sn-fe-t-copied",
+   "name": "copied/saved status reset",
+   "value_ms": 2000,
+   "raw": "setTimeout(..., 2000)",
+   "where": "sn-fe-sources-import",
+   "kind": "timeout",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/features/aiSetlists/components/ui.tsx:20",
+    "songnodes/frontend/src/features/musicLibrary/components/ui.tsx:143"
+   ]
+  },
+  {
+   "id": "sn-fe-t-nginx-resolver",
+   "name": "nginx DNS re-resolve TTL",
+   "value_ms": 10000,
+   "raw": "resolver 127.0.0.11 valid=10s",
+   "where": "sn-fe-store-nginx",
+   "kind": "ttl",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/Dockerfile:36"
+   ]
+  },
+  {
+   "id": "sn-fe-t-frontend-health",
+   "name": "frontend container healthcheck",
+   "value_ms": 10000,
+   "raw": "interval: 10s, timeout: 5s, retries: 6",
+   "where": "sn-fe-store-nginx",
+   "kind": "heartbeat",
+   "state": "built",
+   "evidence": [
+    "songnodes/compose.dev.yaml:204-209"
+   ]
+  },
+  {
+   "id": "sn-fe-t-asset-cache",
+   "name": "hashed asset cache",
+   "value_ms": 31536000000,
+   "raw": "expires 1y",
+   "where": "sn-fe-store-nginx",
+   "kind": "ttl",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/Dockerfile:40-43"
+   ]
+  }
+ ],
+ "limits": [
+  {
+   "id": "sn-fe-l-library-search",
+   "name": "library search page size",
+   "value": 5000,
+   "unit": "tracks",
+   "where": "sn-fe-library",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/data.ts:114"
+   ],
+   "current": "294 tracks in the pinned fixture (frontend/tests/e2e/data/library.fixture.json)"
+  },
+  {
+   "id": "sn-fe-l-library-first-batch",
+   "name": "library rows rendered first",
+   "value": 150,
+   "unit": "rows",
+   "where": "sn-fe-library",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/LibraryPage.tsx:27"
+   ]
+  },
+  {
+   "id": "sn-fe-l-ingest-file",
+   "name": "library export upload max",
+   "value": 50,
+   "unit": "MB",
+   "where": "sn-fe-library",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/components/LibraryImportDialog.tsx:24"
+   ],
+   "current": "fixture export 132,486 bytes"
+  },
+  {
+   "id": "sn-fe-l-nginx-body",
+   "name": "frontend nginx request body (default, unset)",
+   "value": 1,
+   "unit": "MB",
+   "where": "sn-fe-store-nginx",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/Dockerfile:28-102",
+    "songnodes/STATUS.md:1899"
+   ]
+  },
+  {
+   "id": "sn-fe-l-tracklist-file",
+   "name": "tracklist upload max",
+   "value": 5,
+   "unit": "MB",
+   "where": "sn-fe-graph",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/components/TracklistImporter.tsx:306"
+   ]
+  },
+  {
+   "id": "sn-fe-l-graph-data",
+   "name": "graph nodes/edges per load",
+   "value": 10000,
+   "unit": "rows",
+   "where": "sn-fe-graph",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/hooks/useDataLoader.ts:28"
+   ]
+  },
+  {
+   "id": "sn-fe-l-graph-hood",
+   "name": "neighbourhood view cap (graph-hood-max token)",
+   "value": 200,
+   "unit": "nodes",
+   "where": "sn-fe-graph",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/lib/graphView.ts:2-10",
+    "songnodes/STATUS.md:2431"
+   ]
+  },
+  {
+   "id": "sn-fe-l-jobs",
+   "name": "jobs listed on pipeline page",
+   "value": 200,
+   "unit": "jobs",
+   "where": "sn-fe-pipeline",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/features/pipeline/usePipelineTelemetry.ts:275"
+   ]
+  },
+  {
+   "id": "sn-fe-l-scrape-jobs",
+   "name": "scrape jobs listed",
+   "value": 50,
+   "unit": "jobs",
+   "where": "sn-fe-pipeline",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/features/pipeline/usePipelineTelemetry.ts:276"
+   ]
+  },
+  {
+   "id": "sn-fe-l-watched-runs",
+   "name": "scrape stage cards kept per visit",
+   "value": 5,
+   "unit": "cards",
+   "where": "sn-fe-pipeline",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/pages/ScraperProgressPage.tsx:33-36"
+   ]
+  },
+  {
+   "id": "sn-fe-l-artist-page",
+   "name": "artist attribution page size",
+   "value": 50,
+   "unit": "rows",
+   "where": "sn-fe-graph",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/components/ArtistAttributionManager.tsx:79"
+   ]
+  },
+  {
+   "id": "sn-fe-l-recent",
+   "name": "recent searches kept per namespace",
+   "value": 10,
+   "unit": "items",
+   "where": "sn-fe-store-browser-ls",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/utils/recentSearches.ts:47"
+   ]
+  },
+  {
+   "id": "sn-fe-l-autocomplete",
+   "name": "autocomplete recent / suggestions",
+   "value": 8,
+   "unit": "items (5 recent, 8 suggestions)",
+   "where": "sn-fe-paths",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/components/ds/AutocompleteSearchField.tsx:55-56"
+   ]
+  },
+  {
+   "id": "sn-fe-l-quick-search",
+   "name": "quick search results",
+   "value": 12,
+   "unit": "items",
+   "where": "sn-fe-graph",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/components/QuickSearch.tsx:174-191"
+   ]
+  },
+  {
+   "id": "sn-fe-l-ai-history",
+   "name": "AI prompt history kept",
+   "value": 30,
+   "unit": "items",
+   "where": "sn-fe-store-browser-ls",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/services/aiService.ts:386"
+   ]
+  },
+  {
+   "id": "sn-fe-l-edge-details",
+   "name": "edges fetched for details",
+   "value": 2,
+   "unit": "edges",
+   "where": "sn-fe-graph",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/components/EdgeDetailsModal.tsx:29"
+   ]
+  },
+  {
+   "id": "sn-fe-l-toast-queue",
+   "name": "toasts queued",
+   "value": 3,
+   "unit": "toasts",
+   "where": "sn-fe-shell",
+   "state": "built",
+   "evidence": [
+    "songnodes/design-system/components/Toast/preview.html:1"
+   ]
+  },
+  {
+   "id": "sn-fe-l-scraper-mem",
+   "name": "unified-scraper memory (compose; frontend has none set, CLAUDE.md says 256MB)",
+   "value": 1,
+   "unit": "GB",
+   "where": "sn-fe-store-nginx",
+   "state": "built",
+   "evidence": [
+    "songnodes/compose.dev.yaml:191",
+    "songnodes/CLAUDE.md §5.3"
+   ]
+  }
+ ],
+ "secrets": [
+  {
+   "id": "sn-fe-s-store-creds",
+   "path": "browser localStorage songnodes-store .state.musicCredentials (runtime, not in repo)",
+   "type": "TIDAL/Spotify access and refresh tokens, client id and client secret",
+   "risk": "real-looking",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/store/useStore.ts:1507-1508"
+   ]
+  },
+  {
+   "id": "sn-fe-s-session-tokens",
+   "path": "browser sessionStorage <service>_oauth_tokens (runtime)",
+   "type": "OAuth access/refresh tokens",
+   "risk": "real-looking",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/components/OAuthCallback.tsx:227-228"
+   ]
+  },
+  {
+   "id": "sn-fe-s-debug-inject",
+   "path": "songnodes/frontend/src/store/useStore.ts:1577-1581",
+   "type": "debugZustand.injectTestCredentials placeholder client id/secret",
+   "risk": "placeholder",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/store/useStore.ts:1577-1581"
+   ]
+  },
+  {
+   "id": "sn-fe-s-api-key-fields",
+   "path": "songnodes/frontend/src/components/APIKeyManager.tsx:529,569",
+   "type": "AI provider API key input placeholders (prefix hints only); keys POSTed to /api/v1/api-keys, legacy raw keys under songnodes_key_*/ai_key_*/apiKey_* removed on migration",
+   "risk": "placeholder",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/services/apiKeyService.ts:170-210"
+   ]
+  },
+  {
+   "id": "sn-fe-s-tidal-bearer",
+   "path": "songnodes/frontend/src/features/setBuilder/sendToTidal.ts:38-44",
+   "type": "browser-held TIDAL access token sent as Authorization Bearer to rest-api",
+   "risk": "real-looking",
+   "state": "built",
+   "evidence": [
+    "songnodes/frontend/src/features/setBuilder/sendToTidal.ts:38-44"
+   ]
+  },
+  {
+   "id": "sn-fe-s-nginx-ssl",
+   "path": "songnodes/nginx/ssl/ (ca.crt, musicdb.crt, musicdb-chain.crt, ca.srl)",
+   "type": "TLS certificates only; musicdb.key referenced by nginx/conf.d/blue-production.conf but not committed",
+   "risk": "placeholder",
+   "state": "built",
+   "evidence": [
+    "songnodes/nginx/conf.d/blue-production.conf:29-30"
+   ]
+  },
+  {
+   "id": "sn-fe-s-auth-cookie",
+   "path": "PR #579 frontend/src/features/auth/AuthContext.tsx",
+   "type": "session cookie (credentials: include) for Duo login",
+   "risk": "placeholder",
+   "state": "queued",
+   "evidence": [
+    "PR #579 AuthContext.tsx:46,81,115"
+   ]
+  }
+ ],
+ "rule_results": [
+  {
+   "page": "sn-fe-home",
+   "rule": "R1",
+   "result": "pass",
+   "detail": "rendered inside AppShell; NavDrawer is the only site navigation; in-page panel tabs only",
+   "evidence": [
+    "songnodes/frontend/src/shell/AppShell.tsx:36-110",
+    "songnodes/frontend/src/App.tsx:34"
+   ]
+  },
+  {
+   "page": "sn-fe-home",
+   "rule": "R3",
+   "result": "pass",
+   "detail": "no alert/confirm/prompt calls in frontend/src (grep); ConfirmDialog used",
+   "evidence": [
+    "songnodes/frontend/src/components/ds/index.tsx",
+    "M1 grep \\b(alert|confirm|prompt)\\( = 0 hits"
+   ]
+  },
+  {
+   "page": "sn-fe-home",
+   "rule": "R7",
+   "result": "n/a",
+   "detail": "frontend triggers scrapes only via POST /api/v1/scrape/trigger; no scraper service names in frontend",
+   "evidence": [
+    "songnodes/frontend/src/pages/ScraperProgressPage.tsx:105"
+   ]
+  },
+  {
+   "page": "sn-fe-graph",
+   "rule": "R1",
+   "result": "pass",
+   "detail": "rendered inside AppShell; NavDrawer is the only site navigation; in-page panel tabs only",
+   "evidence": [
+    "songnodes/frontend/src/shell/AppShell.tsx:36-110",
+    "songnodes/frontend/src/App.tsx:34"
+   ]
+  },
+  {
+   "page": "sn-fe-graph",
+   "rule": "R3",
+   "result": "pass",
+   "detail": "no alert/confirm/prompt calls in frontend/src (grep); ConfirmDialog used",
+   "evidence": [
+    "songnodes/frontend/src/components/ds/index.tsx",
+    "M1 grep \\b(alert|confirm|prompt)\\( = 0 hits"
+   ]
+  },
+  {
+   "page": "sn-fe-graph",
+   "rule": "R7",
+   "result": "n/a",
+   "detail": "frontend triggers scrapes only via POST /api/v1/scrape/trigger; no scraper service names in frontend",
+   "evidence": [
+    "songnodes/frontend/src/pages/ScraperProgressPage.tsx:105"
+   ]
+  },
+  {
+   "page": "sn-fe-library",
+   "rule": "R1",
+   "result": "pass",
+   "detail": "rendered inside AppShell; NavDrawer is the only site navigation; in-page panel tabs only",
+   "evidence": [
+    "songnodes/frontend/src/shell/AppShell.tsx:36-110",
+    "songnodes/frontend/src/App.tsx:34"
+   ]
+  },
+  {
+   "page": "sn-fe-library",
+   "rule": "R3",
+   "result": "pass",
+   "detail": "no alert/confirm/prompt calls in frontend/src (grep); ConfirmDialog used",
+   "evidence": [
+    "songnodes/frontend/src/components/ds/index.tsx",
+    "M1 grep \\b(alert|confirm|prompt)\\( = 0 hits"
+   ]
+  },
+  {
+   "page": "sn-fe-library",
+   "rule": "R7",
+   "result": "n/a",
+   "detail": "frontend triggers scrapes only via POST /api/v1/scrape/trigger; no scraper service names in frontend",
+   "evidence": [
+    "songnodes/frontend/src/pages/ScraperProgressPage.tsx:105"
+   ]
+  },
+  {
+   "page": "sn-fe-sets",
+   "rule": "R1",
+   "result": "pass",
+   "detail": "rendered inside AppShell; NavDrawer is the only site navigation; in-page panel tabs only",
+   "evidence": [
+    "songnodes/frontend/src/shell/AppShell.tsx:36-110",
+    "songnodes/frontend/src/App.tsx:34"
+   ]
+  },
+  {
+   "page": "sn-fe-sets",
+   "rule": "R3",
+   "result": "pass",
+   "detail": "no alert/confirm/prompt calls in frontend/src (grep); ConfirmDialog used",
+   "evidence": [
+    "songnodes/frontend/src/components/ds/index.tsx",
+    "M1 grep \\b(alert|confirm|prompt)\\( = 0 hits"
+   ]
+  },
+  {
+   "page": "sn-fe-sets",
+   "rule": "R7",
+   "result": "n/a",
+   "detail": "frontend triggers scrapes only via POST /api/v1/scrape/trigger; no scraper service names in frontend",
+   "evidence": [
+    "songnodes/frontend/src/pages/ScraperProgressPage.tsx:105"
+   ]
+  },
+  {
+   "page": "sn-fe-paths",
+   "rule": "R1",
+   "result": "pass",
+   "detail": "rendered inside AppShell; NavDrawer is the only site navigation; in-page panel tabs only",
+   "evidence": [
+    "songnodes/frontend/src/shell/AppShell.tsx:36-110",
+    "songnodes/frontend/src/App.tsx:34"
+   ]
+  },
+  {
+   "page": "sn-fe-paths",
+   "rule": "R3",
+   "result": "pass",
+   "detail": "no alert/confirm/prompt calls in frontend/src (grep); ConfirmDialog used",
+   "evidence": [
+    "songnodes/frontend/src/components/ds/index.tsx",
+    "M1 grep \\b(alert|confirm|prompt)\\( = 0 hits"
+   ]
+  },
+  {
+   "page": "sn-fe-paths",
+   "rule": "R7",
+   "result": "n/a",
+   "detail": "frontend triggers scrapes only via POST /api/v1/scrape/trigger; no scraper service names in frontend",
+   "evidence": [
+    "songnodes/frontend/src/pages/ScraperProgressPage.tsx:105"
+   ]
+  },
+  {
+   "page": "sn-fe-harmony",
+   "rule": "R1",
+   "result": "pass",
+   "detail": "rendered inside AppShell; NavDrawer is the only site navigation; in-page panel tabs only",
+   "evidence": [
+    "songnodes/frontend/src/shell/AppShell.tsx:36-110",
+    "songnodes/frontend/src/App.tsx:34"
+   ]
+  },
+  {
+   "page": "sn-fe-harmony",
+   "rule": "R3",
+   "result": "pass",
+   "detail": "no alert/confirm/prompt calls in frontend/src (grep); ConfirmDialog used",
+   "evidence": [
+    "songnodes/frontend/src/components/ds/index.tsx",
+    "M1 grep \\b(alert|confirm|prompt)\\( = 0 hits"
+   ]
+  },
+  {
+   "page": "sn-fe-harmony",
+   "rule": "R7",
+   "result": "n/a",
+   "detail": "frontend triggers scrapes only via POST /api/v1/scrape/trigger; no scraper service names in frontend",
+   "evidence": [
+    "songnodes/frontend/src/pages/ScraperProgressPage.tsx:105"
+   ]
+  },
+  {
+   "page": "sn-fe-sources-targets",
+   "rule": "R1",
+   "result": "pass",
+   "detail": "rendered inside AppShell; NavDrawer is the only site navigation; in-page panel tabs only",
+   "evidence": [
+    "songnodes/frontend/src/shell/AppShell.tsx:36-110",
+    "songnodes/frontend/src/App.tsx:34"
+   ]
+  },
+  {
+   "page": "sn-fe-sources-targets",
+   "rule": "R3",
+   "result": "pass",
+   "detail": "no alert/confirm/prompt calls in frontend/src (grep); ConfirmDialog used",
+   "evidence": [
+    "songnodes/frontend/src/components/ds/index.tsx",
+    "M1 grep \\b(alert|confirm|prompt)\\( = 0 hits"
+   ]
+  },
+  {
+   "page": "sn-fe-sources-targets",
+   "rule": "R7",
+   "result": "n/a",
+   "detail": "frontend triggers scrapes only via POST /api/v1/scrape/trigger; no scraper service names in frontend",
+   "evidence": [
+    "songnodes/frontend/src/pages/ScraperProgressPage.tsx:105"
+   ]
+  },
+  {
+   "page": "sn-fe-sources-import",
+   "rule": "R1",
+   "result": "pass",
+   "detail": "rendered inside AppShell; NavDrawer is the only site navigation; in-page panel tabs only",
+   "evidence": [
+    "songnodes/frontend/src/shell/AppShell.tsx:36-110",
+    "songnodes/frontend/src/App.tsx:34"
+   ]
+  },
+  {
+   "page": "sn-fe-sources-import",
+   "rule": "R3",
+   "result": "pass",
+   "detail": "no alert/confirm/prompt calls in frontend/src (grep); ConfirmDialog used",
+   "evidence": [
+    "songnodes/frontend/src/components/ds/index.tsx",
+    "M1 grep \\b(alert|confirm|prompt)\\( = 0 hits"
+   ]
+  },
+  {
+   "page": "sn-fe-sources-import",
+   "rule": "R7",
+   "result": "n/a",
+   "detail": "frontend triggers scrapes only via POST /api/v1/scrape/trigger; no scraper service names in frontend",
+   "evidence": [
+    "songnodes/frontend/src/pages/ScraperProgressPage.tsx:105"
+   ]
+  },
+  {
+   "page": "sn-fe-pipeline",
+   "rule": "R1",
+   "result": "pass",
+   "detail": "rendered inside AppShell; NavDrawer is the only site navigation; in-page panel tabs only",
+   "evidence": [
+    "songnodes/frontend/src/shell/AppShell.tsx:36-110",
+    "songnodes/frontend/src/App.tsx:34"
+   ]
+  },
+  {
+   "page": "sn-fe-pipeline",
+   "rule": "R3",
+   "result": "pass",
+   "detail": "no alert/confirm/prompt calls in frontend/src (grep); ConfirmDialog used",
+   "evidence": [
+    "songnodes/frontend/src/components/ds/index.tsx",
+    "M1 grep \\b(alert|confirm|prompt)\\( = 0 hits"
+   ]
+  },
+  {
+   "page": "sn-fe-pipeline",
+   "rule": "R7",
+   "result": "n/a",
+   "detail": "frontend triggers scrapes only via POST /api/v1/scrape/trigger; no scraper service names in frontend",
+   "evidence": [
+    "songnodes/frontend/src/pages/ScraperProgressPage.tsx:105"
+   ]
+  },
+  {
+   "page": "sn-fe-settings",
+   "rule": "R1",
+   "result": "pass",
+   "detail": "rendered inside AppShell; NavDrawer is the only site navigation; in-page panel tabs only",
+   "evidence": [
+    "songnodes/frontend/src/shell/AppShell.tsx:36-110",
+    "songnodes/frontend/src/App.tsx:34"
+   ]
+  },
+  {
+   "page": "sn-fe-settings",
+   "rule": "R3",
+   "result": "pass",
+   "detail": "no alert/confirm/prompt calls in frontend/src (grep); ConfirmDialog used",
+   "evidence": [
+    "songnodes/frontend/src/components/ds/index.tsx",
+    "M1 grep \\b(alert|confirm|prompt)\\( = 0 hits"
+   ]
+  },
+  {
+   "page": "sn-fe-settings",
+   "rule": "R7",
+   "result": "n/a",
+   "detail": "frontend triggers scrapes only via POST /api/v1/scrape/trigger; no scraper service names in frontend",
+   "evidence": [
+    "songnodes/frontend/src/pages/ScraperProgressPage.tsx:105"
+   ]
+  },
+  {
+   "page": "sn-fe-notfound",
+   "rule": "R1",
+   "result": "pass",
+   "detail": "rendered inside AppShell; NavDrawer is the only site navigation; in-page panel tabs only",
+   "evidence": [
+    "songnodes/frontend/src/shell/AppShell.tsx:36-110",
+    "songnodes/frontend/src/App.tsx:34"
+   ]
+  },
+  {
+   "page": "sn-fe-notfound",
+   "rule": "R3",
+   "result": "pass",
+   "detail": "no alert/confirm/prompt calls in frontend/src (grep); ConfirmDialog used",
+   "evidence": [
+    "songnodes/frontend/src/components/ds/index.tsx",
+    "M1 grep \\b(alert|confirm|prompt)\\( = 0 hits"
+   ]
+  },
+  {
+   "page": "sn-fe-notfound",
+   "rule": "R7",
+   "result": "n/a",
+   "detail": "frontend triggers scrapes only via POST /api/v1/scrape/trigger; no scraper service names in frontend",
+   "evidence": [
+    "songnodes/frontend/src/pages/ScraperProgressPage.tsx:105"
+   ]
+  },
+  {
+   "page": "sn-fe-oauth-callback",
+   "rule": "R1",
+   "result": "exception",
+   "detail": "shell-less return page outside AppShell by design (AuthCallbackPage, may be a pop-up)",
+   "evidence": [
+    "songnodes/frontend/src/App.tsx:29-33"
+   ]
+  },
+  {
+   "page": "sn-fe-home",
+   "rule": "R2",
+   "result": "pass",
+   "detail": "no primary button; repo checker does not test this rule (scripts/check_design_system.py --check: exit 0, no findings; frontend/design-system-pending.txt: all 37 lines commented out as migrated)",
+   "evidence": [
+    "M1 grep sn-btn--primary|kind=\"primary\""
+   ]
+  },
+  {
+   "page": "sn-fe-graph",
+   "rule": "R2",
+   "result": "pass",
+   "detail": "no primary in DJInterface (0 matches); repo checker does not test this rule (scripts/check_design_system.py --check: exit 0, no findings; frontend/design-system-pending.txt: all 37 lines commented out as migrated)",
+   "evidence": [
+    "M1 grep sn-btn--primary|kind=\"primary\""
+   ]
+  },
+  {
+   "page": "sn-fe-library",
+   "rule": "R2",
+   "result": "pass",
+   "detail": "Build set from crate primary only when tracks exist; Import library primary only in empty state (mutually exclusive); repo checker does not test this rule (scripts/check_design_system.py --check: exit 0, no findings; frontend/design-system-pending.txt: all 37 lines commented out as migrated)",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/LibraryPage.tsx:280,407"
+   ]
+  },
+  {
+   "page": "sn-fe-sets",
+   "rule": "R2",
+   "result": "violation",
+   "detail": "header Build set primary (line 450) and empty-state Build set primary (line 590) both visible while the draft has no slots; repo checker does not test this rule (scripts/check_design_system.py --check: exit 0, no findings; frontend/design-system-pending.txt: all 37 lines commented out as migrated)",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/SetBuilderPage.tsx:450,584-590"
+   ]
+  },
+  {
+   "page": "sn-fe-paths",
+   "rule": "R2",
+   "result": "violation",
+   "detail": "Calculate primary (line 204) and empty-state primary Choose start track/Find path (224/235) visible together before a result; header empty-state Open library is also primary; repo checker does not test this rule (scripts/check_design_system.py --check: exit 0, no findings; frontend/design-system-pending.txt: all 37 lines commented out as migrated)",
+   "evidence": [
+    "songnodes/frontend/src/features/pathfinder/PathfinderPage.tsx:126,204,218-240"
+   ]
+  },
+  {
+   "page": "sn-fe-harmony",
+   "rule": "R2",
+   "result": "pass",
+   "detail": "no primary; repo checker does not test this rule (scripts/check_design_system.py --check: exit 0, no findings; frontend/design-system-pending.txt: all 37 lines commented out as migrated)",
+   "evidence": [
+    "M1 grep sn-btn--primary|kind=\"primary\""
+   ]
+  },
+  {
+   "page": "sn-fe-sources-targets",
+   "rule": "R2",
+   "result": "pass",
+   "detail": "TargetTracksManager primaries are in separate form and import dialog; repo checker does not test this rule (scripts/check_design_system.py --check: exit 0, no findings; frontend/design-system-pending.txt: all 37 lines commented out as migrated)",
+   "evidence": [
+    "M1 grep sn-btn--primary|kind=\"primary\""
+   ]
+  },
+  {
+   "page": "sn-fe-sources-import",
+   "rule": "R2",
+   "result": "violation",
+   "detail": "Review Data and Run Search are on different tabs, but the review step adds a third primary (line 359) shown with the active tab (not rendered to confirm); repo checker does not test this rule (scripts/check_design_system.py --check: exit 0, no findings; frontend/design-system-pending.txt: all 37 lines commented out as migrated)",
+   "evidence": [
+    "songnodes/frontend/src/features/aiSetlists/AISetlistsPage.tsx:244,266,359"
+   ]
+  },
+  {
+   "page": "sn-fe-pipeline",
+   "rule": "R2",
+   "result": "pass",
+   "detail": "Retry connection primary only in error state (early return); Queue scrape primary otherwise; repo checker does not test this rule (scripts/check_design_system.py --check: exit 0, no findings; frontend/design-system-pending.txt: all 37 lines commented out as migrated)",
+   "evidence": [
+    "songnodes/frontend/src/pages/ScraperProgressPage.tsx:165-173,277"
+   ]
+  },
+  {
+   "page": "sn-fe-settings",
+   "rule": "R2",
+   "result": "pass",
+   "detail": "no sn-btn--primary in SettingsPage; repo checker does not test this rule (scripts/check_design_system.py --check: exit 0, no findings; frontend/design-system-pending.txt: all 37 lines commented out as migrated)",
+   "evidence": [
+    "M1 grep sn-btn--primary|kind=\"primary\""
+   ]
+  },
+  {
+   "page": "sn-fe-notfound",
+   "rule": "R2",
+   "result": "pass",
+   "detail": "no buttons; repo checker does not test this rule (scripts/check_design_system.py --check: exit 0, no findings; frontend/design-system-pending.txt: all 37 lines commented out as migrated)",
+   "evidence": [
+    "M1 grep sn-btn--primary|kind=\"primary\""
+   ]
+  },
+  {
+   "page": "sn-fe-home",
+   "rule": "R4",
+   "result": "pass",
+   "detail": "no hex/rgb/px font/z-index found by grep; scripts/check_design_system.py --check: exit 0, no findings; frontend/design-system-pending.txt: all 37 lines commented out as migrated",
+   "evidence": [
+    "scripts/check_design_system.py --check: exit 0, no findings; frontend/design-system-pending.txt: all 37 lines commented out as migrated"
+   ]
+  },
+  {
+   "page": "sn-fe-graph",
+   "rule": "R4",
+   "result": "exception",
+   "detail": "PIXI tints use numeric colours (NO_TINT 0xffffff, visualEncoding 0x4a90e2) and utils/graphHelpers builds rgb() strings; canvas code not covered by tokens. Unreachable DualRangeSlider uses raw zIndex 2/3",
+   "evidence": [
+    "songnodes/frontend/src/components/GraphVisualization.tsx:62",
+    "songnodes/frontend/src/utils/visualEncoding.ts:145",
+    "songnodes/frontend/src/utils/graphHelpers.ts:364-366",
+    "songnodes/frontend/src/components/DualRangeSlider.tsx:75,95"
+   ]
+  },
+  {
+   "page": "sn-fe-library",
+   "rule": "R4",
+   "result": "pass",
+   "detail": "no hex/rgb/px font/z-index found by grep; scripts/check_design_system.py --check: exit 0, no findings; frontend/design-system-pending.txt: all 37 lines commented out as migrated",
+   "evidence": [
+    "scripts/check_design_system.py --check: exit 0, no findings; frontend/design-system-pending.txt: all 37 lines commented out as migrated"
+   ]
+  },
+  {
+   "page": "sn-fe-sets",
+   "rule": "R4",
+   "result": "pass",
+   "detail": "no hex/rgb/px font/z-index found by grep; scripts/check_design_system.py --check: exit 0, no findings; frontend/design-system-pending.txt: all 37 lines commented out as migrated",
+   "evidence": [
+    "scripts/check_design_system.py --check: exit 0, no findings; frontend/design-system-pending.txt: all 37 lines commented out as migrated"
+   ]
+  },
+  {
+   "page": "sn-fe-paths",
+   "rule": "R4",
+   "result": "pass",
+   "detail": "no hex/rgb/px font/z-index found by grep; scripts/check_design_system.py --check: exit 0, no findings; frontend/design-system-pending.txt: all 37 lines commented out as migrated",
+   "evidence": [
+    "scripts/check_design_system.py --check: exit 0, no findings; frontend/design-system-pending.txt: all 37 lines commented out as migrated"
+   ]
+  },
+  {
+   "page": "sn-fe-harmony",
+   "rule": "R4",
+   "result": "pass",
+   "detail": "no hex/rgb/px font/z-index found by grep; scripts/check_design_system.py --check: exit 0, no findings; frontend/design-system-pending.txt: all 37 lines commented out as migrated",
+   "evidence": [
+    "scripts/check_design_system.py --check: exit 0, no findings; frontend/design-system-pending.txt: all 37 lines commented out as migrated"
+   ]
+  },
+  {
+   "page": "sn-fe-sources-targets",
+   "rule": "R4",
+   "result": "pass",
+   "detail": "no hex/rgb/px font/z-index found by grep; scripts/check_design_system.py --check: exit 0, no findings; frontend/design-system-pending.txt: all 37 lines commented out as migrated",
+   "evidence": [
+    "scripts/check_design_system.py --check: exit 0, no findings; frontend/design-system-pending.txt: all 37 lines commented out as migrated"
+   ]
+  },
+  {
+   "page": "sn-fe-sources-import",
+   "rule": "R4",
+   "result": "violation",
+   "detail": "inline maxHeight: 200 (raw px) on the prompt box; checker passes it",
+   "evidence": [
+    "songnodes/frontend/src/features/aiSetlists/AISetlistsPage.tsx:228",
+    "scripts/check_design_system.py --check: exit 0, no findings; frontend/design-system-pending.txt: all 37 lines commented out as migrated"
+   ]
+  },
+  {
+   "page": "sn-fe-pipeline",
+   "rule": "R4",
+   "result": "violation",
+   "detail": "inline style uses raw px (minHeight 300px, border 1px solid, lucide size 48) in the error state; checker passes it",
+   "evidence": [
+    "songnodes/frontend/src/pages/ScraperProgressPage.tsx:167-171",
+    "scripts/check_design_system.py --check: exit 0, no findings; frontend/design-system-pending.txt: all 37 lines commented out as migrated"
+   ]
+  },
+  {
+   "page": "sn-fe-settings",
+   "rule": "R4",
+   "result": "pass",
+   "detail": "no hex/rgb/px font/z-index found by grep; scripts/check_design_system.py --check: exit 0, no findings; frontend/design-system-pending.txt: all 37 lines commented out as migrated",
+   "evidence": [
+    "scripts/check_design_system.py --check: exit 0, no findings; frontend/design-system-pending.txt: all 37 lines commented out as migrated"
+   ]
+  },
+  {
+   "page": "sn-fe-notfound",
+   "rule": "R4",
+   "result": "pass",
+   "detail": "no hex/rgb/px font/z-index found by grep; scripts/check_design_system.py --check: exit 0, no findings; frontend/design-system-pending.txt: all 37 lines commented out as migrated",
+   "evidence": [
+    "scripts/check_design_system.py --check: exit 0, no findings; frontend/design-system-pending.txt: all 37 lines commented out as migrated"
+   ]
+  },
+  {
+   "page": "sn-fe-home",
+   "rule": "R5",
+   "result": "pass",
+   "detail": "no emoji, N/A or Unknown found by grep in the page module",
+   "evidence": [
+    "M1 emoji/N-A/Unknown scan"
+   ]
+  },
+  {
+   "page": "sn-fe-graph",
+   "rule": "R5",
+   "result": "pass",
+   "detail": "status glyphs (✓ ✕) are design-system glyphs; the emoji-like \"✓ Track updated successfully!\" is in unreachable EditTrackModal",
+   "evidence": [
+    "songnodes/frontend/src/components/EditTrackModal.tsx:146,166",
+    "/home/claude/dfa/scratch/sn-frontend/unreachable.txt"
+   ]
+  },
+  {
+   "page": "sn-fe-library",
+   "rule": "R5",
+   "result": "pass",
+   "detail": "no emoji, N/A or Unknown found by grep in the page module",
+   "evidence": [
+    "M1 emoji/N-A/Unknown scan"
+   ]
+  },
+  {
+   "page": "sn-fe-sets",
+   "rule": "R5",
+   "result": "pass",
+   "detail": "no emoji, N/A or Unknown found by grep in the page module",
+   "evidence": [
+    "M1 emoji/N-A/Unknown scan"
+   ]
+  },
+  {
+   "page": "sn-fe-paths",
+   "rule": "R5",
+   "result": "violation",
+   "detail": "'Unknown algorithm' / 'Unknown optimization level' fallbacks (also en-US spelling)",
+   "evidence": [
+    "songnodes/frontend/src/components/PathfinderPanel/hooks.ts:203,212"
+   ]
+  },
+  {
+   "page": "sn-fe-harmony",
+   "rule": "R5",
+   "result": "pass",
+   "detail": "no emoji, N/A or Unknown found by grep in the page module",
+   "evidence": [
+    "M1 emoji/N-A/Unknown scan"
+   ]
+  },
+  {
+   "page": "sn-fe-sources-targets",
+   "rule": "R5",
+   "result": "pass",
+   "detail": "no emoji, N/A or Unknown found by grep in the page module",
+   "evidence": [
+    "M1 emoji/N-A/Unknown scan"
+   ]
+  },
+  {
+   "page": "sn-fe-sources-import",
+   "rule": "R5",
+   "result": "violation",
+   "detail": "Title Case labels ('Copy Prompt', 'Paste Result', 'Additional Exclusions', 'Review Data', 'Run Search') and 'Unknown Date'/'Unknown DJ'/'Unknown Event' instead of an en dash",
+   "evidence": [
+    "songnodes/frontend/src/features/aiSetlists/AISetlistsPage.tsx:219,227,236,244,266,338",
+    "songnodes/frontend/src/features/aiSetlists/api/parser.ts:56"
+   ]
+  },
+  {
+   "page": "sn-fe-pipeline",
+   "rule": "R5",
+   "result": "pass",
+   "detail": "no emoji, N/A or Unknown found by grep in the page module",
+   "evidence": [
+    "M1 emoji/N-A/Unknown scan"
+   ]
+  },
+  {
+   "page": "sn-fe-settings",
+   "rule": "R5",
+   "result": "pass",
+   "detail": "no emoji, N/A or Unknown found by grep in the page module",
+   "evidence": [
+    "M1 emoji/N-A/Unknown scan"
+   ]
+  },
+  {
+   "page": "sn-fe-notfound",
+   "rule": "R5",
+   "result": "pass",
+   "detail": "no emoji, N/A or Unknown found by grep in the page module",
+   "evidence": [
+    "M1 emoji/N-A/Unknown scan"
+   ]
+  },
+  {
+   "page": "sn-fe-oauth-callback",
+   "rule": "R5",
+   "result": "violation",
+   "detail": "'Unknown error' shown in the failure message",
+   "evidence": [
+    "songnodes/frontend/src/components/OAuthCallback.tsx:276"
+   ]
+  },
+  {
+   "page": "sn-fe-home",
+   "rule": "R6",
+   "result": "exception",
+   "detail": "still a STATIC_ROUTES entry in routes/registry.tsx (pre-G2 page kept by AGENTS.md rule 12 \"do not edit App.tsx\"); not self-registered",
+   "evidence": [
+    "songnodes/frontend/src/routes/registry.tsx:13-23"
+   ]
+  },
+  {
+   "page": "sn-fe-graph",
+   "rule": "R6",
+   "result": "exception",
+   "detail": "still a STATIC_ROUTES entry in routes/registry.tsx (pre-G2 page kept by AGENTS.md rule 12 \"do not edit App.tsx\"); not self-registered",
+   "evidence": [
+    "songnodes/frontend/src/routes/registry.tsx:13-23"
+   ]
+  },
+  {
+   "page": "sn-fe-library",
+   "rule": "R6",
+   "result": "pass",
+   "detail": "exported from features/<x>/route.tsx and found by import.meta.glob (G2)",
+   "evidence": [
+    "songnodes/frontend/src/routes/registry.tsx:28-45"
+   ]
+  },
+  {
+   "page": "sn-fe-sets",
+   "rule": "R6",
+   "result": "pass",
+   "detail": "exported from features/<x>/route.tsx and found by import.meta.glob (G2)",
+   "evidence": [
+    "songnodes/frontend/src/routes/registry.tsx:28-45"
+   ]
+  },
+  {
+   "page": "sn-fe-paths",
+   "rule": "R6",
+   "result": "pass",
+   "detail": "exported from features/<x>/route.tsx and found by import.meta.glob (G2)",
+   "evidence": [
+    "songnodes/frontend/src/routes/registry.tsx:28-45"
+   ]
+  },
+  {
+   "page": "sn-fe-harmony",
+   "rule": "R6",
+   "result": "pass",
+   "detail": "exported from features/<x>/route.tsx and found by import.meta.glob (G2)",
+   "evidence": [
+    "songnodes/frontend/src/routes/registry.tsx:28-45"
+   ]
+  },
+  {
+   "page": "sn-fe-sources-targets",
+   "rule": "R6",
+   "result": "exception",
+   "detail": "still a STATIC_ROUTES entry in routes/registry.tsx (pre-G2 page kept by AGENTS.md rule 12 \"do not edit App.tsx\"); not self-registered",
+   "evidence": [
+    "songnodes/frontend/src/routes/registry.tsx:13-23"
+   ]
+  },
+  {
+   "page": "sn-fe-sources-import",
+   "rule": "R6",
+   "result": "pass",
+   "detail": "exported from features/<x>/route.tsx and found by import.meta.glob (G2)",
+   "evidence": [
+    "songnodes/frontend/src/routes/registry.tsx:28-45"
+   ]
+  },
+  {
+   "page": "sn-fe-pipeline",
+   "rule": "R6",
+   "result": "exception",
+   "detail": "still a STATIC_ROUTES entry in routes/registry.tsx (pre-G2 page kept by AGENTS.md rule 12 \"do not edit App.tsx\"); not self-registered",
+   "evidence": [
+    "songnodes/frontend/src/routes/registry.tsx:13-23"
+   ]
+  },
+  {
+   "page": "sn-fe-settings",
+   "rule": "R6",
+   "result": "exception",
+   "detail": "still a STATIC_ROUTES entry in routes/registry.tsx (pre-G2 page kept by AGENTS.md rule 12 \"do not edit App.tsx\"); not self-registered",
+   "evidence": [
+    "songnodes/frontend/src/routes/registry.tsx:13-23"
+   ]
+  },
+  {
+   "page": "sn-fe-notfound",
+   "rule": "R6",
+   "result": "exception",
+   "detail": "still a STATIC_ROUTES entry in routes/registry.tsx (pre-G2 page kept by AGENTS.md rule 12 \"do not edit App.tsx\"); not self-registered",
+   "evidence": [
+    "songnodes/frontend/src/routes/registry.tsx:13-23"
+   ]
+  },
+  {
+   "page": "sn-fe-login",
+   "rule": "R6",
+   "result": "pass",
+   "detail": "queued PR #579 adds features/auth/route.tsx (/login)",
+   "evidence": [
+    "PR #579 frontend/src/features/auth/route.tsx:7"
+   ]
+  },
+  {
+   "page": "sn-fe-login",
+   "rule": "R5",
+   "result": "violation",
+   "detail": "banner titles 'Signed In:' and 'Error:' use Title Case (queued PR)",
+   "evidence": [
+    "PR #579 LoginPage.tsx:54,68"
+   ]
+  },
+  {
+   "page": "sn-fe-graph",
+   "rule": "R8",
+   "result": "violation",
+   "detail": "primary load (/api/graph/data) drops invalid-artist nodes and their edges; fallback path GET /api/graph filters nodes but does not drop edges whose endpoint was filtered before computing connectedNodeIds, so edges to invalid-artist nodes reach the store",
+   "evidence": [
+    "songnodes/frontend/src/hooks/useDataLoader.ts:85-110"
+   ]
+  },
+  {
+   "page": "sn-fe-library",
+   "rule": "R8",
+   "result": "n/a",
+   "detail": "page shows tracks, not transitions",
+   "evidence": []
+  },
+  {
+   "page": "sn-fe-sets",
+   "rule": "R8",
+   "result": "n/a",
+   "detail": "page shows tracks, not transitions",
+   "evidence": []
+  },
+  {
+   "page": "sn-fe-harmony",
+   "rule": "R8",
+   "result": "n/a",
+   "detail": "page shows tracks, not transitions",
+   "evidence": []
+  },
+  {
+   "page": "sn-fe-sources-targets",
+   "rule": "R8",
+   "result": "n/a",
+   "detail": "page shows tracks, not transitions",
+   "evidence": []
+  },
+  {
+   "page": "sn-fe-sources-import",
+   "rule": "R8",
+   "result": "n/a",
+   "detail": "page shows tracks, not transitions",
+   "evidence": []
+  },
+  {
+   "page": "sn-fe-pipeline",
+   "rule": "R8",
+   "result": "n/a",
+   "detail": "page shows tracks, not transitions",
+   "evidence": []
+  },
+  {
+   "page": "sn-fe-settings",
+   "rule": "R8",
+   "result": "n/a",
+   "detail": "page shows tracks, not transitions",
+   "evidence": []
+  },
+  {
+   "page": "sn-fe-home",
+   "rule": "R8",
+   "result": "n/a",
+   "detail": "page shows tracks, not transitions",
+   "evidence": []
+  },
+  {
+   "page": "sn-fe-notfound",
+   "rule": "R8",
+   "result": "n/a",
+   "detail": "page shows tracks, not transitions",
+   "evidence": []
+  },
+  {
+   "page": "sn-fe-work-queue-tracker",
+   "rule": "R4",
+   "result": "violation",
+   "detail": "design-system linter: 12 COL-HEX findings (lines 7-23) and 1 LAY-IMP (!important, line 66)",
+   "evidence": [
+    "design-system/linters/check.py ../plan/work-queue-2026-10-30/tracker.html --json"
+   ]
+  },
+  {
+   "page": "sn-fe-work-queue-tracker",
+   "rule": "R1",
+   "result": "n/a",
+   "detail": "claude.ai artifact outside the app",
+   "evidence": []
+  },
+  {
+   "page": "sn-fe-ds-reference",
+   "rule": "R5",
+   "result": "violation",
+   "detail": "linter: WRT-EMO line 360, WRT-CAPS line 191; also 7 A11Y-ICONBTN",
+   "evidence": [
+    "design-system/linters/check.py ../docs/design-system/reference.html --json"
+   ]
+  },
+  {
+   "page": "sn-fe-ds-violations-fixture",
+   "rule": "R4",
+   "result": "exception",
+   "detail": "deliberate: 20 seeded violations are the linter regression fixture",
+   "evidence": [
+    "design-system/linters/check.py fixtures/violations.html --json (20 findings)",
+    "songnodes/design-system/INDEX.md:50"
+   ]
+  },
+  {
+   "page": "sn-fe-ds-component-previews",
+   "rule": "R4",
+   "result": "pass",
+   "detail": "linter on Toast preview: 0 findings (sample)",
+   "evidence": [
+    "design-system/linters/check.py components/Toast/preview.html --json"
+   ]
+  },
+  {
+   "page": "sn-fe-index-html",
+   "rule": "R4",
+   "result": "pass",
+   "detail": "linter: 0 findings",
+   "evidence": [
+    "design-system/linters/check.py ../frontend/index.html --json"
+   ]
+  },
+  {
+   "page": "sn-fe-paths",
+   "rule": "R8",
+   "result": "violation",
+   "detail": "Pathfinder uses the same useDataLoader: primary load (/api/graph/data) drops invalid-artist nodes and their edges; fallback path GET /api/graph filters nodes but does not drop edges whose endpoint was filtered before computing connectedNodeIds, so edges to invalid-artist nodes reach the store",
+   "evidence": [
+    "songnodes/frontend/src/hooks/useDataLoader.ts:85-110"
+   ]
+  }
+ ],
+ "claims": [
+  {
+   "id": "sn-fe-c-port",
+   "claim": "frontend at http://127.0.0.1:3006, nginx proxies /api to the APIs",
+   "source": "songnodes/CLAUDE.md §2 Services table",
+   "outcome": "confirmed",
+   "finding": "compose publishes 127.0.0.1:3006:8080; inline default.conf sends /api/(graph|v1/visualization|user-setlists) to graph-api and /api/ to rest-api",
+   "evidence": [
+    "songnodes/compose.dev.yaml:202",
+    "songnodes/frontend/Dockerfile:80-101"
+   ]
+  },
+  {
+   "id": "sn-fe-c-import-order",
+   "claim": "Import order: legacy CSS -> tokens.css -> bundle.css -> legacy-aliases.css -> app.css",
+   "source": "songnodes/CLAUDE.md:66",
+   "outcome": "corrected",
+   "finding": "main.tsx imports no legacy CSS before tokens.css; order is tokens, bundle, legacy-aliases, app",
+   "evidence": [
+    "songnodes/frontend/src/main.tsx:4-10"
+   ]
+  },
+  {
+   "id": "sn-fe-c-g2",
+   "claim": "feature routes self-register via G2",
+   "source": "songnodes/CLAUDE.md §2 Stack",
+   "outcome": "corrected",
+   "finding": "true for library, sets, paths, harmony, sources/import; /, /graph, /sources/targets, /pipeline, /settings and * are still static entries in routes/registry.tsx",
+   "evidence": [
+    "songnodes/frontend/src/routes/registry.tsx:13-45"
+   ]
+  },
+  {
+   "id": "sn-fe-c-nav",
+   "claim": "The NavDrawer is the only site navigation",
+   "source": "songnodes/CLAUDE.md §4 Interaction",
+   "outcome": "confirmed",
+   "finding": "AppShell renders only AppHeader (menu + search) and NavDrawer; App.tsx comment says no visible nav bar",
+   "evidence": [
+    "songnodes/frontend/src/shell/AppShell.tsx",
+    "songnodes/frontend/src/App.tsx:1-4"
+   ]
+  },
+  {
+   "id": "sn-fe-c-stack",
+   "claim": "React 19, TypeScript 7, PIXI.js v8, Zustand; Node 26 frontend image",
+   "source": "songnodes/CLAUDE.md §2 Stack, §1 Prerequisites",
+   "outcome": "confirmed",
+   "finding": "package.json react ^19.3.1, typescript ^7.0.2, pixi.js ^8.22.0, zustand ^5.0.16; Dockerfile FROM node:26-alpine",
+   "evidence": [
+    "songnodes/frontend/package.json:62-100",
+    "songnodes/frontend/Dockerfile:2"
+   ]
+  },
+  {
+   "id": "sn-fe-c-ds-sync",
+   "claim": "frontend design-system copy is synced and --check fails on drift",
+   "source": "songnodes/CLAUDE.md §4",
+   "outcome": "confirmed",
+   "finding": "sync-design-system.sh --check: \"design-system 1.10.0: frontend copy in sync\"; VERSION 1.10.0 = tokens.json 1.10.0",
+   "evidence": [
+    "songnodes/frontend/src/styles/design-system/VERSION",
+    "songnodes/design-system/tokens.json"
+   ]
+  },
+  {
+   "id": "sn-fe-c-no-alert",
+   "claim": "Never alert/confirm/prompt",
+   "source": "songnodes/CLAUDE.md §4 Interaction",
+   "outcome": "confirmed",
+   "finding": "0 calls in frontend/src outside tests",
+   "evidence": [
+    "M1 grep"
+   ]
+  },
+  {
+   "id": "sn-fe-c-one-primary",
+   "claim": "one primary button per view",
+   "source": "songnodes/CLAUDE.md §4 Interaction",
+   "outcome": "refuted",
+   "finding": "Set builder and Pathfinder show two primaries at once; the repo checker does not test this",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/SetBuilderPage.tsx:450,590",
+    "songnodes/frontend/src/features/pathfinder/PathfinderPage.tsx:204,224"
+   ]
+  },
+  {
+   "id": "sn-fe-c-en-dash",
+   "claim": "Missing values are an en dash; no \"Unknown\"",
+   "source": "songnodes/CLAUDE.md §4 Writing, §8",
+   "outcome": "refuted",
+   "finding": "AI setlists show 'Unknown Date'; OAuth page 'Unknown error'",
+   "evidence": [
+    "songnodes/frontend/src/features/aiSetlists/AISetlistsPage.tsx:338",
+    "songnodes/frontend/src/components/OAuthCallback.tsx:276"
+   ]
+  },
+  {
+   "id": "sn-fe-c-pending-list",
+   "claim": "Files not yet on the design system are listed in design-system-pending.txt; the conformance job scans every other file",
+   "source": "songnodes/frontend/design-system-pending.txt:1-3",
+   "outcome": "confirmed",
+   "finding": "all 37 lines are commented out as migrated; check_design_system.py --check exits 0 with no findings (but misses R2 and R5 violations found by grep)",
+   "evidence": [
+    "songnodes/frontend/design-system-pending.txt",
+    "scripts/check_design_system.py --check"
+   ]
+  },
+  {
+   "id": "sn-fe-c-pointer-events",
+   "claim": "Graph uses pointerdown/pointerup, not click",
+   "source": "songnodes/CLAUDE.md §5.4",
+   "outcome": "confirmed",
+   "finding": "GraphVisualization: 8 pointerdown/pointerup uses, 0 .on('click')",
+   "evidence": [
+    "songnodes/frontend/src/components/GraphVisualization.tsx"
+   ]
+  },
+  {
+   "id": "sn-fe-c-shortcuts",
+   "claim": "Shortcuts D (debug), Space (pause), Escape (clear), Ctrl+A (select all)",
+   "source": "songnodes/CLAUDE.md §5.4",
+   "outcome": "open",
+   "finding": "only case 'd' found in GraphVisualization; useKeyboardShortcuts is unreachable; Space/Escape/Ctrl+A handlers not located",
+   "evidence": [
+    "songnodes/frontend/src/components/GraphVisualization.tsx:3123",
+    "songnodes/frontend/src/hooks/useKeyboardShortcuts.ts"
+   ]
+  },
+  {
+   "id": "sn-fe-c-artist-filter",
+   "claim": "Frontend validation drops NULL/Unknown artists from the graph",
+   "source": "songnodes/CLAUDE.md Critical requirement 1",
+   "outcome": "confirmed",
+   "finding": "useDataLoader filters nodes with hasValidArtist on both primary and fallback loads (fallback edge filtering gap noted in R8)",
+   "evidence": [
+    "songnodes/frontend/src/hooks/useDataLoader.ts:40,88"
+   ]
+  },
+  {
+   "id": "sn-fe-c-frontend-mem",
+   "claim": "Resource limits: Frontend 256MB",
+   "source": "songnodes/CLAUDE.md §5.3",
+   "outcome": "refuted",
+   "finding": "compose.dev.yaml frontend service sets no mem_limit",
+   "evidence": [
+    "songnodes/compose.dev.yaml:200-211"
+   ]
+  },
+  {
+   "id": "sn-fe-c-indexeddb",
+   "claim": "SongNodes keeps the last graph, library and saved sets in IndexedDB",
+   "source": "songnodes/design-system/16-platform.md:50",
+   "outcome": "refuted",
+   "finding": "no indexedDB use anywhere in frontend/src",
+   "evidence": [
+    "M1 grep indexedDB = 0"
+   ]
+  },
+  {
+   "id": "sn-fe-c-frame-deny",
+   "claim": "nginx/nginx.conf sends X-Frame-Options: DENY and frame-ancestors none",
+   "source": "songnodes/design-system/16-platform.md:72",
+   "outcome": "corrected",
+   "finding": "nginx/nginx.conf is not used by compose; the live frontend default.conf sets no frame headers",
+   "evidence": [
+    "songnodes/frontend/Dockerfile:28-102"
+   ]
+  },
+  {
+   "id": "sn-fe-c-error-pages",
+   "claim": "404/50x static files do not exist yet",
+   "source": "songnodes/design-system/13-page-patterns.md:136",
+   "outcome": "confirmed",
+   "finding": "no error_page in the frontend default.conf; SPA 404 route handles unknown paths",
+   "evidence": [
+    "songnodes/frontend/Dockerfile:28-102",
+    "songnodes/frontend/src/pages/ModulePages.tsx:55"
+   ]
+  },
+  {
+   "id": "sn-fe-c-db1-fallback",
+   "claim": "loadLibrary falls back to /data/music-library.json only when the API fails",
+   "source": "songnodes/plan/agents/DB1_one_track_source.md:23",
+   "outcome": "refuted",
+   "finding": "no fallback in data.ts and frontend/public has no data/ folder; failure surfaces as an error",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/data.ts:107-135"
+   ]
+  },
+  {
+   "id": "sn-fe-c-stages-poll",
+   "claim": "Scrape stage cards poll every 5 s while the tab is visible, at most 5 cards",
+   "source": "songnodes/STATUS.md:2161",
+   "outcome": "confirmed",
+   "finding": "STAGES_POLL_MS = 5000; slice(0, 5) on watched runs",
+   "evidence": [
+    "songnodes/frontend/src/features/pipeline/ScrapeJobStages.tsx:10,45",
+    "songnodes/frontend/src/pages/ScraperProgressPage.tsx:33-36"
+   ]
+  },
+  {
+   "id": "sn-fe-c-gv2-next",
+   "claim": "GV2 next: load the neighbourhood from the API (GV3) instead of the whole graph",
+   "source": "songnodes/STATUS.md:2505",
+   "outcome": "confirmed",
+   "finding": "useDataLoader still fetches /api/graph/data?limit=10000 with no view param (queued)",
+   "evidence": [
+    "songnodes/frontend/src/hooks/useDataLoader.ts:28"
+   ]
+  },
+  {
+   "id": "sn-fe-c-body-limit",
+   "claim": "frontend nginx 1 MB default body limit is a follow-up",
+   "source": "songnodes/STATUS.md:1899",
+   "outcome": "confirmed",
+   "finding": "no client_max_body_size in frontend default.conf while FileDrop allows 50 MB",
+   "evidence": [
+    "songnodes/frontend/Dockerfile:28-102",
+    "songnodes/frontend/src/features/musicLibrary/components/LibraryImportDialog.tsx:24"
+   ]
+  },
+  {
+   "id": "sn-fe-c-ui9-debug",
+   "claim": "debug console.log calls in GraphVisualization and useTokenRefresh stay out of production",
+   "source": "songnodes/STATUS.md (UI9 slot)",
+   "outcome": "corrected",
+   "finding": "true for those two files, but OAuthCallback still console.logs code/state prefixes and storage keys in production",
+   "evidence": [
+    "songnodes/frontend/src/lib/debugLog.ts",
+    "songnodes/frontend/src/components/OAuthCallback.tsx:170-172,230"
+   ]
+  },
+  {
+   "id": "sn-fe-c-banner-day",
+   "claim": "Banner dismissal should also end at the next Melbourne day (DR-051)",
+   "source": "songnodes/STATUS.md:2236",
+   "outcome": "confirmed",
+   "finding": "bannerKey stores only the count; follow-up still queued",
+   "evidence": [
+    "songnodes/frontend/src/features/musicLibrary/storage.ts:29-30"
+   ]
+  }
+ ]
+}

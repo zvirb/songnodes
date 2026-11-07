@@ -10,7 +10,7 @@ CHECKS=[ # (rule-hint, id, regex, applies-to extension tuple, message)
  ('LAY','LAY-Z',r'z-index:\s*\d+',('.css','.html'),'raw z-index'),
  ('MOT','MOT-DUR',r'(?:transition|animation)[^;{]*\b\d+(?:ms|s)\b',('.css','.html'),'raw duration'),
  ('FBK','FBK-DLG',r'\b(?:alert|confirm|prompt)\s*\(',('.js','.html'),'browser dialog'),
- ('WRT','WRT-EMO',r'[\U0001F300-\U0001FAFF☀-➿]',('.html','.js','.css','.md'),'emoji'),
+ ('WRT','WRT-EMO',r'[\U0001F300-\U0001FAFF☀-✔✖-➿]',('.html','.js','.css','.md'),'emoji'),
  ('WRT','WRT-BANG',r'>[^<>]*\w!(?:\s|<)',('.html',),'exclamation mark in copy'),
  ('WRT','WRT-DATE',r'toLocale(?:Date|Time)String',('.js','.html'),'locale date formatting instead of SongNodes.format'),
  ('A11Y','A11Y-OUTLINE',r'outline:\s*(?:none|0)\b',('.css','.html'),'focus outline removed'),
@@ -22,7 +22,8 @@ CHECKS=[ # (rule-hint, id, regex, applies-to extension tuple, message)
  ('MOT','MOT-AUTOPLAY',r'\bautoplay\b',('.html',),'autoplay media'),
  ('NAV','NAV-HASHLINK',r'href="#"',('.html',),'dead link href="#"'),
  ('WRT','WRT-CAPS',r'>[^<>a-z]{6,}[A-Z]{3,}[^<>a-z]*<',('.html',),'ALL CAPS copy'),
- ('DATA','DATA-NULL',r'>\s*(?:N/A|null|undefined|NaN)\s*<',('.html',),'raw missing-value text; use "–"'),
+ ('DATA','DATA-NULL',r'>\s*(?:N/A|null|undefined|NaN|Unknown(?:\s+[^<>]*)?)\s*<',('.html',),'raw missing-value text; use "–"'),
+ ('WRT','WRT-CASE',r'(?:(?:<button\b|role=["\']tab["\']|class=["\'][^"\']*\bsn-tab\b)[^>]*>(?:<[^>]+>|\s)*|\b(?:label|title):\s*[\'"])[A-Z][a-z]+(?:\s+(?!(?:Spotify|Beatport|TIDAL|Rekordbox|Apple|MusicBrainz|Discogs|Deezer|SoundCloud|YouTube|Google|Camelot|SongNodes)\b)[A-Z][a-z]+)+(?:\s*(?:<[^>]+>|\s)*</(?:button|a|div|span)>|[\'"])',('.html',),'button or tab label in Title Case; use sentence case'),
 ]
 def lint(path):
     t=open(path,encoding='utf-8',errors='ignore').read(); ext=os.path.splitext(path)[1]; out=[]

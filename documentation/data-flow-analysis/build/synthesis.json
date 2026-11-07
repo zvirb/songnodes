@@ -1,0 +1,1788 @@
+{
+ "meta": {
+  "title": "Data flow and page interaction",
+  "builder": "Claude (Opus 5.5) for Markus, session 01NvWNfTGjhUeGYwDZx2H948",
+  "songnodes_commit": "7429821ca1c0d2e7f81b51c3d6b79b4bcce1e8cb",
+  "branch": "docs/data-flow-investigation",
+  "ml_snapshot": "7 Nov 2026",
+  "reading": "Read as: one estate of two projects. songnodes (git, main @7429821) is the source of truth for SongNodes; E:\\musicLibrary (no git) is read from a snapshot taken 7 Nov 2026 without its 58 GB data folder. Queued = open PRs #576–#580, musicLibrary plan/jules_payloads and unmerged briefs.",
+  "kpi_spec": [
+   [
+    "pages",
+    "Pages and entry points",
+    null
+   ],
+   [
+    "flows",
+    "Numbered data flows",
+    null
+   ],
+   [
+    "gaps",
+    "Critical data gaps",
+    [
+     "warn",
+     "Fix first"
+    ]
+   ],
+   [
+    "personas",
+    "Personas",
+    null
+   ],
+   [
+    "stores",
+    "Stores and external systems",
+    null
+   ],
+   [
+    "signals",
+    "Signals extracted",
+    null
+   ],
+   [
+    "violations",
+    "Standing-rule violations",
+    [
+     "bad",
+     "To fix"
+    ]
+   ],
+   [
+    "refuted",
+    "Doc claims corrected or refuted",
+    [
+     "warn",
+     "Review"
+    ]
+   ],
+   [
+    "queued",
+    "Queued items",
+    null
+   ],
+   [
+    "tasks",
+    "Sister-project tasks",
+    null
+   ]
+  ],
+  "profile": [
+   [
+    "Scope",
+    "songnodes (E:\\songnodes = github zvirb/songnodes main) and musicLibrary (E:\\musicLibrary). Sub-projects scanned: songnodes frontend, services, scrapers, design-system; musicLibrary pipeline, artifact, ref_mb, plan."
+   ],
+   [
+    "Page source of truth",
+    "songnodes source tree on main @7429821 (no built bundle is kept in the repo); musicLibrary artifact/build/index.html is the live page, artifact/index.html is the legacy page (agent ml, M3 render)."
+   ],
+   [
+    "Queued work",
+    "Open PRs #576–#580 (Duo 2FA, Cloudflare tunnel, login page, Sentinel sanitisation); musicLibrary plan/jules_payloads (30) and the unmerged WP7 brief."
+   ],
+   [
+    "Baseline report",
+    "PR #581 (ARCH1, opened 7 Nov 2026 09:23 by a parallel run on branch docs/data-flow-investigation): its numbers and gate claims are re-verified in the register (area baseline-581) and every topic it covers is kept; this report is merged into that branch. The register also re-checks the repos' own documentation."
+   ],
+   [
+    "Standing rules",
+    "R1–R8 from songnodes CLAUDE.md §2–§4 and AGENTS.md rule 12 (listed in section 3)."
+   ],
+   [
+    "Retired or excluded",
+    "deploy/ and k8s/ (kept but unused, CLAUDE.md §1); musicLibrary _to_delete/ and data/ (data/ listed only)."
+   ],
+   [
+    "Locale",
+    "en-AU, A4, Australia/Melbourne 24-hour time (design system 01-writing)."
+   ],
+   [
+    "Personas",
+    "Inferred from pages and docs; merged across the three scans into one set (section 6)."
+   ],
+   [
+    "Design system",
+    "SongNodes design system, artifact 7f37707d and repo mirror songnodes/design-system, 1.9.1 raised to 1.10.0 by this investigation."
+   ]
+  ],
+  "preflight": [
+   [
+    "songnodes git",
+    "main @7429821, clean except untracked docs/DEPLOYMENT_E2E_STATUS_2026_11_06.md on the laptop; push via the session's GitHub app (REST only, GraphQL blocked)"
+   ],
+   [
+    "musicLibrary git",
+    "Not a git repository: files only, no commits or PRs possible"
+   ],
+   [
+    "Tools",
+    "node 22.23, python 3.13, graphviz dot 2.43, Chromium 153 (Playwright), poppler 24.02 (pdftoppm, pdffonts, pdftotext), pypdf 6.17; missing: PyMuPDF (not needed)"
+   ],
+   [
+    "Laptop shell",
+    "tuf-boi Linux VM over the bridge: deletes blocked, no gh; used for the musicLibrary snapshot only"
+   ],
+   [
+    "Existing reports",
+    "None of this kind. Related: songnodes docs/DATA_LAYER.md, STATUS.md, plan/RESTRUCTURE.md; musicLibrary README.md, docs/mb/*"
+   ]
+  ]
+ },
+ "summary": {
+  "holds": [
+   "songnodes is Git-first with one integration branch, a scope guard and design-system CI; the frontend copy of the design system is in sync and its checkers report zero findings.",
+   "The scraping core is one unified-scraper container with complete-playlist rules, idempotency keys on ingest jobs and FOR UPDATE SKIP LOCKED job claiming.",
+   "musicLibrary's weekly run is a clear eight-step file pipeline with an append-only ledger, a resumable resolve step and a full SQLite rebuild every run.",
+   "Both projects already share one design system, one TIDAL developer app and one saved-set idea, so the join points are few and nameable."
+  ],
+  "strains": [
+   "Contracts between the two projects have drifted: the documented sync script and file do not exist, and the two Set Builders no longer share a saved-set shape.",
+   "The medallion model in CLAUDE.md is not what runs: the scraper writes silver directly and no gold or operational job runs in compose.",
+   "Feedback loops are missing: play history, overrides and proven transitions never flow back into curation or set building, and no track has a BPM or key yet.",
+   "Security posture is not ready for the queued tunnel: write and admin routes are open and the queued login falls back to a default account."
+  ],
+  "loop": "The estate serves one loop: radio plays and DJ tracklists come in, become a curated club library, feed set building and the graph of proven transitions, play out in TIDAL and Rekordbox, and should come back as play history and corrections. Today the loop is open at the last step."
+ },
+ "domain_order": [
+  "ingest",
+  "library",
+  "graph",
+  "paths",
+  "harmony",
+  "sets",
+  "services",
+  "ops",
+  "design"
+ ],
+ "colour_map": {
+  "ingest": "chart-1",
+  "library": "chart-2",
+  "graph": "chart-3",
+  "sets": "chart-4",
+  "paths": "chart-5",
+  "harmony": "chart-6",
+  "services": "chart-7",
+  "ops": "chart-8",
+  "design": "chart-8"
+ },
+ "standing_rules": [
+  {
+   "id": "R1",
+   "text": "The NavDrawer is the only site navigation.",
+   "source": "songnodes/CLAUDE.md §4 Rules: Interaction"
+  },
+  {
+   "id": "R2",
+   "text": "One primary button per view.",
+   "source": "songnodes/CLAUDE.md §4 Rules: Interaction"
+  },
+  {
+   "id": "R3",
+   "text": "Never alert, confirm or prompt; use ConfirmDialog and Toast.",
+   "source": "songnodes/CLAUDE.md §4 Rules: Interaction"
+  },
+  {
+   "id": "R4",
+   "text": "Tokens and sn-* classes only: no hex, rgb, named colours, px font sizes, ad-hoc radii, shadows or z-index numbers.",
+   "source": "songnodes/CLAUDE.md §4 Rules: Colour and values"
+  },
+  {
+   "id": "R5",
+   "text": "No emoji in the interface; en-AU sentence case; missing values are an en dash.",
+   "source": "songnodes/CLAUDE.md §4 Rules: Writing"
+  },
+  {
+   "id": "R6",
+   "text": "Pages register their route (G2) and REST routers register themselves (G3); do not wire App.tsx or main.py.",
+   "source": "songnodes/AGENTS.md rule 12"
+  },
+  {
+   "id": "R7",
+   "text": "unified-scraper is the only scraper container.",
+   "source": "songnodes/CLAUDE.md Critical requirement 3"
+  },
+  {
+   "id": "R8",
+   "text": "Valid artists on both endpoints of every transition; no NULL or Unknown Artist in the graph.",
+   "source": "songnodes/CLAUDE.md Critical requirement 1"
+  }
+ ],
+ "persona_merge": [
+  {
+   "id": "P1",
+   "name": "DJ performing",
+   "short": "DJ",
+   "domain": "graph",
+   "from": [
+    "sn-fe-persona-dj"
+   ],
+   "objective": "Pick the next track from proven transitions while a set is playing."
+  },
+  {
+   "id": "P2",
+   "name": "Set planner",
+   "short": "Set planner",
+   "domain": "sets",
+   "from": [
+    "ml-persona-set-planner",
+    "sn-fe-persona-planner"
+   ],
+   "objective": "Shape a wave-shaped set from the crate, check every transition and send it to TIDAL."
+  },
+  {
+   "id": "P3",
+   "name": "Library curator",
+   "short": "Curator",
+   "domain": "library",
+   "from": [
+    "ml-persona-curator",
+    "sn-fe-persona-curator"
+   ],
+   "objective": "Keep the crates right each week: review, buy, override and import."
+  },
+  {
+   "id": "P4",
+   "name": "Pipeline operator",
+   "short": "Operator",
+   "domain": "ops",
+   "from": [
+    "sn-be-persona-operator",
+    "sn-fe-persona-operator"
+   ],
+   "objective": "Keep the stack, scrapers and imports healthy."
+  },
+  {
+   "id": "P5",
+   "name": "Developer",
+   "short": "Developer",
+   "domain": "design",
+   "from": [
+    "sn-be-persona-developer",
+    "sn-fe-persona-developer",
+    "ml-persona-developer"
+   ],
+   "objective": "Ship one-job packages through PRs without breaking contracts or the design system."
+  },
+  {
+   "id": "P6",
+   "name": "Scraper (system actor)",
+   "short": "Scraper",
+   "domain": "ingest",
+   "from": [
+    "sn-be-persona-scraper"
+   ],
+   "objective": "Find complete playlists containing target tracks and persist them to bronze."
+  },
+  {
+   "id": "P7",
+   "name": "Weekly-run agent (system actor)",
+   "short": "Weekly run",
+   "domain": "library",
+   "from": [
+    "ml-persona-weekly-agent"
+   ],
+   "objective": "Run scrape to republish every week without a person present."
+  },
+  {
+   "id": "P8",
+   "name": "Beatport sync (assisted)",
+   "short": "Beatport",
+   "domain": "services",
+   "from": [
+    "ml-persona-beatport"
+   ],
+   "objective": "Check Beatport for tracks to buy, with Markus at the laptop."
+  }
+ ],
+ "loop": [
+  {
+   "name": "Demand ingestion",
+   "mapping": "Radio plays, charts and DJ tracklists come in",
+   "domain": "ingest",
+   "systems": "ml scrape and ingest; songnodes unified-scraper, target tracks"
+  },
+  {
+   "name": "Scheduling",
+   "mapping": "Resolve, score and rotate into crates",
+   "domain": "library",
+   "systems": "ml resolve, process, ledger; songnodes library ingest"
+  },
+  {
+   "name": "Planning",
+   "mapping": "Shape sets and find paths on proven transitions",
+   "domain": "sets",
+   "systems": "Set builder (songnodes /sets and artifact), Pathfinder, Graph"
+  },
+  {
+   "name": "Floor execution",
+   "mapping": "Play out from TIDAL playlists and Rekordbox",
+   "domain": "services",
+   "systems": "sync-tidal, sync-sets, rekordbox XML"
+  },
+  {
+   "name": "Telemetry and audit",
+   "mapping": "Weekly report, run history, pipeline health",
+   "domain": "ops",
+   "systems": "weekly_report.md, runs table, Pipeline page"
+  },
+  {
+   "name": "Reconciliation",
+   "mapping": "Play history and corrections back into the library",
+   "domain": "library",
+   "systems": "overrides CSV, calibrate.py, rekordbox_collection.xml",
+   "gap": true
+  }
+ ],
+ "modules": [
+  {
+   "id": "M1",
+   "name": "Set exchange",
+   "users": "Set planner, weekly-run agent",
+   "verb": "Convert",
+   "inputs": "songnodes saved sets (/api/v1/library/sets/export), artifact sets (artifact db `sets`)",
+   "operation": "Reads either saved-set shape and writes one versioned `songnodes.saved-set/2` document (name, shape, minutes, tracks[{isrc, tidal_id, ledger_id, tgt}], tidal) to musicLibrary inbox/artifact_sets.json, rejecting rows it cannot map.",
+   "loc": "about 250 lines (Estimate)",
+   "path": "musicLibrary/pipeline/djlib/set_exchange.py (new)"
+  },
+  {
+   "id": "M2",
+   "name": "Play-history import",
+   "users": "Library curator",
+   "verb": "Import",
+   "inputs": "Rekordbox / Lexicon collection XML, play counts and dates",
+   "operation": "Matches plays to ledger tracks by local_path then ISRC, appends `play` events to the ledger and writes rotation evidence that calibrate.py reads.",
+   "loc": "about 300 lines (Estimate)",
+   "path": "musicLibrary/pipeline/djlib/play_history.py"
+  },
+  {
+   "id": "M3",
+   "name": "Transition feed",
+   "users": "Set planner, DJ",
+   "verb": "Export",
+   "inputs": "songnodes silver_track_transitions (occurrence_count) joined to library tracks",
+   "operation": "Publishes `songnodes.transitions/1` (pairs of ISRCs with counts) beside library.json so both Set Builders can rank spares by proven pairings.",
+   "loc": "about 200 lines (Estimate)",
+   "path": "songnodes/services/rest_api/routers/transitions_export.py"
+  },
+  {
+   "id": "M4",
+   "name": "Contract check",
+   "users": "Developer, pipeline operator",
+   "verb": "Verify",
+   "inputs": "contracts/*.schema.json, the newest musicLibrary outputs, the songnodes ingest fixture",
+   "operation": "Validates every cross-project file and request body against its schema in CI and in the weekly run, and fails with the field that broke.",
+   "loc": "about 180 lines (Estimate)",
+   "path": "songnodes/scripts/check_contracts.py"
+  },
+  {
+   "id": "M5",
+   "name": "Run monitor",
+   "users": "Pipeline operator, library curator",
+   "verb": "Alert",
+   "inputs": "musicLibrary runs table and scrape_log; songnodes ingestion_jobs and web_call_log",
+   "operation": "Compares each run's resolve yield, source counts and job failures with the last four runs and raises one Banner-shaped warning with a source link when a figure drops by half.",
+   "loc": "about 220 lines (Estimate)",
+   "path": "songnodes/frontend/src/features/pipeline/RunMonitor.tsx"
+  }
+ ],
+ "backbone": {
+  "summary": "Keep each project's own data folder and owner. Add one shared contracts folder and one exchange folder with versioned, schema-checked files, so every cross-project hop is a named file or endpoint with one writer.",
+  "tree": "songnodes/\n  contracts/                      # single source of every cross-project schema (exists; extend)\n    library.set.saved.v2.json      # new\n    library_ingest.openapi.yaml    # exists\n    transitions.v1.json            # new\n    setlists.v1.json               # new\n  Postgres (compose volume)       # owner: songnodes services only\n    bronze_* -> silver_* -> (gold_* decided in DFA gap) -> projection_*\nmusicLibrary/\n  ledger/                         # owner: process step (append-only)\n  db/dj_library.sqlite            # rebuilt each run from ledger\n  inbox/                          # inputs written by people or other systems\n  outputs/<date>/                 # run outputs, read by people\n  exchange/                       # NEW: the only files the other project reads or writes\n    library.json                  # musicLibrary -> songnodes (also POST /api/v1/library/ingest)\n    saved-sets.json               # both ways, saved-set/2\n    transitions.json              # songnodes -> musicLibrary, transitions/1\n    setlists/*.json               # tracklists for songnodes import (moved from the root)",
+  "risks": [
+   [
+    "Readers still point at old paths (README, import script, artifact)",
+    "Keep the old paths as copies for one release and log a warning when they are read."
+   ],
+   [
+    "Saved-set/1 documents in the artifact db",
+    "M1 reads both shapes; write only /2; keep /1 readable until no /1 set has been opened for four weeks."
+   ],
+   [
+    "Weekly run writes a file songnodes is reading",
+    "Write to a temporary name and rename; songnodes reads only complete files."
+   ],
+   [
+    "Postgres schema change for gold",
+    "One migration through the migration ledger gap first; never reset the volume (CLAUDE.md)."
+   ]
+  ]
+ },
+ "roadmap": [
+  {
+   "id": "W1",
+   "name": "Close the security gate before any tunnel",
+   "tasks": [
+    "SN-T01",
+    "SN-T02"
+   ],
+   "gate": "PR #577 not merged until W1 passes",
+   "depends": []
+  },
+  {
+   "id": "W2",
+   "name": "Repair the cross-project contracts",
+   "tasks": [
+    "ML-T01",
+    "ML-T02",
+    "SN-T03",
+    "SN-T04"
+   ],
+   "gate": "Contract check (M4) green",
+   "depends": [
+    "W1"
+   ]
+  },
+  {
+   "id": "W3",
+   "name": "Make the data layers honest",
+   "tasks": [
+    "SN-T05",
+    "SN-T06",
+    "SN-T07"
+   ],
+   "gate": "Layer model decided and documented",
+   "depends": [
+    "W2"
+   ]
+  },
+  {
+   "id": "W4",
+   "name": "Close the feedback loop",
+   "tasks": [
+    "ML-T03",
+    "ML-T04",
+    "SN-T08",
+    "ML-T05"
+   ],
+   "gate": "Play history visible in calibrate.py output",
+   "depends": [
+    "W2"
+   ]
+  },
+  {
+   "id": "W5",
+   "name": "Observability and clean-up",
+   "tasks": [
+    "SN-T09",
+    "ML-T06",
+    "DS-T01"
+   ],
+   "gate": "Run monitor raises a test warning",
+   "depends": [
+    "W3",
+    "W4"
+   ]
+  },
+  {
+   "id": "W6",
+   "name": "User experience: pages and design-system rules",
+   "tasks": [
+    "UX-T01",
+    "UX-T02",
+    "UX-T03",
+    "UX-T04",
+    "UX-T05",
+    "UX-T06",
+    "UX-T07",
+    "UX-T08",
+    "UX-T09",
+    "UX-T10",
+    "UX-T11",
+    "UX-T12",
+    "SN-T10"
+   ],
+   "gate": "Each new page passes the design-system linter and the conformance screenshots beside the HomePage preview",
+   "depends": [
+    "W2",
+    "W4"
+   ]
+  }
+ ],
+ "queued": [
+  {
+   "id": "PR-576",
+   "title": "DUOAUTH: Cisco Duo 2FA and Cloudflare Tunnel architecture guide",
+   "source": "github zvirb/songnodes#576",
+   "effect": "Docs only",
+   "touches": [
+    "docs"
+   ],
+   "state": "queued"
+  },
+  {
+   "id": "PR-577",
+   "title": "DUO3: Cloudflare Tunnel connector integration",
+   "source": "github zvirb/songnodes#577",
+   "effect": "Publishes the stack through a public tunnel",
+   "touches": [
+    "compose.dev.yaml",
+    "sn-be-q-cloudflared"
+   ],
+   "state": "queued"
+  },
+  {
+   "id": "PR-578",
+   "title": "DUO1: Cisco Duo Web SDK v4 auth router",
+   "source": "github zvirb/songnodes#578",
+   "effect": "Adds /api/v1/auth routes with a default admin login fallback",
+   "touches": [
+    "sn-be-q-user-auth-router"
+   ],
+   "state": "queued"
+  },
+  {
+   "id": "PR-579",
+   "title": "DUO2: Frontend login page and auth context",
+   "source": "github zvirb/songnodes#579",
+   "effect": "Adds /login",
+   "touches": [
+    "sn-fe-login"
+   ],
+   "state": "queued"
+  },
+  {
+   "id": "PR-580",
+   "title": "Sentinel: sanitise REST API main exception details",
+   "source": "github zvirb/songnodes#580",
+   "effect": "Sanitises errors, partly on unreachable routes",
+   "touches": [
+    "sn-be-svc-rest-api"
+   ],
+   "state": "queued"
+  }
+ ],
+ "tasks": [
+  {
+   "id": "SN-T01",
+   "project": "songnodes",
+   "title": "Require the API token on write and admin routes",
+   "type": "security",
+   "owned": [
+    "services/rest_api/security/auth.py",
+    "compose.dev.yaml"
+   ],
+   "depends": [],
+   "verify": "curl without token gets 401 on every POST/PUT/DELETE; scripts pass with the token",
+   "gaps": [
+    "sn-be-gap-auth-token-flow"
+   ]
+  },
+  {
+   "id": "SN-T02",
+   "project": "songnodes",
+   "title": "Remove the default admin login from the queued auth router",
+   "type": "security",
+   "owned": [
+    "services/rest_api/routers/user_auth.py (in PR #578)"
+   ],
+   "depends": [
+    "SN-T01"
+   ],
+   "verify": "no login succeeds without a configured user",
+   "gaps": [
+    "sn-be-gap-auth-token-flow"
+   ]
+  },
+  {
+   "id": "SN-T03",
+   "project": "songnodes",
+   "title": "Accept and keep musicLibrary pipeline fields on library ingest",
+   "type": "contract",
+   "owned": [
+    "services/rest_api/routers/library_ingest.py",
+    "contracts/library_ingest.openapi.yaml"
+   ],
+   "depends": [],
+   "verify": "fixture round-trip keeps energy, rotation, pillar and ISRC",
+   "gaps": [
+    "ml-gap-songnodes-field-loss",
+    "sn-be-gap-library-ingest-409"
+   ]
+  },
+  {
+   "id": "SN-T04",
+   "project": "songnodes",
+   "title": "Raise the frontend nginx body limit to the ingest limit",
+   "type": "fix",
+   "owned": [
+    "frontend/Dockerfile"
+   ],
+   "depends": [],
+   "verify": "a 5 MB library import returns 202, not 413",
+   "gaps": [
+    "sn-fe-gap-ingest-body-limit"
+   ]
+  },
+  {
+   "id": "SN-T05",
+   "project": "songnodes",
+   "title": "Stop the unified scraper at bronze",
+   "type": "data-integrity",
+   "owned": [
+    "scrapers/pipelines/persistence_pipeline.py"
+   ],
+   "depends": [],
+   "verify": "a scrape writes bronze rows only; ingest creates silver once",
+   "gaps": [
+    "sn-be-gap-scraper-bronze-only"
+   ]
+  },
+  {
+   "id": "SN-T06",
+   "project": "songnodes",
+   "title": "Decide and document the real layer model",
+   "type": "docs",
+   "owned": [
+    "docs/DATA_LAYER.md",
+    "CLAUDE.md"
+   ],
+   "depends": [
+    "SN-T05"
+   ],
+   "verify": "docs and compose name the same jobs",
+   "gaps": [
+    "sn-be-gap-medallion-doc"
+   ]
+  },
+  {
+   "id": "SN-T07",
+   "project": "songnodes",
+   "title": "Let target scrapes bypass the daily discovery quota",
+   "type": "fix",
+   "owned": [
+    "scrapers/spiders/1001tracklists_spider.py"
+   ],
+   "depends": [],
+   "verify": "two target scrapes in an hour both run",
+   "gaps": [
+    "sn-be-gap-target-scrape-quota"
+   ]
+  },
+  {
+   "id": "SN-T08",
+   "project": "songnodes",
+   "title": "Publish the transition feed (M3)",
+   "type": "module",
+   "owned": [
+    "services/rest_api/routers/transitions_export.py (new)",
+    "contracts/transitions.v1.json (new)"
+   ],
+   "depends": [
+    "SN-T03"
+   ],
+   "verify": "GET returns transitions/1 for library ISRCs",
+   "gaps": [
+    "ml-gap-transitions-not-used"
+   ]
+  },
+  {
+   "id": "SN-T09",
+   "project": "songnodes",
+   "title": "Fix the OAuth token hand-off and remove dead scraper calls",
+   "type": "fix",
+   "owned": [
+    "frontend/src/components/OAuthCallback.tsx",
+    "frontend/src/pages/SettingsPage.tsx",
+    "frontend/src/pages/GraphPage.tsx"
+   ],
+   "depends": [
+    "SN-T01"
+   ],
+   "verify": "Send to TIDAL finds a token after a fresh login; no 404 in the graph page network log",
+   "gaps": [
+    "sn-fe-gap-oauth-session-tokens",
+    "sn-fe-gap-scrapers-endpoints",
+    "sn-be-gap-frontend-dead-routes"
+   ]
+  },
+  {
+   "id": "ML-T01",
+   "project": "musicLibrary",
+   "title": "Correct the README songnodes contract",
+   "type": "docs",
+   "owned": [
+    "README.md"
+   ],
+   "depends": [],
+   "verify": "every path in the README exists",
+   "gaps": [
+    "ml-gap-sync-script-missing"
+   ]
+  },
+  {
+   "id": "ML-T02",
+   "project": "musicLibrary",
+   "title": "Build the set exchange (M1)",
+   "type": "module",
+   "owned": [
+    "pipeline/djlib/set_exchange.py (new)",
+    "pipeline/run_weekly.py"
+   ],
+   "depends": [
+    "SN-T03"
+   ],
+   "verify": "a songnodes set reaches TIDAL through sync-sets",
+   "gaps": [
+    "ml-gap-saved-set-shape",
+    "sn-fe-gap-artifact-sets-tidal-flag"
+   ]
+  },
+  {
+   "id": "ML-T03",
+   "project": "musicLibrary",
+   "title": "Merge Deezer BPM and key onto the chosen version",
+   "type": "data-integrity",
+   "owned": [
+    "pipeline/run_weekly.py",
+    "pipeline/djlib/deezer.py"
+   ],
+   "depends": [],
+   "verify": "more than 0 tracks have BPM and key after one run",
+   "gaps": [
+    "ml-gap-deezer-bpm-not-merged"
+   ]
+  },
+  {
+   "id": "ML-T04",
+   "project": "musicLibrary",
+   "title": "Build the play-history import (M2)",
+   "type": "module",
+   "owned": [
+    "pipeline/djlib/play_history.py (new)"
+   ],
+   "depends": [],
+   "verify": "calibrate.py reports rotation timings from plays",
+   "gaps": [
+    "ml-gap-rekordbox-feedback"
+   ]
+  },
+  {
+   "id": "ML-T05",
+   "project": "musicLibrary",
+   "title": "Move setlist files into exchange/ and import them",
+   "type": "contract",
+   "owned": [
+    "exchange/setlists/ (new)",
+    "pipeline/run_weekly.py"
+   ],
+   "depends": [
+    "SN-T03"
+   ],
+   "verify": "JohnCourse and kiki appear as songnodes setlists",
+   "gaps": [
+    "ml-gap-setlists-orphan"
+   ]
+  },
+  {
+   "id": "ML-T06",
+   "project": "musicLibrary",
+   "title": "Warn on resolve yield drops and retry rejected pending",
+   "type": "observability",
+   "owned": [
+    "pipeline/run_weekly.py",
+    "pipeline/djlib/export.py"
+   ],
+   "depends": [],
+   "verify": "a run with half the usual yield writes a warning",
+   "gaps": [
+    "ml-gap-written-never-read"
+   ]
+  },
+  {
+   "id": "DS-T01",
+   "project": "design-system",
+   "title": "Publish 1.10.0 to the design-system artifact",
+   "type": "design-system",
+   "owned": [
+    "design-system artifact 7f37707d"
+   ],
+   "depends": [],
+   "verify": "artifact tokens.json version is 1.10.0",
+   "gaps": []
+  },
+  {
+   "id": "UX-T01",
+   "project": "songnodes",
+   "title": "Build the Review queue page (UX-01)",
+   "type": "ux-page",
+   "owned": [
+    "frontend/src/features/musicLibrary/ReviewQueuePage.tsx (new)",
+    "frontend/src/features/musicLibrary/route.tsx",
+    "services/rest_api/routers/library_overrides.py (new)"
+   ],
+   "depends": [
+    "UX-T09",
+    "SN-T03"
+   ],
+   "verify": "see UX-01",
+   "gaps": [
+    "ml-gap-written-never-read"
+   ]
+  },
+  {
+   "id": "UX-T02",
+   "project": "songnodes",
+   "title": "Build the Track detail page (UX-02)",
+   "type": "ux-page",
+   "owned": [
+    "frontend/src/features/trackDetail/ (new)",
+    "frontend/src/components/TrackDetailsModal.tsx"
+   ],
+   "depends": [
+    "SN-T08"
+   ],
+   "verify": "see UX-02",
+   "gaps": [
+    "ml-gap-transitions-not-used"
+   ]
+  },
+  {
+   "id": "UX-T03",
+   "project": "songnodes",
+   "title": "Pipeline health page and run history (UX-03)",
+   "type": "ux-page",
+   "owned": [
+    "frontend/src/pages/ScraperProgressPage.tsx",
+    "frontend/src/features/pipeline/RunsPage.tsx (new)",
+    "frontend/src/features/pipeline/RunMonitor.tsx (new, M5)"
+   ],
+   "depends": [
+    "ML-T06"
+   ],
+   "verify": "see UX-03",
+   "gaps": [
+    "sn-be-gap-backups"
+   ]
+  },
+  {
+   "id": "UX-T04",
+   "project": "songnodes",
+   "title": "Build the Buy list page (UX-04)",
+   "type": "ux-page",
+   "owned": [
+    "frontend/src/features/musicLibrary/BuyListPage.tsx (new)",
+    "frontend/src/features/musicLibrary/route.tsx"
+   ],
+   "depends": [
+    "UX-T09",
+    "ML-T04"
+   ],
+   "verify": "see UX-04",
+   "gaps": [
+    "ml-gap-rekordbox-feedback"
+   ]
+  },
+  {
+   "id": "UX-T05",
+   "project": "musicLibrary",
+   "title": "Retire the artifact Set Builder behind /sets (UX-05)",
+   "type": "ux-page",
+   "owned": [
+    "artifact/index.html",
+    "artifact/build/index.html",
+    "README.md"
+   ],
+   "depends": [
+    "ML-T02"
+   ],
+   "verify": "see UX-05",
+   "gaps": [
+    "ml-gap-saved-set-shape"
+   ]
+  },
+  {
+   "id": "UX-T06",
+   "project": "songnodes",
+   "title": "Rebuild the work-queue tracker on the design system (UX-06)",
+   "type": "ux-page",
+   "owned": [
+    "plan/work-queue-2026-10-30/tracker.html"
+   ],
+   "depends": [],
+   "verify": "see UX-06",
+   "gaps": []
+  },
+  {
+   "id": "UX-T07",
+   "project": "design-system",
+   "title": "Rule: one primary when the empty state carries it (UX-07)",
+   "type": "design-system",
+   "owned": [
+    "design-system/06-interaction-accessibility.md",
+    "design-system/rules/rules.yaml",
+    "scripts/check_design_system.py",
+    "design-system/17-governance.md"
+   ],
+   "depends": [],
+   "verify": "see UX-07",
+   "gaps": []
+  },
+  {
+   "id": "UX-T08",
+   "project": "design-system",
+   "title": "Linter: Unknown values and Title Case labels (UX-08)",
+   "type": "design-system",
+   "owned": [
+    "design-system/linters/check.py",
+    "design-system/rules/rules.yaml"
+   ],
+   "depends": [],
+   "verify": "see UX-08",
+   "gaps": []
+  },
+  {
+   "id": "UX-T09",
+   "project": "design-system",
+   "title": "DataTable editable cell (UX-09)",
+   "type": "design-system",
+   "owned": [
+    "design-system/components/DataTable/README.md",
+    "design-system/components/DataTable/preview.html",
+    "design-system/source/css/30-data.css",
+    "design-system/source/bundle.src.js",
+    "design-system/17-governance.md"
+   ],
+   "depends": [],
+   "verify": "see UX-09",
+   "gaps": []
+  },
+  {
+   "id": "UX-T10",
+   "project": "design-system",
+   "title": "Freshness stamp required on data pages (UX-10)",
+   "type": "design-system",
+   "owned": [
+    "design-system/13-page-patterns.md",
+    "design-system/rules/rules.yaml",
+    "scripts/check_design_system.py"
+   ],
+   "depends": [],
+   "verify": "see UX-10",
+   "gaps": [
+    "sn-fe-gap-library-generated"
+   ]
+  },
+  {
+   "id": "UX-T11",
+   "project": "design-system",
+   "title": "ServiceStatus state from a usable token (UX-11)",
+   "type": "design-system",
+   "owned": [
+    "design-system/components/ServiceStatus/README.md",
+    "design-system/components/AuthCallbackPage/README.md",
+    "design-system/components/SettingsPage/README.md"
+   ],
+   "depends": [
+    "SN-T09"
+   ],
+   "verify": "see UX-11",
+   "gaps": [
+    "sn-fe-gap-oauth-session-tokens"
+   ]
+  },
+  {
+   "id": "UX-T12",
+   "project": "design-system",
+   "title": "Close Q-PRINT-1 and publish 1.10.0 (UX-12)",
+   "type": "design-system",
+   "owned": [
+    "design-system/source/css/61-pages-b.css",
+    "design-system/15-print-export.md",
+    "design-system/17-governance.md",
+    "design-system artifact 7f37707d"
+   ],
+   "depends": [
+    "DS-T01"
+   ],
+   "verify": "see UX-12",
+   "gaps": []
+  },
+  {
+   "id": "SN-T10",
+   "project": "songnodes",
+   "title": "IndexedDB last-good-data cache per 16 platform",
+   "type": "fix",
+   "owned": [
+    "frontend/src/hooks/useDataLoader.ts",
+    "frontend/src/lib/lastGood.ts (new)"
+   ],
+   "depends": [],
+   "verify": "with the API down, /library shows the last data with a stale stamp instead of an error",
+   "gaps": [
+    "sn-fe-gap-indexeddb-cache"
+   ]
+  }
+ ],
+ "assumptions": [
+  "The laptop copy of songnodes equals origin/main @7429821 (git status showed only one untracked doc).",
+  "musicLibrary data/ (58 GB) holds raw dumps and caches; it was listed, not read.",
+  "Effort sizes (S, M, L) are Estimates from evidence spread against the AGENTS.md package budget.",
+  "Gap severity is the highest severity of debt sharing evidence with the gap, otherwise medium (Estimate).",
+  "Open decision: keep a gold layer or document silver-plus-projection as the model (SN-T06).",
+  "Open decision: which Set Builder is primary once both read the same saved-set shape."
+ ],
+ "handover": {
+  "items": [
+   [
+    "Branch",
+    "docs/data-flow-investigation"
+   ]
+  ],
+  "gates": [],
+  "next": []
+ },
+ "ux_proposals": [
+  {
+   "id": "UX-01",
+   "kind": "page",
+   "title": "Review queue",
+   "module": "library",
+   "route": "/library/review",
+   "pattern": "LogPage (filter chips, selectable DataTable with bulk actions, entry panel) with inline NumberField and SelectField cells",
+   "personas": [
+    "P3",
+    "P7"
+   ],
+   "problem": "The curator's weekly review is a CSV round trip: review_queue.csv lists all 413 tracks because none has a BPM, its override column is read by no code, and rows must be copied by hand into overrides/energy_overrides.csv with different columns. 0 overrides exist after four runs.",
+   "proposal": "A page that lists tracks needing a check (energy estimate, missing key or BPM, duplicate), lets the curator set energy, pillar, rotation and local_path in the row, and writes the override through the library API; the weekly run reads overrides from the API instead of the CSV. NavDrawer badge on Library shows the queue size; a warn Banner on /library links to it (every warning says where to fix it).",
+   "evidence": [
+    "P3 failure modes",
+    "ml-gap-written-never-read",
+    "ml-gap-deezer-bpm-not-merged",
+    "musicLibrary/pipeline/run_weekly.py",
+    "songnodes/design-system/components/LogPage/README.md"
+   ],
+   "rules": [
+    "R1",
+    "R2",
+    "R5",
+    "design-system 07 warnings link to their source"
+   ],
+   "effort": "L",
+   "task": "UX-T01",
+   "verify": "Set energy on one queued track in the page; the next weekly run's ledger shows the override and the review queue shrinks by one."
+  },
+  {
+   "id": "UX-02",
+   "kind": "page",
+   "title": "Track detail",
+   "module": "library",
+   "route": "/tracks/:id",
+   "pattern": "TrackDetailPage (KeyValueGrid, KeyBadge with key name, BpmReadout, EnergyBar, SourceBadge, Tabs: overview, plays, transitions)",
+   "personas": [
+    "P1",
+    "P2",
+    "P3"
+   ],
+   "problem": "Track detail is a modal (TrackDetailsModal) opened from the graph; the design system specifies a page, and nothing links a track to where it was heard, its proven transitions and its IDs in one place. The DJ's third step (key and mood) and the planner's spare suggestions have no fallback once the modal closes.",
+   "proposal": "Build the TrackDetailPage route; TrackCell titles in the crate, running order, graph side panel and review queue link to it; the transitions tab reads the transition feed (module M3) so the two projects share one view of a track.",
+   "evidence": [
+    "songnodes/frontend/src/components/TrackDetailsModal.tsx",
+    "songnodes/design-system/components/TrackDetailPage/README.md",
+    "P1 step 3 (fallback none)",
+    "ml-gap-transitions-not-used"
+   ],
+   "rules": [
+    "R1",
+    "R6"
+   ],
+   "effort": "M",
+   "task": "UX-T02",
+   "verify": "Open a track from /library and from the graph; both land on /tracks/:id with key, BPM, energy, sources and transitions filled or shown as en dashes."
+  },
+  {
+   "id": "UX-03",
+   "kind": "page",
+   "title": "Pipeline health",
+   "module": "pipeline",
+   "route": "/pipeline (health) and /pipeline/runs (run history)",
+   "pattern": "MonitoringPage (one Banner, ConnectionStatus, four FigureTiles, ServiceStatus list with only problems expanded) plus a LogPage for run history with StagedProgress per run",
+   "personas": [
+    "P4",
+    "P7"
+   ],
+   "problem": "The existing /pipeline is a telemetry page (queue a scrape, recent runs); nothing answers 'is anything broken'. The resolve yield fell from 614 of 777 to 6 of 81 with no alert, the weekly schedule drifted off Sunday 07:37, songnodes ingest failures are printed as a note, and the backup scripts back up nothing.",
+   "proposal": "Replace the telemetry page's head with the MonitoringPage pattern: a single Banner that names the worst current condition with a source link, FigureTiles for last run, resolve yield, review queue and last backup, and a run history page fed by module M5 (Run monitor). The existing scrape controls move under a 'Queue a scrape' Disclosure.",
+   "evidence": [
+    "songnodes/frontend/src/pages/ScraperProgressPage.tsx:18",
+    "songnodes/design-system/components/MonitoringPage/README.md",
+    "P7 failure modes",
+    "P4 step 6 (backups)",
+    "sn-be-gap-backups"
+   ],
+   "rules": [
+    "R1",
+    "R2",
+    "design-system 07 one Banner per page"
+   ],
+   "effort": "L",
+   "task": "UX-T03",
+   "verify": "With a run whose yield is half the previous four, /pipeline opens on a warn Banner naming the run and linking to /pipeline/runs."
+  },
+  {
+   "id": "UX-04",
+   "kind": "page",
+   "title": "Buy list",
+   "module": "library",
+   "route": "/library/buy",
+   "pattern": "LogPage with FilterChip (store, rotation), DataTable (TrackCell, price and store columns, Beatport check state as StatusPill) and bulk 'Mark bought'",
+   "personas": [
+    "P3",
+    "P8"
+   ],
+   "problem": "Buying is a CSV (buy_list.csv) and a Beatport sync that has never run: 243 beatport_check songs are waiting and 0 tracks have a Beatport id. Bought tracks only reach Rekordbox when a local_path is typed into the overrides CSV.",
+   "proposal": "One page for High and Standard rotation tracks not yet owned, with the Beatport check state, a 'Mark bought' action that records the local_path (or a FileDrop of the file) and feeds the Rekordbox XML, and the assisted Beatport sync as a StagedProgress job started from the page.",
+   "evidence": [
+    "P8 failure modes",
+    "P3 routine",
+    "musicLibrary/outputs/<date>/buy_list.csv",
+    "ml-gap-rekordbox-feedback"
+   ],
+   "rules": [
+    "R1",
+    "R2"
+   ],
+   "effort": "M",
+   "task": "UX-T04",
+   "verify": "Mark one track bought with a local file; the next run's rekordbox_musicLibrary.xml contains it and the buy list no longer does."
+  },
+  {
+   "id": "UX-05",
+   "kind": "page",
+   "title": "One Set builder",
+   "module": "sets",
+   "route": "/sets (songnodes) with the artifact retired",
+   "pattern": "SetBuilderPage as built in songnodes; RetiredPageNotice for artifact/index.html and artifact/build/index.html; SetCard 'Send to TIDAL' state",
+   "personas": [
+    "P2",
+    "P7"
+   ],
+   "problem": "Two Set Builders save sets in different shapes, each with its own Send to TIDAL, so one set can become two TIDAL playlists and a set saved in the artifact waits up to a week. The legacy artifact page breaks R1, R4 and R5 (43 linter findings).",
+   "proposal": "songnodes /sets becomes the only builder. The artifact pages show RetiredPageNotice with a link to /sets. Sending to TIDAL is one action with one state on the SetCard (queued for the weekly run, or sent now), backed by the set exchange (module M1) so the weekly run and the page agree.",
+   "evidence": [
+    "P2 failure modes",
+    "ml-gap-saved-set-shape",
+    "sn-fe-gap-artifact-sets-tidal-flag",
+    "ml-page-set-builder-legacy R1/R4/R5",
+    "songnodes/design-system/components/RetiredPageNotice/README.md"
+   ],
+   "rules": [
+    "R1",
+    "R2",
+    "R4",
+    "R5"
+   ],
+   "effort": "M",
+   "task": "UX-T05",
+   "verify": "Save a set on /sets and tick Send to TIDAL; exactly one 'SET · name' playlist exists after the next run, and the artifact URL shows the retired notice."
+  },
+  {
+   "id": "UX-06",
+   "kind": "page",
+   "title": "Work queue on the design system",
+   "module": "design",
+   "route": "plan/work-queue-*/tracker.html",
+   "pattern": "LogPage (filter chips by wave and status, DataTable with CopyButton per prompt)",
+   "personas": [
+    "P5"
+   ],
+   "problem": "The developer's work-queue tracker defines its own colours (12 hex literals, !important) and so breaks R4 on the one page developers open most.",
+   "proposal": "Rebuild the tracker from the design system's LogPage pattern with its tokens inlined the way the report and reference.standalone.html are built, so it reads like every other page and the linter passes.",
+   "evidence": [
+    "sn-fe-work-queue-tracker R4",
+    "songnodes/plan/work-queue-2026-10-30/tracker.html",
+    "songnodes/docs/design-system/build_standalone.py"
+   ],
+   "rules": [
+    "R4",
+    "R5"
+   ],
+   "effort": "S",
+   "task": "UX-T06",
+   "verify": "design-system/linters/check.py reports 0 findings on the tracker."
+  },
+  {
+   "id": "UX-07",
+   "kind": "design-system",
+   "title": "One primary action when an empty state carries it",
+   "module": "design",
+   "route": "06 interaction, EmptyState and PageHeader cards",
+   "pattern": "Rule and a conformance check",
+   "personas": [
+    "P2",
+    "P4"
+   ],
+   "problem": "Three production pages show two primary buttons at once (Set builder, Pathfinder, Sources import) because the PageHeader primary and the EmptyState primary are both specified and the repo checker does not test the combination.",
+   "proposal": "Add the rule: while a page's EmptyState shows the primary action, the PageHeader primary is not rendered (the EmptyState is the view). Add it to rules/rules.yaml (INT family) and to scripts/check_design_system.py as a DOM check on the previews; record the decision in 17-governance.",
+   "evidence": [
+    "sn-fe-sets R2",
+    "sn-fe-paths R2",
+    "sn-fe-sources-import R2",
+    "songnodes/design-system/components/EmptyState/README.md"
+   ],
+   "rules": [
+    "R2"
+   ],
+   "effort": "S",
+   "task": "UX-T07",
+   "verify": "The check fails on today's Set builder and passes once its header primary is hidden while the draft is empty."
+  },
+  {
+   "id": "UX-08",
+   "kind": "design-system",
+   "title": "Linter catches 'Unknown' and Title Case labels",
+   "module": "design",
+   "route": "linters/check.py DATA-NULL and WRT-CASE",
+   "pattern": "Linter rules",
+   "personas": [
+    "P1",
+    "P2",
+    "P4"
+   ],
+   "problem": "Five pages print 'Unknown algorithm', 'Unknown error', 'Unknown DJ' or Title Case button labels ('Copy Prompt', 'Run Search'); the linter's DATA-NULL rule only catches N/A, null, undefined and NaN, so the repo checker passes them.",
+   "proposal": "Extend DATA-NULL to the word Unknown (and 'Unknown …') in visible copy, and add WRT-CASE: a button or tab label of two or more capitalised words. Both run in the design-system workflow on the frontend's rendered previews, not only on static files.",
+   "evidence": [
+    "sn-fe-paths R5",
+    "sn-fe-sources-import R5",
+    "sn-fe-oauth-callback R5",
+    "sn-fe-login R5",
+    "songnodes/design-system/linters/check.py:20"
+   ],
+   "rules": [
+    "R5"
+   ],
+   "effort": "S",
+   "task": "UX-T08",
+   "verify": "check.py reports the five known sites; after the copy fixes it reports 0."
+  },
+  {
+   "id": "UX-09",
+   "kind": "design-system",
+   "title": "Inline editable cell for DataTable",
+   "module": "design",
+   "route": "components/DataTable (new part) and 12 inputs",
+   "pattern": "DataTable `__edit` cell: NumberField or SelectField shown on Enter or click, saved on blur, with an InlineMessage on failure",
+   "personas": [
+    "P3"
+   ],
+   "problem": "The review queue (UX-01) and the buy list (UX-04) need a value set in the row; the design system has NumberField and SelectField but no rule for editing inside a table, so each page would invent one.",
+   "proposal": "Specify the editable cell once: which cells may be edited, the keyboard model (Enter edits, Esc cancels, Tab moves on), how a save failure is shown, and the print form (the value only). Add the card and a preview; bump the design system a minor.",
+   "evidence": [
+    "songnodes/design-system/components/DataTable/README.md",
+    "songnodes/design-system/12-inputs.md",
+    "UX-01",
+    "UX-04"
+   ],
+   "rules": [
+    "R4",
+    "R5"
+   ],
+   "effort": "M",
+   "task": "UX-T09",
+   "verify": "The DataTable preview shows an editable energy cell that passes the design-system linter and the keyboard check."
+  },
+  {
+   "id": "UX-10",
+   "kind": "design-system",
+   "title": "Freshness on every data page",
+   "module": "design",
+   "route": "FreshnessStamp, PageHeader stamp, 16 platform",
+   "pattern": "FreshnessStamp sourced from the server, IndexedDB last-good cache as 16 platform already specifies",
+   "personas": [
+    "P1",
+    "P2",
+    "P3"
+   ],
+   "problem": "The library's freshness stamp is always unknown (library.generated is never set), the IndexedDB last-good-data cache that 16 platform requires does not exist, and polling backoff never engages, so a reader cannot tell live data from stale.",
+   "proposal": "Make the stamp a page-pattern requirement: every data page's PageHeader shows 'Data from <stamp>' from the ingest or run time, goes amber past the module's staleness threshold and links to Pipeline health (UX-03). Add a conformance check that a data page without a stamp fails. The cache stays a frontend task (SN-T10).",
+   "evidence": [
+    "sn-fe-gap-library-generated",
+    "sn-fe-gap-indexeddb-cache",
+    "sn-fe-debt-poll-backoff",
+    "songnodes/design-system/components/FreshnessStamp/README.md",
+    "songnodes/design-system/16-platform.md"
+   ],
+   "rules": [
+    "R1"
+   ],
+   "effort": "M",
+   "task": "UX-T10",
+   "verify": "/library shows the last ingest time; after the threshold the stamp turns warn and its link opens /pipeline."
+  },
+  {
+   "id": "UX-11",
+   "kind": "design-system",
+   "title": "Service rows tell the truth about OAuth",
+   "module": "services",
+   "route": "ServiceStatus, AuthCallbackPage, SettingsPage",
+   "pattern": "AuthCallbackPage (progress, then connected or what went wrong) and ServiceStatus with the one fixing action",
+   "personas": [
+    "P2",
+    "P4"
+   ],
+   "problem": "Settings redirects in the same window, the callback writes sessionStorage keys nothing reads, and the readers look for localStorage keys the callback deletes; Send to TIDAL then fails with a token error while Settings may still look connected. A TIDAL login for the weekly run also collides with songnodes on port 3006.",
+   "proposal": "Specify that ServiceStatus derives its state from a token the app can actually use (a probe call), never from the presence of a key; the callback page always lands on a connected or failed state with 'Reconnect' as the one action; Settings shows a notice when the musicLibrary login needs port 3006. The token hand-off itself is task SN-T09.",
+   "evidence": [
+    "sn-fe-gap-oauth-session-tokens",
+    "ml-gap-tidal-port",
+    "songnodes/design-system/components/ServiceStatus/README.md",
+    "songnodes/design-system/components/AuthCallbackPage/README.md"
+   ],
+   "rules": [
+    "R1",
+    "R2",
+    "R5"
+   ],
+   "effort": "S",
+   "task": "UX-T11",
+   "verify": "After a fresh TIDAL login the Services row reads Connected and Send to TIDAL succeeds; after revoking the token the row reads Reconnect within one probe."
+  },
+  {
+   "id": "UX-12",
+   "kind": "design-system",
+   "title": "Close Q-PRINT-1 and publish 1.10.0",
+   "module": "design",
+   "route": "15 print and export, PrintSheet, design-system artifact",
+   "pattern": "PrintSheet footer through the PDF footer template, as long documents now do",
+   "personas": [
+    "P2",
+    "P5"
+   ],
+   "problem": "Printed set sheets lose their traceability footer (clipped at bottom: -12mm in Chromium), and the published design-system artifact still holds 1.9.1 while the repo is at 1.10.0, so pages built from the artifact miss the print rules and the report patterns.",
+   "proposal": "Move the PrintSheet footer to the same footer-template mechanism, close Q-PRINT-1 with a decision record, and publish 1.10.0 to the artifact (DS-T01).",
+   "evidence": [
+    "songnodes/design-system/17-governance.md Q-PRINT-1",
+    "songnodes/design-system/15-print-export.md",
+    "DS-T01"
+   ],
+   "rules": [
+    "R4"
+   ],
+   "effort": "S",
+   "task": "UX-T12",
+   "verify": "A printed set shows its footer on every page; the artifact's tokens.json reads 1.10.0."
+  }
+ ],
+ "patch": {
+  "debt": {
+   "sn-fe-debt-creds-localstorage": {
+    "effort": "S"
+   },
+   "sn-fe-debt-dead-graph-modules": {
+    "effort": "M"
+   },
+   "sn-fe-debt-api-ts-dead": {
+    "effort": "M"
+   },
+   "sn-fe-debt-poll-backoff": {
+    "effort": "S"
+   },
+   "sn-fe-debt-source-label": {
+    "effort": "M"
+   },
+   "sn-fe-debt-proxy-drift": {
+    "effort": "M"
+   },
+   "sn-fe-debt-unused-nginx": {
+    "effort": "M"
+   },
+   "sn-fe-debt-tracker-hex": {
+    "effort": "S"
+   },
+   "sn-fe-debt-test-key-drift": {
+    "effort": "S"
+   },
+   "sn-fe-debt-presets-only-cross-tab": {
+    "effort": "S"
+   },
+   "ml-debt-no-bpm-key": {
+    "effort": "M"
+   },
+   "ml-debt-pending-rejected-dup": {
+    "effort": "S"
+   },
+   "ml-debt-resolve-yield-silent": {
+    "effort": "S"
+   },
+   "ml-debt-idempotency-same-length": {
+    "effort": "S"
+   },
+   "ml-debt-no-run-lock": {
+    "effort": "S"
+   },
+   "ml-debt-history-overwrite": {
+    "effort": "S"
+   },
+   "ml-debt-sqlite-copy": {
+    "effort": "S"
+   },
+   "ml-debt-artifact-build-drift": {
+    "effort": "M"
+   },
+   "ml-debt-legacy-page-ds": {
+    "effort": "S"
+   },
+   "ml-debt-build-charset": {
+    "effort": "S"
+   },
+   "ml-debt-unused-std-cap": {
+    "effort": "S"
+   },
+   "ml-debt-songnodes-ingest-swallowed": {
+    "effort": "S"
+   },
+   "ml-debt-secrets-plain": {
+    "effort": "S"
+   },
+   "ml-debt-schedule-drift": {
+    "effort": "S"
+   },
+   "sn-be-debt-scraper-silver-layer-skip": {
+    "effort": "M"
+   },
+   "sn-be-debt-gold-operational-absent": {
+    "effort": "M"
+   },
+   "sn-be-debt-daily-quota-vs-hourly-targets": {
+    "effort": "M"
+   },
+   "sn-be-debt-long-transaction-scrape": {
+    "effort": "M"
+   },
+   "sn-be-debt-worker-starvation": {
+    "effort": "S"
+   },
+   "sn-be-debt-auth-header-collision": {
+    "effort": "S"
+   },
+   "sn-be-debt-open-admin": {
+    "effort": "S"
+   },
+   "sn-be-debt-default-encryption-key": {
+    "effort": "M"
+   },
+   "sn-be-debt-memgraph-noop": {
+    "effort": "S"
+   },
+   "sn-be-debt-orphan-tables": {
+    "effort": "M"
+   },
+   "sn-be-debt-library-events-ignored": {
+    "effort": "M"
+   },
+   "sn-be-debt-route-shadowing": {
+    "effort": "S"
+   },
+   "sn-be-debt-progress-polling": {
+    "effort": "S"
+   },
+   "sn-be-debt-doc-drift": {
+    "effort": "M"
+   },
+   "sn-be-debt-migration-ledger": {
+    "effort": "S"
+   },
+   "sn-be-debt-backups-wrong-target": {
+    "effort": "M"
+   },
+   "sn-be-debt-library-ingest-contract": {
+    "effort": "M"
+   },
+   "sn-be-debt-set-delete-no-event": {
+    "effort": "S"
+   },
+   "sn-be-debt-two-setlist-stores": {
+    "effort": "S"
+   },
+   "sn-be-debt-unmounted-router": {
+    "effort": "S"
+   },
+   "sn-be-debt-q-tunnel-before-auth": {
+    "effort": "L"
+   },
+   "sn-be-debt-q-sentinel-dead-route": {
+    "effort": "M"
+   },
+   "sn-be-debt-ingest-like-scan": {
+    "effort": "S"
+   }
+  },
+  "gaps": {
+   "sn-fe-gap-oauth-session-tokens": {
+    "severity": "high",
+    "effort": "M"
+   },
+   "sn-fe-gap-scrapers-endpoints": {
+    "severity": "medium",
+    "effort": "M"
+   },
+   "sn-fe-gap-indexeddb-cache": {
+    "severity": "medium",
+    "effort": "S"
+   },
+   "sn-fe-gap-artifact-sets-tidal-flag": {
+    "severity": "critical",
+    "effort": "M"
+   },
+   "sn-fe-gap-target-pending-sync": {
+    "severity": "medium",
+    "effort": "S"
+   },
+   "sn-fe-gap-library-generated": {
+    "severity": "medium",
+    "effort": "S"
+   },
+   "sn-fe-gap-graph-ws": {
+    "severity": "medium",
+    "effort": "S"
+   },
+   "sn-fe-gap-ingest-body-limit": {
+    "severity": "medium",
+    "effort": "M"
+   },
+   "ml-gap-sync-script-missing": {
+    "severity": "medium",
+    "effort": "M"
+   },
+   "ml-gap-saved-set-shape": {
+    "severity": "critical",
+    "effort": "M"
+   },
+   "ml-gap-setlists-orphan": {
+    "severity": "critical",
+    "effort": "M"
+   },
+   "ml-gap-rekordbox-feedback": {
+    "severity": "medium",
+    "effort": "S"
+   },
+   "ml-gap-transitions-not-used": {
+    "severity": "medium",
+    "effort": "M"
+   },
+   "ml-gap-deezer-bpm-not-merged": {
+    "severity": "critical",
+    "effort": "S"
+   },
+   "ml-gap-written-never-read": {
+    "severity": "critical",
+    "effort": "S"
+   },
+   "ml-gap-tidal-port": {
+    "severity": "medium",
+    "effort": "M"
+   },
+   "ml-gap-songnodes-field-loss": {
+    "severity": "medium",
+    "effort": "S"
+   },
+   "sn-be-gap-scraper-bronze-only": {
+    "severity": "high",
+    "effort": "S"
+   },
+   "sn-be-gap-target-scrape-quota": {
+    "severity": "high",
+    "effort": "S"
+   },
+   "sn-be-gap-scrape-outside-tx": {
+    "severity": "medium",
+    "effort": "S"
+   },
+   "sn-be-gap-medallion-doc": {
+    "severity": "high",
+    "effort": "S"
+   },
+   "sn-be-gap-auth-token-flow": {
+    "severity": "critical",
+    "effort": "S"
+   },
+   "sn-be-gap-library-projection": {
+    "severity": "medium",
+    "effort": "S"
+   },
+   "sn-be-gap-backups": {
+    "severity": "high",
+    "effort": "S"
+   },
+   "sn-be-gap-migration-ledger": {
+    "severity": "medium",
+    "effort": "S"
+   },
+   "sn-be-gap-library-ingest-409": {
+    "severity": "medium",
+    "effort": "S"
+   },
+   "sn-be-gap-music-search": {
+    "severity": "medium",
+    "effort": "S"
+   },
+   "sn-be-gap-frontend-dead-routes": {
+    "severity": "medium",
+    "effort": "S"
+   }
+  }
+ },
+ "append": {
+  "claims": [
+   {
+    "id": "BL-B01",
+    "claim": "12 pages",
+    "source": "documentation/data-flow-analysis/findings.json pages[] @1f296c3",
+    "outcome": "corrected",
+    "finding": "12 is the songnodes frontend route count (13 production routes found here, including the shadowed /paths placeholder); the estate holds 115 pages and entry points across both repos.",
+    "evidence": [
+     "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+     "documentation/data-flow-analysis/findings.json pages[] @1f296c3"
+    ],
+    "_agent": "baseline-581",
+    "state": "built"
+   },
+   {
+    "id": "BL-B02",
+    "claim": "8 stores",
+    "source": "findings.json stores[] @1f296c3",
+    "outcome": "corrected",
+    "finding": "39 internal stores plus 9 external systems (48) found by three scanners; #581 grouped Postgres by layer and omitted RabbitMQ, the artifact database, ref_mb and external APIs.",
+    "evidence": [
+     "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+     "findings.json stores[] @1f296c3"
+    ],
+    "_agent": "baseline-581",
+    "state": "built"
+   },
+   {
+    "id": "BL-B03",
+    "claim": "26 edges",
+    "source": "findings.json edges[] @1f296c3",
+    "outcome": "corrected",
+    "finding": "87 numbered flows, every one drawn in D2a–D2g.",
+    "evidence": [
+     "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+     "findings.json edges[] @1f296c3"
+    ],
+    "_agent": "baseline-581",
+    "state": "built"
+   },
+   {
+    "id": "BL-B04",
+    "claim": "5 personas",
+    "source": "findings.json personas[] @1f296c3",
+    "outcome": "corrected",
+    "finding": "8 personas (5 human, 2 system actors, 1 assisted); #581's selector, librarian, data engineer, resolution specialist and devops map onto P1/P2, P3, P4/P5, P3/P7 and P4.",
+    "evidence": [
+     "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+     "findings.json personas[] @1f296c3"
+    ],
+    "_agent": "baseline-581",
+    "state": "built"
+   },
+   {
+    "id": "BL-B05",
+    "claim": "5 gaps",
+    "source": "findings.json gaps[] @1f296c3",
+    "outcome": "corrected",
+    "finding": "28 gaps; all five #581 gaps are kept: GAP-01 Rekordbox feedback = ml-gap-rekordbox-feedback; GAP-02 dual storage = ml-gap-saved-set-shape and ml-gap-songnodes-field-loss; GAP-03 audio fingerprint segmenter is not evidenced in either repo (kept as Unverified); GAP-04 unwired target queue feedback = sn-be-gap-target-scrape-quota and sn-fe-gap-target-pending-sync; GAP-05 outbox projection lag = sn-be-gap-library-projection.",
+    "evidence": [
+     "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+     "findings.json gaps[] @1f296c3"
+    ],
+    "_agent": "baseline-581",
+    "state": "built"
+   },
+   {
+    "id": "BL-B06",
+    "claim": "Gate 1: 0 hard-coded colours or fonts outside token definitions",
+    "source": "PR #581 description",
+    "outcome": "refuted",
+    "finding": "243 literal hex colours in SVG fill/stroke attributes of report/index.html outside style blocks (this run's gate 2 regex over tags).",
+    "evidence": [
+     "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+     "PR #581 description"
+    ],
+    "_agent": "baseline-581",
+    "state": "built"
+   },
+   {
+    "id": "BL-B07",
+    "claim": "All 14 internal navigation anchors resolve",
+    "source": "PR #581 description",
+    "outcome": "confirmed",
+    "finding": "14 href=#… anchors, all with a matching id.",
+    "evidence": [
+     "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+     "PR #581 description"
+    ],
+    "_agent": "baseline-581",
+    "state": "built"
+   },
+   {
+    "id": "BL-B08",
+    "claim": "Standalone SVGs at viewBox 1800x1100",
+    "source": "PR #581 description",
+    "outcome": "confirmed",
+    "finding": "system-architecture-data-flow.svg viewBox 0 0 1800 1100.",
+    "evidence": [
+     "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+     "PR #581 description"
+    ],
+    "_agent": "baseline-581",
+    "state": "built"
+   },
+   {
+    "id": "BL-B09",
+    "claim": "enhanced-architecture-connections-and-gaps.svg and ARCHITECTURE_ENHANCEMENTS_AND_GAPS_REPORT.md produced",
+    "source": "STATUS.md SLOT:ARCH1 @1f296c3",
+    "outcome": "refuted",
+    "finding": "Neither file is in the branch (git diff --stat origin/main...1f296c3 lists 17 files without them); both exist in this run.",
+    "evidence": [
+     "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+     "STATUS.md SLOT:ARCH1 @1f296c3"
+    ],
+    "_agent": "baseline-581",
+    "state": "built"
+   },
+   {
+    "id": "BL-B10",
+    "claim": "Sister TODO written to E:\\musicLibrary\\TODO-ARCHITECTURAL-IMPROVEMENTS.md",
+    "source": "STATUS.md SLOT:ARCH1 @1f296c3",
+    "outcome": "confirmed",
+    "finding": "File present on tuf-boi (7,332 bytes, 6 Nov 2026 22:18 UTC); kept and extended, not replaced.",
+    "evidence": [
+     "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+     "STATUS.md SLOT:ARCH1 @1f296c3"
+    ],
+    "_agent": "baseline-581",
+    "state": "built"
+   },
+   {
+    "id": "BL-B11",
+    "claim": "PDF 1,775 KB, vector, searchable",
+    "source": "PR #581 description",
+    "outcome": "confirmed",
+    "finding": "1,817,715 bytes in the branch.",
+    "evidence": [
+     "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+     "PR #581 description"
+    ],
+    "_agent": "baseline-581",
+    "state": "built"
+   },
+   {
+    "id": "BL-B12",
+    "claim": "Rebuild pipeline passes in 3.2 s",
+    "source": "STATUS.md SLOT:ARCH1 @1f296c3",
+    "outcome": "not-reproducible",
+    "finding": "Not re-run: its build scripts are kept in the branch but superseded by build.py; timing is the author's figure.",
+    "evidence": [
+     "PR #581 (branch docs/data-flow-investigation @1f296c3)",
+     "STATUS.md SLOT:ARCH1 @1f296c3"
+    ],
+    "_agent": "baseline-581",
+    "state": "built"
+   }
+  ],
+  "unverified": [
+   "#581 GAP-03 (audio fingerprint and AcoustID transition segmenter): no code, schema or doc in either repo supports it; kept as a topic, not as a gap."
+  ]
+ }
+}

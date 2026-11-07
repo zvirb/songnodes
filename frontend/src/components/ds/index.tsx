@@ -1680,3 +1680,7 @@ export { DateRange } from './DateRange';
 export type { DateRangeMark, DateRangeModifier, DateRangePreset, DateRangePresetId, DateRangeProps } from './DateRange';
 export { DateField, DateRangeField } from './DateField';
 export type { DateFieldProps, DatePart, DateRangeFieldProps } from './DateField';
+export { DataTable } from './DataTable';
+export type { DataTableColumn, DataTableProps } from './DataTable';
+export { EditableCell } from './EditableCell';
+export type { EditableCellProps, EditableCellType, EditableCellOption } from './EditableCell';
