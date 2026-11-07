@@ -3196,3 +3196,9 @@ One job: refresh eight stale settings/pipeline visual baselines.
 Owned paths: frontend/tests/e2e/visual.spec.ts-snapshots/{pipeline,settings}-{dark,light}-{desktop,phone}-chromium-linux.png; STATUS.md CIC20 slot; integration brief.
 Visually reviewed all eight canonical captures from run 42346214726. Correct empty states, responsive layouts, no wrapping corruption; settings phone is a viewport capture. Tolerances unchanged. All eight copied PNGs passed SHA256 equality verification. TypeScript, lint (warnings only), build, conformance, design-system 1.10.0 sync and 70 unit files / 604 tests passed. Playwright discovery passes. Initial npm test -- --run was an unsupported Playwright option; corrected to test:unit. Next: canonical CI, then merge only when all checks pass.
 <!-- SLOT:CIC20 END -->
+<!-- SLOT:CIC21 BEGIN -->
+## CIC21 — started 8 Nov 2026
+One job: verify PR #602 after rebasing onto the merged frontend CI repair.
+Owned paths: STATUS.md CIC21 slot only; preserve the PR's existing security changes.
+Original-head security checks pass; E2E fails on eight inherited screenshot baselines and missing review-count fixture. Local Python regression attempt could not run because bundled Python lacks pytest; CI remains authoritative. #601 callback fixture separately passed nine Chrome audits plus two redirect regressions against its built frontend. PR #601 merged as c998970f after every check passed, including 234 browser tests. Rebased this PR onto that main. Next: current-head CI and merge only when every check passes.
+<!-- SLOT:CIC21 END -->
