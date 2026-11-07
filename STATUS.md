@@ -3104,3 +3104,10 @@ One job: align the pipeline route smoke test with the intentional Health page.
 Owned paths: frontend/tests/e2e/routes.smoke.spec.ts, STATUS.md CIC08 slot.
 Changed smoke test to assert Health heading, four named summary tiles, retained sections, current run-empty text and disclosure opening the queue form. Playwright discovered all 13 Chromium route smoke tests successfully; diff whitespace check against main passed. Actual test execution remains CI's canonical stack. Next: inspect the new Linux run and refresh only reviewed changed pipeline snapshots in another package.
 <!-- SLOT:CIC08 END -->
+
+<!-- SLOT:CIC09 BEGIN -->
+## CIC09 — started 2026-11-07
+One job: restore conformance for the newly merged frontend.
+Owned paths: frontend/src/components/ds/FreshnessStamp.tsx, frontend/src/features/trackDetail/TrackDetailPage.tsx, frontend/src/features/pipeline/RunsPage.tsx, plan/agents/CIC09_freshness_tip.md, STATUS.md CIC09 slot.
+Latest main also introduced duplicate key-name literals flagged as emoji, redundant card styling read as spacing, and an undefined run-history header class. Use SN.keyName, canonical sn-card styling and the defined header main class. Implemented all three scoped fixes. Passed: zero conformance findings, TypeScript, 13 component tests (track detail and pipeline), and whitespace check. No generated styles edited. Next: publish the conformance follow-up, inspect final canonical CI and merge when green.
+<!-- SLOT:CIC09 END -->

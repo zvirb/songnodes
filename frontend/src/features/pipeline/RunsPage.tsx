@@ -136,7 +136,7 @@ export const RunsPage: React.FC<RunsPageProps> = ({ onBack }) => {
               </a>
             )}
           </div>
-          <div className="sn-page-header__bar">
+          <div className="sn-page-header__main">
             <h1 className="sn-title title-l">
               <span className="sn-lead">Pipeline:</span> Run history
             </h1>
