@@ -30,8 +30,8 @@ async def export_transitions(
             st.from_track_id::text,
             st.to_track_id::text,
             st.occurrence_count as count,
-            COALESCE(st.avg_bpm_difference, 0.0) as bpm_diff,
-            COALESCE(st.avg_key_compatibility >= 0.5, true) as harmonic_compatible,
+            st.avg_bpm_difference as bpm_diff,
+            (st.avg_key_compatibility >= 0.5) as harmonic_compatible,
             st.transition_quality_score as quality_score,
             COALESCE(
                 (SELECT array_agg(DISTINCT p->>'source')

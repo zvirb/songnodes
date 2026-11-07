@@ -42,7 +42,8 @@ class FakePool:
         return Ctx()
 
 
-def test_transitions_export_conforms_to_schema(mocker):
+@pytest.mark.parametrize('bpm_diff,harmonic_compatible', [(2.0, True), (None, None)])
+def test_transitions_export_conforms_to_schema(mocker, bpm_diff, harmonic_compatible):
     track1_id = str(uuid.uuid4())
     track2_id = str(uuid.uuid4())
 
@@ -55,8 +56,8 @@ def test_transitions_export_conforms_to_schema(mocker):
             "to_artist": "Kaskade",
             "to_title": "Move For Me",
             "count": 3,
-            "bpm_diff": 2.0,
-            "harmonic_compatible": True,
+            "bpm_diff": bpm_diff,
+            "harmonic_compatible": harmonic_compatible,
             "quality_score": 0.95,
             "sources": ["1001tracklists", "mixesdb"]
         }
@@ -76,6 +77,8 @@ def test_transitions_export_conforms_to_schema(mocker):
     assert data["version"] == "1.0.0"
     assert data["count"] == 1
     assert len(data["transitions"]) == 1
+    assert data["transitions"][0]["bpm_diff"] == bpm_diff
+    assert data["transitions"][0]["harmonic_compatible"] is harmonic_compatible
 
     # Load and validate with JSON Schema
     schema_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../contracts/transitions.v1.json'))

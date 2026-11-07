@@ -2758,3 +2758,10 @@ unbooks/agent-audit.md), design-system/reference/ (components.md, 	okens.md), de
 - Note: `scripts/check_design_system.py --check` reports pre-existing un-tokenized values in `frontend/src/components/ds/EditableCell.tsx` and `frontend/src/components/ds/DataTable.tsx` introduced in commit `ebf44357` (UX-T09), which are out of scope for this backend router package (Rule 6).
 - Next: Open PR and proceed to SN-T09 (Publish contract checker M4).
 <!-- SLOT:SNT08 END -->
+
+<!-- SLOT:CIC06 BEGIN -->
+## CIC06 — started 2026-11-07
+One job: preserve unknown transition metadata before merging PR 597.
+Owned paths: services/rest_api/routers/transitions_export.py, tests/rest_api/test_transitions_export.py, STATUS.md CIC06 slot.
+Consulted IMPLEMENTATION_PLAN WP1-WP5 and TRACK_METADATA_RETRIEVAL. Found SQL converting absent BPM difference to 0 and absent key compatibility to true. Changed two SQL expressions to preserve NULL BPM difference and harmonic compatibility. Passed: two synthetic contract cases (known and missing values), schema validation and whitespace. Test launcher isolated the unused main import with an empty module; get_pool was already mocked by the test. No live database/provider/coverage validation. Next: integrate current main and run CI before merge.
+<!-- SLOT:CIC06 END -->
