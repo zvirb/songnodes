@@ -19,7 +19,7 @@ Paper and files leave the app and lose context, so they must carry it: what this
 | Type | Body 10pt Inter, titles Sora; `pt` units are allowed only in print CSS. Text `#1c1c1e` (light `fg`) on white. |
 | Colour | `print-color-adjust: exact` only on `EnergyBar`, `KeyBadge` dot and `EnergyWave`; everything else may drop backgrounds. |
 | Expand | Closed `details` print open; tab panels marked `sn-print-expand` (and every `sn-tabs__panel`) print in full, one after another (1.10.0). |
-| Breaks | `break-inside: avoid` on `SetSlot`, `Card`, table rows, `FigureTile`; `break-after: avoid` on headings; repeat `thead` (`display: table-header-group`). |
+| Breaks | `break-inside: avoid` on `SetSlot`, `Card`, table rows, `FigureTile`; `break-after: avoid` on headings; repeat `thead` (`display: table-header-group`). Exception (1.10.0): a card inside `ReportPage` (a gap, proposal or protocol card of running text) may split across pages; its heading stays with what follows and its key-value grid or evidence list is kept whole, so a long document does not leave pages half empty before each card. |
 | Links | Internal links print as text; external links append the domain in `fg-3`: `a.sn-link--ext::after { content: " (" attr(data-host) ")"; }`. |
 | Charts | Print as SVG; canvas (PIXI graph) is replaced by "Graph view not printable. Open at <URL>." |
 

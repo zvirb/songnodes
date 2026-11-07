@@ -2878,6 +2878,11 @@ th.sn-page-matrix__rowhead { position: static; text-transform: none; letter-spac
   .sn-page-report__body { gap: var(--space-8); }
   .sn-print-cover { break-after: page; }
   .sn-figure { box-shadow: none; padding: 0; border: 0; break-inside: avoid; gap: var(--space-1); }
+  /* report cards (gaps, proposals, protocols) carry running text: they may split across pages; the heading stays with
+     what follows and a key-value grid or evidence list is not split */
+  .sn-page-report .sn-card { break-inside: auto; }
+  .sn-page-report .sn-card > :is(.sn-section-heading, .sn-title) { break-after: avoid; }
+  .sn-page-report .sn-card :is(.sn-key-value-grid, .sn-disclosure) { break-inside: avoid; }
   .sn-figure__canvas { overflow: visible; border: 0; background: transparent; }
   .sn-figure__canvas > svg { transform: none; }
   .sn-pill { background: transparent; border: 1px solid currentColor; }
