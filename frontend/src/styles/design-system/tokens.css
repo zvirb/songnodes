@@ -444,6 +444,8 @@
   --drawer-w: 300px;
   --rail-w: 248px;
   --content-max: 1400px;
+  --print-wide-h: 150mm;
+  --print-wide-w: 273mm;
   --prose-max: 68ch;
   --z-base: 0;
   --z-sticky: 10;
