@@ -2827,3 +2827,24 @@ Changed script stripping to accept mixed case, attributes and closing-tag whites
   - Document syntax and markdown validation.
 - Next: Finalize artifact report and present complete implementation package to user.
 <!-- SLOT:DUOAUTH END -->
+
+<!-- SLOT:SNT08 BEGIN -->
+### SNT08: Publish the transition feed M3 (SN-T08)
+- Completed: 2026-11-07 (branch snt08-transition-feed off origin/main ebf44357).
+- Scope: Publish machine-readable transition evidence feed for sister projects, closing gap sn-be-gap-transition-feed:
+  1. `contracts/transitions.v1.json`: Authored and validated JSON Schema specifying the transition feed shape (version 1.0.0, exported_at, transitions array with from/to tracks, count, quality metrics, harmonic compatibility, and sources).
+  2. `services/rest_api/routers/transitions_export.py`: Implemented `GET /api/v1/transitions/export` querying `silver_track_transitions` with pagination (`limit`, `offset`, `min_count`) and auto-registering via `register(app)` per Rule 12.
+  3. `tests/rest_api/test_transitions_export.py`: Added unit test validating that endpoint output strictly satisfies `contracts/transitions.v1.json`.
+- Checks run and passed:
+  - `$env:PYTHONPATH="services;services/common;services/rest_api"; python -m pytest tests/rest_api/test_transitions_export.py` (1 passed in 0.58s)
+  - `git diff --diff-filter=D --name-only origin/main...HEAD` (0 deleted files outside owned paths)
+- Note: `scripts/check_design_system.py --check` reports pre-existing un-tokenized values in `frontend/src/components/ds/EditableCell.tsx` and `frontend/src/components/ds/DataTable.tsx` introduced in commit `ebf44357` (UX-T09), which are out of scope for this backend router package (Rule 6).
+- Next: Open PR and proceed to SN-T09 (Publish contract checker M4).
+<!-- SLOT:SNT08 END -->
+
+<!-- SLOT:CIC06 BEGIN -->
+## CIC06 — started 2026-11-07
+One job: preserve unknown transition metadata before merging PR 597.
+Owned paths: services/rest_api/routers/transitions_export.py, tests/rest_api/test_transitions_export.py, STATUS.md CIC06 slot.
+Consulted IMPLEMENTATION_PLAN WP1-WP5 and TRACK_METADATA_RETRIEVAL. Found SQL converting absent BPM difference to 0 and absent key compatibility to true. Changed two SQL expressions to preserve NULL BPM difference and harmonic compatibility. Passed: two synthetic contract cases (known and missing values), schema validation and whitespace. Test launcher isolated the unused main import with an empty module; get_pool was already mocked by the test. No live database/provider/coverage validation. Next: integrate current main and run CI before merge.
+<!-- SLOT:CIC06 END -->
