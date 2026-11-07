@@ -440,6 +440,7 @@ const SetBuilderPage: React.FC = () => {
         desc={`${shape.name} over ${draft.minutes} min: ${SN.format.count(filled.length)} tracks, ${mixLine}.`}
         stampVerb="Saved"
         stamp={savedDoc?.updated ?? null}
+        stampUnknown={draft.slots.some((s) => s.id != null) && !savedDoc?.updated}
         pill={undefined}
         actions={
           <>
