@@ -3139,3 +3139,10 @@ One job: register the existing Run history page at /pipeline/runs.
 Owned paths: frontend/src/features/pipeline/route.tsx, frontend/src/routes/registry.test.tsx, STATUS.md CIC13 slot; integration ownership in CIC09 brief.
 Used the feature-route registry (no App.tsx edits). Added a discovery assertion for /pipeline/runs. Passed TypeScript, registry regression, feature boundaries and whitespace; all-page discovery now has 69 Chromium cases (three themes). Next: canonical all-page CI.
 <!-- SLOT:CIC13 END -->
+
+<!-- SLOT:CIC14 BEGIN -->
+## CIC14 — started 2026-11-07
+One job: give standalone callback pages the required landmark and error-page heading.
+Owned paths: frontend/src/components/OAuthCallback.tsx, STATUS.md CIC14 slot.
+Read AuthCallbackPage and ErrorState cards. Added canonical main identifier/focus target and native ErrorState markup with a sentence-case page h1. Callback/token handling is unchanged. Passed TypeScript, zero conformance findings, feature boundaries, whitespace and all 70 unit files / 604 tests. Next: canonical route audit (69 cases plus dynamic settings links).
+<!-- SLOT:CIC14 END -->
