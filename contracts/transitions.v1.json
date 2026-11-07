@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SongNodes Transition Feed v1",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "string",
+      "enum": [
+        "1.0.0"
+      ]
+    },
+    "exported_at": {
+      "type": "string"
+    },
+    "count": {
+      "type": "integer"
+    },
+    "transitions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "from_track_id",
+          "to_track_id",
+          "count"
+        ],
+        "properties": {
+          "from_track_id": {
+            "type": "string"
+          },
+          "to_track_id": {
+            "type": "string"
+          },
+          "from_artist": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "from_title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "to_artist": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "to_title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "count": {
+            "type": "integer"
+          },
+          "confidence": {
+            "type": "number"
+          },
+          "bpm_diff": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "harmonic_compatible": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "quality_score": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "version",
+    "exported_at",
+    "count",
+    "transitions"
+  ]
+}
