@@ -17,10 +17,12 @@ beforeAll(() => {
 
 import PathfinderPage from './PathfinderPage';
 
+const view = vi.hoisted(() => ({ emptyLibrary: false, hasResult: true }));
+
 // Mock the hooks
 vi.mock('../../hooks/useUnifiedTracks', () => ({
   useUnifiedTracks: () => ({
-    tracks: [
+    tracks: view.emptyLibrary ? [] : [
       { id: '1', title: 'Track 1', artist: 'Artist 1', key: '8A' },
       { id: '2', title: 'Track 2', artist: 'Artist 2', key: null }
     ],
@@ -50,7 +52,7 @@ vi.mock('../../components/PathfinderPanel/hooks', () => ({
     },
     availableTracks: [{ id: '1', name: 'Start', artist: 'Artist' }],
     isCalculating: false,
-    hasResult: true,
+    hasResult: view.hasResult,
     hasError: false,
     send: mockSend,
     calculate: mockCalculate,
@@ -63,7 +65,27 @@ vi.mock('../../hooks/useDataLoader', () => ({
 }));
 
 describe('PathfinderPage', () => {
-  afterEach(cleanup);
+  afterEach(() => {
+    cleanup();
+    view.emptyLibrary = false;
+    view.hasResult = true;
+  });
+
+  it('shows only Open library when no tracks are available', () => {
+    view.emptyLibrary = true;
+    const { container } = render(<MemoryRouter><PathfinderPage /></MemoryRouter>);
+    expect(container.querySelectorAll('.sn-btn--primary')).toHaveLength(1);
+    expect(screen.getByRole('link', { name: 'Open library' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Find path' })).toBeNull();
+  });
+
+  it('uses the empty-state action until a path has been found', () => {
+    view.hasResult = false;
+    const { container } = render(<MemoryRouter><PathfinderPage /></MemoryRouter>);
+    expect(container.querySelectorAll('.sn-btn--primary')).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Find path' }));
+    expect(mockCalculate).toHaveBeenCalled();
+  });
 
   it('renders title and found path', () => {
     render(<MemoryRouter><PathfinderPage /></MemoryRouter>);

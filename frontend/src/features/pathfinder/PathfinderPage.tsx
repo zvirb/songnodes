@@ -139,6 +139,7 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
           </div>
         )}
 
+        {!error && !isLoading && tracks.length > 0 && <>
         <div className="pf__facts" style={{ marginTop: 'var(--space-4)' }}>
           {/* Start Track Picker */}
           <div className="sn-field">
@@ -200,11 +201,11 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
             </div>
         </div>
 
-        <div>
+        {(pf.isCalculating || pf.hasError || pf.hasResult) && <div>
           <button type="button" className="sn-btn sn-btn--primary" onClick={handleCalculate} disabled={pf.isCalculating || !pf.state.startTrack}>
               {pf.isCalculating ? 'Calculating…' : 'Find path'}
           </button>
-        </div>
+        </div>}
 
         {/* Results section */}
         <div className="pf__result">
@@ -330,6 +331,7 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
               </section>
            )}
         </div>
+        </>}
       </div>
     </main>
   );
