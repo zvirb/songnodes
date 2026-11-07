@@ -1,6 +1,8 @@
+import json
 from fastapi import APIRouter, Header, HTTPException, Body
 from typing import Dict, Any, Optional
 from common.datalayer import jobs as domain
+from common.datalayer.errors import CatalogError
 from .catalog_writes import domain_errors, get_pool
 from library.model.library_db import get_sets, save_set, delete_set, get_set_export
 import uuid
@@ -13,6 +15,16 @@ async def ingest_library(idempotency_key: str = Header(..., min_length=1, max_le
                          payload: Dict[str, Any] = Body(...)):
     """Idempotent bulk ingest for music library data."""
     async with get_pool().acquire() as conn:
+        existing = await conn.fetchrow(
+            'SELECT payload FROM ingestion_jobs WHERE kind = $1 AND idempotency_key = $2',
+            'library_ingest', idempotency_key
+        )
+        if existing is not None:
+            raw_payload = existing['payload']
+            existing_payload = json.loads(raw_payload) if isinstance(raw_payload, str) else raw_payload
+            if existing_payload != payload:
+                raise CatalogError(409, "Idempotency key was already submitted with a different payload")
+
         row, created = await domain.enqueue(conn, 'library_ingest', idempotency_key, payload)
 
     return {'job_id': str(row['id']), 'status': row['status'], 'created': created}
