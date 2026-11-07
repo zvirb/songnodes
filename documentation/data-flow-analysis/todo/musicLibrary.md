@@ -1,8 +1,8 @@
 # Architectural improvements: musicLibrary
 
-Written 7 Nov 2026 by the data-flow investigation. 6 tasks for this repository.
+Written 7 Nov 2026 by the data-flow investigation. 7 tasks for this repository.
 
-From the SongNodes data flow report of 7 Nov 2026 (`findings.json` sha256 `e469b41763f1`). Master report, in the songnodes repo: `documentation/data-flow-analysis/DATA_FLOW_AND_PAGE_INTERACTION_REPORT.md` (Markdown), `documentation/data-flow-analysis/report/index.html` (web), `documentation/data-flow-analysis/DATA_FLOW_AND_PAGE_INTERACTION_REPORT.pdf` (PDF); gaps in `documentation/data-flow-analysis/ARCHITECTURE_ENHANCEMENTS_AND_GAPS_REPORT.md`.
+From the SongNodes data flow report of 7 Nov 2026 (`findings.json` sha256 `9239a01d7141`). Master report, in the songnodes repo: `documentation/data-flow-analysis/DATA_FLOW_AND_PAGE_INTERACTION_REPORT.md` (Markdown), `documentation/data-flow-analysis/report/index.html` (web), `documentation/data-flow-analysis/DATA_FLOW_AND_PAGE_INTERACTION_REPORT.pdf` (PDF); gaps in `documentation/data-flow-analysis/ARCHITECTURE_ENHANCEMENTS_AND_GAPS_REPORT.md`.
 
 Each task is one job package (AGENTS.md rules 1–3: one verb, owned paths only, about 400 changed lines). UI work follows the SongNodes design system in full: tokens and `sn-*` classes only, its page patterns, and no local overrides; a missing pattern is added to the design system first.
 
@@ -81,6 +81,18 @@ Each task is one job package (AGENTS.md rules 1–3: one verb, owned paths only,
   - Contract: review_queue.csv energy_score_override -> overrides
   - Evidence: musicLibrary/pipeline/djlib/export.py:285-305, musicLibrary/pipeline/run_weekly.py:298-308
 - **Impact:** closes ml-gap-written-never-read
+
+## UX-T05: Retire the artifact Set Builder behind /sets (UX-05)
+
+- **Type:** ux-page
+- **Owned paths:** `artifact/index.html`, `artifact/build/index.html`, `README.md`
+- **Depends on:** ML-T02
+- **Verification:** see UX-05
+- **Gap `ml-gap-saved-set-shape` (critical):** Saved-set shape is no longer shared between the two Set Builders
+  - Fix: Version the document: add schema 'naarm.saved-set.v2' {id, name, shape, minutes, mix, pool, seed, tidal, tracks[{ml_id, sn_id, tgt, move}]}; songnodes stores the extra fields in library.sets (jsonb) and maps uuid->source_id via library.track_xref on export; load_sets accepts {sets:[...]} and resolves ids via xref.
+  - Contract: naarm.saved-set.v2
+  - Evidence: musicLibrary/pipeline/build_db.py:93-106, musicLibrary/pipeline/run_weekly.py:529-547, songnodes/frontend/src/features/musicLibrary/data.ts:140-161, songnodes/services/library/model/library_db.py:50-62
+- **Impact:** closes ml-gap-saved-set-shape
 
 ## Standing-rule violations in this project (report only)
 

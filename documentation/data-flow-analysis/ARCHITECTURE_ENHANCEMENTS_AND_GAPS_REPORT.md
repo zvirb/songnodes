@@ -1,6 +1,6 @@
 # Architecture enhancements and gaps
 
-Part of the SongNodes data flow report (7 Nov 2026). Source: `findings.json` sha256 `e469b41763f1`. Web: `report/index.html#gaps`; PDF section 8.
+Part of the SongNodes data flow report (7 Nov 2026). Source: `findings.json` sha256 `9239a01d7141`. Web: `report/index.html#gaps`; PDF section 8.
 
 ## 1. Critical data gaps
 

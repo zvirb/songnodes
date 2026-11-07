@@ -1194,8 +1194,12 @@ def d8(ctx):
     tasks = F.get("tasks", [])
     mods = F.get("modules", [])
     out = []
-    panels = [("D8a", "ml-gap-", "musicLibrary and cross-project"), ("D8b", "sn-be-gap-", "songnodes backend"),
-              ("D8c", "sn-fe-gap-", "songnodes frontend")]
+    BE_DATA = {"sn-be-gap-scraper-bronze-only", "sn-be-gap-target-scrape-quota", "sn-be-gap-scrape-outside-tx",
+               "sn-be-gap-medallion-doc", "sn-be-gap-library-projection", "sn-be-gap-library-ingest-409"}
+    panels = [("D8a", lambda i: i.startswith("ml-gap-"), "musicLibrary and cross-project"),
+              ("D8b", lambda i: i in BE_DATA, "songnodes backend: data layers and scraping"),
+              ("D8c", lambda i: i.startswith("sn-be-gap-") and i not in BE_DATA, "songnodes backend: platform and operations"),
+              ("D8d", lambda i: i.startswith("sn-fe-gap-"), "songnodes frontend")]
     gnum = {g["id"]: f"G{i + 1}" for i, g in enumerate(gaps)}
     mod_gaps = {}
     for m in mods:
@@ -1203,7 +1207,7 @@ def d8(ctx):
             if f"({m['id']})" in t.get("title", ""):
                 mod_gaps.setdefault(m["id"], []).extend(t.get("gaps", []))
     for fid, pref, label in panels:
-        pg = [g for g in gaps if g["id"].startswith(pref)]
+        pg = [g for g in gaps if pref(g["id"])]
         nodes, edges, extra, key = {}, [], [], []
         rows = []
         for g in pg:
@@ -1238,13 +1242,14 @@ def d8(ctx):
             key.append((gnum[g["id"]], f'{g.get("contract", "")} ({g.get("severity")})'))
             rows.append([gnum[g["id"]], g["id"], g["title"], g.get("contract"), ", ".join(g.get("affects", [])),
                          g.get("severity"), g.get("effort"), "Gap"])
-        prepo = "musicLibrary" if pref.startswith("ml") else "songnodes"
+        prepo = "musicLibrary" if fid == "D8a" else "songnodes"
         for m in mods:
-            gl = [x for x in mod_gaps.get(m["id"], []) if x.startswith(pref)]
+            gl = [x for x in mod_gaps.get(m["id"], []) if pref(x)]
             mrepo = m.get("path", "").split("/")[0]
             sub = "frontend" if "/frontend/" in m.get("path", "") else "backend"
-            home = (pref == "ml-gap-" and mrepo == "musicLibrary") or (
-                pref == f"sn-{'fe' if sub == 'frontend' else 'be'}-gap-" and mrepo == "songnodes")
+            # a module is "at home" on the panel of its own repo and side: musicLibrary modules on D8a, backend ones on
+            # the backend platform panel (D8c), frontend ones on D8d
+            home = (fid == "D8a" and mrepo == "musicLibrary") or (mrepo == "songnodes" and fid == ("D8d" if sub == "frontend" else "D8c"))
             if not gl and not home:
                 continue
             mid = m["id"]
@@ -2084,13 +2089,32 @@ def d10(ctx):
 
 # ---------------------------------------------------------------- D11 roadmap
 def d11(ctx):
+    """Roadmap: one panel per group of waves. A wave with more than 6 tasks is drawn in columns of at most 3 tasks
+    in its own panel (D11b), so cards stay legible at print size and no column grows past the page."""
+    waves = ctx.F.get("roadmap", [])
+    short = [w for w in waves if len(w["tasks"]) <= 6]
+    long_ = [w for w in waves if len(w["tasks"]) > 6]
+    if not long_:
+        return d11_panel(ctx, waves, "", "")
+    out = [d11_panel(ctx, short, "a", " (waves %s to %s)" % (short[0]["id"], short[-1]["id"]) if short else "")]
+    for i, w in enumerate(long_):
+        out.append(d11_panel(ctx, [w], "bcd"[i], " (wave %s)" % w["id"], chunk=3))
+    return out
+
+
+def d11_panel(ctx, waves, panel, note, chunk=None):
     F = ctx.F
-    waves = F.get("roadmap", [])
+    fid = "D11" + panel
+    cols = []                      # (wave, header label, task ids, first column of its wave)
+    for w in waves:
+        parts = [w["tasks"][i:i + chunk] for i in range(0, len(w["tasks"]), chunk)] if chunk else [w["tasks"]]
+        for j, part in enumerate(parts):
+            cols.append((w, w["id"] + ("" if j == 0 else " (%d of %d)" % (j + 1, len(parts))), part, j == 0))
     tasks = {t["id"]: t for t in F.get("tasks", [])}
     gaps = {g["id"]: g for g in F.get("gaps", [])}
     T = TIERS[CUR["tier"] or "A"]
     M, colw, cw, corridor = 24, 242, 208, 30
-    W = 2 * M + 30 + len(waves) * colw
+    W = 2 * M + 30 + len(cols) * colw
     body, rects, eps, labels = [], {}, [], []
     x0 = M + 30
     top = M + lh(T["meta"]) + 8
@@ -2108,25 +2132,28 @@ def d11(ctx):
     # wave headers
     hdr = {}
     hh = 0
-    for k, w in enumerate(waves):
-        n = {"id": w["id"], "raw": [(f'{w["id"]} {w["name"]}', "name", "", 2)], "c": 8, "state": "note",
+    for k, (w, label, part, first) in enumerate(cols):
+        hid = w["id"] if first else f'{w["id"]}#{k}'
+        n = {"id": hid, "raw": [(f'{label} {w["name"]}' if first else label, "name", "", 2)], "c": 8, "state": "note",
              "title": f'{w["id"]}: {w["name"]}', "marks": []}
         _, h_ = node_size(n, T, cw, cw)
-        hdr[w["id"]] = n
+        hdr[k] = (hid, n)
         hh = max(hh, h_)
-    for k, w in enumerate(waves):
+    for k, (w, label, part, first) in enumerate(cols):
+        hid, n = hdr[k]
         r = (x0 + k * colw, top, cw, hh)
-        body.append(node_svg(hdr[w["id"]], r, T).replace(f'data-node="{w["id"]}"', f'data-node="{w["id"]}" data-wave="{w["id"]}"', 1))
-        rects[w["id"]] = r
+        body.append(node_svg(n, r, T).replace(f'data-node="{hid}"', f'data-node="{w["id"]}" data-wave="{w["id"]}"', 1))
+        rects[hid] = r
     # task cards
     cards = {}
     ch = 0
-    for w in waves:
-        for tid in w["tasks"]:
+    for w, label, part, first in cols:
+        for tid in part:
             t = tasks.get(tid, {"id": tid, "title": tid, "project": "", "type": ""})
             d = tdom(t)
+            ext = [x for x in t.get("depends", []) if x not in {q for c in cols for q in c[2]}]
             n = {"id": tid, "raw": [(tid, "num", "", 1), (t["title"], "text", "", 2),
-                                    (f'{d} · {t["project"]} · {t.get("type", "")}', "meta", "2", 1)],
+                                    (f'{d} · {t["project"]} · {t.get("type", "")}' + (f' · after {", ".join(ext)}' if ext else ""), "meta", "2", 2 if ext else 1)],
                  "c": ctx.chart(d), "state": "queued",
                  "title": f'{tid} ({t["project"]}, {t.get("type")}): {t["title"]}. Verify: {t.get("verify", "")}', "marks": []}
             _, h_ = node_size(n, T, cw, cw)
@@ -2134,9 +2161,9 @@ def d11(ctx):
             ch = max(ch, h_)
     rowy = lambda i: top + hh + corridor + i * (ch + corridor)
     pos = {}
-    maxrows = max(len(w["tasks"]) for w in waves) if waves else 0
-    for k, w in enumerate(waves):
-        for i, tid in enumerate(w["tasks"]):
+    maxrows = max(len(c[2]) for c in cols) if cols else 0
+    for k, (w, label, part, first) in enumerate(cols):
+        for i, tid in enumerate(part):
             r = (x0 + k * colw, rowy(i), cw, ch)
             pos[tid] = (k, i)
             rects[tid] = r
@@ -2151,7 +2178,9 @@ def d11(ctx):
         _, h_ = node_size(n, T, cw - 30, cw - 30)
         gnodes[w["id"]] = n
         gh = max(gh, h_)
-    for k, w in enumerate(waves):
+    for k, (w, label, part, first) in enumerate(cols):
+        if not first:
+            continue
         gx = x0 + k * colw
         body.append(f'<path class="sn-diagram__gate" d="M{gx + 12:.1f} {gy + gh / 2 - 12:.1f} L{gx + 24:.1f} {gy + gh / 2:.1f} '
                     f'L{gx + 12:.1f} {gy + gh / 2 + 12:.1f} L{gx:.1f} {gy + gh / 2:.1f} Z"/>')
@@ -2160,7 +2189,7 @@ def d11(ctx):
         body.append(node_svg(gnodes[w["id"]], r, T).replace(f'data-node="gate-{w["id"]}"', f'data-node="{w["id"]}" data-gate="{w["id"]}"', 1))
     # wave dependency arrows: gate of the earlier wave -> header of the later wave (routed through the top corridor)
     lane_y = M - 4
-    widx = {w["id"]: k for k, w in enumerate(waves)}
+    widx = {c[0]["id"]: k for k, c in enumerate(cols) if c[3]}
     used = 0
     for w in waves:
         for d in w.get("depends", []):
@@ -2184,8 +2213,8 @@ def d11(ctx):
             (ka, ia), (kb, ib) = pos[d], pos[tid]
             a, b = rects[d], rects[tid]
             if ka == kb:
-                xx = a[0] + a[2] - 24
-                pts = [(xx, a[1] + a[3]), (xx, b[1])] if ib > ia else [(xx, a[1]), (xx, b[1] + b[3])]
+                xx = a[0] + a[2] + 8 + ((ia + ib) % 3) * 4
+                pts = [(a[0] + a[2], a[1] + a[3] / 2), (xx, a[1] + a[3] / 2), (xx, b[1] + b[3] / 2), (b[0] + b[2], b[1] + b[3] / 2)]
             else:
                 cy = rowy(ib) - corridor / 2 + (4 if (ka + kb) % 2 else -4)
                 xa = a[0] + a[2] + 8 + (ia % 3) * 4
@@ -2210,21 +2239,22 @@ def d11(ctx):
     lgh = legend_height(leg, W - 2 * M, T)
     H = y + lgh + M
     W, H, minu = fit_canvas(W, H, "wide")
-    s_, _, _ = legend_svg(leg, M, y, W - 2 * M, T, "D11")
+    s_, _, _ = legend_svg(leg, M, y, W - 2 * M, T, fid)
     body.append(s_)
-    svg = svg_root("D11", W, H, "Roadmap: waves, tasks and gates",
+    svg = svg_root(fid, W, H, "Roadmap: waves, tasks and gates" + note,
                    f"{len(waves)} waves as columns from Today; {len(cards)} task cards with dependency arrows, a gate "
                    "diamond under each wave and wave-to-wave dependencies across the top.", "\n".join(body))
     chk = hand_checks({k: v for k, v in rects.items()}, eps, labels, W, H, minu, T)
     rows = [[w["id"], tid, tasks.get(tid, {}).get("title"), tasks.get(tid, {}).get("project"),
              ", ".join(tasks.get(tid, {}).get("depends", [])) or "–", w.get("gate"), ", ".join(w.get("depends", [])) or "–"]
-            for w in waves for tid in w["tasks"]]
-    return fig("D11", "Roadmap timeline", f"{len(waves)} waves and {len(cards)} tasks; the security gate in W1 comes "
-               "before any tunnel.", "tasks", len(cards), "queued",
+            for w, label, part, first in cols for tid in part]
+    cap = (f"{len(waves)} waves and {len(cards)} tasks; the security gate in W1 comes before any tunnel." if not panel or panel == "a"
+           else f"{waves[0]['id']} alone: {len(cards)} one-job packages for the proposed pages and design-system updates, after waves {', '.join(waves[0].get('depends', []))}.")
+    return fig(fid, "Roadmap timeline" + note, cap, "tasks", len(cards), "queued",
                "roadmap[] (tasks, gate, depends); tasks[] (project, type, depends, gaps); meta.ml_snapshot (Today)",
                f"hand-placed columns, dependency arrows routed through row corridors; {chk['crossings']} crossings", svg,
                {"columns": ["Wave", "Task", "Title", "Project", "Depends on", "Gate", "Wave depends on"], "rows": rows},
-               chk, "roadmap-timeline.svg")
+               chk, "roadmap-timeline%s.svg" % ("-" + panel if panel else ""))
 
 
 BUILDERS = [("D1", d1), ("D2", d2), ("D3", d3), ("D4", d4), ("D5", d5), ("D6", d6), ("D7", d7), ("D8", d8), ("D9", d9),

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1573 865" role="img" aria-labelledby="D11-t D11-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1573 865" role="img" aria-labelledby="D11a-t D11a-d" class="sn-diagram"><style>/* SongNodes — generated from tokens.json */
 :root, [data-theme="dark"] {
   --bg: #222222;
   --surface-1: #2d2d2d;
@@ -788,8 +788,8 @@
 .sn-chart-frame__base { stroke: var(--line-strong); stroke-width: 1; shape-rendering: crispEdges; }
 .sn-chart-frame__tick { fill: var(--chart-axis); font-family: var(--font-data); font-size: 0.6875rem; font-variant-numeric: tabular-nums; }
 .sn-chart-frame__axis-title { fill: var(--chart-axis); font-family: var(--font-body); font-size: 0.6875rem; }</style>
-<title id="D11-t">Roadmap: waves, tasks and gates</title>
-<desc id="D11-d">5 waves as columns from Today; 16 task cards with dependency arrows, a gate diamond under each wave and wave-to-wave dependencies across the top.</desc>
+<title id="D11a-t">Roadmap: waves, tasks and gates &#x28;waves W1 to W5)</title>
+<desc id="D11a-d">5 waves as columns from Today; 16 task cards with dependency arrows, a gate diamond under each wave and wave-to-wave dependencies across the top.</desc>
 <rect class="sn-diagram__bg" x="0" y="0" width="1573" height="865"/>
 <g class="sn-diagram__node sn-dg-c8 sn-diagram__node--note" data-node="W1" data-wave="W1" tabindex="0" aria-label="W1: Close the security gate before any tunnel">
 <title>W1: Close the security gate before any tunnel</title>
@@ -1040,8 +1040,8 @@
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--queued" data-from="SN-T03" data-to="ML-T02" data-edge="SN-T03&gt;ML-T02" tabindex="0" aria-label="ML-T02 depends on SN-T03">
 <title>ML-T02 depends on SN-T03</title>
-<path class="sn-diagram__line" d="M480.0 395.0 L480.0 365.0"/>
-<path class="sn-diagram__head" d="M480.0 365.0 L476.1 372.0 L483.9 372.0 Z"/>
+<path class="sn-diagram__line" d="M504.0 444.0 L512.0 444.0 L512.0 316.0 L504.0 316.0"/>
+<path class="sn-diagram__head" d="M504.0 316.0 L511.0 312.1 L511.0 319.9 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--queued" data-from="SN-T03" data-to="ML-T05" data-edge="SN-T03&gt;ML-T05" tabindex="0" aria-label="ML-T05 depends on SN-T03">
 <title>ML-T05 depends on SN-T03</title>
@@ -1050,13 +1050,13 @@
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--queued" data-from="SN-T01" data-to="SN-T02" data-edge="SN-T01&gt;SN-T02" tabindex="0" aria-label="SN-T02 depends on SN-T01">
 <title>SN-T02 depends on SN-T01</title>
-<path class="sn-diagram__line" d="M238.0 237.0 L238.0 267.0"/>
-<path class="sn-diagram__head" d="M238.0 267.0 L234.2 260.0 L241.8 260.0 Z"/>
+<path class="sn-diagram__line" d="M262.0 188.0 L274.0 188.0 L274.0 316.0 L262.0 316.0"/>
+<path class="sn-diagram__head" d="M262.0 316.0 L269.0 312.1 L269.0 319.9 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c3 sn-diagram__edge--queued" data-from="SN-T05" data-to="SN-T06" data-edge="SN-T05&gt;SN-T06" tabindex="0" aria-label="SN-T06 depends on SN-T05">
 <title>SN-T06 depends on SN-T05</title>
-<path class="sn-diagram__line" d="M722.0 237.0 L722.0 267.0"/>
-<path class="sn-diagram__head" d="M722.0 267.0 L718.1 260.0 L725.9 260.0 Z"/>
+<path class="sn-diagram__line" d="M746.0 188.0 L758.0 188.0 L758.0 316.0 L746.0 316.0"/>
+<path class="sn-diagram__head" d="M746.0 316.0 L753.0 312.1 L753.0 319.9 Z"/>
 </g>
 <g class="sn-diagram__edge sn-dg-c8 sn-diagram__edge--queued" data-from="SN-T03" data-to="SN-T08" data-edge="SN-T03&gt;SN-T08" tabindex="0" aria-label="SN-T08 depends on SN-T03">
 <title>SN-T08 depends on SN-T03</title>

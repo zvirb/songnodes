@@ -9,6 +9,9 @@ import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import ux  # noqa: E402  UX recommendations (pages and design-system updates)
+
 frag_dir, out = Path(sys.argv[1]), Path(sys.argv[2])
 FR = {p.stem: json.loads(p.read_text(encoding="utf-8")) for p in frag_dir.glob("*.json")}
 
@@ -192,8 +195,11 @@ S = {
         "Open decision: keep a gold layer or document silver-plus-projection as the model (SN-T06).",
         "Open decision: which Set Builder is primary once both read the same saved-set shape."],
     "handover": {"items": [["Branch", "docs/data-flow-investigation"]], "gates": [], "next": []},
+    "ux_proposals": ux.PROPOSALS,
     "patch": patch,
     "append": APPEND,
 }
+S["tasks"] += ux.TASKS
+S["roadmap"].append(ux.WAVE)
 out.write_text(json.dumps(S, indent=1, ensure_ascii=False), encoding="utf-8")
 print("synthesis", out, len(patch["debt"]), "debt", len(patch["gaps"]), "gaps")

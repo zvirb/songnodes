@@ -472,6 +472,30 @@
     "W3",
     "W4"
    ]
+  },
+  {
+   "id": "W6",
+   "name": "User experience: pages and design-system rules",
+   "tasks": [
+    "UX-T01",
+    "UX-T02",
+    "UX-T03",
+    "UX-T04",
+    "UX-T05",
+    "UX-T06",
+    "UX-T07",
+    "UX-T08",
+    "UX-T09",
+    "UX-T10",
+    "UX-T11",
+    "UX-T12",
+    "SN-T10"
+   ],
+   "gate": "Each new page passes the design-system linter and the conformance screenshots beside the HomePage preview",
+   "depends": [
+    "W2",
+    "W4"
+   ]
   }
  ],
  "queued": [
@@ -775,6 +799,218 @@
    "depends": [],
    "verify": "artifact tokens.json version is 1.10.0",
    "gaps": []
+  },
+  {
+   "id": "UX-T01",
+   "project": "songnodes",
+   "title": "Build the Review queue page (UX-01)",
+   "type": "ux-page",
+   "owned": [
+    "frontend/src/features/musicLibrary/ReviewQueuePage.tsx (new)",
+    "frontend/src/features/musicLibrary/route.tsx",
+    "services/rest_api/routers/library_overrides.py (new)"
+   ],
+   "depends": [
+    "UX-T09",
+    "SN-T03"
+   ],
+   "verify": "see UX-01",
+   "gaps": [
+    "ml-gap-written-never-read"
+   ]
+  },
+  {
+   "id": "UX-T02",
+   "project": "songnodes",
+   "title": "Build the Track detail page (UX-02)",
+   "type": "ux-page",
+   "owned": [
+    "frontend/src/features/trackDetail/ (new)",
+    "frontend/src/components/TrackDetailsModal.tsx"
+   ],
+   "depends": [
+    "SN-T08"
+   ],
+   "verify": "see UX-02",
+   "gaps": [
+    "ml-gap-transitions-not-used"
+   ]
+  },
+  {
+   "id": "UX-T03",
+   "project": "songnodes",
+   "title": "Pipeline health page and run history (UX-03)",
+   "type": "ux-page",
+   "owned": [
+    "frontend/src/pages/ScraperProgressPage.tsx",
+    "frontend/src/features/pipeline/RunsPage.tsx (new)",
+    "frontend/src/features/pipeline/RunMonitor.tsx (new, M5)"
+   ],
+   "depends": [
+    "ML-T06"
+   ],
+   "verify": "see UX-03",
+   "gaps": [
+    "sn-be-gap-backups"
+   ]
+  },
+  {
+   "id": "UX-T04",
+   "project": "songnodes",
+   "title": "Build the Buy list page (UX-04)",
+   "type": "ux-page",
+   "owned": [
+    "frontend/src/features/musicLibrary/BuyListPage.tsx (new)",
+    "frontend/src/features/musicLibrary/route.tsx"
+   ],
+   "depends": [
+    "UX-T09",
+    "ML-T04"
+   ],
+   "verify": "see UX-04",
+   "gaps": [
+    "ml-gap-rekordbox-feedback"
+   ]
+  },
+  {
+   "id": "UX-T05",
+   "project": "musicLibrary",
+   "title": "Retire the artifact Set Builder behind /sets (UX-05)",
+   "type": "ux-page",
+   "owned": [
+    "artifact/index.html",
+    "artifact/build/index.html",
+    "README.md"
+   ],
+   "depends": [
+    "ML-T02"
+   ],
+   "verify": "see UX-05",
+   "gaps": [
+    "ml-gap-saved-set-shape"
+   ]
+  },
+  {
+   "id": "UX-T06",
+   "project": "songnodes",
+   "title": "Rebuild the work-queue tracker on the design system (UX-06)",
+   "type": "ux-page",
+   "owned": [
+    "plan/work-queue-2026-10-30/tracker.html"
+   ],
+   "depends": [],
+   "verify": "see UX-06",
+   "gaps": []
+  },
+  {
+   "id": "UX-T07",
+   "project": "design-system",
+   "title": "Rule: one primary when the empty state carries it (UX-07)",
+   "type": "design-system",
+   "owned": [
+    "design-system/06-interaction-accessibility.md",
+    "design-system/rules/rules.yaml",
+    "scripts/check_design_system.py",
+    "design-system/17-governance.md"
+   ],
+   "depends": [],
+   "verify": "see UX-07",
+   "gaps": []
+  },
+  {
+   "id": "UX-T08",
+   "project": "design-system",
+   "title": "Linter: Unknown values and Title Case labels (UX-08)",
+   "type": "design-system",
+   "owned": [
+    "design-system/linters/check.py",
+    "design-system/rules/rules.yaml"
+   ],
+   "depends": [],
+   "verify": "see UX-08",
+   "gaps": []
+  },
+  {
+   "id": "UX-T09",
+   "project": "design-system",
+   "title": "DataTable editable cell (UX-09)",
+   "type": "design-system",
+   "owned": [
+    "design-system/components/DataTable/README.md",
+    "design-system/components/DataTable/preview.html",
+    "design-system/source/css/30-data.css",
+    "design-system/source/bundle.src.js",
+    "design-system/17-governance.md"
+   ],
+   "depends": [],
+   "verify": "see UX-09",
+   "gaps": []
+  },
+  {
+   "id": "UX-T10",
+   "project": "design-system",
+   "title": "Freshness stamp required on data pages (UX-10)",
+   "type": "design-system",
+   "owned": [
+    "design-system/13-page-patterns.md",
+    "design-system/rules/rules.yaml",
+    "scripts/check_design_system.py"
+   ],
+   "depends": [],
+   "verify": "see UX-10",
+   "gaps": [
+    "sn-fe-gap-library-generated"
+   ]
+  },
+  {
+   "id": "UX-T11",
+   "project": "design-system",
+   "title": "ServiceStatus state from a usable token (UX-11)",
+   "type": "design-system",
+   "owned": [
+    "design-system/components/ServiceStatus/README.md",
+    "design-system/components/AuthCallbackPage/README.md",
+    "design-system/components/SettingsPage/README.md"
+   ],
+   "depends": [
+    "SN-T09"
+   ],
+   "verify": "see UX-11",
+   "gaps": [
+    "sn-fe-gap-oauth-session-tokens"
+   ]
+  },
+  {
+   "id": "UX-T12",
+   "project": "design-system",
+   "title": "Close Q-PRINT-1 and publish 1.10.0 (UX-12)",
+   "type": "design-system",
+   "owned": [
+    "design-system/source/css/61-pages-b.css",
+    "design-system/15-print-export.md",
+    "design-system/17-governance.md",
+    "design-system artifact 7f37707d"
+   ],
+   "depends": [
+    "DS-T01"
+   ],
+   "verify": "see UX-12",
+   "gaps": []
+  },
+  {
+   "id": "SN-T10",
+   "project": "songnodes",
+   "title": "IndexedDB last-good-data cache per 16 platform",
+   "type": "fix",
+   "owned": [
+    "frontend/src/hooks/useDataLoader.ts",
+    "frontend/src/lib/lastGood.ts (new)"
+   ],
+   "depends": [],
+   "verify": "with the API down, /library shows the last data with a stale stamp instead of an error",
+   "gaps": [
+    "sn-fe-gap-indexeddb-cache"
+   ]
   }
  ],
  "assumptions": [
@@ -795,6 +1031,338 @@
   "gates": [],
   "next": []
  },
+ "ux_proposals": [
+  {
+   "id": "UX-01",
+   "kind": "page",
+   "title": "Review queue",
+   "module": "library",
+   "route": "/library/review",
+   "pattern": "LogPage (filter chips, selectable DataTable with bulk actions, entry panel) with inline NumberField and SelectField cells",
+   "personas": [
+    "P3",
+    "P7"
+   ],
+   "problem": "The curator's weekly review is a CSV round trip: review_queue.csv lists all 413 tracks because none has a BPM, its override column is read by no code, and rows must be copied by hand into overrides/energy_overrides.csv with different columns. 0 overrides exist after four runs.",
+   "proposal": "A page that lists tracks needing a check (energy estimate, missing key or BPM, duplicate), lets the curator set energy, pillar, rotation and local_path in the row, and writes the override through the library API; the weekly run reads overrides from the API instead of the CSV. NavDrawer badge on Library shows the queue size; a warn Banner on /library links to it (every warning says where to fix it).",
+   "evidence": [
+    "P3 failure modes",
+    "ml-gap-written-never-read",
+    "ml-gap-deezer-bpm-not-merged",
+    "musicLibrary/pipeline/run_weekly.py",
+    "songnodes/design-system/components/LogPage/README.md"
+   ],
+   "rules": [
+    "R1",
+    "R2",
+    "R5",
+    "design-system 07 warnings link to their source"
+   ],
+   "effort": "L",
+   "task": "UX-T01",
+   "verify": "Set energy on one queued track in the page; the next weekly run's ledger shows the override and the review queue shrinks by one."
+  },
+  {
+   "id": "UX-02",
+   "kind": "page",
+   "title": "Track detail",
+   "module": "library",
+   "route": "/tracks/:id",
+   "pattern": "TrackDetailPage (KeyValueGrid, KeyBadge with key name, BpmReadout, EnergyBar, SourceBadge, Tabs: overview, plays, transitions)",
+   "personas": [
+    "P1",
+    "P2",
+    "P3"
+   ],
+   "problem": "Track detail is a modal (TrackDetailsModal) opened from the graph; the design system specifies a page, and nothing links a track to where it was heard, its proven transitions and its IDs in one place. The DJ's third step (key and mood) and the planner's spare suggestions have no fallback once the modal closes.",
+   "proposal": "Build the TrackDetailPage route; TrackCell titles in the crate, running order, graph side panel and review queue link to it; the transitions tab reads the transition feed (module M3) so the two projects share one view of a track.",
+   "evidence": [
+    "songnodes/frontend/src/components/TrackDetailsModal.tsx",
+    "songnodes/design-system/components/TrackDetailPage/README.md",
+    "P1 step 3 (fallback none)",
+    "ml-gap-transitions-not-used"
+   ],
+   "rules": [
+    "R1",
+    "R6"
+   ],
+   "effort": "M",
+   "task": "UX-T02",
+   "verify": "Open a track from /library and from the graph; both land on /tracks/:id with key, BPM, energy, sources and transitions filled or shown as en dashes."
+  },
+  {
+   "id": "UX-03",
+   "kind": "page",
+   "title": "Pipeline health",
+   "module": "pipeline",
+   "route": "/pipeline (health) and /pipeline/runs (run history)",
+   "pattern": "MonitoringPage (one Banner, ConnectionStatus, four FigureTiles, ServiceStatus list with only problems expanded) plus a LogPage for run history with StagedProgress per run",
+   "personas": [
+    "P4",
+    "P7"
+   ],
+   "problem": "The existing /pipeline is a telemetry page (queue a scrape, recent runs); nothing answers 'is anything broken'. The resolve yield fell from 614 of 777 to 6 of 81 with no alert, the weekly schedule drifted off Sunday 07:37, songnodes ingest failures are printed as a note, and the backup scripts back up nothing.",
+   "proposal": "Replace the telemetry page's head with the MonitoringPage pattern: a single Banner that names the worst current condition with a source link, FigureTiles for last run, resolve yield, review queue and last backup, and a run history page fed by module M5 (Run monitor). The existing scrape controls move under a 'Queue a scrape' Disclosure.",
+   "evidence": [
+    "songnodes/frontend/src/pages/ScraperProgressPage.tsx:18",
+    "songnodes/design-system/components/MonitoringPage/README.md",
+    "P7 failure modes",
+    "P4 step 6 (backups)",
+    "sn-be-gap-backups"
+   ],
+   "rules": [
+    "R1",
+    "R2",
+    "design-system 07 one Banner per page"
+   ],
+   "effort": "L",
+   "task": "UX-T03",
+   "verify": "With a run whose yield is half the previous four, /pipeline opens on a warn Banner naming the run and linking to /pipeline/runs."
+  },
+  {
+   "id": "UX-04",
+   "kind": "page",
+   "title": "Buy list",
+   "module": "library",
+   "route": "/library/buy",
+   "pattern": "LogPage with FilterChip (store, rotation), DataTable (TrackCell, price and store columns, Beatport check state as StatusPill) and bulk 'Mark bought'",
+   "personas": [
+    "P3",
+    "P8"
+   ],
+   "problem": "Buying is a CSV (buy_list.csv) and a Beatport sync that has never run: 243 beatport_check songs are waiting and 0 tracks have a Beatport id. Bought tracks only reach Rekordbox when a local_path is typed into the overrides CSV.",
+   "proposal": "One page for High and Standard rotation tracks not yet owned, with the Beatport check state, a 'Mark bought' action that records the local_path (or a FileDrop of the file) and feeds the Rekordbox XML, and the assisted Beatport sync as a StagedProgress job started from the page.",
+   "evidence": [
+    "P8 failure modes",
+    "P3 routine",
+    "musicLibrary/outputs/<date>/buy_list.csv",
+    "ml-gap-rekordbox-feedback"
+   ],
+   "rules": [
+    "R1",
+    "R2"
+   ],
+   "effort": "M",
+   "task": "UX-T04",
+   "verify": "Mark one track bought with a local file; the next run's rekordbox_musicLibrary.xml contains it and the buy list no longer does."
+  },
+  {
+   "id": "UX-05",
+   "kind": "page",
+   "title": "One Set builder",
+   "module": "sets",
+   "route": "/sets (songnodes) with the artifact retired",
+   "pattern": "SetBuilderPage as built in songnodes; RetiredPageNotice for artifact/index.html and artifact/build/index.html; SetCard 'Send to TIDAL' state",
+   "personas": [
+    "P2",
+    "P7"
+   ],
+   "problem": "Two Set Builders save sets in different shapes, each with its own Send to TIDAL, so one set can become two TIDAL playlists and a set saved in the artifact waits up to a week. The legacy artifact page breaks R1, R4 and R5 (43 linter findings).",
+   "proposal": "songnodes /sets becomes the only builder. The artifact pages show RetiredPageNotice with a link to /sets. Sending to TIDAL is one action with one state on the SetCard (queued for the weekly run, or sent now), backed by the set exchange (module M1) so the weekly run and the page agree.",
+   "evidence": [
+    "P2 failure modes",
+    "ml-gap-saved-set-shape",
+    "sn-fe-gap-artifact-sets-tidal-flag",
+    "ml-page-set-builder-legacy R1/R4/R5",
+    "songnodes/design-system/components/RetiredPageNotice/README.md"
+   ],
+   "rules": [
+    "R1",
+    "R2",
+    "R4",
+    "R5"
+   ],
+   "effort": "M",
+   "task": "UX-T05",
+   "verify": "Save a set on /sets and tick Send to TIDAL; exactly one 'SET · name' playlist exists after the next run, and the artifact URL shows the retired notice."
+  },
+  {
+   "id": "UX-06",
+   "kind": "page",
+   "title": "Work queue on the design system",
+   "module": "design",
+   "route": "plan/work-queue-*/tracker.html",
+   "pattern": "LogPage (filter chips by wave and status, DataTable with CopyButton per prompt)",
+   "personas": [
+    "P5"
+   ],
+   "problem": "The developer's work-queue tracker defines its own colours (12 hex literals, !important) and so breaks R4 on the one page developers open most.",
+   "proposal": "Rebuild the tracker from the design system's LogPage pattern with its tokens inlined the way the report and reference.standalone.html are built, so it reads like every other page and the linter passes.",
+   "evidence": [
+    "sn-fe-work-queue-tracker R4",
+    "songnodes/plan/work-queue-2026-10-30/tracker.html",
+    "songnodes/docs/design-system/build_standalone.py"
+   ],
+   "rules": [
+    "R4",
+    "R5"
+   ],
+   "effort": "S",
+   "task": "UX-T06",
+   "verify": "design-system/linters/check.py reports 0 findings on the tracker."
+  },
+  {
+   "id": "UX-07",
+   "kind": "design-system",
+   "title": "One primary action when an empty state carries it",
+   "module": "design",
+   "route": "06 interaction, EmptyState and PageHeader cards",
+   "pattern": "Rule and a conformance check",
+   "personas": [
+    "P2",
+    "P4"
+   ],
+   "problem": "Three production pages show two primary buttons at once (Set builder, Pathfinder, Sources import) because the PageHeader primary and the EmptyState primary are both specified and the repo checker does not test the combination.",
+   "proposal": "Add the rule: while a page's EmptyState shows the primary action, the PageHeader primary is not rendered (the EmptyState is the view). Add it to rules/rules.yaml (INT family) and to scripts/check_design_system.py as a DOM check on the previews; record the decision in 17-governance.",
+   "evidence": [
+    "sn-fe-sets R2",
+    "sn-fe-paths R2",
+    "sn-fe-sources-import R2",
+    "songnodes/design-system/components/EmptyState/README.md"
+   ],
+   "rules": [
+    "R2"
+   ],
+   "effort": "S",
+   "task": "UX-T07",
+   "verify": "The check fails on today's Set builder and passes once its header primary is hidden while the draft is empty."
+  },
+  {
+   "id": "UX-08",
+   "kind": "design-system",
+   "title": "Linter catches 'Unknown' and Title Case labels",
+   "module": "design",
+   "route": "linters/check.py DATA-NULL and WRT-CASE",
+   "pattern": "Linter rules",
+   "personas": [
+    "P1",
+    "P2",
+    "P4"
+   ],
+   "problem": "Five pages print 'Unknown algorithm', 'Unknown error', 'Unknown DJ' or Title Case button labels ('Copy Prompt', 'Run Search'); the linter's DATA-NULL rule only catches N/A, null, undefined and NaN, so the repo checker passes them.",
+   "proposal": "Extend DATA-NULL to the word Unknown (and 'Unknown …') in visible copy, and add WRT-CASE: a button or tab label of two or more capitalised words. Both run in the design-system workflow on the frontend's rendered previews, not only on static files.",
+   "evidence": [
+    "sn-fe-paths R5",
+    "sn-fe-sources-import R5",
+    "sn-fe-oauth-callback R5",
+    "sn-fe-login R5",
+    "songnodes/design-system/linters/check.py:20"
+   ],
+   "rules": [
+    "R5"
+   ],
+   "effort": "S",
+   "task": "UX-T08",
+   "verify": "check.py reports the five known sites; after the copy fixes it reports 0."
+  },
+  {
+   "id": "UX-09",
+   "kind": "design-system",
+   "title": "Inline editable cell for DataTable",
+   "module": "design",
+   "route": "components/DataTable (new part) and 12 inputs",
+   "pattern": "DataTable `__edit` cell: NumberField or SelectField shown on Enter or click, saved on blur, with an InlineMessage on failure",
+   "personas": [
+    "P3"
+   ],
+   "problem": "The review queue (UX-01) and the buy list (UX-04) need a value set in the row; the design system has NumberField and SelectField but no rule for editing inside a table, so each page would invent one.",
+   "proposal": "Specify the editable cell once: which cells may be edited, the keyboard model (Enter edits, Esc cancels, Tab moves on), how a save failure is shown, and the print form (the value only). Add the card and a preview; bump the design system a minor.",
+   "evidence": [
+    "songnodes/design-system/components/DataTable/README.md",
+    "songnodes/design-system/12-inputs.md",
+    "UX-01",
+    "UX-04"
+   ],
+   "rules": [
+    "R4",
+    "R5"
+   ],
+   "effort": "M",
+   "task": "UX-T09",
+   "verify": "The DataTable preview shows an editable energy cell that passes the design-system linter and the keyboard check."
+  },
+  {
+   "id": "UX-10",
+   "kind": "design-system",
+   "title": "Freshness on every data page",
+   "module": "design",
+   "route": "FreshnessStamp, PageHeader stamp, 16 platform",
+   "pattern": "FreshnessStamp sourced from the server, IndexedDB last-good cache as 16 platform already specifies",
+   "personas": [
+    "P1",
+    "P2",
+    "P3"
+   ],
+   "problem": "The library's freshness stamp is always unknown (library.generated is never set), the IndexedDB last-good-data cache that 16 platform requires does not exist, and polling backoff never engages, so a reader cannot tell live data from stale.",
+   "proposal": "Make the stamp a page-pattern requirement: every data page's PageHeader shows 'Data from <stamp>' from the ingest or run time, goes amber past the module's staleness threshold and links to Pipeline health (UX-03). Add a conformance check that a data page without a stamp fails. The cache stays a frontend task (SN-T10).",
+   "evidence": [
+    "sn-fe-gap-library-generated",
+    "sn-fe-gap-indexeddb-cache",
+    "sn-fe-debt-poll-backoff",
+    "songnodes/design-system/components/FreshnessStamp/README.md",
+    "songnodes/design-system/16-platform.md"
+   ],
+   "rules": [
+    "R1"
+   ],
+   "effort": "M",
+   "task": "UX-T10",
+   "verify": "/library shows the last ingest time; after the threshold the stamp turns warn and its link opens /pipeline."
+  },
+  {
+   "id": "UX-11",
+   "kind": "design-system",
+   "title": "Service rows tell the truth about OAuth",
+   "module": "services",
+   "route": "ServiceStatus, AuthCallbackPage, SettingsPage",
+   "pattern": "AuthCallbackPage (progress, then connected or what went wrong) and ServiceStatus with the one fixing action",
+   "personas": [
+    "P2",
+    "P4"
+   ],
+   "problem": "Settings redirects in the same window, the callback writes sessionStorage keys nothing reads, and the readers look for localStorage keys the callback deletes; Send to TIDAL then fails with a token error while Settings may still look connected. A TIDAL login for the weekly run also collides with songnodes on port 3006.",
+   "proposal": "Specify that ServiceStatus derives its state from a token the app can actually use (a probe call), never from the presence of a key; the callback page always lands on a connected or failed state with 'Reconnect' as the one action; Settings shows a notice when the musicLibrary login needs port 3006. The token hand-off itself is task SN-T09.",
+   "evidence": [
+    "sn-fe-gap-oauth-session-tokens",
+    "ml-gap-tidal-port",
+    "songnodes/design-system/components/ServiceStatus/README.md",
+    "songnodes/design-system/components/AuthCallbackPage/README.md"
+   ],
+   "rules": [
+    "R1",
+    "R2",
+    "R5"
+   ],
+   "effort": "S",
+   "task": "UX-T11",
+   "verify": "After a fresh TIDAL login the Services row reads Connected and Send to TIDAL succeeds; after revoking the token the row reads Reconnect within one probe."
+  },
+  {
+   "id": "UX-12",
+   "kind": "design-system",
+   "title": "Close Q-PRINT-1 and publish 1.10.0",
+   "module": "design",
+   "route": "15 print and export, PrintSheet, design-system artifact",
+   "pattern": "PrintSheet footer through the PDF footer template, as long documents now do",
+   "personas": [
+    "P2",
+    "P5"
+   ],
+   "problem": "Printed set sheets lose their traceability footer (clipped at bottom: -12mm in Chromium), and the published design-system artifact still holds 1.9.1 while the repo is at 1.10.0, so pages built from the artifact miss the print rules and the report patterns.",
+   "proposal": "Move the PrintSheet footer to the same footer-template mechanism, close Q-PRINT-1 with a decision record, and publish 1.10.0 to the artifact (DS-T01).",
+   "evidence": [
+    "songnodes/design-system/17-governance.md Q-PRINT-1",
+    "songnodes/design-system/15-print-export.md",
+    "DS-T01"
+   ],
+   "rules": [
+    "R4"
+   ],
+   "effort": "S",
+   "task": "UX-T12",
+   "verify": "A printed set shows its footer on every page; the artifact's tokens.json reads 1.10.0."
+  }
+ ],
  "patch": {
   "debt": {
    "sn-fe-debt-creds-localstorage": {

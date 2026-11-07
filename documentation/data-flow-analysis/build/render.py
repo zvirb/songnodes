@@ -28,7 +28,7 @@ APP = "http://127.0.0.1:3006"  # SongNodes frontend (compose.dev.yaml); NavDrawe
 
 SEV_STATUS = {"critical": ("bad", "Critical"), "high": ("warn", "High"), "medium": ("fair", "Medium"), "low": ("info", "Low")}
 CLASS_STATUS = {"production": ("ok", "Production"), "non-final": ("info", "Non-final")}
-STATE_STATUS = {"built": ("ok", "Built"), "queued": ("warn", "Queued"), "projected": ("info", "Projected")}
+STATE_STATUS = {"built": ("ok", "Built"), "queued": ("warn", "Queued"), "projected": ("info", "Projected"), "proposed": ("idle", "Proposed")}
 OUTCOME_STATUS = {"confirmed": ("ok", "Confirmed"), "corrected": ("fair", "Corrected"), "refuted": ("bad", "Refuted"),
                   "not-reproducible": ("warn", "Not reproducible"), "open": ("info", "Open")}
 RULE_STATUS = {"pass": ("ok", "Pass"), "violation": ("bad", "Violation"), "exception": ("fair", "Accepted exception"), "n/a": ("idle", "n/a")}

@@ -12,6 +12,7 @@ SECTIONS = [
     ("personas", "Personas and journeys"),
     ("debt", "Technical debt, risk and roadmap"),
     ("gaps", "Gaps, proposed modules and storage backbone"),
+    ("ux", "User experience: proposed pages and design-system updates"),
     ("projected", "Built and Projected"),
     ("tasks", "Sister-project tasks"),
     ("verification", "Verification register"),
@@ -311,7 +312,51 @@ def s_gaps(F, FG, C, mode):
     return sec("gaps", body, "%d gaps · %d modules" % (C["gaps"], C["modules"]))
 
 
-# ------------------------------------------------------------------ 9
+# ------------------------------------------------------------------ 9 (UX)
+def s_ux(F, FG, C, mode):
+    P = F.get("ux_proposals", [])
+    pid = {p["id"]: p for p in F["personas"]}
+    def card(u):
+        st, w = STATE_STATUS["proposed"]
+        who = ", ".join("%s %s" % (k, pid[k]["short"]) for k in u["personas"] if k in pid)
+        return ('<section class="sn-card" id="%s" aria-labelledby="%s-t" data-kind="ux"><div class="sn-section-heading">%s</div>'
+                '<p class="sn-figure__meta caption"><code>%s</code> · %s · %s · %s · Effort %s (Estimate)</p>'
+                '<p class="body"><span class="body-strong">Problem.</span> %s</p><p class="body"><span class="body-strong">Proposal.</span> %s</p>%s%s</section>') % (
+            E(u["id"]), E(u["id"]), title(u["id"], u["title"], "title-s", "h3", u["id"] + "-t"), E(u["id"]), tag("New page" if u["kind"] == "page" else "Design system"),
+            tag(u["module"]), pill(st, w), E(u["effort"]), E(u["problem"]), E(u["proposal"]),
+            kv([("Route or place", code(u.get("route")), False), ("Design-system pattern", E(u.get("pattern") or ""), False), ("Personas served", E(who), False),
+                ("Rules it satisfies", E(", ".join(u.get("rules") or [])), False), ("Task", code(u.get("task")), False), ("Verification", E(u.get("verify") or ""), False)]),
+            evidence(u.get("evidence"), u["id"]))
+    pages = [u for u in P if u["kind"] == "page"]
+    dsu = [u for u in P if u["kind"] != "page"]
+    body = para("Every recommendation below answers something the investigation measured: a persona step with no fallback, a standing-rule violation or a gap. "
+                "Each is sized as a one-job package and listed in the task matrix (wave W6). Nothing here is built or queued; the state is Proposed.")
+    # persona × proposal matrix (letters, not colour)
+    pcols = [(k, k, False) for k in PERSONA_COLS(F)]
+    rows = []
+    for u in P:
+        row = {"_id": u["id"] + "-m", "_kind": "ux-matrix", "id": '<span class="sn-mono">%s</span>' % E(u["id"]), "t": E(u["title"]), "k": tag("Page" if u["kind"] == "page" else "DS")}
+        for k, _, _ in pcols:
+            row[k] = '<span class="sn-mono" title="%s">●</span>' % E(pid[k]["name"]) if k in u["personas"] else '<span class="sn-none">–</span>'
+        rows.append(row)
+    body += table("t-ux-matrix", "Proposals by persona served", [("id", "ID", False), ("t", "Proposal", False), ("k", "Kind", False)] + pcols, rows, sortable=False, kind="ux-matrix",
+                  heading=sub_heading("Matrix", "Who each proposal serves", "t-ux-matrix-h", "%d proposals" % len(P)),
+                  note="● = the proposal changes that persona's journey (from its steps, failure modes and the rule results on its pages).")
+    body += sub_heading("Pages", "Proposed new pages and page changes", "ux-pages-h", "%d pages" % len(pages)) + '<div class="sn-figure-grid sn-figure-grid--2">%s</div>' % "".join(card(u) for u in pages)
+    body += sub_heading("Design system", "Proposed design-system updates", "ux-ds-h", "%d updates" % len(dsu)) + '<div class="sn-figure-grid sn-figure-grid--2">%s</div>' % "".join(card(u) for u in dsu)
+    return sec("ux", body, "%d proposals" % len(P), "Pages are built from the design system's existing page patterns; where a pattern is missing, the design system is changed first (UX-07 to UX-12).")
+
+
+def PERSONA_COLS(F):
+    used = []
+    for u in F.get("ux_proposals", []):
+        for k in u["personas"]:
+            if k not in used:
+                used.append(k)
+    return sorted(used, key=lambda k: int(k[1:]))
+
+
+# ------------------------------------------------------------------ 10
 def s_projected(F, FG, C, mode):
     rows = [{"_id": q["id"], "_kind": "queued", "id": code(q["id"]), "what": E(q["title"]), "src": code(q.get("source")), "effect": E(q.get("effect") or "") or none(),
              "touches": E(", ".join(q.get("touches") or [])) or none()} for q in F["queued"]]
@@ -374,7 +419,7 @@ def s_handover(F, FG, C, mode):
     return sec("handover", body)
 
 
-BUILDERS = [s_summary, s_architecture, s_catalogue, s_stores, s_protocols, s_personas, s_debt, s_gaps, s_projected, s_tasks, s_verification, s_methods, s_handover]
+BUILDERS = [s_summary, s_architecture, s_catalogue, s_stores, s_protocols, s_personas, s_debt, s_gaps, s_ux, s_projected, s_tasks, s_verification, s_methods, s_handover]
 
 
 def all_sections(F, FG, mode):
