@@ -1,0 +1,790 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1032 439" role="img" aria-labelledby="c5-t c5-d" class="sn-chart"><style>/* SongNodes — generated from tokens.json */
+:root, [data-theme="dark"] {
+  --bg: #222222;
+  --surface-1: #2d2d2d;
+  --surface-2: #373737;
+  --surface-3: #414141;
+  --sunk: #1b1b1b;
+  --line: #3c3c3c;
+  --line-strong: #858585;
+  --fg: #f9f9f9;
+  --fg-2: #bbbbbb;
+  --fg-3: #a3a3a3;
+  --fg-disabled: #6a6a6a;
+  --overlay: rgba(0, 0, 0, 0.55);
+  --brand: #9b85cb;
+  --brand-strong: #b4a2dc;
+  --brand-soft: #332b45;
+  --on-brand: #160f26;
+  --link: var(--brand-strong);
+  --focus: var(--brand);
+  --hover-bg: rgba(255, 255, 255, 0.06);
+  --flag-bg: #3a3020;
+  --mod-graph: #6fa8dc;
+  --mod-graph-bg: #22313e;
+  --mod-graph-raised: #2d4256;
+  --mod-graph-line: #3d5872;
+  --mod-graph-ink: #e2f0fe;
+  --mod-graph-muted: #acc8e3;
+  --on-mod-graph: #0a1c2c;
+  --mod-library: #c9a85c;
+  --mod-library-bg: #362e1b;
+  --mod-library-raised: #4a3e22;
+  --mod-library-line: #63532f;
+  --mod-library-ink: #f6eedc;
+  --mod-library-muted: #d3c29f;
+  --on-mod-library: #231902;
+  --mod-sets: #e08a5f;
+  --mod-sets-bg: #3f291e;
+  --mod-sets-raised: #573726;
+  --mod-sets-line: #744935;
+  --mod-sets-ink: #feeae0;
+  --mod-sets-muted: #e6b9a4;
+  --on-mod-sets: #2c1206;
+  --mod-paths: #d27aa8;
+  --mod-paths-bg: #3e2732;
+  --mod-paths-raised: #553345;
+  --mod-paths-line: #71455c;
+  --mod-paths-ink: #fee7f2;
+  --mod-paths-muted: #e3b5cb;
+  --on-mod-paths: #2b101e;
+  --mod-harmony: #5fb8b0;
+  --mod-harmony-bg: #1e3432;
+  --mod-harmony-raised: #264743;
+  --mod-harmony-line: #345e5a;
+  --mod-harmony-ink: #dff4f1;
+  --mod-harmony-muted: #a5cec9;
+  --on-mod-harmony: #03201d;
+  --mod-sources: #8fbf6b;
+  --mod-sources-bg: #27331e;
+  --mod-sources-raised: #344627;
+  --mod-sources-line: #465d35;
+  --mod-sources-ink: #e7f3de;
+  --mod-sources-muted: #b5cda5;
+  --on-mod-sources: #111f06;
+  --mod-pipeline: #7fa1b3;
+  --mod-pipeline-bg: #283135;
+  --mod-pipeline-raised: #354249;
+  --mod-pipeline-line: #475861;
+  --mod-pipeline-ink: #e7f0f5;
+  --mod-pipeline-muted: #b6c7d1;
+  --on-mod-pipeline: #121c22;
+  --mod-services: #a5a07b;
+  --mod-services-bg: #312f26;
+  --mod-services-raised: #424032;
+  --mod-services-line: #585644;
+  --mod-services-ink: #f0efe5;
+  --mod-services-muted: #c7c5b2;
+  --on-mod-services: #1d1b10;
+  --status-ok: #5fd08f;
+  --status-ok-bg: #143321;
+  --status-fair: #b6d35a;
+  --status-fair-bg: #282f11;
+  --status-warn: #efb54a;
+  --status-warn-bg: #38280c;
+  --status-bad: #ff7469;
+  --status-bad-bg: #41211e;
+  --status-info: #bbbbbb;
+  --status-info-bg: #2b2b2b;
+  --on-status-bad: #2a0806;
+  --compat-perfect: var(--status-ok);
+  --compat-compatible: var(--status-fair);
+  --compat-possible: var(--status-warn);
+  --compat-clash: var(--status-bad);
+  --progress-fill: var(--fg-2);
+  --progress-track: var(--surface-3);
+  --energy-1: #3b3a8f;
+  --energy-2: #4c3fa6;
+  --energy-3: #6a43b3;
+  --energy-4: #8a47b5;
+  --energy-5: #a94ba9;
+  --energy-6: #c55394;
+  --energy-7: #db6278;
+  --energy-8: #ea795c;
+  --energy-9: #f39a45;
+  --energy-10: #f7c04a;
+  --key-1a: #17a478;
+  --key-1b: #5ed8a9;
+  --key-2a: #689d48;
+  --key-2b: #99d079;
+  --key-3a: #989016;
+  --key-3b: #cac256;
+  --key-4a: #ba7f14;
+  --key-4b: #eeb154;
+  --key-5a: #cc7044;
+  --key-5b: #ffa47a;
+  --key-6a: #cf6872;
+  --key-6b: #fe9fa6;
+  --key-7a: #c3699e;
+  --key-7b: #f99bd1;
+  --key-8a: #aa72c2;
+  --key-8b: #dda4f7;
+  --key-9a: #857fd7;
+  --key-9b: #b6b4fe;
+  --key-10a: #528ed9;
+  --key-10b: #91c1ff;
+  --key-11a: #089ac3;
+  --key-11b: #49cffc;
+  --key-12a: #09a0a0;
+  --key-12b: #2ad7d7;
+  --chart-1: #56b4e9;
+  --chart-2: #e69f00;
+  --chart-3: #3fc29a;
+  --chart-4: #cc79a7;
+  --chart-5: #e8d95a;
+  --chart-6: #5aa0e0;
+  --chart-7: #f08a4b;
+  --chart-8: #999999;
+  --chart-grid: #353535;
+  --chart-axis: var(--fg-3);
+  --chart-ref: #d9d9d9;
+  --on-now: #1f1600;
+  --now: #f7c04a;
+  --sim: #8f8f8f;
+  --svc-spotify: #1db954;
+  --on-svc-spotify: #000000;
+  --svc-tidal: #000000;
+  --on-svc-tidal: #ffffff;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.30);
+  --shadow-2: 0 6px 20px rgba(0, 0, 0, 0.45);
+  --shadow-3: 0 18px 48px rgba(0, 0, 0, 0.55);
+}
+[data-theme="light"] {
+  --bg: #f4f4f1;
+  --surface-1: #ffffff;
+  --surface-2: #ecece8;
+  --surface-3: #e1e1dc;
+  --sunk: #e9e9e5;
+  --line: #d9d9d4;
+  --line-strong: #86867f;
+  --fg: #1c1c1e;
+  --fg-2: #47474b;
+  --fg-3: #616166;
+  --fg-disabled: #a3a3a0;
+  --overlay: rgba(20, 20, 24, 0.40);
+  --brand: #6a52a6;
+  --brand-strong: #56408f;
+  --brand-soft: #ebe5f7;
+  --on-brand: #ffffff;
+  --link: var(--brand);
+  --focus: var(--brand);
+  --hover-bg: rgba(0, 0, 0, 0.045);
+  --flag-bg: #fbf0d9;
+  --mod-graph: #2b679a;
+  --mod-graph-bg: #e5f2fe;
+  --mod-graph-raised: #cbe5fd;
+  --mod-graph-line: #accbe9;
+  --mod-graph-ink: #14283b;
+  --mod-graph-muted: #2d4a66;
+  --on-mod-graph: #ffffff;
+  --mod-library: #7d5e01;
+  --mod-library-bg: #f9efda;
+  --mod-library-raised: #eee0c0;
+  --mod-library-line: #d8c59e;
+  --mod-library-ink: #302508;
+  --mod-library-muted: #56451d;
+  --on-mod-library: #ffffff;
+  --mod-sets: #9b4816;
+  --mod-sets-bg: #ffece3;
+  --mod-sets-raised: #fcd9c8;
+  --mod-sets-line: #e9bca7;
+  --mod-sets-ink: #3c1d0d;
+  --mod-sets-muted: #673a24;
+  --on-mod-sets: #ffffff;
+  --mod-paths: #964070;
+  --mod-paths-bg: #ffe9f3;
+  --mod-paths-raised: #f9d6e6;
+  --mod-paths-line: #e6b8ce;
+  --mod-paths-ink: #3a1a2b;
+  --mod-paths-muted: #64364e;
+  --on-mod-paths: #ffffff;
+  --mod-harmony: #00736c;
+  --mod-harmony-bg: #def6f3;
+  --mod-harmony-raised: #c5eae6;
+  --mod-harmony-line: #a5d2cd;
+  --mod-harmony-ink: #0a2d2a;
+  --mod-harmony-muted: #21514d;
+  --on-mod-harmony: #ffffff;
+  --mod-sources: #447214;
+  --mod-sources-bg: #e8f5e0;
+  --mod-sources-raised: #d6e8ca;
+  --mod-sources-line: #b8d0a8;
+  --mod-sources-ink: #1b2c0e;
+  --mod-sources-muted: #375024;
+  --on-mod-sources: #ffffff;
+  --mod-pipeline: #46687a;
+  --mod-pipeline-bg: #e7f2f8;
+  --mod-pipeline-raised: #d4e4ed;
+  --mod-pipeline-line: #b8cbd5;
+  --mod-pipeline-ink: #1c282f;
+  --mod-pipeline-muted: #394b54;
+  --on-mod-pipeline: #ffffff;
+  --mod-services: #6a6440;
+  --mod-services-bg: #f2f1e5;
+  --mod-services-raised: #e4e2d1;
+  --mod-services-line: #cbc8b3;
+  --mod-services-ink: #29271a;
+  --mod-services-muted: #4b4835;
+  --on-mod-services: #ffffff;
+  --status-ok: #1d7a45;
+  --status-ok-bg: #daf7e2;
+  --status-fair: #5d7414;
+  --status-fair-bg: #e9f4d5;
+  --status-warn: #8a5a00;
+  --status-warn-bg: #feebd3;
+  --status-bad: #b3261e;
+  --status-bad-bg: #fee9e5;
+  --status-info: #47474b;
+  --status-info-bg: #eeeef0;
+  --on-status-bad: #ffffff;
+  --compat-perfect: var(--status-ok);
+  --compat-compatible: var(--status-fair);
+  --compat-possible: var(--status-warn);
+  --compat-clash: var(--status-bad);
+  --progress-fill: var(--fg-2);
+  --progress-track: var(--surface-3);
+  --key-1a: #057c59;
+  --key-1b: #029e72;
+  --key-2a: #467922;
+  --key-2b: #629742;
+  --key-3a: #736c01;
+  --key-3b: #928a07;
+  --key-4a: #8d5e00;
+  --key-4b: #b37903;
+  --key-5a: #a44c1d;
+  --key-5b: #c56a3e;
+  --key-6a: #a64450;
+  --key-6b: #c8626d;
+  --key-7a: #9b467a;
+  --key-7b: #bc6398;
+  --key-8a: #854f9c;
+  --key-8b: #a36cbc;
+  --key-9a: #635bb0;
+  --key-9b: #7f79d1;
+  --key-10a: #2e69b2;
+  --key-10b: #4c88d3;
+  --key-11a: #027493;
+  --key-11b: #0994ba;
+  --key-12a: #047879;
+  --key-12b: #009a9a;
+  --chart-1: #0072b2;
+  --chart-2: #b36b00;
+  --chart-3: #007a5a;
+  --chart-4: #b0477f;
+  --chart-5: #8a7d00;
+  --chart-6: #005a8c;
+  --chart-7: #b34700;
+  --chart-8: #6b6b6b;
+  --chart-grid: #e4e4df;
+  --chart-axis: var(--fg-3);
+  --chart-ref: #3a3a3d;
+  --on-now: #ffffff;
+  --now: #9a6400;
+  --sim: #76767a;
+  --shadow-1: 0 1px 2px rgba(20, 20, 24, 0.08);
+  --shadow-2: 0 6px 20px rgba(20, 20, 24, 0.14);
+  --shadow-3: 0 18px 48px rgba(20, 20, 24, 0.22);
+}
+[data-theme="booth"] {
+  --bg: #000000;
+  --surface-1: #0f0f0f;
+  --surface-2: #1c1c1c;
+  --surface-3: #2a2a2a;
+  --sunk: #000000;
+  --line: #5e5e5e;
+  --line-strong: #a8a8a8;
+  --fg: #ffffff;
+  --fg-2: #e8e8e8;
+  --fg-3: #cfcfcf;
+  --fg-disabled: #8a8a8a;
+  --overlay: rgba(0, 0, 0, 0.80);
+  --brand: #c9b9f0;
+  --brand-strong: #e0d6fa;
+  --brand-soft: #271e3d;
+  --on-brand: #000000;
+  --link: var(--brand);
+  --focus: var(--brand);
+  --hover-bg: rgba(255, 255, 255, 0.14);
+  --flag-bg: #3a2a00;
+  --mod-graph: #acd6fe;
+  --mod-graph-bg: #081725;
+  --mod-graph-raised: #162d42;
+  --mod-graph-line: #658aad;
+  --mod-graph-ink: #fafcfe;
+  --mod-graph-muted: #d1e8fe;
+  --on-mod-graph: #000000;
+  --mod-library: #e9ce92;
+  --mod-library-bg: #1d1502;
+  --mod-library-raised: #372908;
+  --mod-library-line: #998352;
+  --mod-library-ink: #fffbf4;
+  --mod-library-muted: #f1e3c6;
+  --on-mod-library: #000000;
+  --mod-sets: #fec1a4;
+  --mod-sets-bg: #250f05;
+  --mod-sets-raised: #43210f;
+  --mod-sets-line: #b0765a;
+  --mod-sets-ink: #fefbf9;
+  --mod-sets-muted: #ffdccc;
+  --on-mod-sets: #000000;
+  --mod-paths: #feb9db;
+  --mod-paths-bg: #240d19;
+  --mod-paths-raised: #411d31;
+  --mod-paths-line: #ad718f;
+  --mod-paths-ink: #fefbfc;
+  --mod-paths-muted: #ffd8ea;
+  --on-mod-paths: #000000;
+  --mod-harmony: #9ce0d9;
+  --mod-harmony-bg: #031a18;
+  --mod-harmony-raised: #0b322f;
+  --mod-harmony-line: #59928d;
+  --mod-harmony-ink: #f5fefd;
+  --mod-harmony-muted: #ccede9;
+  --on-mod-harmony: #000000;
+  --mod-sources: #b8df9c;
+  --mod-sources-bg: #0e1a05;
+  --mod-sources-raised: #1f320f;
+  --mod-sources-line: #72925a;
+  --mod-sources-ink: #f9fdf6;
+  --mod-sources-muted: #d8eccb;
+  --on-mod-sources: #000000;
+  --mod-pipeline: #bad6e5;
+  --mod-pipeline-bg: #0f171c;
+  --mod-pipeline-raised: #202e35;
+  --mod-pipeline-line: #738a96;
+  --mod-pipeline-ink: #f9fcfe;
+  --mod-pipeline-muted: #d9e7ef;
+  --on-mod-pipeline: #000000;
+  --mod-services: #d6d2b4;
+  --mod-services-bg: #18160d;
+  --mod-services-raised: #2e2c1d;
+  --mod-services-line: #8a876e;
+  --mod-services-ink: #fdfcf5;
+  --mod-services-muted: #e7e5d6;
+  --on-mod-services: #000000;
+  --status-ok: #6fe0a0;
+  --status-ok-bg: #001709;
+  --status-fair: #c6e36a;
+  --status-fair-bg: #0f1400;
+  --status-warn: #f7c35a;
+  --status-warn-bg: #1a0f00;
+  --status-bad: #ff8a80;
+  --status-bad-bg: #240706;
+  --status-info: #e8e8e8;
+  --status-info-bg: #121212;
+  --on-status-bad: #000000;
+  --compat-perfect: var(--status-ok);
+  --compat-compatible: var(--status-fair);
+  --compat-possible: var(--status-warn);
+  --compat-clash: var(--status-bad);
+  --progress-fill: var(--fg-2);
+  --progress-track: var(--surface-3);
+  --energy-1: #47489f;
+  --energy-2: #4e41a9;
+  --key-1a: #2dc08e;
+  --key-1b: #68eeba;
+  --key-2a: #7db85a;
+  --key-2b: #a9e686;
+  --key-3a: #b2a92a;
+  --key-3b: #dfd65f;
+  --key-4a: #d79628;
+  --key-4b: #fec675;
+  --key-5a: #eb8656;
+  --key-5b: #fec1a6;
+  --key-6a: #ef7d88;
+  --key-6b: #ffbdc1;
+  --key-7a: #e17eb9;
+  --key-7b: #feb8df;
+  --key-8a: #c588e0;
+  --key-8b: #eabdfe;
+  --key-9a: #9c96f8;
+  --key-9b: #cbcbfe;
+  --key-10a: #65a7fa;
+  --key-10b: #b3d4ff;
+  --key-11a: #03b5e4;
+  --key-11b: #8cdeff;
+  --key-12a: #08bcbc;
+  --key-12b: #2eeded;
+  --chart-grid: #3a3a3a;
+  --chart-axis: var(--fg-3);
+  --chart-ref: #ffffff;
+  --on-now: #000000;
+  --now: #ffd166;
+  --sim: #bdbdbd;
+  --shadow-1: none;
+  --shadow-2: 0 0 0 1px #a8a8a8;
+  --shadow-3: 0 0 0 2px #ffffff;
+}
+:root {
+  --space-0: 0px;
+  --space-0\.5: 2px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --radius-chip: 4px;
+  --radius-control: 8px;
+  --radius-card: 14px;
+  --radius-sheet: 18px;
+  --radius-pill: 999px;
+  --control-sm: 32px;
+  --control-md: 40px;
+  --control-lg: 48px;
+  --touch-min: 44px;
+  --row-compact: 32px;
+  --row-comfortable: 40px;
+  --row-two-line: 56px;
+  --header-h: 56px;
+  --drawer-w: 300px;
+  --rail-w: 248px;
+  --content-max: 1400px;
+  --print-wide-h: 150mm;
+  --print-wide-w: 273mm;
+  --prose-max: 68ch;
+  --z-base: 0;
+  --z-sticky: 10;
+  --z-header: 20;
+  --z-drawer: 40;
+  --z-overlay: 50;
+  --z-dialog: 60;
+  --z-popover: 70;
+  --z-toast: 80;
+  --z-tooltip: 90;
+  --duration-instant: 0ms;
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 1, 1);
+  --bp-phone: 480px;
+  --bp-tablet: 768px;
+  --bp-desktop: 1100px;
+  --bp-wide: 1440px;
+  --bp-wall: 1920px;
+  --opacity-disabled: 0.45;
+  --opacity-faded: 0.15;
+  --opacity-edge: 0.6;
+  --graph-edge-w-1: 1px;
+  --graph-edge-w-2: 2px;
+  --graph-edge-w-3: 3.5px;
+  --graph-edge-w-4: 6px;
+  --graph-edge-op-1: 0.35;
+  --graph-edge-op-2: 0.55;
+  --graph-edge-op-3: 0.8;
+  --graph-edge-op-4: 1;
+  --graph-edge-dim: 0.25;
+  --graph-ring-first: 58px;
+  --graph-ring-step: 40px;
+  --graph-ring-aspect: 1.7;
+  --graph-seat-gap: 30px;
+  --graph-label-zoom: 1.5;
+  --graph-hood-steps: 3;
+  --graph-hood-max: 200;
+  --font-display: "Sora", "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+.display-xl { font-family: var(--font-display); font-size: 2.5rem; line-height: 1.1; font-weight: 700; letter-spacing: -0.01em; }
+.title-l { font-family: var(--font-display); font-size: 1.75rem; line-height: 1.2; font-weight: 700; }
+.title-m { font-family: var(--font-display); font-size: 1.375rem; line-height: 1.25; font-weight: 700; }
+.title-s { font-family: var(--font-display); font-size: 1.125rem; line-height: 1.3; font-weight: 700; }
+.title-lead { font-family: var(--font-display); font-size: 1em; line-height: 1.2; font-weight: 400; }
+.figure { font-family: var(--font-display); font-size: 2rem; line-height: 1.05; font-weight: 700; }
+.body-l { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.55; font-weight: 400; }
+.body { font-family: var(--font-body); font-size: 0.9375rem; line-height: 1.45; font-weight: 400; }
+.body-strong { font-family: var(--font-body); font-size: 0.9375rem; line-height: 1.45; font-weight: 600; }
+.body-s { font-family: var(--font-body); font-size: 0.8125rem; line-height: 1.4; font-weight: 400; }
+.label { font-family: var(--font-body); font-size: 0.75rem; line-height: 1.3; font-weight: 600; letter-spacing: 0.08em; }
+.caption { font-family: var(--font-body); font-size: 0.75rem; line-height: 1.35; font-weight: 400; }
+.data { font-family: var(--font-data); font-size: 0.8125rem; line-height: 1.4; font-weight: 400; }
+.data-strong { font-family: var(--font-data); font-size: 0.8125rem; line-height: 1.4; font-weight: 600; }
+.data-s { font-family: var(--font-data); font-size: 0.6875rem; line-height: 1.35; font-weight: 400; }
+
+
+
+
+
+@media (prefers-color-scheme: light) {
+:root:not([data-theme]) {
+  --bg: #f4f4f1;
+  --surface-1: #ffffff;
+  --surface-2: #ecece8;
+  --surface-3: #e1e1dc;
+  --sunk: #e9e9e5;
+  --line: #d9d9d4;
+  --line-strong: #86867f;
+  --fg: #1c1c1e;
+  --fg-2: #47474b;
+  --fg-3: #616166;
+  --fg-disabled: #a3a3a0;
+  --overlay: rgba(20, 20, 24, 0.40);
+  --brand: #6a52a6;
+  --brand-strong: #56408f;
+  --brand-soft: #ebe5f7;
+  --on-brand: #ffffff;
+  --link: var(--brand);
+  --hover-bg: rgba(0, 0, 0, 0.045);
+  --flag-bg: #fbf0d9;
+  --mod-graph: #2b679a;
+  --mod-graph-bg: #e5f2fe;
+  --mod-graph-raised: #cbe5fd;
+  --mod-graph-line: #accbe9;
+  --mod-graph-ink: #14283b;
+  --mod-graph-muted: #2d4a66;
+  --on-mod-graph: #ffffff;
+  --mod-library: #7d5e01;
+  --mod-library-bg: #f9efda;
+  --mod-library-raised: #eee0c0;
+  --mod-library-line: #d8c59e;
+  --mod-library-ink: #302508;
+  --mod-library-muted: #56451d;
+  --on-mod-library: #ffffff;
+  --mod-sets: #9b4816;
+  --mod-sets-bg: #ffece3;
+  --mod-sets-raised: #fcd9c8;
+  --mod-sets-line: #e9bca7;
+  --mod-sets-ink: #3c1d0d;
+  --mod-sets-muted: #673a24;
+  --on-mod-sets: #ffffff;
+  --mod-paths: #964070;
+  --mod-paths-bg: #ffe9f3;
+  --mod-paths-raised: #f9d6e6;
+  --mod-paths-line: #e6b8ce;
+  --mod-paths-ink: #3a1a2b;
+  --mod-paths-muted: #64364e;
+  --on-mod-paths: #ffffff;
+  --mod-harmony: #00736c;
+  --mod-harmony-bg: #def6f3;
+  --mod-harmony-raised: #c5eae6;
+  --mod-harmony-line: #a5d2cd;
+  --mod-harmony-ink: #0a2d2a;
+  --mod-harmony-muted: #21514d;
+  --on-mod-harmony: #ffffff;
+  --mod-sources: #447214;
+  --mod-sources-bg: #e8f5e0;
+  --mod-sources-raised: #d6e8ca;
+  --mod-sources-line: #b8d0a8;
+  --mod-sources-ink: #1b2c0e;
+  --mod-sources-muted: #375024;
+  --on-mod-sources: #ffffff;
+  --mod-pipeline: #46687a;
+  --mod-pipeline-bg: #e7f2f8;
+  --mod-pipeline-raised: #d4e4ed;
+  --mod-pipeline-line: #b8cbd5;
+  --mod-pipeline-ink: #1c282f;
+  --mod-pipeline-muted: #394b54;
+  --on-mod-pipeline: #ffffff;
+  --mod-services: #6a6440;
+  --mod-services-bg: #f2f1e5;
+  --mod-services-raised: #e4e2d1;
+  --mod-services-line: #cbc8b3;
+  --mod-services-ink: #29271a;
+  --mod-services-muted: #4b4835;
+  --on-mod-services: #ffffff;
+  --status-ok: #1d7a45;
+  --status-ok-bg: #daf7e2;
+  --status-fair: #5d7414;
+  --status-fair-bg: #e9f4d5;
+  --status-warn: #8a5a00;
+  --status-warn-bg: #feebd3;
+  --status-bad: #b3261e;
+  --status-bad-bg: #fee9e5;
+  --status-info: #47474b;
+  --status-info-bg: #eeeef0;
+  --on-status-bad: #ffffff;
+  --energy-1: #3b3a8f;
+  --energy-2: #4c3fa6;
+  --energy-3: #6a43b3;
+  --energy-4: #8a47b5;
+  --energy-5: #a94ba9;
+  --energy-6: #c55394;
+  --energy-7: #db6278;
+  --energy-8: #ea795c;
+  --energy-9: #f39a45;
+  --energy-10: #f7c04a;
+  --key-1a: #057c59;
+  --key-1b: #029e72;
+  --key-2a: #467922;
+  --key-2b: #629742;
+  --key-3a: #736c01;
+  --key-3b: #928a07;
+  --key-4a: #8d5e00;
+  --key-4b: #b37903;
+  --key-5a: #a44c1d;
+  --key-5b: #c56a3e;
+  --key-6a: #a64450;
+  --key-6b: #c8626d;
+  --key-7a: #9b467a;
+  --key-7b: #bc6398;
+  --key-8a: #854f9c;
+  --key-8b: #a36cbc;
+  --key-9a: #635bb0;
+  --key-9b: #7f79d1;
+  --key-10a: #2e69b2;
+  --key-10b: #4c88d3;
+  --key-11a: #027493;
+  --key-11b: #0994ba;
+  --key-12a: #047879;
+  --key-12b: #009a9a;
+  --chart-1: #0072b2;
+  --chart-2: #b36b00;
+  --chart-3: #007a5a;
+  --chart-4: #b0477f;
+  --chart-5: #8a7d00;
+  --chart-6: #005a8c;
+  --chart-7: #b34700;
+  --chart-8: #6b6b6b;
+  --chart-grid: #e4e4df;
+  --chart-ref: #3a3a3d;
+  --on-now: #ffffff;
+  --now: #9a6400;
+  --sim: #76767a;
+  --svc-tidal: #000000;
+  --shadow-1: 0 1px 2px rgba(20, 20, 24, 0.08);
+  --shadow-2: 0 6px 20px rgba(20, 20, 24, 0.14);
+  --shadow-3: 0 18px 48px rgba(20, 20, 24, 0.22);
+  color-scheme: light;
+}
+}
+.sn-m-graph    { --m: var(--mod-graph);    --m-bg: var(--mod-graph-bg);    --m-raised: var(--mod-graph-raised);    --m-line: var(--mod-graph-line);    --m-ink: var(--mod-graph-ink);    --m-muted: var(--mod-graph-muted);    --m-on: var(--on-mod-graph); }
+.sn-m-library  { --m: var(--mod-library);  --m-bg: var(--mod-library-bg);  --m-raised: var(--mod-library-raised);  --m-line: var(--mod-library-line);  --m-ink: var(--mod-library-ink);  --m-muted: var(--mod-library-muted);  --m-on: var(--on-mod-library); }
+.sn-m-sets     { --m: var(--mod-sets);     --m-bg: var(--mod-sets-bg);     --m-raised: var(--mod-sets-raised);     --m-line: var(--mod-sets-line);     --m-ink: var(--mod-sets-ink);     --m-muted: var(--mod-sets-muted);     --m-on: var(--on-mod-sets); }
+.sn-m-paths    { --m: var(--mod-paths);    --m-bg: var(--mod-paths-bg);    --m-raised: var(--mod-paths-raised);    --m-line: var(--mod-paths-line);    --m-ink: var(--mod-paths-ink);    --m-muted: var(--mod-paths-muted);    --m-on: var(--on-mod-paths); }
+.sn-m-harmony  { --m: var(--mod-harmony);  --m-bg: var(--mod-harmony-bg);  --m-raised: var(--mod-harmony-raised);  --m-line: var(--mod-harmony-line);  --m-ink: var(--mod-harmony-ink);  --m-muted: var(--mod-harmony-muted);  --m-on: var(--on-mod-harmony); }
+.sn-m-sources  { --m: var(--mod-sources);  --m-bg: var(--mod-sources-bg);  --m-raised: var(--mod-sources-raised);  --m-line: var(--mod-sources-line);  --m-ink: var(--mod-sources-ink);  --m-muted: var(--mod-sources-muted);  --m-on: var(--on-mod-sources); }
+.sn-m-pipeline { --m: var(--mod-pipeline); --m-bg: var(--mod-pipeline-bg); --m-raised: var(--mod-pipeline-raised); --m-line: var(--mod-pipeline-line); --m-ink: var(--mod-pipeline-ink); --m-muted: var(--mod-pipeline-muted); --m-on: var(--on-mod-pipeline); }
+.sn-m-services { --m: var(--mod-services); --m-bg: var(--mod-services-bg); --m-raised: var(--mod-services-raised); --m-line: var(--mod-services-line); --m-ink: var(--mod-services-ink); --m-muted: var(--mod-services-muted); --m-on: var(--on-mod-services); }
+.sn-m-icon { color: var(--m); }
+/* Diagram (1.10.0): build-time SVG diagrams for investigation reports (D-series figures).
+   Colour: one domain map, .sn-dg-c1 … .sn-dg-c8 set --dg-c to chart-1 … chart-8 (strokes and stripes only).
+   Nodes are neutral cards (surface-1, fg text); state is carried by outline style plus a word:
+   production solid, non-final dotted, queued dashed (sim), proposed dashed (brand). Gaps are status-bad dashed with a cross glyph.
+   Interaction hooks: [data-hl] highlights, [data-dim] fades, :focus-visible shows the focus ring. */
+.sn-diagram { font-family: var(--font-body); color: var(--fg); }
+.sn-diagram__bg { fill: var(--bg); }
+.sn-dg-c1 { --dg-c: var(--chart-1); }
+.sn-dg-c2 { --dg-c: var(--chart-2); }
+.sn-dg-c3 { --dg-c: var(--chart-3); }
+.sn-dg-c4 { --dg-c: var(--chart-4); }
+.sn-dg-c5 { --dg-c: var(--chart-5); }
+.sn-dg-c6 { --dg-c: var(--chart-6); }
+.sn-dg-c7 { --dg-c: var(--chart-7); }
+.sn-dg-c8 { --dg-c: var(--chart-8); }
+
+.sn-diagram__t { fill: var(--fg); }
+.sn-diagram__t--2 { fill: var(--fg-2); }
+.sn-diagram__t--3 { fill: var(--fg-3); }
+
+.sn-diagram__group { fill: none; stroke: var(--line); stroke-width: var(--graph-edge-w-1); }
+.sn-diagram__lane { fill: var(--surface-2); stroke: var(--line); stroke-width: var(--graph-edge-w-1); }
+.sn-diagram__lane--alt { fill: none; }
+.sn-diagram__grid { fill: none; stroke: var(--chart-grid); stroke-width: var(--graph-edge-w-1); }
+
+.sn-diagram__node { cursor: pointer; }
+.sn-diagram__box { fill: var(--surface-1); stroke: var(--line-strong); stroke-width: var(--graph-edge-w-1); filter: drop-shadow(var(--shadow-1)); }
+.sn-diagram__stripe { fill: var(--dg-c, var(--line-strong)); stroke: none; }
+.sn-diagram__node--nonfinal .sn-diagram__box,
+.sn-diagram__legend-box.sn-diagram__node--nonfinal { stroke-dasharray: 1.5 3; stroke-linecap: round; stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__node--queued .sn-diagram__box,
+.sn-diagram__legend-box.sn-diagram__node--queued { stroke: var(--sim); stroke-dasharray: 6 4; stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__node--proposed .sn-diagram__box,
+.sn-diagram__legend-box.sn-diagram__node--proposed { stroke: var(--brand); stroke-dasharray: 6 4; stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__node--gap .sn-diagram__box { stroke: var(--status-bad); stroke-dasharray: 4 3; stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__node--note .sn-diagram__box { fill: var(--surface-2); stroke: var(--line); filter: none; }
+.sn-diagram__node--fallback .sn-diagram__box { fill: var(--surface-2); stroke: var(--line-strong); stroke-dasharray: 4 3; filter: none; }
+.sn-diagram__node--changed .sn-diagram__box { stroke: var(--status-warn); stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__legend-box { fill: var(--surface-1); stroke: var(--line-strong); stroke-width: var(--graph-edge-w-1); }
+.sn-diagram__swatch { fill: var(--dg-c); }
+.sn-diagram__lock { fill: none; stroke: var(--fg-2); stroke-width: var(--graph-edge-w-1); stroke-linejoin: round; }
+
+.sn-diagram__edge { cursor: pointer; }
+.sn-diagram__line { fill: none; stroke: var(--dg-c, var(--line-strong)); stroke-width: var(--graph-edge-w-2); stroke-linejoin: round; opacity: var(--graph-edge-op-4); }
+.sn-diagram__head { fill: var(--dg-c, var(--line-strong)); stroke: none; }
+.sn-diagram__edge--queued .sn-diagram__line { stroke: var(--sim); stroke-dasharray: 6 4; }
+.sn-diagram__edge--queued .sn-diagram__head { fill: var(--sim); }
+.sn-diagram__edge--gap .sn-diagram__line { stroke: var(--status-bad); stroke-dasharray: 5 4; }
+.sn-diagram__edge--gap .sn-diagram__head { fill: var(--status-bad); }
+.sn-diagram__edge--proposed .sn-diagram__line { stroke: var(--brand); stroke-dasharray: 6 4; }
+.sn-diagram__edge--proposed .sn-diagram__head { fill: var(--brand); }
+.sn-diagram__edge--return .sn-diagram__line { stroke-dasharray: 4 3; }
+.sn-diagram__edge--fallback .sn-diagram__line { stroke: var(--line-strong); stroke-dasharray: 4 3; stroke-width: var(--graph-edge-w-1); }
+.sn-diagram__edge--fallback .sn-diagram__head { fill: var(--line-strong); }
+.sn-diagram__edge--neutral .sn-diagram__line { stroke: var(--line-strong); }
+.sn-diagram__edge--neutral .sn-diagram__head { fill: var(--line-strong); }
+.sn-diagram__lifeline { fill: none; stroke: var(--line-strong); stroke-width: var(--graph-edge-w-1); stroke-dasharray: 4 4; }
+
+.sn-diagram__badge-box { fill: var(--surface-1); stroke: var(--dg-c, var(--line-strong)); stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__edge--queued .sn-diagram__badge-box { stroke: var(--sim); stroke-dasharray: 3 2; }
+.sn-diagram__badge--gap .sn-diagram__badge-box,
+.sn-diagram__edge--gap .sn-diagram__badge-box { fill: var(--status-bad-bg); stroke: var(--status-bad); }
+.sn-diagram__badge--proposed .sn-diagram__badge-box,
+.sn-diagram__edge--proposed .sn-diagram__badge-box { fill: var(--brand-soft); stroke: var(--brand); }
+.sn-diagram__badge--neutral .sn-diagram__badge-box { stroke: var(--line-strong); }
+.sn-diagram__mark-box { fill: var(--status-bad-bg); stroke: var(--status-bad); stroke-width: var(--graph-edge-w-1); }
+.sn-diagram__mark--warn .sn-diagram__mark-box { fill: var(--status-warn-bg); stroke: var(--status-warn); }
+.sn-diagram__mark--info .sn-diagram__mark-box { fill: var(--surface-2); stroke: var(--line-strong); }
+.sn-diagram__now { fill: none; stroke: var(--now); stroke-width: var(--graph-edge-w-3); }
+.sn-diagram__gate { fill: var(--surface-1); stroke: var(--fg-2); stroke-width: var(--graph-edge-w-2); }
+.sn-diagram__cell { fill: var(--surface-1); stroke: var(--line); stroke-width: var(--graph-edge-w-1); }
+
+/* interaction */
+.sn-diagram [data-dim] { opacity: var(--opacity-faded); }
+.sn-diagram__node[data-hl] .sn-diagram__box { stroke: var(--fg); stroke-width: var(--graph-edge-w-3); }
+.sn-diagram__edge[data-hl] .sn-diagram__line { stroke-width: var(--graph-edge-w-3); }
+.sn-diagram__node:focus-visible .sn-diagram__box,
+.sn-diagram__edge:focus-visible .sn-diagram__badge-box { stroke: var(--focus); stroke-width: var(--graph-edge-w-3); }
+.sn-diagram__edge:focus-visible .sn-diagram__line { stroke: var(--focus); stroke-width: var(--graph-edge-w-3); }
+
+@media print {
+  .sn-diagram__box { filter: none; }
+  .sn-diagram [data-dim] { opacity: 1; }
+}
+/* corner radii by part (SVG2 rx as a CSS property): tokens only */
+.sn-diagram__box, .sn-diagram__legend-box { rx: var(--radius-control); }
+.sn-diagram__badge-box { rx: var(--radius-pill); }
+.sn-diagram__mark-box, .sn-diagram__cell, .sn-diagram__stripe, .sn-diagram__swatch { rx: var(--radius-chip); }
+.sn-diagram__group, .sn-diagram__lane { rx: var(--radius-card); }
+
+/* ===== Report charts (source/css/65-report-charts.css) =====
+   Static report charts (data-flow report C-series): bars, matrix cells, bullet bands, log-axis dots and
+   pattern lines that ChartFrame does not define. Tokens only. Grid, base, tick and axis-title come from
+   .sn-chart-frame__* in 40-charts.css. Marks take their series colour from style="--c: var(--chart-N)". */
+.sn-chart { overflow: visible; font-family: var(--font-body); }
+.sn-rchart__bar { fill: var(--c, var(--chart-1)); }
+.sn-rchart__bar--proj { fill: none; stroke: var(--line-strong); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.sn-rchart__bar--none { fill: var(--surface-3); stroke: var(--line-strong); stroke-width: 1; }
+.sn-rchart__pat-line { stroke: var(--surface-1); stroke-width: 1.5; }
+.sn-rchart__label { fill: var(--fg-2); font-family: var(--font-body); font-size: 0.75rem; }
+.sn-rchart__label--strong { fill: var(--fg); font-weight: 600; }
+.sn-rchart__value { fill: var(--fg); font-family: var(--font-data); font-size: 0.6875rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.sn-rchart__halo { paint-order: stroke; stroke: var(--surface-1); stroke-width: 3; stroke-linejoin: round; }
+.sn-rchart__ref { stroke: var(--chart-ref); stroke-width: 1.5; stroke-dasharray: 5 4; fill: none; }
+.sn-rchart__ref-label { fill: var(--fg-2); font-family: var(--font-body); font-size: 0.6875rem; }
+.sn-rchart__cell { fill: var(--surface-3); stroke: var(--line-strong); stroke-width: 1; }
+.sn-rchart__cell--empty { fill: none; stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 2; }
+.sn-rchart__cell--queued { stroke-dasharray: 4 3; }
+.sn-rchart__cell--ok { fill: var(--status-ok-bg); }
+.sn-rchart__cell--fair { fill: var(--status-fair-bg); }
+.sn-rchart__cell--warn { fill: var(--status-warn-bg); }
+.sn-rchart__cell--bad { fill: var(--status-bad-bg); }
+.sn-rchart__cell--info { fill: var(--status-info-bg); }
+.sn-rchart__cell-text { fill: var(--fg); font-family: var(--font-data); font-size: 0.6875rem; font-weight: 600; }
+.sn-rchart__cell-id { fill: var(--fg-2); font-family: var(--font-data); font-size: 0.6875rem; }
+.sn-rchart__dot { fill: var(--c, var(--fg-2)); stroke: var(--surface-1); stroke-width: 1.5; }
+.sn-rchart__dot--proj { fill: var(--surface-1); stroke: var(--fg-2); stroke-width: 1.5; stroke-dasharray: 2 2; }
+.sn-rchart__band { fill: var(--surface-2); }
+.sn-rchart__band--near { fill: var(--surface-3); }
+.sn-rchart__mark { stroke: var(--fg); stroke-width: 2; }
+.sn-rchart__lane { stroke: var(--chart-grid); stroke-width: 1; shape-rendering: crispEdges; }
+
+.sn-chart-frame__grid { stroke: var(--chart-grid); stroke-width: 1; shape-rendering: crispEdges; }
+.sn-chart-frame__base { stroke: var(--line-strong); stroke-width: 1; shape-rendering: crispEdges; }
+.sn-chart-frame__tick { fill: var(--chart-axis); font-family: var(--font-data); font-size: 0.6875rem; font-variant-numeric: tabular-nums; }
+.sn-chart-frame__axis-title { fill: var(--chart-axis); font-family: var(--font-body); font-size: 0.6875rem; }</style><title id="c5-t">Timing constants on a log axis</title><desc id="c5-d">105 timing constants span 100 ms to 365 d; reference lines mark Heartbeat stale &#40;sn-be-t-heartbeat-stale), Job lease &#40;sn-be-t-lease-default), Job stall &#40;sn-fe-t-stall), Token lifetime &#40;ml-t-tidal-user-default). n = 105 timing constants. State: Projected. Source: findings.json timings[].</desc><rect x="112" y="5" width="12" height="10" class="sn-rchart__bar" style="--c: var(--fg-2)"></rect><text x="129" y="14" class="sn-rchart__label">Built</text><rect x="180" y="5" width="12" height="10" class="sn-rchart__bar--proj"></rect><text x="197" y="14" class="sn-rchart__label">Queued</text><text x="282" y="14" class="sn-rchart__ref-label">Dashed lines: reference thresholds</text><line x1="134.3" y1="90" x2="134.3" y2="403" class="sn-chart-frame__grid"/><text x="134.3" y="417" class="sn-chart-frame__tick" text-anchor="middle">100 ms</text><line x1="234.7" y1="90" x2="234.7" y2="403" class="sn-chart-frame__grid"/><text x="234.7" y="417" class="sn-chart-frame__tick" text-anchor="middle">1 s</text><line x1="335.2" y1="90" x2="335.2" y2="403" class="sn-chart-frame__grid"/><text x="335.2" y="417" class="sn-chart-frame__tick" text-anchor="middle">10 s</text><line x1="413.3" y1="90" x2="413.3" y2="403" class="sn-chart-frame__grid"/><text x="413.3" y="417" class="sn-chart-frame__tick" text-anchor="middle">1 min</text><line x1="513.8" y1="90" x2="513.8" y2="403" class="sn-chart-frame__grid"/><text x="513.8" y="417" class="sn-chart-frame__tick" text-anchor="middle">10 min</text><line x1="591.9" y1="90" x2="591.9" y2="403" class="sn-chart-frame__grid"/><text x="591.9" y="417" class="sn-chart-frame__tick" text-anchor="middle">1 h</text><line x1="730.5" y1="90" x2="730.5" y2="403" class="sn-chart-frame__grid"/><text x="730.5" y="417" class="sn-chart-frame__tick" text-anchor="middle">1 d</text><line x1="815.4" y1="90" x2="815.4" y2="403" class="sn-chart-frame__grid"/><text x="815.4" y="417" class="sn-chart-frame__tick" text-anchor="middle">1 wk</text><line x1="878.9" y1="90" x2="878.9" y2="403" class="sn-chart-frame__grid"/><text x="878.9" y="417" class="sn-chart-frame__tick" text-anchor="middle">30 d</text><line x1="987.9" y1="90" x2="987.9" y2="403" class="sn-chart-frame__grid"/><text x="987.9" y="417" class="sn-chart-frame__tick" text-anchor="middle">1 y</text><text x="1008" y="433" class="sn-chart-frame__axis-title" text-anchor="end">Duration, log scale &#40;each gridline a named unit)</text><line x1="112" y1="122" x2="1008" y2="122" class="sn-rchart__lane"/><text x="104" y="112" class="sn-rchart__label" text-anchor="end">debounce &#40;7)</text><circle cx="134.3" cy="102" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>minimap viewport debounce: 100 ms &#40;sn-fe-graph, built)</title></circle><circle cx="152" cy="102" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>Deezer per-request sleep: 150 ms &#40;ml-cli-resolve, built)</title></circle><circle cx="204.5" cy="102" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>InfoTip hover delay: 500 ms &#40;sn-fe-home, built)</title></circle><circle cx="234.7" cy="102" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>scraper polite delay: 1 s &#40;ml-cli-scrape, built)</title></circle><circle cx="265" cy="102" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>3RRR episode delay: 2 s &#40;ml-cli-scrape, built)</title></circle><circle cx="265" cy="111" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>Scrapy default DOWNLOAD_DELAY &#40;randomised 0.5-1.5x): 2 s &#40;sn-be-svc-unified-scraper, built)</title></circle><circle cx="431" cy="102" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>1001tracklists DOWNLOAD_DELAY: 90 s &#40;sn-be-svc-unified-scraper, built)</title></circle><line x1="112" y1="159" x2="1008" y2="159" class="sn-rchart__lane"/><text x="104" y="144.5" class="sn-rchart__label" text-anchor="end">poll &#40;8)</text><circle cx="265" cy="130" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>library ingest job poll: 2 s &#40;sn-fe-library, built)</title></circle><circle cx="304.9" cy="130" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>import-music-library job poll: 5 s &#40;sn-be-cli-import-music-library, built)</title></circle><circle cx="304.9" cy="139" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>Celery beat drain-jobs: 5 s &#40;sn-be-svc-worker, built)</title></circle><circle cx="304.9" cy="148" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>scrape job stages poll &#40;tab visible): 5 s &#40;sn-fe-pipeline, built)</title></circle><circle cx="335.2" cy="130" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>scrapy LOGSTATS interval feeding progress: 10 s &#40;sn-be-svc-unified-scraper, built)</title></circle><circle cx="335.2" cy="139" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>pipeline telemetry poll: 10 s &#40;sn-fe-pipeline, built)</title></circle><circle cx="335.2" cy="148" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>target tracks search-state poll: 10 s &#40;sn-fe-sources-targets, built)</title></circle><circle cx="413.3" cy="130" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>token expiry check interval: 1 min &#40;sn-fe-store-zustand, built)</title></circle><line x1="112" y1="187" x2="1008" y2="187" class="sn-rchart__lane"/><text x="104" y="177" class="sn-rchart__label" text-anchor="end">retry &#40;10)</text><circle cx="134.3" cy="167" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>mutex retry spin: 100 ms &#40;sn-fe-store-browser-ls, built)</title></circle><circle cx="134.3" cy="176" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>PIXI init retry delay: 100 ms &#40;sn-fe-graph, built)</title></circle><circle cx="234.7" cy="167" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>Deezer quota backoff: 1 s &#40;ml-cli-resolve, built)</title></circle><circle cx="234.7" cy="176" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>TIDAL 429/5xx retry: 1 s &#40;ml-cli-sync-tidal, built)</title></circle><circle cx="304.9" cy="167" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>MetaBrainz curl retry: 5 s &#40;ml-cli-fetch-metabrainz, built)</title></circle><circle cx="304.9" cy="176" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>MetaBrainz HEAD retry: 5 s &#40;ml-cli-fetch-metabrainz, built)</title></circle><circle cx="383.1" cy="167" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>job retry backoff base &#40;x4 for transient), doubled per attempt: 30 s &#40;sn-be-tbl-ingestion-jobs, built)</title></circle><circle cx="383.1" cy="176" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>pipeline poll backoff on error &#40;never engages, stale closure): 30 s &#40;sn-fe-pipeline, built)</title></circle><circle cx="413.3" cy="167" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>AUTOTHROTTLE_MAX_DELAY: 1 min &#40;sn-be-svc-unified-scraper, built)</title></circle><circle cx="591.9" cy="167" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>job retry backoff cap: 1 h &#40;sn-be-tbl-ingestion-jobs, built)</title></circle><line x1="112" y1="233" x2="1008" y2="233" class="sn-rchart__lane"/><text x="104" y="214" class="sn-rchart__label" text-anchor="end">heartbeat &#40;10)</text><circle cx="282.6" cy="195" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>postgres healthcheck: 3 s &#40;sn-be-store-postgres, built)</title></circle><circle cx="282.6" cy="204" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>redis healthcheck: 3 s &#40;sn-be-store-redis, built)</title></circle><circle cx="304.9" cy="195" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>rest-api healthcheck: 5 s &#40;sn-be-svc-rest-api, built)</title></circle><circle cx="335.2" cy="195" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>audio-analysis healthcheck: 10 s &#40;sn-be-svc-audio-analysis, built)</title></circle><circle cx="335.2" cy="204" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>rabbitmq healthcheck: 10 s &#40;sn-be-store-rabbitmq, built)</title></circle><circle cx="335.2" cy="213" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>unified-scraper healthcheck: 10 s &#40;sn-be-svc-unified-scraper, built)</title></circle><circle cx="335.2" cy="222" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>frontend container healthcheck: 10 s &#40;sn-fe-store-nginx, built)</title></circle><circle cx="383.1" cy="195" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>ref-mb healthcheck: 30 s &#40;ml-svc-ref-mb, built)</title></circle><circle cx="383.1" cy="204" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>worker Docker HEALTHCHECK interval: 30 s &#40;sn-be-svc-worker, built)</title></circle><circle cx="431" cy="195" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>worker heartbeat staleness: 90 s &#40;sn-be-svc-worker, built)</title></circle><line x1="112" y1="288" x2="1008" y2="288" class="sn-rchart__lane"/><text x="104" y="264.5" class="sn-rchart__label" text-anchor="end">timeout &#40;32)</text><circle cx="164.5" cy="241" r="4" class="sn-rchart__dot--proj"><title>Duo router Redis connect timeout &#40;queued): 200 ms &#40;sn-be-q-user-auth-router, queued)</title></circle><circle cx="234.7" cy="241" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>&quot;slow&quot; loading hint: 1 s &#40;sn-fe-library, built)</title></circle><circle cx="252.4" cy="241" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>callback pop-up close / redirect delay: 1,500 ms &#40;sn-fe-oauth-callback, built)</title></circle><circle cx="265" cy="241" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>songnodes ref_mb statement timeout: 2 s &#40;sn-be-store-refmb, built)</title></circle><circle cx="265" cy="250" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>ref_mb statement timeout: 2 s &#40;sn-be-store-refmb, built)</title></circle><circle cx="265" cy="259" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>rest-api scrape progress fetch timeout: 2 s &#40;sn-be-svc-rest-api, built)</title></circle><circle cx="265" cy="268" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>copied/saved status reset: 2 s &#40;sn-fe-sources-import, built)</title></circle><circle cx="269.1" cy="277" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>legacy toast: 2,200 ms &#40;ml-page-set-builder-legacy, built)</title></circle><circle cx="282.6" cy="241" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>legacy delete confirm arm: 3 s &#40;ml-page-set-builder-legacy, built)</title></circle><circle cx="282.6" cy="250" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>clear-draft double-press window: 3 s &#40;sn-fe-sets, built)</title></circle><circle cx="282.6" cy="259" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>callback error redirect delay: 3 s &#40;sn-fe-oauth-callback, built)</title></circle><circle cx="295.2" cy="241" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>artifact shared-store init timeout: 4 s &#40;ml-page-set-builder, built)</title></circle><circle cx="295.2" cy="250" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>toast visible time &#40;8 s with action): 4 s &#40;sn-fe-home, built)</title></circle><circle cx="304.9" cy="241" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>Memgraph connection timeout: 5 s &#40;sn-be-store-memgraph, built)</title></circle><circle cx="304.9" cy="250" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>music search proxy timeout: 5 s &#40;sn-be-svc-rest-api, built)</title></circle><circle cx="343.1" cy="241" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>mutex acquire give-up: 12 s &#40;sn-fe-store-browser-ls, built)</title></circle><circle cx="365.4" cy="241" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>Deezer HTTP timeout: 20 s &#40;ml-cli-resolve, built)</title></circle><circle cx="383.1" cy="241" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>scraper HTTP timeout: 30 s &#40;ml-cli-scrape, built)</title></circle><circle cx="383.1" cy="250" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>songnodes ingest POST timeout: 30 s &#40;ml-cli-sync-songnodes, built)</title></circle><circle cx="383.1" cy="259" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>TIDAL API and token HTTP timeout: 30 s &#40;ml-cli-resolve, built)</title></circle><circle cx="383.1" cy="268" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>graph-api pool and query timeout: 30 s &#40;sn-be-svc-graph-api, built)</title></circle><circle cx="383.1" cy="277" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>ApiClient default request timeout: 30 s &#40;sn-fe-home, built)</title></circle><circle cx="413.3" cy="241" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>AI proxy upstream timeout: 1 min &#40;sn-be-svc-rest-api, built)</title></circle><circle cx="413.3" cy="250" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>401 rate-limit window: 1 min &#40;sn-be-svc-rest-api, built)</title></circle><circle cx="413.3" cy="259" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>tracklist import stall: 1 min &#40;sn-fe-graph, built)</title></circle><circle cx="443.6" cy="241" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>start-dev compose up wait timeout: 2 min &#40;sn-be-cli-start-dev, built)</title></circle><circle cx="456.1" cy="241" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>resolve foreground chunk: 160 s &#40;ml-agent-weekly-run, built)</title></circle><circle cx="483.5" cy="241" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>one-step login callback wait: 5 min &#40;ml-cli-tidal, built)</title></circle><circle cx="513.8" cy="241" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>ref-mb stop grace period: 10 min &#40;ml-svc-ref-mb, built)</title></circle><circle cx="513.8" cy="250" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>job stall threshold: 10 min &#40;sn-fe-pipeline, built)</title></circle><circle cx="531.4" cy="241" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>unified scraper spider timeout: 15 min &#40;sn-be-svc-unified-scraper, built)</title></circle><circle cx="534.3" cy="250" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>worker -&gt; /scrape HTTP timeout: 16 min &#40;sn-be-svc-worker, built)</title></circle><line x1="112" y1="316" x2="1008" y2="316" class="sn-rchart__lane"/><text x="104" y="306" class="sn-rchart__label" text-anchor="end">expiry &#40;9)</text><circle cx="352.8" cy="296" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>drain task expires: 15 s &#40;sn-be-svc-worker, built)</title></circle><circle cx="413.3" cy="296" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>TIDAL client token refresh margin: 1 min &#40;ml-cli-resolve, built)</title></circle><circle cx="431" cy="296" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>schedule task expires: 90 s &#40;sn-be-svc-worker, built)</title></circle><circle cx="443.6" cy="296" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>TIDAL user token refresh margin: 2 min &#40;ml-store-secrets, built)</title></circle><circle cx="483.5" cy="296" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>token refresh buffer before expiry: 5 min &#40;sn-fe-store-zustand, built)</title></circle><circle cx="531.4" cy="296" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>PKCE login link max age: 15 min &#40;ml-cli-tidal, built)</title></circle><circle cx="591.9" cy="296" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>TIDAL token default lifetime: 1 h &#40;ml-store-secrets, built)</title></circle><circle cx="591.9" cy="305" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>default token lifetime when expires_in missing: 1 h &#40;sn-fe-oauth-callback, built)</title></circle><circle cx="815.4" cy="296" r="4" class="sn-rchart__dot--proj"><title>Duo session cookie expiry &#40;queued): 7 d &#40;sn-be-q-user-auth-router, queued)</title></circle><line x1="112" y1="338" x2="1008" y2="338" class="sn-rchart__lane"/><text x="104" y="331" class="sn-rchart__label" text-anchor="end">lease &#40;3)</text><circle cx="335.2" cy="324" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>localStorage mutex lease: 10 s &#40;sn-fe-store-browser-ls, built)</title></circle><circle cx="483.5" cy="324" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>job lease: 5 min &#40;sn-be-tbl-ingestion-jobs, built)</title></circle><circle cx="561.7" cy="324" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>scrape job lease: 30 min &#40;sn-be-tbl-ingestion-jobs, built)</title></circle><line x1="112" y1="375" x2="1008" y2="375" class="sn-rchart__lane"/><text x="104" y="360.5" class="sn-rchart__label" text-anchor="end">schedule &#40;9)</text><circle cx="352.8" cy="346" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>projection_consume and graph_projection_consume bucket: 15 s &#40;sn-be-svc-worker, built)</title></circle><circle cx="383.1" cy="346" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>Celery beat schedule-recurring: 30 s &#40;sn-be-svc-worker, built)</title></circle><circle cx="413.3" cy="346" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>ingest_pending bucket: 1 min &#40;sn-be-svc-worker, built)</title></circle><circle cx="513.8" cy="346" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>audio_analysis bucket: 10 min &#40;sn-be-svc-worker, built)</title></circle><circle cx="561.7" cy="346" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>ref-mb checkpoint_timeout: 30 min &#40;ml-svc-ref-mb, built)</title></circle><circle cx="591.9" cy="346" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>scrape_targets bucket: 1 h &#40;sn-be-svc-worker, built)</title></circle><circle cx="815.4" cy="346" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>weekly run schedule: 7 d &#40;ml-agent-weekly-run, built)</title></circle><circle cx="815.4" cy="355" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>target re-search interval: 7 d &#40;sn-be-tbl-target-tracks, built)</title></circle><circle cx="821.2" cy="364" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>scrape look-back window: 8 d &#40;ml-cli-scrape, built)</title></circle><line x1="112" y1="403" x2="1008" y2="403" class="sn-rchart__lane"/><text x="104" y="393" class="sn-rchart__label" text-anchor="end">ttl &#40;17)</text><circle cx="335.2" cy="383" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>nginx DNS re-resolve TTL: 10 s &#40;sn-fe-store-nginx, built)</title></circle><circle cx="483.5" cy="383" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>graph-api CACHE_TTL &#40;unused decorator): 5 min &#40;sn-be-svc-graph-api, built)</title></circle><circle cx="513.8" cy="383" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>Spotify/TIDAL OAuth state TTL: 10 min &#40;sn-be-store-redis, built)</title></circle><circle cx="513.8" cy="392" r="4" class="sn-rchart__dot--proj"><title>Duo auth state TTL &#40;queued): 10 min &#40;sn-be-q-user-auth-router, queued)</title></circle><circle cx="591.9" cy="383" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>graph-api batch status key TTL: 1 h &#40;sn-be-store-redis, built)</title></circle><circle cx="591.9" cy="392" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>graph-api pool recycle: 1 h &#40;sn-be-svc-graph-api, built)</title></circle><circle cx="730.5" cy="383" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>spider daily quota key TTL: 1 d &#40;sn-be-store-redis, built)</title></circle><circle cx="845.7" cy="383" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>chart last-seen freshness: 14 d &#40;ml-cli-process, built)</title></circle><circle cx="845.7" cy="392" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>succeeded job retention: 14 d &#40;sn-be-tbl-ingestion-jobs, built)</title></circle><circle cx="863.3" cy="383" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>early chart entry window: 21 d &#40;ml-cli-process, built)</title></circle><circle cx="878.9" cy="383" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>promotion window: 30 d &#40;ml-cli-process, built)</title></circle><circle cx="878.9" cy="392" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>setlist dedupe key TTL: 30 d &#40;sn-be-store-redis, built)</title></circle><circle cx="893.6" cy="383" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>High Rotation tenure cap: 42 d &#40;ml-cli-process, built)</title></circle><circle cx="896.6" cy="392" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>High Rotation silence demotion: 45 d &#40;ml-cli-process, built)</title></circle><circle cx="909.1" cy="383" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>Standard archive silence: 60 d &#40;ml-cli-process, built)</title></circle><circle cx="957.1" cy="383" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>Standard archive minimum age: 180 d &#40;ml-cli-process, built)</title></circle><circle cx="987.9" cy="383" r="4" class="sn-rchart__dot" style="--c: var(--fg-2)"><title>hashed asset cache: 365 d &#40;sn-fe-store-nginx, built)</title></circle><line x1="431" y1="33" x2="431" y2="403" class="sn-rchart__ref"><title>Heartbeat stale 90 s &#40;sn-be-t-heartbeat-stale)</title></line><text x="435" y="30" class="sn-rchart__ref-label sn-rchart__halo">Heartbeat stale 90 s</text><line x1="483.5" y1="48" x2="483.5" y2="403" class="sn-rchart__ref"><title>Job lease 5 min &#40;sn-be-t-lease-default)</title></line><text x="487.5" y="45" class="sn-rchart__ref-label sn-rchart__halo">Job lease 5 min</text><line x1="513.8" y1="63" x2="513.8" y2="403" class="sn-rchart__ref"><title>Job stall 10 min &#40;sn-fe-t-stall)</title></line><text x="517.8" y="60" class="sn-rchart__ref-label sn-rchart__halo">Job stall 10 min</text><line x1="591.9" y1="78" x2="591.9" y2="403" class="sn-rchart__ref"><title>Token lifetime 1 h &#40;ml-t-tidal-user-default)</title></line><text x="595.9" y="75" class="sn-rchart__ref-label sn-rchart__halo">Token lifetime 1 h</text></svg>

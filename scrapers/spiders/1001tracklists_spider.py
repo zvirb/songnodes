@@ -187,11 +187,13 @@ class OneThousandOneTracklistsSpider(NLPFallbackSpiderMixin, scrapy.Spider):
             self.logger.info(f"Using provided start_urls: {self.start_urls}")
         # Support for search query (from orchestrator)
         elif search_query:
+            self.force_run = True
             search_url = f"https://www.1001tracklists.com/search/result.php?main_search={quote(search_query)}"
             self.start_urls = [search_url]
             self.logger.info(f"Using search query: {search_query} -> {search_url}")
         # Generate search URLs based on target tracks
         elif self.search_mode == 'targeted':
+            self.force_run = True
             self.start_urls = self.generate_target_search_urls()
         else:
             self.start_urls = self.get_discovery_urls()
