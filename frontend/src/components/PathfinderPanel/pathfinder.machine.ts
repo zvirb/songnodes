@@ -121,7 +121,13 @@ export const pathfinderMachine = setup({
     events: {} as PathfinderEvent,
   },
   actors: {
-    calculatePath: fromPromise<PathfinderResult, PathfinderContext>(({ input }) => calculatePath(input)),
+    calculatePath: fromPromise<PathfinderResult, PathfinderContext>(async ({ input }) => {
+      const result = await calculatePath(input);
+      if (!result.success) {
+        throw new Error(result.message || 'No valid path found matching constraints');
+      }
+      return result;
+    }),
   },
   actions: {
     exportPath: ({ context, event }) => {
@@ -151,7 +157,10 @@ export const pathfinderMachine = setup({
         SET_START_TRACK: {
           actions: assign({
             startTrack: ({ event }) => event.track,
-            announcement: ({ event }) => `Start track set to ${event.track.name} by ${event.track.artist}`,
+            announcement: ({ event }) =>
+              event.track
+                ? `Start track set to ${event.track.name} by ${event.track.artist}`
+                : 'Start track cleared',
           }),
         },
         SET_END_TRACK: {
@@ -323,7 +332,21 @@ export const pathfinderMachine = setup({
           actions: assign({
             startTrack: ({ event }) => event.track,
             result: null,
-            announcement: ({ event }) => `Start track changed to ${event.track.name}. Path cleared.`,
+            announcement: ({ event }) =>
+              event.track
+                ? `Start track changed to ${event.track.name}. Path cleared.`
+                : 'Start track cleared. Path cleared.',
+          }),
+        },
+        SET_END_TRACK: {
+          target: 'idle',
+          actions: assign({
+            endTrack: ({ event }) => event.track,
+            result: null,
+            announcement: ({ event }) =>
+              event.track
+                ? `End track set to ${event.track.name} by ${event.track.artist}. Path cleared.`
+                : 'End track cleared. Path cleared.',
           }),
         },
         UPDATE_CONSTRAINTS: {
@@ -344,6 +367,39 @@ export const pathfinderMachine = setup({
         CALCULATE_PATH: { target: 'calculating', guard: 'hasStartTrack', actions: 'assignCalculateInput' },
         PATH_ERROR: { target: 'error', actions: 'assignPathError' },
         RESET: 'idle',
+        SET_START_TRACK: {
+          target: 'idle',
+          actions: assign({
+            startTrack: ({ event }) => event.track,
+            error: null,
+            announcement: ({ event }) =>
+              event.track
+                ? `Start track set to ${event.track.name} by ${event.track.artist}`
+                : 'Start track cleared',
+          }),
+        },
+        SET_END_TRACK: {
+          target: 'idle',
+          actions: assign({
+            endTrack: ({ event }) => event.track,
+            error: null,
+            announcement: ({ event }) =>
+              event.track
+                ? `End track set to ${event.track.name} by ${event.track.artist}`
+                : 'End track cleared',
+          }),
+        },
+        UPDATE_CONSTRAINTS: {
+          target: 'idle',
+          actions: assign({
+            constraints: ({ context, event }) => ({
+              ...context.constraints,
+              ...event.constraints,
+            }),
+            error: null,
+            announcement: () => 'Constraints updated',
+          }),
+        },
         PREVIOUS_STEP: {
           target: 'idle',
           actions: assign({

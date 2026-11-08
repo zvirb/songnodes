@@ -27,19 +27,24 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
   const [startQuery, setStartQuery] = useState('');
   const [endQuery, setEndQuery] = useState('');
   const [maxHops, setMaxHops] = useState(3);
+  const [preferKeyMatching, setPreferKeyMatching] = useState(true);
 
   const tracksWithoutKey = tracks.filter(t => !t.key);
   const routeableTracks = tracks.filter(t => !!t.key);
+  const startRawId = pf.state.startTrack?.id ? pf.state.startTrack.id.replace(/^song_/, '') : null;
+  const endRawId = pf.state.endTrack?.id ? pf.state.endTrack.id.replace(/^song_/, '') : null;
+  const canFind = Boolean(startRawId) && (!endRawId || startRawId !== endRawId);
 
-  // Sync maxHops with the state machine constraints whenever it changes
+  // Sync maxHops and harmonic key preference with the state machine constraints
   useEffect(() => {
     send({
       type: 'UPDATE_CONSTRAINTS',
       constraints: {
-         targetDuration: maxHops * 5 // approximate mapping
+         targetDuration: maxHops * 5, // approximate mapping
+         preferKeyMatching,
       }
     });
-  }, [maxHops, send]);
+  }, [maxHops, preferKeyMatching, send]);
 
   // Advanced filtering for track pickers
   const getFilteredTracks = (query: string): AutocompleteOption[] => {
@@ -82,18 +87,47 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
   };
 
   const handleTrackSelect = (option: AutocompleteOption, type: 'start' | 'end') => {
-    // We need to find the equivalent Track object from pf.availableTracks
-    const fullTrack = pf.availableTracks.find(t => t.id === option.id);
-    if (fullTrack) {
-       // Ensure name property exists to satisfy TS Track requirement if it's missing on GraphNode
-       const trackToUse = { ...fullTrack, name: fullTrack.name || (fullTrack as any).title || '–' };
-       if (type === 'start') {
-          pf.send({ type: 'SET_START_TRACK', track: trackToUse as any });
-          setStartQuery('');
-       } else {
-          pf.send({ type: 'SET_END_TRACK', track: trackToUse as any });
-          setEndQuery('');
-       }
+    const rawId = option.id.replace(/^song_/, '');
+    // Match across raw UUID and song_<uuid> forms in pf.availableTracks
+    const fullTrack = pf.availableTracks.find(t => {
+      const candidateRawId = t.id.replace(/^song_/, '');
+      const candidateTrackId = (t as any).track_id ? String((t as any).track_id).replace(/^song_/, '') : null;
+      return (
+        t.id === option.id ||
+        t.id === `song_${rawId}` ||
+        candidateRawId === rawId ||
+        candidateTrackId === rawId
+      );
+    });
+
+    const unified = tracks.find(t => t.id === option.id || t.id.replace(/^song_/, '') === rawId);
+    const usesSongPrefix = pf.availableTracks.some(t => t.id.startsWith('song_'));
+    const fallbackId = usesSongPrefix && !option.id.startsWith('song_') ? `song_${rawId}` : option.id;
+
+    const trackToUse = fullTrack
+      ? { ...fullTrack, name: fullTrack.name || (fullTrack as any).title || unified?.title || '–' }
+      : {
+          id: fallbackId,
+          track_id: rawId,
+          name: unified?.title || option.value,
+          title: unified?.title || option.value,
+          artist: unified?.artist || '–',
+          bpm: unified?.bpm ?? undefined,
+          key: unified?.key ?? undefined,
+          camelotKey: unified?.key ?? undefined,
+          camelot_key: unified?.key ?? undefined,
+          energy: unified?.energy ?? undefined,
+          duration: unified?.durationSec ?? 240,
+          duration_seconds: unified?.durationSec ?? 240,
+          duration_ms: (unified?.durationSec ?? 240) * 1000,
+        };
+
+    if (type === 'start') {
+      pf.send({ type: 'SET_START_TRACK', track: trackToUse as any });
+      setStartQuery('');
+    } else {
+      pf.send({ type: 'SET_END_TRACK', track: trackToUse as any });
+      setEndQuery('');
     }
   };
 
@@ -201,8 +235,17 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
             </div>
         </div>
 
+        <label className="sn-checkbox">
+          <input
+            type="checkbox"
+            checked={preferKeyMatching}
+            onChange={e => setPreferKeyMatching(e.target.checked)}
+          />
+          <span>Prefer harmonic key matches</span>
+        </label>
+
         {(pf.isCalculating || pf.hasError || pf.hasResult) && <div>
-          <button type="button" className="sn-btn sn-btn--primary" onClick={handleCalculate} disabled={pf.isCalculating || !pf.state.startTrack}>
+          <button type="button" className="sn-btn sn-btn--primary" onClick={handleCalculate} disabled={pf.isCalculating || !canFind}>
               {pf.isCalculating ? 'Calculating…' : 'Find path'}
           </button>
         </div>}
@@ -236,6 +279,7 @@ export default function PathfinderPage({ onAddToSet }: { onAddToSet?: (trackIds:
                    className="sn-btn sn-btn--primary"
                    type="button"
                    onClick={handleCalculate}
+                   disabled={!canFind}
                  >
                    <SnIcon name="play" />Find path
                  </button>

@@ -8,9 +8,12 @@ from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any, Set, Tuple
 import heapq
 import logging
-from collections import defaultdict
+from collections import defaultdict, deque
 import math
-from annoy import AnnoyIndex
+try:
+    from annoy import AnnoyIndex
+except ImportError:
+    AnnoyIndex = None
 import sys
 import os
 
@@ -22,7 +25,8 @@ except (ImportError, ValueError):
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
     from utils.pathfinder_utils import find_pivots
 
-from common.metadata.transition_scoring import bpm_verdict, compat_score, key_verdict, path_cost
+from common.metadata.camelot import to_camelot
+from common.metadata.transition_scoring import Compat, bpm_verdict, compat_score, key_verdict, path_cost
 
 logger = logging.getLogger(__name__)
 
@@ -119,10 +123,12 @@ class PathfinderResponse(BaseModel):
 
 def is_key_compatible(from_key: Optional[str], to_key: Optional[str]) -> bool:
     """Check if two Camelot keys are harmonically compatible"""
-    if not from_key or not to_key or from_key not in CAMELOT_WHEEL:
+    norm_from = to_camelot(from_key) or from_key
+    norm_to = to_camelot(to_key) or to_key
+    if not norm_from or not norm_to or norm_from not in CAMELOT_WHEEL:
         return False
 
-    return to_key in CAMELOT_WHEEL[from_key]['compatible']
+    return norm_to == norm_from or norm_to in CAMELOT_WHEEL[norm_from]['compatible']
 
 # Waypoint edges cost this fraction of their normal cost: steers the search towards them
 # while every cost stays positive (spec harmonic-1 section 2.6: no negative waypoint rewards).
@@ -134,21 +140,52 @@ def occurrence_count(weight: Optional[float]) -> int:
         return 0
     return int(weight)
 
-def transition_cost(from_track: TrackNode, to_track: TrackNode, count: int) -> float:
+def transition_cost(from_track: TrackNode, to_track: TrackNode, count: int, prefer_key_matching: bool = True) -> float:
     """Spec harmonic-1 section 2.6 cost of one directed edge: always > 0, lower is better.
 
     It falls as the key/BPM compatibility score rises and as the occurrence count rises;
     an unknown key or BPM costs the spec's neutral U, never less than a known perfect part.
+    When prefer_key_matching is False, harmonic key mismatch penalties are excluded.
     """
-    key = key_verdict(from_track.camelot_key, to_track.camelot_key)
     bpm = bpm_verdict(from_track.bpm, to_track.bpm)
+    if not prefer_key_matching:
+        compat = Compat(bpm.score, 1.0, bpm.score) if bpm.score is not None else Compat(None, 0.0, None)
+        return path_cost(compat, count)
+    key = key_verdict(from_track.camelot_key, to_track.camelot_key)
     return path_cost(compat_score(key.score, bpm.score), count)
+
+def compute_reverse_bfs_distances(
+    target_ids: Set[str],
+    prepared_adj: Dict[str, List[Tuple[str, float, float, bool, bool, int]]]
+) -> Dict[str, Dict[str, int]]:
+    """Precompute shortest-hop distances to each target node using reverse BFS."""
+    rev_adj: Dict[str, List[str]] = defaultdict(list)
+    for u, neighbors in prepared_adj.items():
+        for v, _, _, _, _, _ in neighbors:
+            rev_adj[v].append(u)
+
+    distances: Dict[str, Dict[str, int]] = {}
+    for target in target_ids:
+        dist_map: Dict[str, int] = {target: 0}
+        queue = deque([target])
+        while queue:
+            curr = queue.popleft()
+            curr_dist = dist_map[curr]
+            for prev_node in rev_adj.get(curr, ()):
+                if prev_node not in dist_map:
+                    dist_map[prev_node] = curr_dist + 1
+                    queue.append(prev_node)
+        distances[target] = dist_map
+    return distances
 
 def calculate_heuristic(
     current_duration: int,
     target_duration: int,
     remaining_waypoints: Set[str],
-    avg_track_duration: float
+    avg_track_duration: float,
+    current_track_id: Optional[str] = None,
+    end_id: Optional[str] = None,
+    hop_distances: Optional[Dict[str, Dict[str, int]]] = None
 ) -> float:
     """
     Improved heuristic for A* search (2025 best practices)
@@ -156,16 +193,37 @@ def calculate_heuristic(
     Uses admissible heuristic that doesn't overestimate:
     - Duration difference (scaled down to not dominate)
     - Waypoint estimation (minimum tracks needed, not penalized)
+    - Reverse BFS hop distance guidance toward remaining waypoints and end_id
     """
     # Calculate minimum additional duration needed
     duration_remaining = max(0, target_duration - current_duration)
 
     # Estimate minimum tracks needed for remaining waypoints
-    # Use more conservative estimate to avoid over-penalizing
     min_waypoint_duration = len(remaining_waypoints) * avg_track_duration
 
-    # Return admissible heuristic (will not overestimate actual cost)
-    return max(duration_remaining, min_waypoint_duration) / avg_track_duration
+    base_h = max(duration_remaining, min_waypoint_duration) / max(avg_track_duration, 1.0)
+
+    if current_track_id is not None and hop_distances:
+        min_hops = 0
+        if remaining_waypoints:
+            wp_hops = [
+                hop_distances.get(wp, {}).get(current_track_id, 10)
+                for wp in remaining_waypoints
+            ]
+            min_hops = min(wp_hops) + sum(sorted(wp_hops)[1:]) + len(remaining_waypoints) * 8
+            if end_id and end_id not in remaining_waypoints:
+                end_from_wp = min(
+                    hop_distances.get(end_id, {}).get(wp, 10)
+                    for wp in remaining_waypoints
+                )
+                min_hops += end_from_wp
+        elif end_id:
+            min_hops = hop_distances.get(end_id, {}).get(current_track_id, 10)
+
+        # Guide search strongly toward target/waypoints while preserving duration guidance
+        return max(base_h * 0.25, float(min_hops) * 0.8) + (float(min_hops) * 0.5)
+
+    return base_h
 
 # ===========================================
 # ANN (Approximate Nearest Neighbors) Helpers
@@ -174,11 +232,16 @@ def calculate_heuristic(
 def camelot_to_vector(key: Optional[str]) -> Tuple[float, float]:
     """Convert Camelot key to a 2D vector for distance calculation"""
     if not key:
-        return (0, 0)
+        return (0.0, 0.0)
 
-    # Map key to an angle on a circle and a radius for major/minor
-    letter = key[-1]
-    number = int(key[:-1])
+    norm_key = to_camelot(key) or key
+    try:
+        letter = norm_key[-1].upper()
+        number = int(norm_key[:-1])
+        if letter not in ('A', 'B') or not (1 <= number <= 12):
+            return (0.0, 0.0)
+    except (ValueError, TypeError, IndexError):
+        return (0.0, 0.0)
 
     angle = (number - 1) * (2 * math.pi / 12)  # 12 keys on the wheel
     radius = 1.0 if letter == 'B' else 0.7  # Major keys on outer circle
@@ -197,48 +260,55 @@ def find_similar_tracks(
     Find similar tracks using Annoy for approximate nearest neighbors.
     Builds a multi-dimensional index and finds N closest tracks for each track.
     """
-    track_map = {i: track for i, track in enumerate(tracks)}
-    track_id_to_idx = {track.id: i for i, track in track_map.items()}
+    if not tracks:
+        return defaultdict(list)
 
-    # 3 dimensions: normalized BPM, and 2D vector for Camelot key
-    f = 3
-    t = AnnoyIndex(f, 'euclidean')
+    track_map = {i: track for i, track in enumerate(tracks)}
 
     # Normalize BPM to a 0-1 range for indexing
     bpms = [track.bpm for track in tracks if track.bpm]
     min_bpm, max_bpm = min(bpms) if bpms else 0, max(bpms) if bpms else 1
 
+    vectors: Dict[int, List[float]] = {}
     for i, track in track_map.items():
-        # Normalize BPM
         normalized_bpm = ((track.bpm - min_bpm) / (max_bpm - min_bpm)) if track.bpm and max_bpm > min_bpm else 0.5
-
-        # Convert Camelot key to vector
         key_x, key_y = camelot_to_vector(track.camelot_key)
-
-        # Create feature vector with weighting
-        v = [
+        vectors[i] = [
             normalized_bpm * bpm_weight,
             key_x * key_weight,
-            key_y * key_weight
+            key_y * key_weight,
         ]
-        t.add_item(i, v)
-
-    t.build(10)  # 10 trees
 
     adjacency = defaultdict(list)
-    for i, track in track_map.items():
-        # Find k nearest neighbors. We get k+1 because the track itself will be the closest.
-        neighbors_indices = t.get_nns_by_item(i, n_neighbors + 1)
 
-        for neighbor_idx in neighbors_indices:
-            if i == neighbor_idx:
-                continue
+    if AnnoyIndex is not None:
+        f = 3
+        t = AnnoyIndex(f, 'euclidean')
+        for i, v in vectors.items():
+            t.add_item(i, v)
+        t.build(10)  # 10 trees
 
-            neighbor_track = track_map[neighbor_idx]
-
-            # Use Annoy's distance as the edge weight
-            distance = t.get_distance(i, neighbor_idx)
-            adjacency[track.id].append((neighbor_track.id, distance))
+        for i, track in track_map.items():
+            neighbors_indices = t.get_nns_by_item(i, n_neighbors + 1)
+            for neighbor_idx in neighbors_indices:
+                if i == neighbor_idx:
+                    continue
+                neighbor_track = track_map[neighbor_idx]
+                distance = t.get_distance(i, neighbor_idx)
+                adjacency[track.id].append((neighbor_track.id, distance))
+    else:
+        for i, track in track_map.items():
+            vi = vectors[i]
+            dists = []
+            for j, other in track_map.items():
+                if i == j:
+                    continue
+                vj = vectors[j]
+                dist = math.sqrt(sum((a - b) ** 2 for a, b in zip(vi, vj)))
+                dists.append((dist, other.id))
+            dists.sort(key=lambda item: item[0])
+            for dist, other_id in dists[:n_neighbors]:
+                adjacency[track.id].append((other_id, dist))
 
     return adjacency
 
@@ -306,11 +376,11 @@ def prepare_adjacency(
             if not v_track:
                 continue
 
-            key_compatible = is_key_compatible(u_track.camelot_key, v_track.camelot_key) if prefer_key_matching else False
+            key_compatible = is_key_compatible(u_track.camelot_key, v_track.camelot_key)
             is_synthetic = (u, v) in synthetic_edges
             # Request edges carry their occurrence count; ANN fallback edges are inferred (n = 0)
             count = 0 if is_synthetic else occurrence_count(edge_weight)
-            base_trans_cost = transition_cost(u_track, v_track, count)
+            base_trans_cost = transition_cost(u_track, v_track, count, prefer_key_matching=prefer_key_matching)
             v_duration = v_track.duration_ms
 
             u_neighbors.append((v, edge_weight, base_trans_cost, key_compatible, is_synthetic, v_duration))
@@ -332,7 +402,8 @@ def find_path(
     pivots: Set[str],
     synthetic_edges: Optional[Set[Tuple[str, str]]] = None,  # Set of (from_id, to_id) synthetic edges
     prepared_adj: Optional[Dict[str, List[Tuple[str, float, float, bool, bool, int]]]] = None,
-    avg_duration: Optional[float] = None
+    avg_duration: Optional[float] = None,
+    hop_distances: Optional[Dict[str, Dict[str, int]]] = None
 ) -> Tuple[Optional[List[Tuple[str, float, bool, bool]]], Optional[List[Tuple[str, float, bool, bool]]]]:
     """
     Modified A* pathfinding with constraints
@@ -356,17 +427,26 @@ def find_path(
     if avg_duration is None:
         avg_duration = sum(t.duration_ms for t in tracks_dict.values()) / max(len(tracks_dict), 1)
 
+    # Precompute reverse BFS hop distances to end_id and waypoints for heuristic guidance
+    target_nodes: Set[str] = set(waypoint_ids)
+    if end_id:
+        target_nodes.add(end_id)
+    if hop_distances is None and target_nodes:
+        hop_distances = compute_reverse_bfs_distances(target_nodes, prepared_adj)
+
     # Initial state
     start_track = tracks_dict[start_id]
+    initial_waypoints = waypoint_ids - {start_id}
     initial_state = PathfinderState(
         current_track_id=start_id,
         path=[(start_id, 0.0, False, False)],
         visited={start_id},
         duration=start_track.duration_ms,
-        remaining_waypoints=waypoint_ids - {start_id},
+        remaining_waypoints=initial_waypoints,
         cost=0.0,
         heuristic=calculate_heuristic(
-            start_track.duration_ms, target_duration, waypoint_ids - {start_id}, avg_duration
+            start_track.duration_ms, target_duration, initial_waypoints, avg_duration,
+            current_track_id=start_id, end_id=end_id, hop_distances=hop_distances
         ),
         pivot_score=1 if start_id in pivots else 0
     )
@@ -374,15 +454,22 @@ def find_path(
     # Priority queue for A* search
     open_set = [initial_state]
     best_path = None
-    best_duration_diff = float('inf')
+    best_score = (float('inf'), float('inf'))
 
-    # Fallback: keep track of the longest path found that is valid (correct endpoint)
+    # Fallback: keep track of the best-effort path that reaches the correct endpoint
+    # (preferring all waypoints visited, then duration closest to target_duration / longest valid)
     longest_valid_path = None
-    longest_valid_duration = -1
+    best_fallback_key = (-1, float('-inf'), -1)  # (all_waypoints_int, -duration_diff, duration)
+
+    # Closed-set / state dominance pruning to prevent exponential state-space explosion
+    bucket_ms = max(int(avg_duration // 2), 30000)
+    best_g_score: Dict[Tuple[str, frozenset, int], float] = {}
+    node_wp_expansions: Dict[Tuple[str, frozenset], int] = defaultdict(int)
+    max_expansions_per_node_wp = 16
 
     iterations = 0
     max_iterations = 10000  # Prevent infinite loops
-    max_allowed_duration = target_duration + (tolerance * 2)
+    max_allowed_duration = max(target_duration + (tolerance * 2), int(target_duration * 2.5) if (end_id or waypoint_ids) else 0)
 
     while open_set and iterations < max_iterations:
         iterations += 1
@@ -401,19 +488,39 @@ def find_path(
         all_waypoints_visited = len(current_state.remaining_waypoints) == 0
         is_correct_endpoint = (end_id is None) or (current_state.current_track_id == end_id)
 
-        # Update longest valid path found so far
-        # We consider a path "valid" for fallback if it ends at the correct endpoint (if specified)
-        if is_correct_endpoint:
-            if current_state.duration > longest_valid_duration:
+        # Update fallback path if it ends at the required endpoint (and isn't just the single start node when no end_id)
+        if is_correct_endpoint and (len(current_state.path) > 1 or end_id == start_id):
+            wp_rank = 1 if all_waypoints_visited else -len(current_state.remaining_waypoints)
+            fallback_key = (wp_rank, -duration_diff, current_state.duration)
+            if fallback_key > best_fallback_key:
+                best_fallback_key = fallback_key
                 longest_valid_path = current_state.path
-                longest_valid_duration = current_state.duration
 
         # Valid solution if: within tolerance, all waypoints visited, and correct endpoint
         if is_within_tolerance and all_waypoints_visited and is_correct_endpoint:
-            if duration_diff < best_duration_diff:
+            candidate_score = (round(current_state.cost, 6), duration_diff)
+            if candidate_score < best_score:
                 best_path = current_state.path
-                best_duration_diff = duration_diff
+                best_score = candidate_score
             continue  # Keep searching for better paths
+
+        # If we already reached end_id early (before target duration or before all waypoints), do not expand past end_id
+        if end_id is not None and current_state.current_track_id == end_id and current_state. current_track_id != start_id:
+            continue
+
+        # State dominance / closed-set check
+        wp_frozen = frozenset(current_state.remaining_waypoints)
+        node_wp_key = (current_state.current_track_id, wp_frozen)
+        if node_wp_expansions[node_wp_key] >= max_expansions_per_node_wp:
+            continue
+
+        dur_bucket = current_state.duration // bucket_ms
+        state_key = (current_state.current_track_id, wp_frozen, dur_bucket)
+        prev_best_g = best_g_score.get(state_key)
+        if prev_best_g is not None and current_state.cost >= prev_best_g:
+            continue
+        best_g_score[state_key] = current_state.cost
+        node_wp_expansions[node_wp_key] += 1
 
         # Expand neighbors using pre-calculated transition parameters
         neighbors = prepared_adj.get(current_state.current_track_id)
@@ -442,16 +549,34 @@ def find_path(
             if new_duration > max_allowed_duration:
                 continue
 
+            # Update remaining waypoints efficiently
+            new_remaining_waypoints = curr_remaining_wp - {neighbor_id} if neighbor_id in curr_remaining_wp else curr_remaining_wp
+
+            # Skip unreachable states if neighbor cannot reach remaining waypoints or end_id
+            if hop_distances:
+                if end_id is not None and neighbor_id != end_id:
+                    if neighbor_id not in hop_distances.get(end_id, {}):
+                        continue
+                if new_remaining_waypoints:
+                    if any(neighbor_id not in hop_distances.get(wp, {}) for wp in new_remaining_waypoints):
+                        continue
+
             # Reaching a remaining waypoint is discounted, never rewarded with a negative cost
             step_cost = base_trans_cost * WAYPOINT_COST_FACTOR if neighbor_id in curr_remaining_wp else base_trans_cost
 
             new_cost = curr_cost + step_cost
 
-            # Update remaining waypoints efficiently
-            new_remaining_waypoints = curr_remaining_wp - {neighbor_id} if neighbor_id in curr_remaining_wp else curr_remaining_wp
+            new_wp_frozen = frozenset(new_remaining_waypoints)
+            new_dur_bucket = new_duration // bucket_ms
+            new_state_key = (neighbor_id, new_wp_frozen, new_dur_bucket)
+            if new_cost >= best_g_score.get(new_state_key, float('inf')):
+                continue
 
             # Calculate heuristic
-            new_heuristic = calculate_heuristic(new_duration, target_duration, new_remaining_waypoints, avg_duration)
+            new_heuristic = calculate_heuristic(
+                new_duration, target_duration, new_remaining_waypoints, avg_duration,
+                current_track_id=neighbor_id, end_id=end_id, hop_distances=hop_distances
+            )
 
             is_piv = 1 if neighbor_id in pivots else 0
 
@@ -506,7 +631,10 @@ async def find_dj_path(request: PathfinderRequest):
             adjacency[edge.from_id].append((edge.to_id, edge.weight))
 
         # 2025 ENHANCEMENT: Use ANN to find similar tracks for a fallback graph
-        ann_adjacency = find_similar_tracks(request.tracks, n_neighbors=15, bpm_weight=1.5, key_weight=1.0)
+        ann_key_weight = 1.0 if request.prefer_key_matching else 0.0
+        ann_adjacency = find_similar_tracks(
+            request.tracks, n_neighbors=15, bpm_weight=1.5, key_weight=ann_key_weight
+        )
 
         synthetic_edges_added = 0
         synthetic_edge_set = set()
@@ -568,15 +696,31 @@ async def find_dj_path(request: PathfinderRequest):
             synthetic_edges=synthetic_edge_set
         )
         avg_track_duration = sum(t.duration_ms for t in tracks_dict.values()) / max(len(tracks_dict), 1)
+        target_nodes_for_bfs: Set[str] = set(waypoint_ids)
+        if request.end_track_id:
+            target_nodes_for_bfs.add(request.end_track_id)
+        hop_distances = compute_reverse_bfs_distances(target_nodes_for_bfs, prepared_adj) if target_nodes_for_bfs else None
 
         # Progressive relaxation strategy (2025 best practice)
         # Try with increasing tolerance levels if strict search fails
         tolerance_multipliers = [1.0, 1.5, 2.0, 3.0]
         path = None
 
-        # Track the global longest valid path across all attempts
+        # Track the global best fallback path across all attempts
         global_longest_valid_path = None
-        global_longest_valid_duration = -1
+        global_best_fallback_key = (-1, float('-inf'), -1)
+
+        def update_global_fallback(candidate_path: Optional[List[Tuple[str, float, bool, bool]]]):
+            nonlocal global_longest_valid_path, global_best_fallback_key
+            if not candidate_path:
+                return
+            cand_dur = sum(tracks_dict[tid].duration_ms for tid, _, _, _ in candidate_path)
+            visited_wps = sum(1 for tid, _, _, _ in candidate_path if tid in waypoint_ids)
+            cand_diff = abs(cand_dur - request.target_duration_ms)
+            cand_key = (visited_wps, -cand_diff, cand_dur)
+            if cand_key > global_best_fallback_key:
+                global_best_fallback_key = cand_key
+                global_longest_valid_path = candidate_path
 
         for multiplier in tolerance_multipliers:
             adjusted_tolerance = int(request.tolerance_ms * multiplier)
@@ -594,23 +738,21 @@ async def find_dj_path(request: PathfinderRequest):
                 pivots=pivots,
                 synthetic_edges=synthetic_edge_set,
                 prepared_adj=prepared_adj,
-                avg_duration=avg_track_duration
+                avg_duration=avg_track_duration,
+                hop_distances=hop_distances
             )
 
-            # Update global fallback if this attempt found a longer valid path
-            if longest_fallback:
-                # Calculate duration for this fallback path
-                fallback_duration = 0
-                for track_id, _, _, _ in longest_fallback:
-                    fallback_duration += tracks_dict[track_id].duration_ms
-
-                if fallback_duration > global_longest_valid_duration:
-                    global_longest_valid_duration = fallback_duration
-                    global_longest_valid_path = longest_fallback
+            update_global_fallback(longest_fallback)
 
             if path:
                 logger.info(f"Path found with tolerance multiplier {multiplier}")
                 break
+
+        if not path and global_longest_valid_path:
+            visited_in_best = sum(1 for tid, _, _, _ in global_longest_valid_path if tid in waypoint_ids)
+            if visited_in_best == len(waypoint_ids):
+                logger.info("Using valid fallback path that visited all waypoints and reached endpoint.")
+                path = global_longest_valid_path
 
         if not path:
             # Final fallback: Try without requiring all waypoints (best-effort)
@@ -629,19 +771,11 @@ async def find_dj_path(request: PathfinderRequest):
                 pivots=pivots,
                 synthetic_edges=synthetic_edge_set,
                 prepared_adj=prepared_adj,
-                avg_duration=avg_track_duration
+                avg_duration=avg_track_duration,
+                hop_distances=hop_distances
             )
 
-            # Update global fallback if this attempt found a longer valid path
-            if longest_fallback:
-                # Calculate duration for this fallback path
-                fallback_duration = 0
-                for track_id, _, _, _ in longest_fallback:
-                    fallback_duration += tracks_dict[track_id].duration_ms
-
-                if fallback_duration > global_longest_valid_duration:
-                    global_longest_valid_duration = fallback_duration
-                    global_longest_valid_path = longest_fallback
+            update_global_fallback(longest_fallback)
 
         # Use the longest valid path if we still haven't found a path meeting constraints
         if not path and global_longest_valid_path:
