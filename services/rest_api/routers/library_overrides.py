@@ -238,8 +238,23 @@ async def get_review_queue_count():
                 tid = (row.get("track_id") or "").strip()
                 if tid and (tid not in overrides or not overrides[tid].get("energy_score")):
                     count += 1
+        return {"count": count}
 
-    return {"count": count}
+    pool = get_pool()
+    if pool is not None:
+        for query in (
+            "SELECT count(*)::int FROM enrichment_reviews WHERE status = 'pending'",
+            "SELECT count(*)::int FROM library.pending",
+        ):
+            try:
+                async with pool.acquire() as conn:
+                    val = await conn.fetchval(query)
+                    if val is not None:
+                        return {"count": int(val)}
+            except Exception:
+                continue
+
+    return {"count": 0}
 
 
 @router.get("/overrides")
