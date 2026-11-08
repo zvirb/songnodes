@@ -3202,3 +3202,21 @@ One job: verify PR #602 after rebasing onto the merged frontend CI repair.
 Owned paths: STATUS.md CIC21 slot only; preserve the PR's existing security changes.
 Original-head security checks pass; E2E fails on eight inherited screenshot baselines and missing review-count fixture. Local Python regression attempt could not run because bundled Python lacks pytest; CI remains authoritative. #601 callback fixture separately passed nine Chrome audits plus two redirect regressions against its built frontend. PR #601 merged as c998970f after every check passed, including 234 browser tests. Rebased this PR onto that main. Next: current-head CI and merge only when every check passes.
 <!-- SLOT:CIC21 END -->
+
+<!-- SLOT:HOMESTATS BEGIN -->
+### HOMESTATS: Show live module state and figures on all Home launcher cards — completed 2026-11-08
+- Scope: Update `frontend/src/pages/HomePage.tsx` and `frontend/src/pages/HomePage.test.tsx` so that all 8 module `LauncherCard`s on the Home page display live data, headline counts, two key figures, and attention status pills where applicable.
+- Changes:
+  - `frontend/src/pages/HomePage.tsx`: Added live fetching and state calculation for Graph (`/api/graph/stats` -> nodes, edges, sets read), Set builder (`/api/v1/library/sets` -> longest set duration, tracks in latest), Pathfinder (routeable keyed tracks, graph edges), Library (tracks, need an energy check, warning pill), Key & mood (keys in use, top Camelot key track count, missing key count), Sources (`/api/v1/target-tracks` -> active targets, pending search, failed search pill), Pipeline (`/api/v1/jobs` -> active/recent non-housekeeping jobs, running or queued, completed/failed, failed pill), and Services (`/api/v1/api-keys/requirements`, `/api/v1/api-keys`, streaming credentials -> streaming connected, API keys saved, expired token warning pill).
+  - `frontend/src/pages/HomePage.test.tsx`: Added unit tests verifying initial figure labels (`–` fallbacks) and populated live figures across all 8 module launcher cards.
+- Checks run and passed:
+  - `npm run type-check` (`tsc --noEmit`: 0 errors)
+  - `npx oxlint --type-aware src/pages/HomePage.tsx src/pages/HomePage.test.tsx` (0 warnings, 0 errors)
+  - `npx vitest run src/pages/HomePage.test.tsx src/routes/registry.test.tsx` (2 test files, 3 tests passed)
+  - `python scripts/check_design_system.py --staged` (0 findings)
+  - `python scripts/check_feature_imports.py --check` (Feature boundaries OK)
+  - `git diff --check` (passed)
+- Unresolved issues: Pre-existing conformance findings on `main` in `TrackDetailPage.tsx`, `FreshnessStamp.tsx`, and `RunsPage.tsx` remain in their separate repair packages.
+- Next task: Review and merge `song_adjacency_graph_stats`, and refresh Linux Playwright Home visual snapshots if required by CI.
+<!-- SLOT:HOMESTATS END -->
+
