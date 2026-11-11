@@ -1,5 +1,5 @@
 pytest==9.2.0
-pytest-asyncio==1.4.1
+pytest-asyncio==1.4.1.post1
 pytest-timeout==2.5.0
 pytest-xdist==3.8.0
 pytest-cov==7.1.0
@@ -8,6 +8,6 @@ asyncpg==0.32.0
 faker==40.44.0
 prometheus-client==0.26.0
 redis==8.1.0
-aio-pika==10.2.1
+aio-pika==10.2.2
 unidecode==1.4.0
 jsonschema==4.26.0
