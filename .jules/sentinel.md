@@ -19,3 +19,8 @@
 **Vulnerability:** Duo OIDC auth callback leaked raw network request exceptions (`str(exc)`), upstream token endpoint error responses (`token_resp.text[:200]`), and JWT decoding exceptions (`str(exc)`) in `HTTPException(detail=...)`.
 **Learning:** Returning unparsed raw error strings or exception messages in authentication callbacks leaks internal network errors, JWT claim details, and upstream provider internals to untrusted clients.
 **Prevention:** Always log full exception and upstream details server-side with `logger.error(..., exc_info=True)` and return constant generic messages to clients.
+
+## 2026-11-08 - Music Auth Upstream Provider Error Leakage
+**Vulnerability:** Music auth router leaked raw upstream provider error messages (`error_msg`), error bodies (`error_text`), and query error params (`error`) in `HTTPException(detail=...)` across Spotify and Tidal OAuth callback, token exchange, and token refresh endpoints.
+**Learning:** Relaying upstream provider error payloads or query error parameters to clients exposes internal provider error responses and internal OAuth diagnostics.
+**Prevention:** Log upstream errors server-side with `logger.error(...)` and return constant generic error details to clients.
