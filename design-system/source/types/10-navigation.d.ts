@@ -267,10 +267,13 @@ export interface ShortcutSheetProps {
 }
 
 export interface PreferencesPanelProps {
-  /** Current preferences, from SongNodes.prefs.get() plus motion. */
+  /** Current preferences, from SongNodes.prefs.get() (theme, text size, density, motion). */
   value: { theme: "system" | "dark" | "light" | "booth"; textSize: "s" | "m" | "l" | "xl"; density: "comfortable" | "compact"; motion: "system" | "reduce" };
   /** Called on every change; apply immediately via SongNodes.prefs. */
   onChange: (next: PreferencesPanelProps["value"]) => void;
+  /** Settings browser storage refused to save (SongNodes.prefs.keptForVisit()): they hold for this visit only,
+   *  and the footer reads "Kept for this visit only" instead of "Saved on this device only" (1.14.0). */
+  keptForVisit?: string[];
   /** Called by the close button. */
   onClose?: () => void;
 }

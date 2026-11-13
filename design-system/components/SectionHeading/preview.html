@@ -1,4 +1,4 @@
-<!-- @dsCard group="Data" height=258 subtitle="Thin–bold section titles at title-m and title-s with count, right-side action or link, caveat line, and a ruled variant" -->
+<!-- @dsCard group="Data" height=320 subtitle="Thin–bold section titles at title-m and title-s with count, right-side action or link, caveat line, a ruled variant, and an InfoTip after the title (tooltip for a caveat that only explains, panel for method text)" -->
 <!doctype html>
 <html>
 <head><meta charset="utf-8"><title>SectionHeading — preview</title></head>
@@ -21,12 +21,21 @@
     <div class="sn-section-heading__end"><a class="sn-link sn-m-sources" href="#sources">Open Sources</a></div>
   </div>
   <div class="sn-section-heading">
-    <h3 class="sn-title title-s"><span class="sn-lead">Pipeline:</span> Scraper health</h3>
-    <p class="sn-section-heading__caveat">Checked every 5 min. Counts reset at midnight AEDT.</p>
+    <h3 class="sn-title title-s" id="h-scr"><span class="sn-lead">Pipeline:</span> Scraper health</h3>
+  </div>
+  <div class="sn-section-heading sn-section-heading--rule">
+    <h2 class="sn-title title-m" id="h-order"><span class="sn-lead">Set builder:</span> Running order</h2>
+    <span class="sn-section-heading__count">14 slots</span>
+    <div class="sn-section-heading__end"><button class="sn-btn sn-btn--sm" type="button">Try another take</button></div>
   </div>
 </div>
 <script>
   var S = window.SongNodes;
+  // a caveat that only explains is an InfoTip after the title; method text is the panel form: no page has a "How this works" section
+  document.getElementById("h-scr").insertAdjacentHTML("beforeend", S.infoTip({ id: "tip-scr", about: "About scraper health", text: "Checked every 5 min. Counts reset at midnight AEDT." }));
+  document.getElementById("h-order").insertAdjacentHTML("beforeend", S.infoTip({ id: "tip-order", about: "How the set is built", panel: { title: "How the set is built", html:
+    '<ol><li>The crate is filtered by your pillars, tiers and rotation.</li><li>Each slot is scored on energy step, key, BPM and genre against the set shape.</li><li>Locked slots stay where they are; the rest follow the energy wave.</li></ol><span class="sn-infotip__note">Three spares are kept for every slot.</span>' } }));
+  S.infoTips();
   document.getElementById("b1").innerHTML = S.icon("download") + "Export CSV";
   document.getElementById("cav").innerHTML = S.icon("info", { size: 15 }) + "<span>Energy is estimated from BPM and source; 47 tracks need a check.</span>";
 </script>

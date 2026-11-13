@@ -15,14 +15,14 @@ Data is the product. Show the value, its unit and its meaning in that order, in 
 | `StatusPill` | System or job status from a backend enum | Jobs, scrapers, proxies, saves, confidence | Categories, compatibility |
 | `CategoryTag` | Neutral category: pillar, genre, rotation, tag | Classification | Anything with a good/bad meaning |
 | `SourceBadge` | Where a track or play came from | Heard on, links, imports | Service connection status (`ServiceStatus`) |
-| `FigureTile` | One headline figure + label + change | Stats rows, launcher figures | Long lists of numbers (`KeyValueGrid`) |
+| `FigureTile` | One headline figure + label + change; link form and state tiles ("Not connected", "Awaiting the weekly run", "Implausible") on figure pages | Stats rows, launcher figures, the summary band (Figure pages) | Long lists of numbers (`KeyValueGrid`) |
 | `KeyValueGrid` | Label/value pairs | Track detail, job detail | Comparisons across rows (`DataTable`) |
 | `DataTable` | Sortable, selectable rows, optional J/K keyboard navigation | Crate, jobs, imports, history | Fewer than 4 items (use a list) |
 | `MiniAudioPreview` | 32px play/pause, progress and time for a preview clip; one plays at a time | Crate rows, set slots, suggestions | Full playback or analysis (`WaveformStrip`) |
-| `Heatmap` | Counts over two dimensions | Keys × energy, shows × days | Exact values (pair with a table) |
+| `Heatmap` | Counts over two dimensions; a slashed cell for "Not measured" | Keys × energy, shows × days | Exact values (pair with a table) |
 | `Card`, `SetCard`, `SetSlot` | Grouped objects; a saved set; one running-order row | Indexes, set building | Page layout boxes |
 | `ChartFrame` + `EnergyWave`, `Sparkline`, `WaveformStrip`, `CamelotWheel` | Charts with title, legend, table fallback | Shapes over time or space | Single numbers |
-| `ProgressBar`, `ProgressRing`, `StagedProgress` | Completion | Jobs, imports, set length filled | Health or quality |
+| `ProgressBar`, `ProgressRing`, `StagedProgress` | Completion; a set against its length on a held scale | Jobs, imports, set length filled | Health or quality |
 | `Checklist` | Items with done/not done | Pre-release checks, onboarding, set readiness | Statuses of systems |
 | `Disclosure`, `ShowMore` | Hide secondary detail | Long meta, raw JSON, more suggestions | Primary content |
 | `SectionHeading` | `title-m` heading with optional count and action | Every section inside a page | Page titles |
@@ -34,6 +34,8 @@ Data is the product. Show the value, its unit and its meaning in that order, in 
 - `TrackCell` line 1 `body-strong` (title wins weight: artist `fg-2`, title `fg`); line 2 `body-s` `fg-3` meta: label, year, mix name. Truncate the title before the artist.
 - The track title links to `TrackDetailPage` in Library colour (`.sn-link.sn-m-library`) only when the row has no other click target.
 - Remix and version names stay in parentheses as written: "Fred again.. – Delilah (pull me out of this)".
+
+Generated lines on a row (missing key, a clash, analysis pending) are `CardFlag`s, never text lines or tags. A row's actions follow `RowActions`; a suggestion row's follow `SuggestionActions`.
 
 ## Energy
 
@@ -99,6 +101,7 @@ Compatibility of a move from key a to key b (`SongNodes.compat`):
 - `BpmReadout`: `.sn-bpm`, mono, "124" with "BPM" in column headers and "124 BPM" in prose. One decimal only when not whole: "128.5".
 - Changes: "+2 BPM", "−3 BPM", "same BPM", "half time", "double time". Verdict thresholds from `bpmStep`: ≤2 perfect, 3–4 compatible, 5–8 possible, >8 clash, on the gap rounded half up (125.5 → 123 is "−3 BPM"). A half- or double-time move (87 → 174) is judged on the halved or doubled gap and is never better than compatible (18-music-domain, DR-056).
 - Track durations `format.duration(sec)` "6:12"; set lengths `format.span(sec)` "1 h 52 min". Right-align in tables (`td.num`).
+- On figure pages and for a set against its length, a total under 120 minutes reads in minutes and from 120 minutes in hours and minutes ("92 min", "2 h 8 min"); see Figure pages → Units.
 
 ## Sources, rotation and pillars
 

@@ -16,6 +16,8 @@ A running-order row: slot number, energy against the slot's target, the TrackCel
 </li>
 ```
 
+Generated lines about the slot (twice in this set, locked off target, no key) are `CardFlag`s in the slot's TrackCell. Lock, move up and move down are the slot's own controls; Remove acts at once with Undo. Any further action goes in a `RowActions` kebab (`sn-ract-zone` after the controls).
+
 ## States
 - Default.
 - Locked `data-locked`: `sunk` fill, lock button pressed; move and remove disabled; survives "Try another take".

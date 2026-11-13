@@ -51,6 +51,14 @@ for sec,typ in [('spacing','dimension'),('radius','dimension'),('size','dimensio
 for g in t['type']['groups']:
     for s in g['styles']:
         put(['typography',s['name']],{x:s[x] for x in s if x!='name'},s.get('usage',''),'typography')
+# 1.11.0: LiveChange family (durations, easing, counts, sizes)
+for k in t.get('live',{}).get('tokens',[]):
+    v=k['value']; vs=str(v)
+    if vs.startswith('cubic-bezier'): typ='cubicBezier'; v=[float(x) for x in re.findall(r'[\d.]+',vs)]
+    elif vs.endswith('ms'): typ='duration'
+    elif vs.endswith('px') or vs.endswith('rem'): typ='dimension'
+    else: typ='number'
+    put(['live',k['name']],v,k.get('usage',''),typ)
 for n,v in t['type']['families'].items(): put(['fontFamily',n],v,'','fontFamily')
 os.makedirs('tokens',exist_ok=True)
 json.dump({'$description':'SongNodes tokens, W3C DTCG. GENERATED from tokens.json by build_agentconf.py. Modes in $extensions.com.songnodes.modes; $value is the dark theme.',**D},open('tokens/tokens.json','w',encoding='utf-8'),indent=1)

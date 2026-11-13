@@ -3220,6 +3220,39 @@ Original-head security checks pass; E2E fails on eight inherited screenshot base
 - Next task: Review and merge `song_adjacency_graph_stats`, and refresh Linux Playwright Home visual snapshots if required by CI.
 <!-- SLOT:HOMESTATS END -->
 
+
+<!-- SLOT:BADGE1 BEGIN -->
+### BADGE1 — Diagnose serving-index warning (2026-11-13)
+- Scope: read-only badge and freshness diagnosis; owned path: STATUS.md (this slot only). Slot added because none existed.
+- Completed: warning is missing + stale > 0; screenshot has 0 missing and 8,134 stale despite 100% row coverage. Backend compares projection_tracks timestamps and energy contract against silver_enriched_tracks; this is not direct graph freshness.
+- Checks: read frontend mapping, backend /outbox/status wiring and reconcile SQL; source trace confirmed. No tests run (diagnosis only); no live database queried.
+- Unresolved: which stale predicate applies to those 8,134 rows requires live read-only SQL. Next task: count timestamp mismatches versus energy-contract mismatches before proposing any repair.
+<!-- SLOT:BADGE1 END -->
+
+<!-- SLOT:BADGE2 BEGIN -->
+### BADGE2 — Clarify pipeline warnings (2026-11-13)
+- Started: show only warning causes, in the icon warning colour.
+- Owned paths: frontend/src/features/pipeline/usePipelineTelemetry.ts; frontend/src/pages/ScraperProgressPage.tsx; STATUS.md (this slot).
+- Changed: warning rows show only their cause in var(--status-warn); serving warnings omit zero counts and name the serving index accurately, with singular/plural wording.
+- Checks: npm run type-check passed; python scripts/check_design_system.py --check passed; git diff --check passed. Existing telemetry tests could not run: vitest executable unavailable.
+- Unresolved: unit test runner unavailable; no commit created. Next: visually verify the warning row in the running app and rerun telemetry tests when Vitest is available.
+<!-- SLOT:BADGE2 END -->
+
+<!-- SLOT:BADGE3 BEGIN -->
+### BADGE3 — Verify warning count provenance (2026-11-13)
+- Scope: read-only source and live endpoint verification; owned path STATUS.md (this new slot only).
+- Verified: page uses live GET /outbox/status through usePipelineTelemetry; no hardcoded 8134/30163 found in frontend or services. Live API returned missing=0, stale=8134, source_total=projection_total=30163.
+- Checks: independent read-only PostgreSQL aggregate returned 30163 joined tracks, 8134 source timestamp mismatches, 0 energy-contract mismatches, stale_total=8134. All queries succeeded; no data changed.
+- Limitation: timestamp mismatch establishes freshness drift, not necessarily changed metadata values. Next task: investigate why those source updates were not reprojected, if requested.
+<!-- SLOT:BADGE3 END -->
+
+<!-- SLOT:HDR1 BEGIN -->
+### HDR1 — Inspect desktop header conformance (2026-11-13)
+- Started: compare app-shell header placement with AppHeader specification. Owned path: STATUS.md (this new slot only); implementation is read-only.
+- Findings: AppShell uses the canonical sticky header class; imported bundle has top:0 and z-header. AppShell omits connection status and More actions, and Search navigates to Library rather than opening CommandPalette. html/body overflow:auto warrants live scroll verification before attributing a positioning defect.
+- Checks: source inspection only; no runtime/browser checks or tests run. No implementation changed. Unresolved: actual desktop appearance and sticky behaviour. Exact next task: reproduce desktop scrolling in the running app and inspect computed header/ancestor overflow.
+<!-- SLOT:HDR1 END -->
+
 <!-- SLOT:DSLINT1 BEGIN -->
 ### DSLINT1 — Audit design-system conformance (2026-11-13)
 - Started: extend existing conformance tooling into a repeatable all-route audit. Existing checks found in scripts/check_design_system.py and frontend/tests/e2e (design-rules and accessibility); coverage gaps include exempt files, discovered routes and sticky shell behaviour.
@@ -3239,6 +3272,6 @@ Original-head security checks pass; E2E fails on eight inherited screenshot base
 - Implemented: atomic metadata mutex, all-or-nothing file/folder/special-resource claims, heartbeat, operator-attested stale recovery, origin-idempotent import, dependency/role checks, retirement/split/deferred transitions, isolated verification, guarded optional apply, rollback backups/journals and idempotent completion recovery.
 - Git safety: active state, locks, proposals, test snapshots and journals are ignored under branch-specific .runtime/. QUEUE.md carries sanitized task definitions/terminal evidence with no active owners. git-check rejects force-added runtime files or staged ownership. New-branch isolation is regression-tested; source application remains disabled in proposal-only configuration.
 - Backlog: 99 distinct observation tasks preserve all 669 audit occurrences; five coverage-gap tasks; 104 total Ready, zero claims. Existing imported IDs remain immutable; new IDs add UUID suffixes for branch-safe allocation. Generated versioned data: QUEUE.md and reports/design-system-audit.json. The historical static tracker is untouched.
-- Checks: queue/source-checker Python suite passed 53 tests; browser-audit Node suite passed 3; frontend type-check passed; strict source scan found 0 findings; repository diff whitespace check passed. Final regression rerun follows the last small ownership/verification guards. No live task was claimed or applied.
-- Next: commit verified queue changes and the user-requested existing project snapshot, fetch/check main, push this branch, and verify remote parity. Then review WQ00001 (header observations) in a new authorized worker run; no schedule is enabled.
+- Checks: queue/source-checker Python suite passed 53 tests; browser-audit Node suite passed 3; frontend type-check passed; strict source scan found 0 findings; repository diff whitespace check passed. Final regression rerun passed the same 53 tests after the last ownership/verification guards. No live task was claimed or applied.
+- Git: verified queue implementation committed as 7674ef14. Existing project changes will be committed separately as explicitly requested; runtime locks and nested worktrees are excluded. Fetch/main deletion check is clean (main is an ancestor). Next: push the combined branch and verify remote parity; then review WQ00001 in a newly authorized worker run. No schedule is enabled.
 <!-- SLOT:WQ1 END -->

@@ -375,7 +375,7 @@ Depth means 'floats above the page'. Cards rest at shadow-1; only floating layer
 /* a page that links or inlines tokens.css: prefer var(--control-sm), so that a change to tokens.css reaches the page */
 ```
 
-### Tokens (12)
+### Tokens (15)
 
 | token | value | usage |
 | --- | --- | --- |
@@ -391,6 +391,9 @@ Depth means 'floats above the page'. Cards rest at shadow-1; only floating layer
 | `--rail-w` | 248px | Filter rail width on desktop. |
 | `--content-max` | 1400px | Max content width; wider screens centre it. |
 | `--prose-max` | 68ch | Max line length for running text and help. |
+| `--slider-track-h` | 6px | Drawn height of a slider track and its fill (1.7.0). The hit area is `touch-min`, never the drawn height. |
+| `--slider-thumb` | 22px | Visible diameter of a slider thumb, ring included (1.7.0). Grows slightly (scale 1.15) on hover. |
+| `--slider-thumb-ring` | 3px | Width of the `brand` ring round the thumb's `fg` disc (1.7.0). |
 
 ## Z index
 

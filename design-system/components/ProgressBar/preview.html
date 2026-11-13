@@ -1,4 +1,4 @@
-<!-- @dsCard group="Charts" height=460 subtitle="Determinate with count and percent, indeterminate, sizes, segmented stages; health shown by a separate pill" -->
+<!-- @dsCard group="Charts" height=815 subtitle="Determinate with count and percent, indeterminate, sizes, segmented stages; health shown by a separate pill; saved sets against their length on a held scale with a hatched removed part" -->
 <!doctype html>
 <html>
 <head><meta charset="utf-8"><title>ProgressBar — preview</title>
@@ -45,6 +45,15 @@
       <section class="sn-card sn-card--compact" id="segs"></section>
     </div>
   </div>
+  <div class="sn-preview__label">Held scale · saved sets against their length (the full bar is the set length)</div>
+  <section class="sn-card sn-card--compact sn-m-sets" style="gap: var(--space-4)">
+    <div id="heldBars" class="sn-stack" style="gap: var(--space-4)"></div>
+    <ul class="sn-progress-bar__key" aria-label="Key">
+      <li><span class="sn-progress-bar__swatch" data-part="filled"></span>Planned</li>
+      <li><span class="sn-progress-bar__swatch" data-part="open"></span>Still to fill</li>
+      <li><span class="sn-progress-bar__swatch" data-part="removed"></span>Removed since the last save</li>
+    </ul>
+  </section>
 </div>
 <script>
 (function () {
@@ -89,6 +98,34 @@
     '<hr style="border:0;border-top:1px solid var(--line);margin:var(--space-2) 0">' +
     staged("TIDAL sync · Peak time Friday", [
       { name: "Find tracks", state: "done" }, { name: "Create playlist", state: "done" }, { name: "Add tracks", state: "done" }], S.html.pill("completed"));
+})();
+</script>
+<script>
+/* Held scale: inline helper for this preview (no library). */
+(function () {
+  var S = window.SongNodes;
+  /** A duration under 120 min reads in minutes, from 120 min in hours and minutes. */
+  function mins(m) { return m < 120 ? m + " min" : Math.floor(m / 60) + " h" + (m % 60 ? " " + (m % 60) + " min" : ""); }
+  /** "x of y": both sides take the form of the scale y, so one figure keeps one unit. */
+  function pair(x, y) { return y < 120 ? x + " of " + y + " min" : (x < 60 ? x + " min" : Math.floor(x / 60) + " h" + (x % 60 ? " " + (x % 60) + " min" : "")) + " of " + mins(y); }
+  /** o: {name, length (min, the held scale), planned (min), removed (min), removedTracks} */
+  function held(o, i) {
+    var p = o.planned / o.length, fill = Math.min(1, p), rem = Math.min(o.removed / o.length, 1 - fill), over = o.planned - o.length, id = "held" + i;
+    var cap = (over > 0 ? mins(over) + " over the set length" : over === 0 ? "At the set length" : mins(-over) + " still to fill") +
+      (o.removed > 0 ? " · " + o.removedTracks + (o.removedTracks === 1 ? " track" : " tracks") + " removed since the last save (" + mins(o.removed) + ")" : "");
+    var words = pair(o.planned, o.length) + " planned, " + Math.round(p * 100) + "%, " + cap.replace(" · ", ", ");
+    return '<div class="sn-progress-bar sn-progress-bar--held">' +
+      '<div class="sn-progress-bar__head"><span class="sn-progress-bar__label" id="' + id + '">' + S.esc(o.name) + '</span><span class="sn-progress-bar__value">' + pair(o.planned, o.length) + " · " + Math.round(p * 100) + "%</span></div>" +
+      '<div class="sn-progress-bar__track" role="progressbar" aria-labelledby="' + id + '" aria-valuemin="0" aria-valuemax="' + o.length + '" aria-valuenow="' + Math.min(o.planned, o.length) + '" aria-valuetext="' + S.esc(words) + '" style="--p: ' + (fill * 100).toFixed(1) + "%; --removed: " + (rem * 100).toFixed(1) + '%">' +
+      '<div class="sn-progress-bar__fill"></div>' + (rem > 0 ? '<div class="sn-progress-bar__removed"></div>' : "") + "</div>" +
+      '<div class="sn-progress-bar__caption">' + cap + "</div></div>";
+  }
+  document.getElementById("heldBars").innerHTML = [
+    { name: "Peak time Friday", length: 120, planned: 92, removed: 0 },
+    { name: "Warm-up opener", length: 90, planned: 61, removed: 11, removedTracks: 2 },
+    { name: "Closing", length: 120, planned: 128, removed: 0 },
+    { name: "All night long", length: 240, planned: 201, removed: 6, removedTracks: 1 }
+  ].map(held).join("");
 })();
 </script>
 </body>

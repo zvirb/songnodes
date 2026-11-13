@@ -25,6 +25,9 @@ Banner: `sn-connection-status-banner[data-state]` → `__msg` (bold state + what
 | offline | ✕ bad | Offline · data from 21:30 | what is shown, that edits are kept, Retry now |
 | partial | ▲ warn | 1001tracklists unreachable | what paused, what carries on, Open Pipeline |
 
+## Changes waiting (1.14.0)
+While this device holds changes that are waiting or not saved, the compact form holds one more child: the Outbox count, a quiet small button (`sn-outbox__count`) reading "3 changes waiting" or "3 waiting, 1 not saved"; it opens the Outbox. `SongNodes.resp.outbox.init({ mount })` adds and removes it; do not write it by hand. With the count present the status may wrap onto two lines. The offline banner's "Changes you make are kept on this device and sent when the connection is back" is the Outbox's promise.
+
 ## Accessibility
 `role="status"` (polite). Announce each state change once, not every retry; update the attempt count without re-announcing. The ↻ glyph is static; no spinning.
 

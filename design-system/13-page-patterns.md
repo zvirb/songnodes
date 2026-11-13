@@ -4,11 +4,10 @@ Fifteen page patterns cover both products. Build a new page by picking the close
 
 Common rules:
 - Content width `content-max` (1400px), centred; side gutter `space-4` on phones, `space-6` from `bp-tablet`, `space-8` from `bp-desktop`.
-- **Page container (required).** Every page's root is `<main class="sn-page__main" id="main" tabindex="-1">`. That class is what gives the gutter, the `content-max` width and the `space-8` rhythm between sections; a page without it renders edge to edge with no padding. `ErrorPage` uses `sn-page-error`, `AuthCallbackPage` uses `sn-page-auth`, and `GraphPage` uses `sn-page-graph` as the full-bleed page container (05-layout). Do not wrap a page in any other class, and never invent one: a class the bundle does not define renders nothing (17-governance, The sn- namespace).
+- **Page container (required).** Every page's root is `<main class="sn-page__main" id="main" tabindex="-1">`. That class is what gives the gutter, the `content-max` width and the `space-8` rhythm between sections; a page without it renders edge to edge with no padding. `ErrorPage` uses `sn-page-error` and `AuthCallbackPage` uses `sn-page-auth` instead. The graph canvas is the only full-bleed page (05-layout) and carries a `design-system exception` comment on its `<main>`. Do not wrap a page in any other class, and never invent one: a class the bundle does not define renders nothing (17-governance, The sn- namespace).
 - Vertical rhythm between sections `space-8`; inside a section `space-4`.
 - One `h1` (the thin–bold title). Section headings `SectionHeading` (`h2`).
 - Loading uses `LoadingState` (skeletons shaped like the content), errors `ErrorState` in place of the failed region only, empty regions `EmptyState`.
-- **Attribution notice / Legal notice.** Third-party data licensing requirements (such as MusicBrainz CC BY-NC-SA 3.0) use `.sn-attribution` (or `.sn-legal-notice`). It renders centred secondary text (`--fg-2`) with `space-3` padding, `space-6` top margin, `space-4` bottom margin, and a top border in `--surface-2` without ad-hoc inline styles.
 
 ## HomePage (launcher)
 
@@ -27,6 +26,8 @@ Common rules:
 | Recently opened: Peak time Friday · Bicep – Glue        |
 | ● API healthy  ▲ 1001tracklists cooling down            |
 ```
+
+- HomePage, MonitoringPage and the stats views are figure pages: the summary band, the reading sentence and the section order follow `21-figure-pages.md`.
 
 ## LibraryPage (rail + table)
 
@@ -54,7 +55,7 @@ Below `bp-tablet` the rail becomes a "Filters" button with a `SideSheet`; below 
 | Region | Components |
 |---|---|
 | Header | `PageHeader` (Set builder: Peak time Friday), primary "Build set", secondary "Save set", overflow: Copy tracklist, Export, Print set, Send to TIDAL on the weekly run, Delete |
-| Controls | `Card`: `TextField` set name, `SelectField` shape, `NumberField` length (min), `RangeSlider` × 3 genre mix weights, pool `SelectField` |
+| Controls | `Card`: `TextField` set name, `SelectField` shape, `NumberField` length (min), `SliderGroup` of three genre mix weights (relative, DR-062), pool `SelectField` |
 | Wave | `ChartFrame` + `EnergyWave` (bars per slot, dashed target) |
 | Running order | `SetSlot` list with `TransitionNote` strips; `ShowMore` spares per slot |
 | Saved sets | `SetCard` grid |

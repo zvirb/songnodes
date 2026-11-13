@@ -87,3 +87,6 @@
 | TYP-083 | Graph labels shall be shown only for the hovered node, its neighbours, the selection and nodes above the zoom threshold. | dom | Visible label set is subset of hover, neighbours, selection, zoom-threshold nodes. |
 | TYP-084 | No more than about 60 graph labels shall be shown at once. | dom | Visible graph label count <= 60. |
 | TYP-085 | BPM and key in node tooltips shall use JetBrains Mono. | dom | Tooltip BPM/key elements compute JetBrains Mono. |
+| TYP-086 | A font size, line height or font weight in CSS shall be a type-scale token (`--fs-*`, `--lh-*`, `--fw-*`) or come from a named type class, and shall not be written as a number. | lint | Fail if new or changed CSS sets `font-size`, `line-height`, `font-weight` or a `font` shorthand with a literal size, line height or weight. |
+| TYP-087 | A size that is not on the type scale shall snap to the nearest named style, the smaller when it sits halfway between two, and shall never be given a token or a name of its own. | judgement | Every font size on the page equals one of the named styles at the current text-size setting. |
+| TYP-088 | `html` shall set `text-size-adjust: 100%` (with the `-webkit-` form), so a phone in landscape does not enlarge the text. | lint | `getComputedStyle(document.documentElement).textSizeAdjust` is `100%`. |

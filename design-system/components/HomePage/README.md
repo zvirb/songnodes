@@ -10,7 +10,7 @@ The only page at `/` in both products (the music library uses the same page with
 |---|---|---|
 | Shell | `AppHeader` (lead "SongNodes", title "Home"), `NavDrawer` (Home current), toast region, `.sn-skip` | `.sn-page` on the preview root, `.sn-page__main` around content |
 | Title | `PageHeader` without a module band (decided: Home has no band, since it belongs to no module): `SongNodes: **Home**` (`title-l`), one-line description, `FreshnessStamp` in the meta row | No greeting, no primary action (a launcher has none) |
-| Since your last visit | `SectionHeading` + `FigureTile` row (max 4): figure, label, delta, link in the destination module colour, `StatusPill` only for problems | `.sn-page__section` |
+| Since your last visit | `SectionHeading` + `FigureTile` row (max 4): figure, label, delta, link in the destination module colour, `StatusPill` only for problems | `.sn-page__section` On a figure layout the row is a `sn-figure-band` of link tiles with one reading sentence (Figure pages). |
 | Modules | `LauncherCard` × 8 in drawer order, tonal per module, attention pill only when needed | 4 columns ≥ 1100px, 2 from 768px, 1 on phones (`.sn-page-home .sn-launcher-card__grid`) |
 | Recently opened | Two `Card`s: 5 sets (`TextLink` sets colour + mono stats + relative time with absolute tooltip) and 5 tracks (`TextLink` library colour + `EnergyBar`, `KeyBadge`, `BpmReadout`) | `.sn-page-home__recent`, `.sn-page__list`, `.sn-page__item` |
 | Health | `ServiceStatus` rows for problems only, then one line of ok `StatusPill`s | Link "Open Pipeline health" |

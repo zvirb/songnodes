@@ -17,6 +17,11 @@ for p in sorted(glob.glob(os.path.join(proj, "assets", "Icons", "*.svg"))):
 js = open(os.path.join(here, "bundle.src.js"), encoding="utf-8").read().replace("__ICONS__", json.dumps(icons, ensure_ascii=False))
 header = '/* @ds-bundle: {"format":4,"namespace":"SongNodes","components":[]} */\n'
 js = header + js
+# 1.11.0: LiveChange (SN_LIVE, port of LedgerSchedule LS_LIVE 1.0) and the SongNodes.live wrapper, after window.SongNodes exists
+js += "\n" + open(os.path.join(here, "livechange.src.js"), encoding="utf-8").read()
+# 1.14.0: further helper modules, each attaching to window.SongNodes, in name order
+for p in sorted(glob.glob(os.path.join(here, "js", "*.src.js"))):
+    js += "\n" + open(p, encoding="utf-8").read()
 assert "</script" not in js.lower() and "<!--" not in js
 open(os.path.join(proj, "components", "bundle.js"), "w", encoding="utf-8").write(js)
 print("bundle.css", len(css), "bundle.js", len(js), "icons", len(icons))

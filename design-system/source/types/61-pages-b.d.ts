@@ -143,7 +143,7 @@ export interface PrintSheetProps {
   /** Shape name ("Peak time (three waves)"). */ shape: string;
   /** Running order, up to 24 slots per A4 page. */ slots: PrintSlot[];
   /** Genre mix line ("House 50 · Techno 30 · UK garage 20"). */ genreMix?: string;
-  /** Full URL of the view for the footer. */ url: string;
+  /** Full URL of the view for the footer. The page number is not a prop: "Page n of N" prints in the page margin (@page sheet, 1.14.0). */ url: string;
   /** Library freshness for the footer. */ dataFrom: IsoTime;
   /** Adds the blank 30 mm notes column. */ notesColumn?: boolean;
 }

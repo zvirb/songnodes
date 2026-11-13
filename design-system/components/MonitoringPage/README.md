@@ -15,12 +15,12 @@ Full pipeline health on one page: scrapers, jobs, proxies, enrichment, the revie
 | Shell | `AppHeader` ("Pipeline: Health", "Checked just now"); drawer Pipeline row carries a bad pill "1" |
 | Header | `PageHeader` with stamp "Checked …" and `ConnectionStatus` "Live"; secondary Test proxies; More actions: Pause all scrapers, Export health as CSV; primary **Run scrapers now** (busy "Starting…") |
 | Problems first | One `Banner` (`bad`): "1001tracklists paused after errors. … Retries at 21:45 AEDT" + "See the errors". Severity budget: at most one bad banner; other incidents collapse into it ("and 2 more") |
-| Figures | `FigureTile` × 4: Jobs today, Failed today (bad pill + "Show these"), Queue length, Proxies healthy "9 of 12" (warn pill) |
+| Figures | `FigureTile` × 4: Jobs today, Failed today (bad pill + "Show these"), Queue length, Proxies healthy "9 of 12" (warn pill) A scraper success rate names its base ("92% of jobs today"); proxies with no test yet are not a 0. |
 | Scrapers | `DataTable --stack`: name + kind, `StatusPill` via `SongNodes.status` (idle, running, error, disabled → Off, circuit_open → Paused after errors), last success `FreshnessStamp` (▲ after 1 h), `Sparkline` hourly success rate with latest %, jobs today, next run, row `OverflowMenu` (Run now disabled with its reason while paused). Rows in error carry `data-flag` |
 | Enrichment | `Card` (Pipeline) + `StagedProgress`: steps (finished steps green `status-ok` "● Done · 6:02"), elapsed, estimate, meter on the running step |
 | Proxies | `Card --list`: name + region, `StatusPill --outline` (healthy, degraded, failed, untested → Not tested), latency |
 | Review queue | `Card` + `Checklist` summary and rows with counts; `TextLink` "Open review queue" |
-| Errors | `ErrorState` for the newest error that needs the person (auth: "Retrying won't help until the key is renewed" + Services module button + reference), then a compact table of the last 24 h |
+| Errors | `ErrorState` for the newest error that needs the person (auth: "Retrying won't help until the key is renewed" + Services module button + reference), then a compact table of the last 24 h; the errors heading's end slot holds the small CopyButton "Copy diagnostics" (Diagnostics, DIA-027) |
 | Footer | `.sn-page-monitor__foot`: Grafana and API reference external links |
 
 ## Data

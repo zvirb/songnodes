@@ -258,15 +258,16 @@ SH = [("shadow-1",{"dark":"0 1px 2px rgba(0, 0, 0, 0.30)","light":"0 1px 2px rgb
 SIZE = [("control-sm","32px","Small buttons and inputs in dense toolbars and table rows."),("control-md","40px","Default button, input and select height."),("control-lg","48px","Large buttons: empty-state actions, booth mode, touch-first screens."),
         ("touch-min","44px","Minimum hit area for anything tappable on phone and tablet (pad small visuals to reach it)."),("row-compact","32px","Table row height in compact density."),
         ("row-comfortable","40px","Table row height, default density."),("row-two-line","56px","Two-line rows (title + meta) in lists and the running order."),
-        ("header-h","56px","App header height."),("drawer-w","300px","Navigation drawer width (max 86vw on phones)."),("rail-w","248px","Filter rail width on desktop."),
-        ("content-max","1400px","Max content width; wider screens centre it."),("print-wide-h","150mm","Print only: tallest drawing a wide figure may have on an A4 landscape page (182 mm content height less about 30 mm for the title, caption and figure notes), so the figure and its notes stay on one page."),("print-wide-w","273mm","Print only: content width of an A4 landscape page (@page wide, 297 mm less 12 mm margins). Wide print blocks (sn-print-wide) take it, because Chromium keeps block widths from the portrait layout on a named landscape page."),("prose-max","68ch","Max line length for running text and help.")]
+        ("skeleton-card-h","320px","Skeleton: height held for a SetCard whose height is not yet remembered on this device."),("skeleton-chart-h","240px","Skeleton: height held for a ChartFrame plot (axes only, no marks) whose height is not yet remembered on this device."),("header-h","56px","App header height."),("drawer-w","300px","Navigation drawer width (max 86vw on phones)."),("rail-w","248px","Filter rail width on desktop."),
+        ("content-max","1400px","Max content width; wider screens centre it."),("print-wide-h","150mm","Print only: tallest drawing a wide figure may have on an A4 landscape page (182 mm content height less about 30 mm for the title, caption and figure notes), so the figure and its notes stay on one page."),("print-wide-w","273mm","Print only: content width of an A4 landscape page (@page wide, 297 mm less 12 mm margins). Wide print blocks (sn-print-wide) take it, because Chromium keeps block widths from the portrait layout on a named landscape page."),("prose-max","68ch","Max line length for running text and help."),
+        ("slider-track-h","6px","Drawn height of a slider track and its fill (1.13.0). The hit area is touch-min, never the drawn height."),("slider-thumb","22px","Visible diameter of a slider thumb, ring included (1.13.0). Grows slightly (scale 1.15) on hover."),("slider-thumb-ring","3px","Width of the brand ring round the thumb's fg disc (1.13.0).")]
 Z = [("z-base","0","Page content."),("z-sticky","10","Sticky table headers, sticky filter rail."),("z-header","20","App header."),("z-drawer","40","Navigation drawer and side sheets."),
      ("z-overlay","50","Scrim."),("z-dialog","60","Dialogs and the media viewer."),("z-popover","70","Menus, popovers, context menu, select lists."),("z-toast","80","Toasts."),("z-tooltip","90","Tooltips.")]
 DUR = [("duration-instant","0ms","Reduced motion: every duration collapses to this."),("duration-fast","120ms","Hover, press, focus, chip toggle."),("duration-base","200ms","Drawer, dialog, disclosure, tab indicator."),("duration-slow","320ms","Chart transitions and graph camera moves (max).")]
 EASE = [("ease-standard","cubic-bezier(0.2, 0, 0, 1)","Everything that moves in or changes size."),("ease-exit","cubic-bezier(0.3, 0, 1, 1)","Elements leaving (drawer close, toast out).")]
 BP = [("bp-phone","480px","Below: one column, drawer navigation, tables become cards or scroll in their box."),("bp-tablet","768px","Tablet: rails collapse to a Filters button; two-column cards."),
       ("bp-desktop","1100px","Desktop: filter rail + content; side panels open beside, not over."),("bp-wide","1440px","Wide: three-region layouts (library, graph, panel)."),("bp-wall","1920px","Wall/kiosk: booth theme recommended, type scale steps up one size.")]
-OP = [("opacity-disabled","0.45","Disabled controls (with aria-disabled)."),("opacity-faded","0.15","Graph nodes and edges outside the current selection or filter."),("opacity-edge","0.6","Graph edges drawn without a strength band: legend line samples and the layer toggles. Graph links on the canvas use graph-edge-op-1…4.")]
+OP = [("opacity-disabled","0.45","Disabled controls (with aria-disabled)."),("opacity-faded","0.15","Graph nodes and edges outside the current selection or filter."),("opacity-stale","0.65","A slot whose old content stays on screen while the answer to the person's own press (a filter, a search, a tab, a period) is worked out (sn-stale, Responsive pages): dim enough to read as not current, clear enough to keep reading. LedgerSchedule's stale-opacity is 0.55; 0.65 here so primary text (fg) stays at 4.5:1 or better on bg and surface-1 in dark, light and booth. Not opacity-disabled: a stale slot is still true until its new content lands."),("opacity-edge","0.6","Graph edges drawn without a strength band: legend line samples and the layer toggles. Graph links on the canvas use graph-edge-op-1…4.")]
 GRAPH = [("graph-edge-w-1","1px","Link width, Weak band (below the first fitted cut). Shown only when it is one of either track's two strongest links, touches now playing, or touches the hovered or selected track."),
          ("graph-edge-w-2","2px","Link width, Fair band."),("graph-edge-w-3","3.5px","Link width, Strong band."),("graph-edge-w-4","6px","Link width, Very strong band (at or above the third fitted cut)."),
          ("graph-edge-op-1","0.35","Link opacity, Weak band; backs up the width, never carries strength alone."),("graph-edge-op-2","0.55","Link opacity, Fair band."),("graph-edge-op-3","0.8","Link opacity, Strong band."),("graph-edge-op-4","1","Link opacity, Very strong band."),
@@ -277,6 +278,25 @@ GRAPH = [("graph-edge-w-1","1px","Link width, Weak band (below the first fitted 
          ("graph-label-zoom","1.5","Zoom at which every label shows; each seat keeps clear the node plus its label as drawn at this zoom."),
          ("graph-hood-steps","3","Neighbourhood view: tracks at most this many links from the anchor are shown (GraphControls, View)."),
          ("graph-hood-max","200","Neighbourhood view: at most this many tracks, strongest links first, so Fit holds them at 25% or more in the narrowest graph canvas.")]
+
+# 1.11.0: imported from LedgerSchedule v5.5 (stroke-mark, dash, dash-gap; tokens v22) and v5.9 (LiveChange timings, LS_LIVE 1.0), 8 Nov 2026.
+SIZE += [("stroke-mark","1.5px","Edge of a chart mark and a dashed what-if or reference outline (from LedgerSchedule v5.5)."),
+         ("dash","4px","Dash length of a dashed reference line and of the LiveChange waiting border (LedgerSchedule v5.5)."),
+         ("dash-gap","3px","Gap of a dashed reference line (LedgerSchedule v5.5).")]
+LIVE = [("live-glide-short","150ms","LiveChange glide under one row of travel (LVC-032)."),("live-glide-mid","240ms","LiveChange glide up to about a third of the screen."),
+        ("live-glide-max","400ms","LiveChange glide cap; also the marker fade."),("live-ease","cubic-bezier(0.2, 0, 0.38, 0.9)","Carbon productive curve for every LiveChange glide."),
+        ("live-fade-in","160ms","A filled placeholder or a new item fades in."),("live-fade-out","120ms","A removed item fades out before its neighbours close the gap."),
+        ("live-mark-hold","4000ms","Changed-elsewhere marker and tag stay this long once you are back at the page, then fade."),
+        ("live-failed-hold","8000ms","Put-back marker and its inline message."),("live-pending-after","1000ms","A save the server has not confirmed after this shows the waiting border."),
+        ("live-tries","5","Tries before a move is put back (exponential backoff with equal jitter: 0.5-1, 1-2, 2-4, 4-8 s)."),
+        ("live-try-timeout","10000ms","A try the server has not answered in this time counts as failed."),
+        ("live-sweep","1600ms","One pass of a generating placeholder's sweep; runs until filled; stands still under reduced motion."),
+        ("live-stall","60000ms","A placeholder not filled in this time becomes a failed item."),
+        ("live-glide-limit","12","More items than this gliding at once: nothing glides, markers only (LedgerSchedule's value, kept: a set rebuild that moves more slots shows markers, which matches Layout stability)."),
+        ("live-bar-h","8px","Height of a placeholder bar in an item being generated."),("live-mark-w","2px","Width of the changed-elsewhere, waiting and put-back outline.")]
+
+# 1.14.0: form alignment (from LedgerSchedule v5.0, fitted): the narrowest a field in a row of fields may get before the row wraps.
+SIZE += [("field-min","14rem","Form alignment: the narrowest a field in a .sn-field-row may be before the row wraps to another line (1.14.0).")]
 
 def fam(lst, note=None):
     d = {"tokens": [{"name": n, "value": v, "usage": u} for n, v, u in lst]}
@@ -313,20 +333,32 @@ TYPE = {
     {"name": "data-strong", "fontSize": "0.8125rem", "lineHeight": 1.4, "fontWeight": 600, "sample": "+1 key · +2 BPM", "usage": "Emphasised data: the transition verdict, the current value."},
     {"name": "data-s", "fontSize": "0.6875rem", "lineHeight": 1.35, "fontWeight": 400, "sample": "trk_01HF9Z", "usage": "External IDs (ISRC, Spotify ID), chart tick labels."}]}]}
 
+# 1.14.0 (from LedgerSchedule v4.23 and v5.2): the type scale as tokens, generated from the named styles above, so CSS can take a
+# size, line height and weight from the scale instead of writing the number: --fs-<style>, --lh-<style>, --fw-<style>.
+# No new sizes: an off-scale size snaps to the nearest style and is never given a name of its own (TYP-086, TYP-087).
+TYPESCALE = []
+for _g in TYPE["groups"]:
+    for _s in _g["styles"]:
+        TYPESCALE += [("fs-" + _s["name"], _s["fontSize"], "Font size of the %s style. %s" % (_s["name"], _s["usage"])),
+                      ("lh-" + _s["name"], str(_s["lineHeight"]), "Line height of the %s style." % _s["name"]),
+                      ("fw-" + _s["name"], str(_s["fontWeight"]), "Font weight of the %s style." % _s["name"])]
+
 tok = {
- "name": "SongNodes", "version": "1.10.0",
+ "name": "SongNodes", "version": "1.14.0",
  "meta": {"source": "Decisions page 24 Oct 2026 + songnodes repo audit + Naarm Set Builder", "generator": "source/build_tokens.py"},
  "color": {"themes": [{"id": t, "name": n} for t, n in THEMES], "tokens": tokens},
  "type": TYPE,
  "spacing": fam(SP, "4px base. Use gap on flex/grid, never margins between siblings."),
  "radius": fam(RAD, "Three-step shape scale: the rounder, the bigger and more 'object' it is."),
  "shadow": fam(SH, "Depth means 'floats above the page'. Cards rest at shadow-1; only floating layers get more."),
+ "typeScale": fam(TYPESCALE, "Generated from type.groups (1.14.0): the size, line height and weight of every named style as custom properties. Use these or the style classes; never write a font size, line height or weight as a number. An off-scale size snaps to the nearest style."),
  "size": fam(SIZE),
  "zIndex": fam(Z),
  "duration": fam(DUR, "Reduced motion sets every duration to 0ms except progress indication."),
  "easing": fam(EASE),
  "breakpoint": fam(BP),
  "opacity": fam(OP),
+ "live": fam(LIVE, "LiveChange (1.11.0, from LedgerSchedule v5.9): how a list, set or table shows a change that happens under the reader. Under reduced motion nothing glides, fades or sweeps; markers and words still show."),
  "graph": fam(GRAPH, "Graph visualiser (GraphStyles): link strength is drawn as four width-and-opacity bands; distance only orders tracks on rings. Band cut points are fitted to the library each weekly run, not stored here."),
 }
 with open(os.path.join(OUT, "tokens.json"), "w", encoding="utf-8") as f:
@@ -358,7 +390,7 @@ lines.append(block(f':root, [data-theme="{first}"]', first, False))
 for th, _ in THEMES[1:]:
     lines.append(block(f'[data-theme="{th}"]', th, True))
 other = []
-for famname in ("spacing", "radius", "size", "zIndex", "duration", "easing", "breakpoint", "opacity", "graph"):
+for famname in ("spacing", "radius", "size", "zIndex", "duration", "easing", "breakpoint", "opacity", "live", "graph", "typeScale"):
     for t in tok[famname]["tokens"]:
         other.append(f"  --{t['name'].replace('.', '\\.')}: {t['value']};")
 for k, v in TYPE["families"].items(): other.append(f"  --font-{k}: {v};")
@@ -395,6 +427,11 @@ _pgno = ('@bottom-right { content: "Page " counter(page) " of " counter(pages); 
 media += "@media print {\n"
 media += "  @page doc { size: A4 portrait; margin: 14mm 12mm 18mm; " + _pgno + " }\n"
 media += "  @page wide { size: A4 landscape; margin: 12mm 12mm 16mm; " + _pgno + " }\n"
+# 1.14.0 (from LedgerSchedule v4.24): every printed page carries "Page n of N" in its bottom-right margin box, not only documents.
+# The unnamed @page adds the margin box to the page rule in 61-pages-b.css; @page sheet is the PrintSheet's, with the number at the
+# top of the margin so it clears the sheet's own footer line.
+media += "  @page { " + _pgno + " }\n"
+media += "  @page sheet { size: A4 portrait; margin: 14mm 12mm 18mm; " + _pgno.replace("; color:", "; vertical-align: top; padding-top: 1mm; color:") + " }\n"
 media += "}\n"
 open(os.path.join(OUT, "source", "css", "02-theme-media.css"), "w", encoding="utf-8").write(media)
 print(len(tokens), "colour tokens written")

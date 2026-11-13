@@ -31,6 +31,7 @@ Preferences also opens globally from the header More menu as the floating `Prefe
 - Empty: no keys yet → each SecretField starts in entry mode with its help line.
 - Error: per service row (`ServiceStatus` error with retry time); an import error stays on the file row.
 - Offline: connect and test are disabled with "Reconnect to the internet to connect services" (`aria-disabled` + description); Preferences still work.
+- Optimistic edits use SaveMark; the Outbox count sits in the ConnectionStatus; first loads of known-shape slots use Skeleton (20-responsive-pages).
 
 ## Responsive
 ≥1100px: 220px section list + content. Below: stacked sections, connect buttons drop under the text, keys 1-up on phones. Wall: capped at 1400px. Booth: same order, larger type.

@@ -27,7 +27,8 @@ Panel (`radius-sheet`, `shadow-2`) → head → four sets → footer ("Saved on 
 - Theme → `SongNodes.prefs.setTheme("system"|"dark"|"light"|"booth")`. System follows the OS.
 - Text size → `prefs.setTextSize("s"|"m"|"l"|"xl")` (scales `html` font-size; booth adds its own step).
 - Density → `prefs.setDensity("comfortable"|"compact")` (40px or 32px rows).
-- Reduce motion → `html[data-motion="reduce"]`, stored as `sn-motion`; "Follow this device's setting" removes it. Not in `prefs` yet (see below).
+- Reduce motion → `prefs.setMotion("reduce"|"system")` (`html[data-motion="reduce"]`, stored as `sn-motion`); "Follow this device's setting" removes it.
+- **When browser storage refuses the write** (a private window, blocked site data, a full quota) the choice still takes effect for this visit: `prefs` keeps the value in memory, reads it before storage until the page is closed, and logs the refusal once for each setting at warn (`SongNodes.diag.warn("storage", …)` when Diagnostics is on the page, `console.warn` otherwise). The next visit opens on the defaults. The panel never reads or writes storage itself, and it shows no banner or toast for this: the footer line reads "Kept for this visit only" instead of "Saved on this device only" (`prefs.keptForVisit()` lists the settings held in memory). A later write that storage accepts clears the memory copy. Dismissed warnings (`SongNodes.dismissal`) follow the same rule.
 - Everything applies on choice and is announced ("Theme set to Light"); there is no Save button.
 
 ## States
@@ -43,7 +44,8 @@ Theme, text size and density are radio groups with arrow-key selection; reduce m
 Panel width `min(440px, 100%)`; on phones it fills the screen as a sheet. Theme tiles stay 4-up down to 320px.
 
 ## Do / don't
-- Do apply `prefs.init()` inline in `<head>` so the stored theme shows before first paint.
+- Do apply `prefs.init()` inline in `<head>` so the stored theme shows before first paint. `init()` only reads: it never writes a setting back, so opening a page logs no refusal nobody caused.
+- Don't wrap a setting in a `try`/`catch` of your own or re-read storage after a change: that is how a refused theme choice used to snap back.
 - Don't sync these to the account; they are per device on purpose (a booth laptop differs from a phone).
 
 ## In SongNodes
@@ -51,3 +53,7 @@ Replaces the theme toggle and display options in `SettingsPanel.tsx`; connection
 
 ## In the music library
 Same panel; compact density suits the crate table on a laptop.
+
+## Differs from beanAlliance
+- beanAlliance keeps a refused Theme and Reduce motion choice for the visit inside its Menu's View group; SongNodes has no Menu, so the rule sits in `SongNodes.prefs` and covers all four settings (theme with booth, text size, density, motion) and dismissed warnings.
+- The footer line changes its words when a setting is held for the visit only; beanAlliance says nothing on the page.

@@ -1,4 +1,4 @@
-<!-- @dsCard group="Feedback" height=430 subtitle="An explanatory notice shrunk to an info button: tooltip form (40 words or fewer) and panel form, opened by hover, focus or tap" -->
+<!-- @dsCard group="Feedback" height=660 subtitle="An explanatory notice shrunk to an info button: tooltip form (40 words or fewer) and panel form, opened by hover, focus or tap; Escape closes it and it stays closed until the pointer leaves; panels inside a heading, a subject with no heading, a key of words" -->
 <!doctype html>
 <html>
 <head><meta charset="utf-8"><title>InfoTip — preview</title>
@@ -46,6 +46,24 @@
     </div>
 
     <div class="sn-card pv-card">
+      <div class="sn-preview__label">Method text → panel inside a heading (every part a span)</div>
+      <h2 class="sn-title title-s pv-title" id="t6"><span class="sn-lead">Library:</span>&nbsp;Rotation</h2>
+    </div>
+
+    <div class="sn-card pv-card">
+      <div class="sn-preview__label">A subject with no heading of its own</div>
+      <p class="sn-infotip-line" id="t7">Mix-in point</p>
+      <p class="sn-dim pv-title">Not analysed yet for this track.</p>
+    </div>
+
+    <div class="sn-card pv-card">
+      <div class="sn-preview__label">A key of words may be an InfoTip; a colour key stays on the page</div>
+      <div class="sn-section-heading"><h2 class="sn-title title-s pv-title" id="t8"><span class="sn-lead">Crate:</span>&nbsp;Rotation</h2></div>
+      <div class="sn-row" id="t8-pills"></div>
+      <div class="sn-row" id="t8-keys"></div>
+    </div>
+
+    <div class="sn-card pv-card">
       <div class="sn-preview__label">Never an InfoTip: a warning stays as text</div>
       <div class="sn-banner" data-status="warn" role="status">
         <span class="sn-banner__icon" id="w-icon"></span>
@@ -64,6 +82,14 @@
   add("t4", S.infoTip({ id: "tip-build", about: "How the set is built", panel: { title: "How the set is built", html:
     '<ol><li>The crate is filtered by your pillars, tiers and rotation.</li><li>Each slot is scored on energy step, key, BPM and genre against the set shape.</li><li>Locked slots stay where they are; the rest are ordered to follow the energy wave.</li><li>Three spares are kept for every slot.</li></ol>' } }));
   add("t5", S.infoTip({ id: "tip-empty", about: "About saved sets", text: "Build a set from the library, then press Save set. Saved sets appear here and in the music library." }));
+  add("t6", S.infoTip({ id: "tip-rot", about: "How rotation is worked out", panel: { title: "How rotation is worked out", html:
+    '<span class="sn-infotip__p">Rotation is counted from radio plays over the last 12 weeks, on every show SongNodes follows.</span>' +
+    '<ol><li><b>High rotation</b>: 6 plays or more on 2 shows or more.</li><li><b>Standard</b>: 2 to 5 plays.</li><li><b>Vault</b>: no play in 12 weeks.</li></ol>' +
+    '<span class="sn-infotip__note">Counted on each weekly run.</span>' } }));
+  add("t7", S.infoTip({ id: "tip-mixin", about: "About the mix-in point", text: "The bar where the next track can come in, found by the weekly audio analysis. Tracks added since the last run have none yet." }));
+  add("t8", S.infoTip({ id: "tip-rotkey", about: "About the rotation words", text: "High rotation: 6 plays or more in 12 weeks. Standard: 2 to 5. Vault: none." }));
+  document.getElementById("t8-pills").innerHTML = '<span class="sn-tag">High rotation</span><span class="sn-tag">Standard</span><span class="sn-tag">Vault</span>';
+  document.getElementById("t8-keys").innerHTML = S.html.key("8A") + S.html.key("9A") + S.html.key("8B") + '<span class="sn-dim">Camelot colours keep their key on the page (KeyBadge, CamelotWheel).</span>';
   document.getElementById("w-icon").innerHTML = S.icon("triangle-alert");
   document.getElementById("w-src").innerHTML = S.sourceLink({ text: "Add keys in Key & mood", href: "#harmony", module: "harmony" });
   S.infoTips();

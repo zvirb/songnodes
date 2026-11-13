@@ -32,6 +32,7 @@ Group order is fixed: Tracks, Artists, Sets, Pages, Actions. Icons take the dest
 
 ## Content rules
 Placeholder lists what can be found. A query that is a Camelot code filters by key; a 2–3 digit number filters by BPM ±1. Actions are verbs: "Build set", "Import tracklist".
+"Copy diagnostics" is always among the actions (Diagnostics, DIA-027): `copy` icon, Pipeline colour; Enter copies, closes the palette and shows the Toast "Diagnostics copied".
 
 ## Accessibility (WAI-ARIA combobox with listbox popup)
 - Focus stays in the input; ↑/↓ move `aria-activedescendant` (wrapping), Enter opens the active result.

@@ -46,7 +46,16 @@ Tablet, desktop and wall (≥ 768): beside the content, push by default, `--over
 - Don't stack two side sheets; replace the content.
 
 ## In SongNodes
+The Outbox ("Changes waiting") opens in the page's SideSheet (class `sn-outbox` while open), replacing its content and handing it back on close; where the page has none, the helper makes an overlay sheet.
 Replaces SidePanel.tsx and the PLAN right tab panel's detail use, EdgeDetailsModal and TrackDetailsModal when browsing from the graph, GraphFilterPanel / FilterPanel (the emoji "🔧 Filters" button becomes a labelled `sliders-horizontal` button), and MobileTrackExplorer's detail view.
 
 ## In the music library
 Filter rail on phones (search, Pillar, Energy tier, Rotation, Heard on, Tags, checkboxes) and track details from the crate.
+
+## Over and inside a side sheet (1.14.0)
+- **Nothing outside an open side sheet is drawn over it except a toast.** The overlay sheet (`z-drawer`) and the phone bottom sheet (`z-dialog`, with its scrim one step under) sit above the page, the `AppHeader` and every sticky bar; a `ConnectionStatus` banner stays in the page flow under the scrim. No fixed element outside the sheet takes a layer above it, and at each button of `sn-side-sheet__foot` the button itself is the top element.
+- An explanation of the sheet is an `InfoTip` after its title; while a tip is open the first Escape closes the tip, the second closes the sheet. A tip opens inside the sheet's box. A state or error line stays as text.
+- The footer's buttons keep their place; the next valid press is the one primary ("Add to set"), the rest are secondary or quiet.
+
+## Differs from beanAlliance
+- The pushing (non-modal) sheet beside the graph has no scrim, so the rule there is only that no fixed bar overlaps it; beanAlliance's drawer is always modal.

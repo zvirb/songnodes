@@ -23,6 +23,12 @@ A modal dialog for a focused task that must be finished or cancelled before goin
 ```
 `radius-sheet` (18px), `shadow-3`, `::backdrop` = `overlay`. `sn-dialog__stage` is a contained scrim for documentation and in-panel previews only.
 
+## Fields, the title's InfoTip and what may sit over a dialog
+- Fields side by side in the body are one `.sn-field-row` (`sn-field-row--2` for two columns): labels and controls line up, hints are InfoTips after the labels, a live readout ("130 → 132 BPM (+1.5%)") hangs below its own field.
+- An explanation of the dialog is an `InfoTip` after the title, never a paragraph of help in the body; the one-line `sn-dialog__sub` stays. While a tip is open the first Escape closes the tip and the second closes the dialog. A state or error line stays as text (`InlineMessage`).
+- **Nothing outside an open dialog is drawn over it except a toast.** The backdrop covers the page, the `AppHeader`, a `ConnectionStatus` banner and every fixed bar; popovers, menus and tooltips opened from the page close when the dialog opens. Layers: `z-dialog` 60 is above `z-header` 20, `z-drawer` 40 and `z-overlay` 50; only `z-toast` 80 (and a popover or tooltip that belongs to the dialog itself) is above it.
+- The footer's buttons keep their place for the life of the dialog; the next valid press is the one primary.
+
 ## Sizes
 `sn-dialog--s` 400px (confirmations, one field) · `--m` 600px (default, forms) · `--l` 800px (tables, previews). Max height 85vh; the body scrolls, head and foot stay.
 
@@ -50,3 +56,7 @@ Replaces `ui/Modal.tsx` usage in TrackDetailsModal, EditTrackModal / TrackEditMo
 
 ## In the music library
 "Edit cues & transitions" from a running-order row (key shift, tempo change, mix cue in/out), Save set as, export options.
+
+## Differs from beanAlliance
+- beanAlliance had to move its folder pill under the scrim; SongNodes has no fixed element above `z-dialog` outside a dialog, so the rule is stated and checked and no token changed.
+- The dialog is the native `<dialog>`; the InfoTip's Escape handler prevents the default so the dialog stays open on the first Escape.

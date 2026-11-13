@@ -146,10 +146,28 @@ export interface InlineMessageProps {
 export interface ToastOptions {
   /** Past-tense confirmation: "Set saved", "Tracklist copied: 18 tracks". */
   message: ReactNode;
-  /** One optional action, usually Undo; must also be available elsewhere (e.g. Ctrl/Cmd+Z, history). */
-  action?: { label: string; onAction: () => void };
+  /** One optional action, usually Undo; must also be available elsewhere (e.g. Ctrl/Cmd+Z, history).
+   *  Drawn as one small button straight before the dismiss button. onAction is called once and the toast closes;
+   *  return false when the action could not start and the toast stays (1.14.0). */
+  action?: { label: string; onAction: () => void | false };
   /** Visible time in ms: default 4000, 8000 with an action. Pauses on hover and focus. */
   durationMs?: number;
+}
+
+/** What SongNodes.toast(...) returns (1.14.0). */
+export interface ToastHandle {
+  /** Close this toast now, or take it out of the queue. */
+  dismiss(): void;
+  /** Resolves once the toast has left: by its timer, the dismiss button, its action, or dropped from a full queue. */
+  closed: Promise<"timeout" | "dismiss" | "action" | "dropped"> | null;
+}
+/** SongNodes.toast (1.14.0): the one way a page raises a toast. Confirmations only: there is no role, kind or status option. */
+export interface SongNodesToast {
+  (options: string | { text?: string; html?: string; action?: string; onAction?: () => void | false; ms?: number }): ToastHandle | null;
+  /** Make the empty role="status" region at start, so the live region exists before the first words. */
+  mount(): HTMLElement;
+  /** Visible time in ms: plain, and with an action. */
+  DEFAULT_MS: { plain: number; action: number };
 }
 
 export interface ToastProps {
@@ -158,7 +176,7 @@ export interface ToastProps {
   /** Placement: bottom centre, bottom right from the desktop breakpoint. */
   placement?: "auto";
   /** Push a toast; never for errors that need action (use Banner, ErrorState or InlineMessage). */
-  toast?: (options: ToastOptions) => void;
+  toast?: (options: ToastOptions) => ToastHandle | void;
 }
 
 export interface DialogProps {
@@ -314,6 +332,51 @@ export interface InfoTipProps {
   about: string;
   /** Tooltip form: the words, plain text, 40 words or fewer. Opens after 500 ms on hover, at once on keyboard focus and tap. */
   text?: string;
-  /** Panel form: a title and the content (may hold a list, links, mono file names). Opens on click, tap, Enter or Space only. */
+  /** Panel form: a title and the content (may hold a list, links, mono file names). Opens on click, tap, Enter or Space only.
+   *  Inside a heading every part is a span: paragraphs as sn-infotip__p, a short closing line as sn-infotip__note (1.14.0). */
   panel?: { title: string; content: ReactNode };
+  /** Where the tip sits (1.14.0): after a heading or label (default), or after the words of a subject with no heading (p.sn-infotip-line). */
+  placement?: "after" | "line";
+}
+
+/** LiveChange (1.11.0, LedgerSchedule v5.9 LiveChange): the only way a list moves on its own (LIV-001 to LIV-021). */
+export interface LiveChangeChange {
+  /** data-key of the item that changed. */
+  key: string;
+  /** Verb for the tag; default "Moved" ("Re-ordered", "Added"). */
+  verb?: string;
+  /** The device it happened on: "Phone" gives "Moved on Phone · 22:14". */
+  on?: string;
+  /** A process instead of a device: "weekly run". Never a person's name. */
+  by?: string;
+  /** hh:mm of the change. */
+  at?: string;
+}
+export interface LiveChangeSendOptions {
+  /** The InlineMessage words when the move is put back. */
+  words?: string;
+  /** Put-back tag; default "Not saved: put back". */
+  tag?: string;
+  /** Try again action. */
+  retry?: () => void;
+  /** Replace the default InlineMessage after the list. */
+  toast?: (msg: string, kind: "warn", action: { label: string; fn: () => void } | null) => void;
+  onTry?: (n: number) => void;
+}
+export interface SongNodesLive {
+  version: string;
+  /** A change from another device or the weekly run; queued while the list is pointed at, focused or dragged. */
+  remote(root: Element, mutate: () => void, changes: LiveChangeChange[], opts?: { onQueued?: (count: number, apply: () => void) => void; say?: string | false }): { queued: true } | { moved: Element[]; animated: boolean; finished: Promise<void> };
+  /** My own move: waits, retries five times, saves or is put back. Rejects when put back. */
+  send(root: Element, key: string, save: () => Promise<unknown>, back: () => void, opts?: LiveChangeSendOptions): Promise<unknown>;
+  cancel(root: Element): void;
+  generating(root: Element, insert: () => void, opts: { key: string; label?: string; fail?: { words?: string; retry?: () => void; remove?: () => void } }): unknown;
+  filled(el: Element, fill: () => void, opts?: { label?: string }): void;
+  remove(root: Element, key: string, opts?: { on?: string; by?: string; at?: string; label?: string; words?: string; retry?: () => void }): Promise<void>;
+  flip(root: Element, mutate: () => void, opts?: object): unknown;
+  queued(root: Element): number;
+  flush(root: Element): void;
+  reduced(): boolean;
+  say(text: string): void;
+  limits: Record<string, number>;
 }

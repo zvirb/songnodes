@@ -21,7 +21,7 @@ The predictable home for secondary actions: a "More actions" button with an elli
 ```
 
 ## Variants
-- Page level: secondary (bordered) icon button in PageHeader. Row level: `sn-btn--quiet sn-btn--sm`, labelled with the row ("More actions for Overmono – So U Kno").
+- Page level: secondary (bordered) icon button in PageHeader. Row level: `sn-btn--quiet sn-btn--sm`, labelled with the row ("More actions for Overmono – So U Kno"). Row level under `RowActions`: the trigger is `sn-ract-kebab` with `ellipsis-vertical`, used only when the row type has seven or more actions (four or more in a fixed-height row).
 - `__menu--start` aligns to the left edge; `__menu--up` opens upwards near the bottom of the screen.
 - Checkbox item: `role="menuitemcheckbox"` + `aria-checked`, the check icon shows only when on.
 - Shortcut hint: a `<kbd>` at the right of the item.

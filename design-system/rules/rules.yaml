@@ -1124,6 +1124,38 @@
   status: active
   replaced_by: null
   history_ref: null
+- id: A11Y-109
+  statement: The InfoTip Escape handler shall run in the capture phase and shall consume the key (prevent
+    the default and stop propagation), so one press closes one layer.
+  scope:
+  - js
+  check_type: lint
+  test: In `SongNodes.infoTips` the keydown listener is registered with capture true and calls `preventDefault`
+    and `stopPropagation` when a tip is open.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: A11Y-110
+  statement: A link drawn as a button that cannot be followed shall have `aria-disabled="true"` and no
+    `href`, and shall give its reason in words beside it or through `aria-describedby`.
+  scope:
+  - html
+  check_type: dom
+  test: Every `a.sn-btn[aria-disabled="true"]` has no `href` and has visible reason text or an `aria-describedby`
+    target.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: BAN-130
+  statement: A toast shall wrap only when it must; the sentence shall keep the first line and actions
+    that do not fit shall take the next line, end-aligned; a button shall never wrap inside itself.
+  scope:
+  - component
+  check_type: visual
+  test: At 390 px a long toast with an action shows the action on a second line, end-aligned.
+  status: active
+  replaced_by: null
+  history_ref: null
 - id: BRD-001
   statement: Pages shall load tokens.css, then components/bundle.css, then components/bundle.js in that
     order.
@@ -1577,6 +1609,235 @@
   - js
   check_type: lint
   test: No hand-drawn icon SVGs.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: CFL-001
+  statement: A card flag shall be an icon-only InfoTip button (`.sn-infotip__btn.sn-cflag__btn`) inside
+    `span.sn-infotip.sn-cflag`, in its tone's colour with no border at rest, and there shall be one flag
+    for each generated line.
+  scope:
+  - html
+  - component
+  check_type: dom
+  test: Each `.sn-cflag` holds exactly one `.sn-cflag__btn` and one `.sn-cflag__tip`; the button has no
+    visible border at rest.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: CFL-002
+  statement: A flag's tip shall hold the flag's meaning in bold and then the line's words verbatim, and
+    shall open and close as an InfoTip tooltip; a flag shall not open a panel.
+  scope:
+  - component
+  - copy
+  check_type: judgement
+  test: The tip text equals the flag table's words with its figures filled in; hover, focus and tap behave
+    as InfoTip.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: CFL-003
+  statement: Every flag's icon and meaning shall be a row of the CardFlag flag table; a new meaning shall
+    be added to the table before a page uses it.
+  scope:
+  - component
+  - page
+  check_type: judgement
+  test: Each `data-flag` value is a key of `SongNodes.CARD_FLAGS` and its icon matches the table.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: CFL-004
+  statement: A flag's tone shall be `info`, `warn` or `bad` in `data-tone`, drawn in `status-info`, `status-warn`
+    or `status-bad`; colour shall not be the only cue to its meaning.
+  scope:
+  - css
+  - component
+  check_type: visual
+  test: Each tone renders in its token colour in dark, light and booth, and each flag has a distinct icon
+    and name.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: CFL-005
+  statement: When one flag stands for several lines, a count shall follow the icon (`.sn-cflag__n`) and
+    the tip shall list the lines in order in an ordered list.
+  scope:
+  - html
+  - component
+  check_type: dom
+  test: A flag with more than one line has `.sn-cflag__n` equal to the number of `li` in its tip.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: CFL-006
+  statement: Flags shall sit in one `.sn-cflags` row in the group order Set, Transition, Track, Service;
+    the row shall wrap and shall not cap or hide a flag.
+  scope:
+  - html
+  - component
+  check_type: dom
+  test: Flags appear in table group order and no "more" control replaces any of them.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: CFL-007
+  statement: A state (locked, now playing, the TIDAL send state, rotation) shall stay its own mark and
+    shall not be drawn as a flag.
+  scope:
+  - component
+  - page
+  check_type: judgement
+  test: No flag repeats a state already shown by a lock button, the Now marker, a StatusPill or a CategoryTag.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: CFL-008
+  statement: A `bad` flag shall keep its words beside the icon (`.sn-cflag--words`) in every theme; any
+    other flag should be icon only unless a person must read it to avoid a mistake.
+  scope:
+  - component
+  - copy
+  check_type: judgement
+  test: Key clash, BPM jump and Energy jump show their words; other flags show the icon alone.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: CFL-009
+  statement: Flags shall not print; a PrintSheet shall carry the words it needs as words.
+  scope:
+  - print
+  - component
+  check_type: visual
+  test: Print emulation shows no `.sn-cflags` content.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: CFL-010
+  statement: The tip of a `warn` or `bad` flag shall end with its source link, written with `SongNodes.sourceLink`,
+    after the words; the source link shall be the only link in a tip.
+  scope:
+  - html
+  - copy
+  - component
+  check_type: dom
+  test: Each warn or bad `.sn-cflag__tip` ends with one `.sn-cflag__src a.sn-link--src` and holds no other
+    link or button.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: CFL-011
+  statement: A flag button's `aria-label` shall be the flag's meaning (with its count), shall not be "Flag",
+    "Info" or "Warning" alone, and the button shall not carry a `title` attribute.
+  scope:
+  - html
+  - component
+  check_type: dom
+  test: Each `.sn-cflag__btn` has a meaningful `aria-label` and no `title`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: CFL-012
+  statement: A flag button shall name its tip with `aria-describedby` and `aria-controls`, and that tip
+    shall be a `.sn-cflag__tip` with `role="tooltip"` in the same `.sn-cflag`.
+  scope:
+  - html
+  - component
+  check_type: dom
+  test: For each `.sn-cflag__btn`, the id in `aria-describedby` resolves to the sibling tip.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: CFL-013
+  statement: A generated line on a track row, set slot or set card shall be a card flag; it shall not
+    be a CategoryTag or a text line such as `.sn-track-cell__flag`.
+  scope:
+  - page
+  - component
+  check_type: judgement
+  test: No page draws "Check energy" or a like line as text or as a tag.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: CFL-014
+  statement: An empty flag row shall add no height, and a flag row shall not push the row's RowActions
+    out of their place.
+  scope:
+  - css
+  - component
+  check_type: visual
+  test: A row with no flags is the same height as one with flags in a DataTable; `.sn-ract-zone` keeps
+    its position.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: CFL-015
+  statement: In a DataTable, a row's flags shall sit in one Flags cell (`td.sn-cflags-cell`); the row's
+    TrackCell shall then carry no flags and no other cell shall repeat a flag's words.
+  scope:
+  - html
+  - component
+  - page
+  check_type: dom
+  test: A table with a Flags column has no `.sn-cflags` inside its `.sn-track-cell` elements.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: CFL-016
+  statement: The transition flags (Key clash, BPM jump, Energy jump) shall be used only where no TransitionNote
+    is drawn between the two tracks, and shall sit on the later slot.
+  scope:
+  - page
+  - component
+  check_type: judgement
+  test: A SetSlot list with TransitionNote strips carries no transition flag.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: CFL-017
+  statement: On a SetCard one flag shall stand for every line of its kind in the set, with the count,
+    and each line in its tip shall name its slot.
+  scope:
+  - component
+  - copy
+  check_type: judgement
+  test: A SetCard shows at most one flag per `data-flag` value.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: CFL-018
+  statement: 'An open flag tip shall not be clipped by its row, table box or list: at 768px and wider
+    it shall be drawn fixed beside its button, and under 768px at the bottom of the screen.'
+  scope:
+  - css
+  - js
+  - component
+  check_type: dom
+  test: With a tip open, the element at the tip's centre point is inside the tip, in a DataTable and in
+    a SetSlot.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: CFL-019
+  statement: A flag's tip shall hold 40 words or fewer; a longer finding should be an InlineMessage on
+    the detail page.
+  scope:
+  - copy
+  - component
+  check_type: judgement
+  test: Count the words of each tip.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: CFL-020
+  statement: With a flag's tip open, Tab shall reach its source link, and Escape shall close the tip and
+    return focus to the flag.
+  scope:
+  - js
+  - component
+  check_type: dom
+  test: 'Focus a flag, press Tab, then Escape: the tip is hidden and the flag button has focus.'
   status: active
   replaced_by: null
   history_ref: null
@@ -2524,6 +2785,187 @@
   - page
   check_type: judgement
   test: Review record shows checklist run per screen across three themes at 400px and 1440px.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: COG-090
+  statement: The first screen shall hold no more than 40 controls, the `AppHeader` counted.
+  scope:
+  - page
+  check_type: dom
+  test: '`window.__snLoadBudget().measures.controls` is 40 or less at 1440 x 900 with data loaded.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: COG-091
+  statement: The first screen shall hold no more than 285 words.
+  scope:
+  - page
+  - copy
+  check_type: dom
+  test: '`measures.words` is 285 or less.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: COG-092
+  statement: No more than 65 of the first screen's words shall sit in sentences of twelve words or more;
+    the rest of the explaining shall be behind an InfoTip.
+  scope:
+  - page
+  - copy
+  check_type: dom
+  test: '`measures.longSentenceWords` is 65 or less.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: COG-093
+  statement: The first screen shall hold no more than 12 bordered or shadowed boxes.
+  scope:
+  - page
+  check_type: dom
+  test: '`measures.boxes` is 12 or less.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: COG-094
+  statement: 'A box shall sit no more than two deep: a card shall never hold a card, and inside a card
+    the parts shall be set apart by a rule or by space.'
+  scope:
+  - page
+  - html
+  check_type: dom
+  test: '`measures.boxDepth` is 2 or less.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: COG-095
+  statement: A page shall use no more than nine type sizes.
+  scope:
+  - page
+  - css
+  check_type: dom
+  test: '`measures.typeSizes` is 9 or less.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: COG-096
+  statement: A row or card shall carry one state pill and up to two tags; `KeyBadge`, `BpmReadout` and
+    `EnergyBar` are values and shall not be counted; in a matrix, where the pill is the cell's value,
+    the limit shall be one pill in each cell.
+  scope:
+  - page
+  - component
+  check_type: dom
+  test: '`measures.tagsOnOneItem` is 3 or less and `measures.tagsInOneMatrixCell` is 1 or less.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: COG-097
+  statement: The default view of a table shall show no more than eight columns; the others shall be optional
+    columns.
+  scope:
+  - page
+  check_type: dom
+  test: '`measures.columns` is 8 or less.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: COG-098
+  statement: The default view of a page shall be no more than three screens high.
+  scope:
+  - page
+  check_type: dom
+  test: '`measures.screens` is 3 or less.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: COG-099
+  statement: A value that is the same on every row shall be said once above the list and not on each row.
+  scope:
+  - page
+  - copy
+  check_type: judgement
+  test: No tag or word repeats on every row of a list.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: COG-100
+  statement: A page over a load-budget limit shall be recorded as a deviation; the limits shall be refitted
+    only by a release, from the page previews as they then are, by more than one method.
+  scope:
+  - page
+  check_type: judgement
+  test: The limits in `linters/load_budget.js` equal those in the guideline, and the guideline shows the
+    measured table and the methods.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: COG-101
+  statement: 'Where buttons run in order, every button shall keep its place in every state: one that cannot
+    be pressed yet shall be disabled with its reason, and none shall be removed, hidden or swapped for
+    another.'
+  scope:
+  - page
+  - component
+  check_type: dom
+  test: 'Step through the flow (`TracklistPaste`, `AuthCallbackPage`, a dialog footer): the set and order
+    of buttons is the same in each state that has buttons.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: COG-102
+  statement: Among buttons that run in order, the next valid press shall be the one primary and the others
+    shall be secondary or quiet; when no press is the next step there shall be no primary.
+  scope:
+  - page
+  - component
+  check_type: dom
+  test: In each state of the flow at most one button is `.sn-btn--primary`, and it is enabled.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: COG-103
+  statement: No page shall have a section, disclosure or tab headed "How it works" or "How this works";
+    an explanation shall be an InfoTip where the thing it explains is.
+  scope:
+  - html
+  - copy
+  check_type: lint
+  test: Fail if a heading, `summary` or `legend` reads "How it works" or "How this ... works" (check.py
+    COG-HOWWORKS).
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: COG-104
+  statement: On `SetBuilderPage` "Build set" shall be the primary in every state and "Save set" shall
+    keep its place beside it as a secondary, disabled with its reason while there is no built set; saving
+    shall not create a second primary.
+  scope:
+  - page
+  check_type: dom
+  test: In the empty, building, built and saved states the header holds Save set, More actions and Build
+    set in that order, with only Build set primary.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: COG-105
+  statement: Above the first row of data a page shall hold only its `PageHeader`, one filter row, up to
+    four `FigureTile`s and at most one `Banner`; a second message shall be a `TaskNotice` under the content
+    or an icon.
+  scope:
+  - page
+  check_type: judgement
+  test: Count the blocks above the first table row or list item.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: COG-106
+  statement: A table whose every row is live inputs shall show the values as text instead; editing one
+    row shall open it in a `SideSheet` or `Dialog` with one Save.
+  scope:
+  - page
+  check_type: judgement
+  test: No table has an input in every row.
   status: active
   replaced_by: null
   history_ref: null
@@ -5351,6 +5793,358 @@
   status: active
   replaced_by: null
   history_ref: null
+- id: DATA-162
+  statement: In a `DataTable` an empty-list line or a value that is not known shall be `.sn-dim` (`fg-3`);
+    a page shall write no colour of its own for it.
+  scope:
+  - html
+  - css
+  check_type: visual
+  test: The muted cell text computes the `fg-3` colour through `.sn-dim`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DATA-163
+  statement: A table that is the only child of a card shall take the card's corners through the card's
+    clipping; a page shall add no radius to header cells.
+  scope:
+  - css
+  check_type: visual
+  test: A `.sn-card` whose only child is `.sn-tablebox` or `.sn-data-table` shows rounded header corners
+    with no page rule.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-001
+  statement: 'Every console line a page writes shall be in the house format: `[SN <page> <build>] <level>
+    <area>: <message> {name, count, ms, type, code, why, attempt}`.'
+  scope:
+  - js
+  - page
+  check_type: dom
+  test: Every console message of a page session that the app wrote matches the format.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-002
+  statement: The area shall be one of `start`, `api`, `service`, `storage`, `save-queue`, `calc`, `render`,
+    `audio`, `print`, `resource`, `script`, `promise`, `longtask`.
+  scope:
+  - js
+  check_type: lint
+  test: Every area passed to `SongNodes.diag` is in the list.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-003
+  statement: A milestone shall be written at `console.debug`, a problem the page recovers from at `console.warn`,
+    and a failure at `console.error`, so a console error always means a real fault.
+  scope:
+  - js
+  check_type: judgement
+  test: A healthy session writes no `error` line.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-004
+  statement: 'A page shall not call `console.log`, `console.info`, `console.warn` or `console.error` itself
+    and shall not carry a logger of its own: every line shall go through `SongNodes.diag`.'
+  scope:
+  - js
+  - page
+  check_type: lint
+  test: No `console.` call in page or app source outside the bundle.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-005
+  statement: 'The app shall name the page and the build with `SongNodes.diag.config({ page, build })`
+    on every route change (page names in lower case, words joined by hyphens: `set-builder`) and carry
+    `<meta name="sn-page">` and `<meta name="sn-build">` in its shell; the page name shall never be taken
+    from the document title.'
+  scope:
+  - js
+  - html
+  check_type: lint
+  test: The shell has both meta tags and the router calls `config`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-006
+  statement: The helper shall load with the bundle before any page script, and a page shall not edit it,
+    wrap `console`, or add an area, a level or a format of its own.
+  scope:
+  - js
+  - page
+  check_type: lint
+  test: '`bundle.js` is the first script; no assignment to `console.*` or `SongNodes.diag.*` in page source.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-007
+  statement: The helper shall log `start` when it runs, and `first paint` and `loaded` by itself, each
+    with its milliseconds from opening the page.
+  scope:
+  - js
+  check_type: dom
+  test: The three lines exist after load.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-008
+  statement: 'A page shall log each heavy step (a read, a fold, a calculation, a layout, a render) with
+    its area, name, milliseconds and count: steps run through `SongNodes.save.start` are logged by the
+    helper, any other through `SongNodes.diag.time(area, name)` or `step`.'
+  scope:
+  - js
+  - page
+  check_type: judgement
+  test: Each heavy step of a page has one debug line.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-009
+  statement: A page shall log `ready` (`SongNodes.diag.mark("ready")`) when its data is drawn and it can
+    be used.
+  scope:
+  - js
+  - page
+  check_type: dom
+  test: 'One `start: ready` line per page view.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-010
+  statement: Without the page's help the helper shall log a script error (`script`), an unhandled rejection
+    (`promise`), a script, style sheet, image or font that did not load (`resource`) and a security policy
+    violation (`resource`) as failures, each with its cause; an asset whose element carries `data-fallback`
+    (a cover that shows its placeholder) shall be logged at warn.
+  scope:
+  - js
+  check_type: dom
+  test: A forced throw, rejection and missing image each leave one error line.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-011
+  statement: A main-thread task longer than 200 ms shall be logged as a warning (`longtask`) with its
+    milliseconds.
+  scope:
+  - js
+  check_type: dom
+  test: A forced 300 ms task leaves one `warn longtask` line.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-012
+  statement: 'Every catch block and error handler of a page shall report the error with `SongNodes.diag.report(area,
+    error, context)`, with `level: "warn"` where the page recovers; none shall swallow a cause.'
+  scope:
+  - js
+  - page
+  check_type: ast
+  test: No empty `catch` block and no `.catch` without a `report` call in page source.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-013
+  statement: A failure of the SongNodes API (`api`), of Spotify or TIDAL (`service`) or of browser storage
+    (`storage`) shall be reported with the error's name and code only and a name for the kind of thing;
+    the error's message shall not be logged.
+  scope:
+  - js
+  check_type: dom
+  test: '`report("api", err, …)` with a message holding a set title logs no part of that message.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-014
+  statement: A save that is refused or lost in the QuickSave queue shall be reported in `save-queue` with
+    its `why` and `attempt` (`SongNodes.save` does this; a page that saves another way shall report it
+    itself).
+  scope:
+  - js
+  check_type: dom
+  test: 'A refused save leaves one `error save-queue` line with `why: refused`.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-015
+  statement: 'A conflict the page recovers from (the item changed on another device or in the weekly run)
+    shall be reported in `api` with `why: "conflict"` at warn.'
+  scope:
+  - js
+  check_type: judgement
+  test: 'Conflict paths call `report` with `level: "warn"`.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-016
+  statement: A calculation that returns no result shall be reported in `calc` (`report("calc", null, {
+    name })` logs "no result"), and a print sheet that does not open in `print`.
+  scope:
+  - js
+  check_type: judgement
+  test: 'A path search with no route leaves one `error calc: no result` line.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-017
+  statement: A state the page recovers from by itself (a save kept while away, waiting, sent again by
+    itself, a refused view setting) shall be logged at warn at most; `error` shall be kept for a terminal
+    failure that needs a person.
+  scope:
+  - js
+  check_type: dom
+  test: 'A kept save leaves one `warn save-queue: kept, will be sent when the service is back` line and
+    no error line.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-018
+  statement: A line shall carry names, counts, an error's type and message, a code, timings, the page,
+    the build and the design system version only.
+  scope:
+  - js
+  - copy
+  check_type: judgement
+  test: Review of `SongNodes.diag.dump()` after a working session.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-019
+  statement: 'A line shall never carry contents: no track, artist, set, crate or playlist title, no search
+    query, note or account name. A `name` shall be a kind of thing, never the thing; the helper shall
+    replace text in double or curly quotes in a message with `[text]`.'
+  scope:
+  - js
+  - copy
+  check_type: dom
+  test: A thrown error whose message quotes a track title is logged with `[text]` in its place.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-020
+  statement: 'A line shall never carry a token, an API key or a password: the helper shall hide a bearer
+    token, the value of a `token=`, `key=`, `secret=` or `password=` pair and any run of 20 or more mixed
+    letters and digits as `[hidden]`.'
+  scope:
+  - js
+  check_type: dom
+  test: A rejection whose message holds a bearer token is logged with `Bearer [hidden]`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-021
+  statement: 'A line shall never carry a path or an address: the helper shall cut each one in a message
+    to its leaf file name.'
+  scope:
+  - js
+  check_type: dom
+  test: '`SongNodes.diag.dump()` holds no slash-separated path after a forced asset failure.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-022
+  statement: The context shall hold only `name`, `count`, `ms`, `type`, `code`, `why` and `attempt`; any
+    other key a page passes shall be dropped, a message cut at 160 characters and a value at 80.
+  scope:
+  - js
+  check_type: dom
+  test: '`debug("render", "x", { title: "y" })` logs no `title`.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-023
+  statement: The lines shall be kept in memory only, the last 300; the same line shall be written at most
+    5 times a minute and the number not shown logged once the minute has passed.
+  scope:
+  - js
+  check_type: dom
+  test: 400 different lines leave 300 entries; one line logged 20 times in a minute is written 5 times.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-024
+  statement: The helper shall make no network request, write no storage, set no styles and change nothing
+    that is drawn, printed or saved.
+  scope:
+  - js
+  check_type: lint
+  test: '`source/js/10-diag.src.js` holds no `fetch`, `XMLHttpRequest`, `sendBeacon`, `localStorage` or
+    `sessionStorage`.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-025
+  statement: 'The helper shall never throw and never change what the page does: every entry point is guarded,
+    and a page shall work the same with or without it.'
+  scope:
+  - js
+  check_type: dom
+  test: Calling every `SongNodes.diag` function with no arguments throws nothing; `source/test_save_diag.py`
+    passes with the helper removed.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-026
+  statement: '`SongNodes.diag.dump()` shall return the kept lines as text: one header line (page, build,
+    design system version, count, Melbourne date and time) and one line per entry with its milliseconds
+    since the helper started.'
+  scope:
+  - js
+  check_type: dom
+  test: The first line of `dump()` starts "SongNodes diagnostics ·" and ends "Melbourne".
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-027
+  statement: '"Copy diagnostics" shall be offered in two places only: as a CommandPalette action (Actions
+    group, `copy` icon) on every page, and as a small labelled CopyButton at the end of the run log heading
+    on LogPage and of the errors heading on MonitoringPage.'
+  scope:
+  - page
+  - component
+  check_type: dom
+  test: The palette lists "Copy diagnostics"; LogPage and MonitoringPage each hold one `.sn-copy-button`
+    reading "Copy diagnostics".
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-028
+  statement: 'A copy shall be confirmed once: the button shows the check and "Copied" for 2 s and announces
+    "Diagnostics copied"; from the CommandPalette a Toast says "Diagnostics copied". A page shall not
+    show both.'
+  scope:
+  - component
+  - copy
+  check_type: dom
+  test: After a press the button has `data-state="copied"` and no `.sn-toast` exists.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-029
+  statement: When the browser refuses the copy, the page shall show the CopyButton fallback box with the
+    dump selected and "Try copy again"; it shall not raise a failure toast.
+  scope:
+  - component
+  - page
+  check_type: dom
+  test: With the clipboard refused, `.sn-copy-button__fallback` holds the dump in a focused, selected
+    text area.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: DIA-030
+  statement: 'The lines shall never be drawn on a page except in that fallback box: there shall be no
+    log panel, banner or badge for them.'
+  scope:
+  - page
+  check_type: judgement
+  test: No page element renders `SongNodes.diag.entries()`.
+  status: active
+  replaced_by: null
+  history_ref: null
 - id: FBK-001
   statement: A first-use empty area shall use `EmptyState` stating what the area holds plus one action.
   scope:
@@ -6139,6 +6933,613 @@
   status: active
   replaced_by: null
   history_ref: null
+- id: FBK-076
+  statement: A page shall raise its toasts with `SongNodes.toast`; it shall not build toast markup of
+    its own, add a button of its own to a toast, wrap the call to add a role, or write a rule for a button
+    inside `.sn-toast`.
+  scope:
+  - js
+  - html
+  - css
+  check_type: lint
+  test: Fail if page code creates a `.sn-toast` element itself or a page stylesheet selects inside `.sn-toast`
+    (check.py INP-OVERRIDE for the CSS).
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FBK-077
+  statement: Every toast shall be announced as `role="status"` by the one region it is drawn in; no toast
+    and no toast region shall carry `role="alert"`.
+  scope:
+  - html
+  - js
+  check_type: lint
+  test: Fail if `.sn-toast` or `.sn-toast__region` has `role="alert"` (check.py FBK-TOASTALERT).
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FBK-078
+  statement: A toast shall carry at most one action, drawn as one small button directly before the dismiss
+    button; an action that has no handler shall not be drawn.
+  scope:
+  - component
+  check_type: dom
+  test: A `.sn-toast` holds at most two buttons, and `.sn-toast__action` is the element straight before
+    `.sn-toast__close`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FBK-079
+  statement: Pressing a toast action shall call its handler once and close the toast; when the handler
+    returns false because the action could not start, the toast and its button shall stay.
+  scope:
+  - component
+  - js
+  check_type: dom
+  test: 'Press Undo: the handler runs once and the toast leaves; with a handler that returns false the
+    toast is still shown.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FBK-080
+  statement: A toast shall never take focus; its action shall be reached by Tab and pressed with Enter
+    or Space, and when a toast closes while focus is inside it, focus shall return to where it came from.
+  scope:
+  - component
+  check_type: dom
+  test: 'Raise a toast: `document.activeElement` is unchanged; Tab to Undo, press Enter: focus is back
+    on the element that had it before.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FBK-081
+  statement: 'A toast shall be a confirmation only: a call that asks for a warning, an error or an alert
+    toast shall be logged at warn and drawn as a confirmation, and the failure shall be said by an `InlineMessage`,
+    a `Banner` or the component''s own mark.'
+  scope:
+  - js
+  - page
+  check_type: judgement
+  test: No toast on the page reports a failure, a warning or a retry.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FBK-082
+  statement: Escape on an InfoTip opened by hover shall close it, and it shall stay closed until the pointer
+    has left the InfoTip; focus shall return to the button only when focus was inside the InfoTip.
+  scope:
+  - component
+  - js
+  check_type: dom
+  test: 'Hover the button until the tip opens with focus in a field, press Escape: the tip is hidden,
+    it is still hidden 700 ms later with the pointer resting and after a pointer move inside the button,
+    and focus is still in the field.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FBK-083
+  statement: In a `Dialog`, `ConfirmDialog` or `SideSheet` an InfoTip shall go after the title; while
+    a tip is open the first Escape shall close the tip and the second shall close the dialog or sheet.
+  scope:
+  - component
+  - page
+  check_type: dom
+  test: 'Open the dialog, open the tip, press Escape: the tip is hidden and the dialog is open; press
+    Escape again: the dialog is closed.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FBK-084
+  statement: An InfoTip button shall carry no `title` attribute; its tooltip form shall open after 500
+    ms of mouse hover and at once on keyboard focus and on a tap.
+  scope:
+  - html
+  - component
+  check_type: lint
+  test: Fail if a `.sn-infotip__btn` has a `title` attribute (check.py FBK-TIPTITLE); hover 300 ms shows
+    nothing, 600 ms shows the tip.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FBK-085
+  statement: A state or error line inside a dialog or side sheet, the consequence line of a `ConfirmDialog`,
+    and anything the person must read to take the action safely shall never be an InfoTip; it shall stay
+    as text, an `InlineMessage` or a `Banner`.
+  scope:
+  - page
+  - copy
+  check_type: judgement
+  test: No InfoTip in a dialog holds a state, an error, a conflict or a consequence.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FBK-086
+  statement: An InfoTip panel inside a heading shall be built from `span` elements only, with a paragraph
+    as `.sn-infotip__p` and a short closing line as `.sn-infotip__note`; bold moved verbatim shall stay
+    inline in its line.
+  scope:
+  - html
+  - component
+  check_type: dom
+  test: 'Inside `h1`-`h6`, `.sn-infotip__panel` has no `div` or `p` descendant; a `b` in a list item is
+    `display: inline`.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FBK-087
+  statement: A subject that has no heading or label of its own shall be named in a `p.sn-infotip-line`
+    that holds the subject's words and then its InfoTip.
+  scope:
+  - html
+  check_type: dom
+  test: An InfoTip that is not after a heading, label, figure label or column header sits in `.sn-infotip-line`
+    after visible words.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FBK-088
+  statement: A legend or key whose marks are colour, shape or position without a word (Camelot key colours,
+    energy tiers, the graph legend, a heatmap scale) shall stay on the page; a key that only says what
+    the words already written on every item mean may be an InfoTip.
+  scope:
+  - page
+  - chart
+  check_type: judgement
+  test: No colour, shape or position key is reachable only through an InfoTip.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FBK-089
+  statement: An InfoTip inside a `Dialog` or `SideSheet` shall open inside that box, and its panel form
+    shall scroll inside itself after 60% of the viewport height.
+  scope:
+  - component
+  check_type: visual
+  test: 'Open each tip in a dialog at 1440 and 390 px: no part of the tip is clipped by the dialog or
+    drawn outside it.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FBK-090
+  statement: Long method text (how a figure is worked out, how a set is built) shall be the panel form
+    of an InfoTip after the heading it explains, moved verbatim, and never an open block or a section
+    of its own.
+  scope:
+  - page
+  - copy
+  check_type: judgement
+  test: No explanatory block longer than 40 words is shown open on the page.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-001
+  statement: On a summary band, or where a figure has its own detail page, the whole tile shall be the
+    link (`a.sn-figure-tile.sn-figure-tile--link`).
+  scope:
+  - component
+  - html
+  check_type: dom
+  test: The link tile's root element is an anchor with an href.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-002
+  statement: A link tile shall not contain a link, a button or an InfoTip.
+  scope:
+  - component
+  - html
+  check_type: dom
+  test: '`a.sn-figure-tile--link` has no descendant a, button or `.sn-infotip`.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-003
+  statement: A tile shall be a link as a whole or carry one link in its footer, never both; a tile that
+    does neither shall be a `div`.
+  scope:
+  - component
+  - html
+  check_type: dom
+  test: No tile has both the link form and a `.sn-figure-tile__foot a`; non-link tiles are not anchors.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-004
+  statement: A link tile shall name its destination in `.sn-figure-tile__go` with words and the chevron-right
+    icon, so the link is not carried by the edge alone.
+  scope:
+  - component
+  - html
+  check_type: dom
+  test: Every link tile has a `.sn-figure-tile__go` with text and an icon.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-005
+  statement: A link tile shall jump to its section or open the figure's detail page in the same tab; it
+    shall not filter the list beneath.
+  scope:
+  - component
+  - js
+  check_type: judgement
+  test: Activating a link tile changes the location, not a filter, and opens no new tab.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-006
+  statement: The detail page of a figure shall repeat that figure once, as its first figure, from the
+    same calculation as the tile.
+  scope:
+  - page
+  check_type: judgement
+  test: The detail page's first figure equals the tile's figure for the same period.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-007
+  statement: A link tile inside a list row shall sit in a `.sn-figure-band__item` list item, so the anchor
+    keeps its link role.
+  scope:
+  - component
+  - html
+  check_type: dom
+  test: No anchor carries role=listitem.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-008
+  statement: 'A figure from a service that is not connected shall be a `data-state="not-connected"` tile:
+    the state line "Not connected" with the plug icon, the label, and a note that says what connecting
+    adds.'
+  scope:
+  - component
+  - html
+  - copy
+  check_type: dom
+  test: With the service disconnected the tile has `.sn-figure-tile__state` reading Not connected and
+    no `.sn-figure-tile__figure`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-009
+  statement: 'A state tile shall show no figure: never 0, never an en dash, never an estimate.'
+  scope:
+  - component
+  - html
+  check_type: dom
+  test: '`.sn-figure-tile[data-state]` has no `.sn-figure-tile__figure` child.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-010
+  statement: 'A figure the weekly run has not worked out yet shall be a `data-state="awaiting"` tile:
+    the state line "Awaiting the weekly run" with the clock icon and a note that gives the next run.'
+  scope:
+  - component
+  - html
+  - copy
+  check_type: dom
+  test: Before the first run the tile reads Awaiting the weekly run and its note names a run time.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-011
+  statement: 'A figure outside its plausible range shall be a `data-state="implausible"` tile: the state
+    line "Implausible" with the triangle-alert icon and a note that gives the figure and the reason.'
+  scope:
+  - component
+  - html
+  - copy
+  check_type: dom
+  test: The implausible tile's note contains the raw figure and a reason.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-012
+  statement: 'A state tile shall not carry a StatusPill or a status ground: a missing service or reading
+    is not a result.'
+  scope:
+  - component
+  - html
+  check_type: dom
+  test: '`.sn-figure-tile[data-state]` contains no `.sn-pill`.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-013
+  statement: 'The state words shall be fixed: "Not connected", "Awaiting the weekly run", "Implausible";
+    a page shall use no other words for these states.'
+  scope:
+  - copy
+  check_type: judgement
+  test: State lines use only the three fixed phrases.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-014
+  statement: A state tile shall be the same height as the figure tiles beside it.
+  scope:
+  - component
+  - css
+  check_type: visual
+  test: Tiles in one row share one height in all three themes.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-015
+  statement: The state icon shall be hidden from assistive technology; the fixed words shall carry the
+    state.
+  scope:
+  - component
+  - html
+  check_type: dom
+  test: The icon in `.sn-figure-tile__state` is aria-hidden and the line has text.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-016
+  statement: The plausible range of a figure shall be fitted per figure from the library's own history
+    and arrive with the data; a component or page shall not hard-code one.
+  scope:
+  - js
+  check_type: judgement
+  test: No numeric plausibility bound is a literal in page or component code.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-017
+  statement: Loading shall remain the skeleton variant; "Awaiting the weekly run" shall not be used while
+    a request is in flight.
+  scope:
+  - component
+  - js
+  check_type: judgement
+  test: During a fetch the tile is `.sn-figure-tile--skeleton`, not a state tile.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-018
+  statement: The "Estimate" tag shall sit inside the tile's label as `.sn-tag.sn-figure-tile__tag`.
+  scope:
+  - component
+  - html
+  check_type: dom
+  test: The tag is a descendant of `.sn-figure-tile__label`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-019
+  statement: A ring or bar that shows a set against its length shall use the set length as its full scale
+    and shall not use the current planned total.
+  scope:
+  - component
+  - js
+  check_type: judgement
+  test: Removing a track leaves the scale unchanged and the fill smaller.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-020
+  statement: The held scale shall change only when the person changes the set length.
+  scope:
+  - component
+  - js
+  check_type: judgement
+  test: Adding or removing tracks never changes aria-valuemax.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-021
+  statement: The arc or fill shall be capped at the full scale while the displayed percentage is not,
+    so a set over its length reads above 100%.
+  scope:
+  - component
+  - js
+  check_type: dom
+  test: With planned above length the fill is 100%, the figure reads above 100% and aria-valuenow equals
+    aria-valuemax.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-022
+  statement: A set over its length shall say the minutes over in words beside the figure and in `aria-valuetext`.
+  scope:
+  - component
+  - copy
+  check_type: dom
+  test: The text and aria-valuetext contain "over the set length".
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-023
+  statement: 'Tracks removed since the last save shall be drawn on a held ring as a cut-out after the
+    fill: the card''s ground with a dashed line-strong edge inside and out, never a status colour.'
+  scope:
+  - component
+  - css
+  check_type: visual
+  test: The cut-out uses `.sn-progress-ring__removed` and two `.sn-progress-ring__removed-edge` arcs.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-024
+  statement: The percentage and "x of y" shall stay on the set as it stands; the removed amount shall
+    be said in words in the text, the `aria-valuetext` and the key, never folded into either figure.
+  scope:
+  - component
+  - copy
+  check_type: dom
+  test: After a removal the figure equals planned over length and the text names the removed tracks and
+    minutes.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-025
+  statement: The removed amount shall be worked out from the saved set and the set on screen; a track
+    added shall take up the removed space first and saving the set shall clear it.
+  scope:
+  - component
+  - js
+  check_type: judgement
+  test: Add after a removal shrinks the cut-out; Save removes it.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-026
+  statement: Time left to fill shall be said in words with the count of empty slots.
+  scope:
+  - component
+  - copy
+  check_type: dom
+  test: Under the length the text reads minutes still to fill and slots empty.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-027
+  statement: '"Set is full" shall need every slot filled and the length met; a ring at or over 100% with
+    an empty slot shall say how many slots are empty.'
+  scope:
+  - component
+  - copy
+  check_type: judgement
+  test: With planned at length and an empty slot the text does not read Set is full.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-028
+  statement: A held ring shall be the 64 size, and a view of held rings or bars with a removed part shall
+    carry one key, not one per item.
+  scope:
+  - component
+  - html
+  check_type: dom
+  test: '`.sn-progress-ring--held` also has `.sn-progress-ring--64`; one key list per group.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-029
+  statement: The key entry for removed tracks shall appear only when something is removed.
+  scope:
+  - component
+  - html
+  check_type: dom
+  test: No `[data-part="removed"]` swatch exists when no item has a removed part.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-030
+  statement: 'A held bar shall read left to right in one order: planned, removed, still to fill.'
+  scope:
+  - component
+  - css
+  check_type: visual
+  test: '`.sn-progress-bar__removed` starts where the fill ends.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-031
+  statement: The removed part of a held bar shall be the card's ground with a dashed start edge and a
+    diagonal line-strong hatch; the hatch shall not be dropped and the part shall not take a status colour.
+  scope:
+  - component
+  - css
+  check_type: visual
+  test: The removed part shows the hatch in dark, light and booth.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-032
+  statement: A held bar shall be `role="progressbar"` with `aria-valuemax` the set length, `aria-valuenow`
+    the minutes planned capped at the length, and an `aria-valuetext` that says planned, the length, time
+    left or over, and the removed amount.
+  scope:
+  - component
+  - html
+  check_type: dom
+  test: The attributes are present and the value text names each part that exists.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-033
+  statement: A held bar shall not be used at the small 4px size.
+  scope:
+  - component
+  - html
+  check_type: dom
+  test: No element has both `.sn-progress-bar--held` and `.sn-progress-bar--sm`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-034
+  statement: On paper the removed part and its key swatch shall print with exact colours, so a mono print
+    reads the hatch and the caption.
+  scope:
+  - component
+  - print
+  - css
+  check_type: visual
+  test: Print preview shows the hatch.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-035
+  statement: 'A heatmap cell whose count could not be taken shall be `data-unmeasured`: a solid line-strong
+    outline with one diagonal slash; it shall not be drawn as zero or as the dashed no-data cell, and
+    nothing shall be estimated across it.'
+  scope:
+  - component
+  - chart
+  check_type: dom
+  test: The cell has data-unmeasured, no data-step, and a `.sn-heatmap__slash` over it.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-036
+  statement: A not-measured cell shall say "not measured" and why in its `aria-label` and in the readout.
+  scope:
+  - component
+  - chart
+  - copy
+  check_type: dom
+  test: Focusing the cell sets the readout to Not measured with a reason.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-037
+  statement: When a heatmap has a not-measured cell, the key's last entry shall read "Not measured" and
+    the ramp's `aria-label` shall name it; without such a cell the entry shall be left out.
+  scope:
+  - component
+  - chart
+  check_type: dom
+  test: '`.sn-heatmap__ramp-unmeasured` is the last child of the ramp exactly when a `[data-unmeasured]`
+    cell exists.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-038
+  statement: A not-measured cell shall take no part in the bins or the ramp maximum and shall show no
+    count on hover or focus.
+  scope:
+  - component
+  - chart
+  - js
+  check_type: judgement
+  test: Changing a cell to not measured leaves the bins of the other cells unchanged.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: FIG-039
+  statement: The heatmap's subtitle shall count the not-measured cells.
+  scope:
+  - component
+  - chart
+  - copy
+  check_type: dom
+  test: The subtitle ends with the number not measured when any exist.
+  status: active
+  replaced_by: null
+  history_ref: null
 - id: GOV-001
   statement: The design system MUST have a single semantic version number (MAJOR.MINOR.PATCH) stored in
     tokens.json and exposed as SongNodes.version in bundle.js.
@@ -6546,6 +7947,19 @@
   - component
   check_type: judgement
   test: Third-party widgets are not listed in the exceptions register.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: GOV-038
+  statement: 'A page shall not carry its own copy or override of a design-system rule: no page stylesheet
+    or style block shall select a class the bundle defines, and a need a page finds shall become a design-system
+    change so that every page gets it.'
+  scope:
+  - css
+  - html
+  check_type: lint
+  test: Fail if a page stylesheet or `<style>` block has a rule that selects any `sn-` class defined in
+    `components/bundle.css` (check.py INP-OVERRIDE; the design system's own CSS is skipped).
   status: active
   replaced_by: null
   history_ref: null
@@ -8833,13 +10247,848 @@
   status: active
   replaced_by: null
   history_ref: null
+- id: INP-125
+  statement: A slider shall be drawn as RangeSlider markup (role="slider" with aria-valuemin, aria-valuemax,
+    aria-valuenow and aria-valuetext); a page shall not use a native input[type=range].
+  scope:
+  - html
+  - component
+  check_type: lint
+  test: Fail on input[type=range] outside the design system (check.py INP-RANGE).
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-126
+  statement: A slider that lacks aria-valuemin or aria-valuemax shall not be mounted, and the console
+    shall say so; it shall never be given a range of its own.
+  scope:
+  - js
+  check_type: dom
+  test: Pass if a slider without aria-valuemin/aria-valuemax is not mounted and logs a message.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-127
+  statement: Every slider shall be paired on the page with a typed value (a number box or NumberField)
+    of the same range and step; moving one shall set the other at once.
+  scope:
+  - html
+  - component
+  check_type: dom
+  test: Pass if each slider has a number box with identical min, max and step and the two stay equal.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-128
+  statement: A slider track shall be drawn at slider-track-h with a 1px line-strong edge on progress-track,
+    its fill in brand, its thumb a fg disc of slider-thumb diameter with a slider-thumb-ring brand ring,
+    and a hit area of at least touch-min.
+  scope:
+  - css
+  - component
+  check_type: visual
+  test: Pass if track, fill and thumb match these tokens and the hit area measures at least 44px in dark,
+    light and booth.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-129
+  statement: Slider keys shall be Left and Down one step down, Right and Up one step up, Page Up and Page
+    Down the big step, Home and End the limits; a press on the rail shall move the nearest thumb there
+    and dragging shall snap to the step.
+  scope:
+  - js
+  - component
+  check_type: dom
+  test: Pass if each key and pointer action moves the value as stated.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-130
+  statement: The thumbs of a two-thumb slider shall not cross; each thumb's aria-valuemax or aria-valuemin
+    shall be the other thumb's value.
+  scope:
+  - js
+  - component
+  check_type: dom
+  test: Pass if the lower thumb's aria-valuemax equals the upper value and the reverse.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-131
+  statement: A disabled slider shall use aria-disabled="true" at opacity-disabled and give its reason
+    in a Tooltip or InfoTip.
+  scope:
+  - html
+  - component
+  check_type: dom
+  test: Pass if a disabled slider has aria-disabled true and a reason.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-132
+  statement: A slider shall be used only for a bounded value whose place in its range matters; a choice
+    among a few named values shall be a SegmentedControl and an unbounded value a NumberField.
+  scope:
+  - component
+  check_type: judgement
+  test: Pass if each slider sets a bounded numeric value.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-133
+  statement: 'Related weights set together shall be a SliderGroup: role="group" named by its title, two
+    to six rows, each a label, a single-thumb RangeSlider and its number box.'
+  scope:
+  - html
+  - component
+  check_type: dom
+  test: Pass if a SliderGroup has 2 to 6 rows, each with label, slider and number box.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-134
+  statement: 'A SliderGroup without data-total shall hold relative weights: rows are independent, each
+    shows its share of the sum in whole percent that adds to exactly 100% by largest remainder, and no
+    total line is drawn.'
+  scope:
+  - component
+  - js
+  check_type: dom
+  test: Pass if shares add to 100 and no .sn-slider-group__total exists.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-135
+  statement: A SliderGroup without data-total whose weights are all 0 shall show "–" for every share and
+    an error line "Set at least one weight above 0", with aria-invalid="true" on the group.
+  scope:
+  - component
+  - js
+  check_type: dom
+  test: Pass if all-zero weights show dashes, the error line and aria-invalid.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-136
+  statement: 'A SliderGroup with data-total shall keep its total: moving a row shall rebalance the others
+    in proportion to their values (equally when all are 0), keep every row on its step and give the rounding
+    remainder to the row that held the most.'
+  scope:
+  - js
+  check_type: judgement
+  test: Pass if the rows sum to data-total after every change and remainders go to the largest row.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-137
+  statement: A SliderGroup with data-total shall show its total with a glyph and words ("● Total 1.00
+    of 1.00", "✕ Total 1.10 of 1.00") and set aria-invalid when it does not sum; the page's Save shall
+    use aria-disabled with the reason in a Tooltip while it does not sum.
+  scope:
+  - html
+  - js
+  check_type: dom
+  test: Pass if a non-summing group shows the ✕ line, aria-invalid true and an aria-disabled Save with
+    a reason.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-138
+  statement: After a change to a SliderGroup commits (pointer released, key pressed or number box left)
+    the page's one polite live region shall read the new values once and shall not read each tick of a
+    drag.
+  scope:
+  - js
+  check_type: judgement
+  test: Pass if one announcement follows each committed change and none during a drag.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-139
+  statement: An OrderList shall be ol.sn-order-list named by its heading with two to six li.sn-order-list__row[data-key]
+    rows, each holding in order the drag handle, the rank, the words and the Move up and Move down buttons;
+    rows shall not be added or removed there.
+  scope:
+  - html
+  - component
+  check_type: dom
+  test: Pass if an OrderList has 2 to 6 rows with those children in that order.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-140
+  statement: An OrderList rank shall be drawn from the row's place and never typed; its words shall be
+    sentence case and the page shall store keys, not words.
+  scope:
+  - js
+  - component
+  check_type: judgement
+  test: Pass if ranks change with the order and stored values are keys.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-141
+  statement: An OrderList drag shall start only from the handle after 4px of movement, and every drag
+    shall have the Move up and Move down buttons and the DragDrop keyboard path.
+  scope:
+  - js
+  - component
+  check_type: dom
+  test: Pass if only the handle starts a drag and buttons and keys reorder the list.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-142
+  statement: 'OrderList Move buttons shall use the arrow-up and arrow-down icons, aria-label "Move up:
+    <row>" or "Move down: <row>", and a Tooltip with the same words; at the ends the button shall use
+    aria-disabled with a Tooltip ("Already first", "Already last").'
+  scope:
+  - html
+  - component
+  check_type: dom
+  test: Pass if buttons carry those labels and tooltips and the end buttons are aria-disabled.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-143
+  statement: Each OrderList move shall be announced once in the page's polite live region with the new
+    place and the whole order, and a pointer drag shall also announce pick-up and cancel.
+  scope:
+  - js
+  check_type: judgement
+  test: 'Pass if one announcement of the form "<row> moved to <n> of <m>. Order: …" follows each move.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-144
+  statement: An OrderList shall change the setting on the page at once and shall follow the surface's
+    own saving rule; it shall not add a Save of its own.
+  scope:
+  - component
+  check_type: judgement
+  test: Pass if the list contains no Save button and saves as its surface does.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-145
+  statement: A NumberField's min, max and step shall come from the page; a bound the page leaves out is
+    no bound, and steps count from the minimum, or from 0 when there is none.
+  scope:
+  - js
+  - component
+  check_type: judgement
+  test: Pass if no bound or step is invented by the component.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-146
+  statement: A NumberField value typed off the step or outside the bounds shall keep what was typed, show
+    an error that says what is wrong and how to fix it, and shall not be silently snapped.
+  scope:
+  - js
+  - component
+  check_type: dom
+  test: Pass if an off-step value stays as typed with an error line and aria-invalid true.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-147
+  statement: The equivalent line of a NumberField (sn-number-field__equiv), an optional line for a value
+    that has another unit people think in, shall be worked out exactly by the page, left out when it cannot
+    be worked out and never shown as 0.
+  scope:
+  - component
+  check_type: judgement
+  test: Pass if an equivalent line is exact or absent.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-148
+  statement: 'A page shall not build its own stepper: no icon-only minus or plus button, and no button
+    reading "−", "+", "−1" or "+1", beside a number input outside NumberField.'
+  scope:
+  - html
+  check_type: lint
+  test: Fail if such a button sits beside a number input outside .sn-number-field (check.py INP-STEPPER).
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-149
+  statement: A page shall not write rules for .sn-range-slider, .sn-slider-group, .sn-order-list or .sn-number-field
+    classes of its own.
+  scope:
+  - css
+  - html
+  check_type: lint
+  test: Fail if a page stylesheet selects those classes (check.py INP-OVERRIDE).
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-150
+  statement: A page shall not set `align-items`, `align-self` or `place-items` on `.sn-field-row` or on
+    a field; the row aligns to the top.
+  scope:
+  - css
+  - html
+  check_type: lint
+  test: Fail if a page rule selects `.sn-field-row` or a field class (check.py INP-OVERRIDE); `getComputedStyle(row).alignItems`
+    is `start` (check_alignment.js).
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-151
+  statement: Fields that sit side by side shall be the children of one `.sn-field-row`, and a row shall
+    hold only fields and one `.sn-field-row__action`; a page shall not lay fields out with its own flex,
+    grid, inline-block or table.
+  scope:
+  - html
+  - page
+  check_type: dom
+  test: '`window.__snAlignment()` reports no "fields sit side by side outside a .sn-field-row" and no
+    "child that is not a field".'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-152
+  statement: In one row of fields every label shall start at the same height, within 1 px.
+  scope:
+  - page
+  check_type: dom
+  test: '`window.__snAlignment()` reports no "labels start at different heights" at 1440 and 390 px.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-153
+  statement: In one row of fields every input, select, stepper box and slider number box shall start at
+    the same height and be `control-md` tall, within 1 px.
+  scope:
+  - page
+  check_type: dom
+  test: '`window.__snAlignment()` reports no "controls start at different heights" and no "controls have
+    different heights".'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-154
+  statement: A textarea in a row of fields shall start at the same height as the other controls; only
+    its height may differ.
+  scope:
+  - page
+  check_type: dom
+  test: The top of the textarea equals the top of the inputs beside it within 1 px.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-155
+  statement: An error, a range line, a count or a live readout shall hang below its own field and shall
+    not move the label or control of any other field in the row.
+  scope:
+  - page
+  check_type: dom
+  test: 'Show an error on one field: the tops of the other labels and controls in the row do not change.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-156
+  statement: A label in a row of fields shall stay on one line at tablet width and above; a longer label
+    shall be shortened or its detail moved into the InfoTip.
+  scope:
+  - page
+  - copy
+  check_type: dom
+  test: '`window.__snAlignment()` reports no wrapped label at 1440 px.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-157
+  statement: A field that needs more room shall span grid columns with `sn-field-row__span-2` or `sn-field-row__span-all`;
+    a page shall not give a field its own width inside a row.
+  scope:
+  - html
+  - css
+  check_type: dom
+  test: No field in a `.sn-field-row` has an inline width or a page rule that sets its width.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-158
+  statement: A button beside a row of fields shall sit in `.sn-field-row__action` and shall start at the
+    same height as the controls beside it.
+  scope:
+  - html
+  check_type: dom
+  test: The top of the button equals the top of the row's controls within 1 px at 1440 px.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-159
+  statement: Below 768 px the fields of a row shall stack in one column, each full width, with the same
+    left edge.
+  scope:
+  - page
+  check_type: visual
+  test: At 390 px every field in the row has the same left and right edge.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-160
+  statement: A three-part or calendar `DateField` shall take a row to itself or share it only with other
+    `DateField`s; a `RangeSlider` in a row shall use `control-md` number boxes.
+  scope:
+  - html
+  - page
+  check_type: dom
+  test: No `.sn-field-row` line holds a `.sn-date-field` beside a `.sn-field`; `window.__snAlignment()`
+    is empty for the row.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-161
+  statement: A label that shares its line with an InfoTip shall keep the type of a label on its own (weight
+    600, `body-s` size, `fg-2`), and every label line in a row shall be `space-6` tall.
+  scope:
+  - css
+  - component
+  check_type: visual
+  test: In one row a label with an InfoTip and a label without have the same computed font and the same
+    line height box.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-162
+  statement: A link drawn as a button (`a.sn-btn`) shall have no underline, and one that cannot be followed
+    shall be drawn at `opacity-disabled` and take no pointer; a page shall write no rule of its own for
+    `a.sn-btn`.
+  scope:
+  - css
+  - html
+  check_type: lint
+  test: 'Fail if a page rule selects `a.sn-btn` (check.py INP-OVERRIDE); `a.sn-btn[aria-disabled="true"]`
+    computes `pointer-events: none`.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-163
+  statement: A native file input inside a field shall have no border, ground or padding of its own, so
+    only its Choose file button is a box, at `control-md`.
+  scope:
+  - css
+  - component
+  check_type: visual
+  test: '`.sn-field input[type=file]` computes border 0 and a transparent ground.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: INP-164
+  statement: The status line beside a form's buttons shall be a plain `InlineMessage`; a form shall have
+    no message class of its own.
+  scope:
+  - html
+  - page
+  check_type: judgement
+  test: No page defines a form message class; the line beside Save is `.sn-inline-message`.
+  status: active
+  replaced_by: null
+  history_ref: null
 - id: INT-001
-  statement: While a page's EmptyState displays the primary action, the PageHeader primary action shall not be rendered.
+  statement: While a page's EmptyState displays the primary action, the PageHeader primary action shall
+    not be rendered.
   scope:
   - page
   - component
   check_type: dom
-  test: Page contains at most one primary button (.sn-btn--primary) and PageHeader primary is not rendered while EmptyState displays the primary action.
+  test: Page contains at most one primary button (.sn-btn--primary) and PageHeader primary is not rendered
+    while EmptyState displays the primary action.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-001
+  statement: A figure page shall answer one question, stated in its one-line subtitle; figures that answer
+    a different question shall sit on another page.
+  scope:
+  - page
+  check_type: judgement
+  test: Read the subtitle; every section's headline answers it.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-002
+  statement: A section that would be opened on its own for a different question shall be a page, not a
+    section.
+  scope:
+  - page
+  check_type: judgement
+  test: No section of the page answers a question other than the subtitle's.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-003
+  statement: A figure page with more than three sections shall carry in-page links in its header, one
+    per section, in page order.
+  scope:
+  - page
+  - html
+  check_type: dom
+  test: Count the sections; above three, the header holds one anchor link per section id in document order.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-004
+  statement: A figure page shall have at most eight sections.
+  scope:
+  - page
+  check_type: dom
+  test: Count the page's sections; fail above eight.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-005
+  statement: 'The first thing under the page header and its period control shall be one summary band:
+    a single row of at most four tiles, each the headline figure of one section.'
+  scope:
+  - page
+  - html
+  check_type: dom
+  test: The first content block is one `.sn-figure-band` whose row holds one to four tiles.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-006
+  statement: A summary tile shall be a link tile whose target is its section or the figure's detail page;
+    it shall not filter.
+  scope:
+  - page
+  - html
+  check_type: dom
+  test: Every tile in the summary band is `a.sn-figure-tile--link` with an href to a section id or a page;
+    none changes a filter.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-007
+  statement: The summary band shall show figures worked out in their sections for the period shown and
+    shall not work out a figure of its own.
+  scope:
+  - page
+  - js
+  check_type: judgement
+  test: Each band figure equals the headline of the section it links to, for the same period.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-008
+  statement: 'One sentence under the summary band (`p.sn-figure-band__read`) shall read the page in plain
+    words: the result, the biggest gap and where to look.'
+  scope:
+  - page
+  - copy
+  check_type: dom
+  test: Exactly one `.sn-figure-band__read` follows the band row and is a single sentence group naming
+    a result and a section.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-009
+  statement: Sections shall follow in the order of the summary tiles, and checks on the data shall come
+    last.
+  scope:
+  - page
+  check_type: judgement
+  test: Section order equals tile order; any data-check section is last.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-010
+  statement: A figure shall be worked out once per page, in the section that owns it; any other place
+    shall show the same number from the same source and link to that section, or leave it out.
+  scope:
+  - page
+  - js
+  check_type: judgement
+  test: List figures that appear more than once; each has one calculation and equal values.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-011
+  statement: Two figures on one page with the same name shall have the same definition, period and scope;
+    a different definition shall take a different name.
+  scope:
+  - page
+  - copy
+  check_type: judgement
+  test: No label appears twice with different values or notes.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-012
+  statement: Every percentage shall say what it is a share of in its note or label.
+  scope:
+  - copy
+  - page
+  check_type: dom
+  test: Each rendered percentage on a figure page has adjacent text beginning "of" or naming its base.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-013
+  statement: A count that feeds two sections shall be the same count in both; where the scope differs,
+    each note shall name its scope.
+  scope:
+  - page
+  check_type: judgement
+  test: Shared counts match across sections or carry scope words.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-014
+  statement: A total of a rate shall be worked out from summed counts, never as a mean of percentages;
+    an item left out of the total shall be named in its note.
+  scope:
+  - js
+  - page
+  check_type: judgement
+  test: Recompute the total from the rows' counts; it matches the shown total.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-015
+  statement: A figure worked out more than one way shall show one headline method, named by what was measured.
+  scope:
+  - page
+  - copy
+  check_type: judgement
+  test: Only one method's figure is a headline and its note names the source of the measurement.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-016
+  statement: Method letters shall not appear on a figure page; the method's name shall.
+  scope:
+  - copy
+  check_type: judgement
+  test: Search the rendered text for lone method letters and the word Method followed by a letter or number.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-017
+  statement: The other method's figure shall sit in the section's "How this was worked out" Disclosure
+    and shall not be a second visible headline.
+  scope:
+  - page
+  - html
+  check_type: dom
+  test: A section has at most one headline figure outside its Disclosures.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-018
+  statement: Where two methods disagree past the page's tolerance, one InlineMessage under the figure
+    shall say which to trust for now and what would close the gap, and shall end with a source link.
+  scope:
+  - page
+  - copy
+  check_type: judgement
+  test: With a fixture that disagrees, one InlineMessage with a link appears under the headline.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-019
+  statement: Formulas, symbols and method prose shall sit behind an InfoTip; a label shall be a plain
+    name.
+  scope:
+  - copy
+  - html
+  check_type: judgement
+  test: No label holds a symbol or formula; the explanation is in an InfoTip after the label.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-020
+  statement: In a tile row, state tiles shall not outnumber figure tiles; when they would, the row shall
+    keep its figure tiles and one line under it (`p.sn-figure-band__rest`) shall list the rest.
+  scope:
+  - page
+  - html
+  check_type: dom
+  test: In every `.sn-figure-tile-row`, count of `[data-state]` tiles is not greater than the count of
+    tiles with a figure.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-021
+  statement: 'A figure that cannot be measured yet shall not be a tile: it shall be a row in one "Not
+    measured yet" Disclosure at the foot of its section, with what it needs.'
+  scope:
+  - page
+  - html
+  check_type: dom
+  test: No tile exists for an unmeasurable figure; the section's last Disclosure lists it.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-022
+  statement: Build plans, phase names and "coming soon" shall not appear on a figure page.
+  scope:
+  - copy
+  check_type: judgement
+  test: Search the rendered text for phase and plan words.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-023
+  statement: A figure outside its plausible range shall be an "Implausible" state tile or, in a table,
+    the warn StatusPill "Implausible" in place of the figure, with the figure and the reason in visible
+    words.
+  scope:
+  - page
+  - html
+  - copy
+  check_type: dom
+  test: With an implausible fixture value, no headline shows the raw figure; the state tile or pill is
+    present with a note.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-024
+  statement: An implausible figure shall be left out of every total, median and mean it would feed, and
+    the note of that total shall say so.
+  scope:
+  - js
+  - copy
+  check_type: judgement
+  test: Recompute the total without the implausible rows; it matches, and the note counts what was left
+    out.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-025
+  statement: A job with no end time shall count to the time the page was checked, shall be marked "Still
+    running" and shall be listed under the page's checks.
+  scope:
+  - js
+  - page
+  check_type: judgement
+  test: With an unclosed job in the fixture, its duration ends at the checked time and it appears under
+    checks.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-026
+  statement: 100% shall be shown only when it was measured; a share with nothing measured shall read "Not
+    measured".
+  scope:
+  - js
+  - copy
+  check_type: judgement
+  test: With an empty denominator in the fixture no 100% or 0% is rendered for that figure.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-027
+  statement: A headline note may end with the change on the previous period, and when it does it shall
+    be a signed figure in the figure's own unit with the period named.
+  scope:
+  - copy
+  check_type: dom
+  test: Change text matches a sign, a number, the figure's unit and a period phrase.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-028
+  statement: Each section with a headline should carry its last twelve weekly runs as one chart in a "Trend"
+    Disclosure.
+  scope:
+  - page
+  - chart
+  check_type: dom
+  test: A section with a headline has a Disclosure named Trend holding one chart of up to twelve points.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-029
+  statement: A benchmark from outside the library shall be shown only behind an InfoTip, with its source,
+    and shall not set a tile's state.
+  scope:
+  - page
+  - copy
+  check_type: judgement
+  test: No outside benchmark is visible on the page surface or drives a pill.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-030
+  statement: A figure worked out from a model and not measured shall carry the flat tag "Estimate" in
+    its label.
+  scope:
+  - html
+  - copy
+  check_type: dom
+  test: Every modelled figure's label contains `.sn-tag` with the text Estimate.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-031
+  statement: An estimate shall not share a total, median or mean with measured figures unless the result
+    is itself tagged "Estimate".
+  scope:
+  - js
+  - page
+  check_type: judgement
+  test: Totals that include a modelled value carry the Estimate tag.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-032
+  statement: An estimate outside the range its model holds for shall not be shown as a number; the tile
+    shall say why in words.
+  scope:
+  - js
+  - copy
+  check_type: judgement
+  test: With an out-of-range fixture the tile shows words and no figure.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-033
+  statement: A duration under 120 minutes shall be shown in minutes and a duration from 120 minutes in
+    hours and minutes; a page shall not show four-digit minutes.
+  scope:
+  - copy
+  - js
+  check_type: dom
+  test: No rendered duration matches three or more digits followed by min above 119, and none below 120
+    min is in hours.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-034
+  statement: Both sides of an "x of y" duration shall take the form of y, so one figure keeps one unit.
+  scope:
+  - copy
+  - js
+  check_type: dom
+  test: Pairs read "61 of 90 min" or "1 h 32 min of 2 h"; no pair mixes a minutes-only side with an hours
+    side.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-035
+  statement: A difference between two percentages shall be given in points, never as a percentage of a
+    percentage.
+  scope:
+  - copy
+  check_type: dom
+  test: Changes of percentage figures end in pts.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: KPG-036
+  statement: A rate shall name both its units, and one figure shall keep one unit across the page.
+  scope:
+  - copy
+  check_type: judgement
+  test: Rates read as a count per unit; the same figure is not shown in two units.
   status: active
   replaced_by: null
   history_ref: null
@@ -9803,6 +12052,273 @@
   - component
   check_type: visual
   test: For nested rounded boxes, inner radius = outer radius - padding and <= outer radius.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: LAY-094
+  statement: 'While a `Dialog`, `ConfirmDialog` or `SideSheet` is open nothing outside it except a toast
+    shall be drawn over it: the scrim shall cover the page, the `AppHeader`, a `ConnectionStatus` banner
+    and every fixed bar.'
+  scope:
+  - page
+  - component
+  check_type: dom
+  test: 'Open each dialog and sheet at 1440 x 900 and 390 x 844: `document.elementsFromPoint` at the centre
+    of each footer button returns that button first.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: LAY-095
+  statement: No fixed or sticky element outside a dialog or side sheet shall take a layer above `z-dialog`
+    other than the toast region; a popover, menu or tooltip opened from the page shall close when a dialog
+    or sheet opens.
+  scope:
+  - css
+  - page
+  check_type: lint
+  test: 'No rule outside the dialog, popover, tooltip and toast components uses `z-popover`, `z-toast`
+    or `z-tooltip`; open a menu, then a dialog: the menu is gone.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: LIV-001
+  statement: 'Only five changes shall move on their own in a list, set or table: an item changed on another
+    device or by the weekly run, a move from this device waiting on the server or put back, an item being
+    generated, a removed item, and the neighbours closing or opening the gap.'
+  scope:
+  - component
+  - page
+  check_type: judgement
+  test: Review finds no other self-moving change.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: LIV-002
+  statement: A page shall draw these changes with `SongNodes.live` and the `.sn-lc-*` classes and shall
+    not write its own move, placeholder or removal animation.
+  scope:
+  - component
+  - page
+  check_type: lint
+  test: No page CSS sets `transition` or `animation` on `.sn-lc-*`, and no page script animates list items
+    itself.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: LIV-003
+  statement: A change from another device or the weekly run shall not move an item while the person is
+    pointing at, focused in or dragging the list; it shall wait and the page shall offer it as "N changes
+    – Show".
+  scope:
+  - component
+  - page
+  check_type: dom
+  test: '`SongNodes.live.remote` returns `{queued:true}` while the list is hovered, focused or dragged,
+    and applies on `pointerleave`, `focusout` or Show.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: LIV-004
+  statement: An item moved elsewhere shall glide from where it was and carry a `live-mark-w` `status-info`
+    outline and a tag naming where and when ("Moved on Phone · 22:14", "Re-ordered by weekly run · 03:00").
+  scope:
+  - component
+  - page
+  check_type: dom
+  test: The moved item has `.sn-lc-remote` and an `.sn-lc-tag` with the device or run and `hh:mm`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: LIV-005
+  statement: The outline and tag shall stay `live-mark-hold` once the item is on screen and the person
+    has touched the page since the change, then fade over `live-glide-max`.
+  scope:
+  - component
+  - page
+  check_type: judgement
+  test: Marker timing matches the tokens in `SN_LIVE.limits`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: LIV-006
+  statement: A move from this device shall stay where the person put it while it is sent; after `live-pending-after`
+    unconfirmed it shall carry a still dashed `status-info` border and the tag "Saving".
+  scope:
+  - component
+  - page
+  check_type: dom
+  test: '`.sn-lc-pending` appears after 1 s without a confirmation and has no animation.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: LIV-007
+  statement: A failed send shall be tried `live-tries` times in all, each given `live-try-timeout`, with
+    exponential backoff and equal jitter between tries, and the tag shall count the tries.
+  scope:
+  - component
+  - page
+  check_type: dom
+  test: The tag reads "Saving · try n of 5"; the gaps fall in 0.5–1, 1–2, 2–4 and 4–8 s.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: LIV-008
+  statement: 'After the last failed try the item shall glide back to where the server has it, carry a
+    `status-warn` outline and "Not saved: put back", and an InlineMessage with **Try again** shall say
+    what was not saved; never a warning toast.'
+  scope:
+  - component
+  - page
+  check_type: dom
+  test: '`.sn-lc-failed` is present and an `.sn-inline-message[data-status=warn][role=alert]` with Try
+    again appears next to the list; no `.sn-toast` is raised.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: LIV-009
+  statement: A move that does not save shall never be lost silently and never be left in a place the server
+    does not hold.
+  scope:
+  - component
+  - page
+  check_type: judgement
+  test: After the put-back the order equals the server's order.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: LIV-010
+  statement: An item that has landed and is still being generated (an imported track being analysed, a
+    set slot being filled) shall show as still placeholder bars in its own shape and height, `aria-busy`,
+    taking no input until filled.
+  scope:
+  - component
+  - page
+  check_type: dom
+  test: A `.sn-lc-gen` row has the row height, `aria-busy=true`, `aria-disabled=true` and no running animation.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: LIV-011
+  statement: A filled placeholder shall take its content in place with a `live-fade-in` fade and the live
+    region shall say "<what> ready".
+  scope:
+  - component
+  - page
+  check_type: dom
+  test: Filling does not change the row height on desktop.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: LIV-012
+  statement: A placeholder not filled within `live-stall` shall become a failed item with the reason in
+    `status-bad`, **Try again** and **Remove**.
+  scope:
+  - component
+  - page
+  check_type: dom
+  test: After the stall time `.sn-lc-genfail` replaces the bars.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: LIV-013
+  statement: 'A removed item shall first grey in place and become inert: a removal on this device for
+    its Undo window, a removal elsewhere until the person is back at the page; then it shall fade and
+    its neighbours glide into the gap.'
+  scope:
+  - component
+  - page
+  check_type: dom
+  test: '`.sn-lc-gone` is inert and greyed before the item leaves.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: LIV-014
+  statement: Gliding items shall move by `transform` and `opacity` only, for `live-glide-short`, `live-glide-mid`
+    or `live-glide-max` by distance on `live-ease`, and only while on screen.
+  scope:
+  - component
+  - page
+  check_type: lint
+  test: No `.sn-lc-*` rule or script animates height, margin, top or left.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: LIV-015
+  statement: When one update would glide more than `live-glide-limit` items on screen, nothing shall glide
+    and each changed item shall carry its marker.
+  scope:
+  - component
+  - page
+  check_type: dom
+  test: With 13 moved items no Web Animation is started.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: LIV-016
+  statement: Under reduced motion (system setting or Preferences › Reduce motion) nothing shall glide
+    or fade; `data-motion="full"` shall override the system setting.
+  scope:
+  - component
+  - page
+  check_type: dom
+  test: With `data-motion=reduce` no `sn-lc-*` animation runs; with `full` under a reduced-motion system
+    setting glides run.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: LIV-017
+  statement: Placeholder bars and the waiting border shall stand still in every motion setting; text,
+    not motion, says that work is happening.
+  scope:
+  - component
+  - page
+  check_type: lint
+  test: '`56-live-change.css` has no `animation` or `@keyframes`.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: LIV-018
+  statement: The page shall carry one polite live region (`p.sn-lc-say.sn-sr`) and the changes of one
+    update shall be said once, together.
+  scope:
+  - component
+  - page
+  check_type: dom
+  test: One `.sn-lc-say[aria-live=polite]` exists; one update gives one announcement.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: LIV-019
+  statement: 'Colour shall never be the only cue: every marker shall have its tag, its `title` and its
+    announcement.'
+  scope:
+  - component
+  - page
+  check_type: judgement
+  test: Greyscale screenshot still shows tag words.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: LIV-020
+  statement: 'Print shall show the final state only: no tag, no outline and no removed item.'
+  scope:
+  - component
+  - page
+  check_type: visual
+  test: Print emulation shows no `.sn-lc-tag` and no `.sn-lc-gone`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: LIV-021
+  statement: When the content of a generating item is known, its placeholder shall hold that content invisibly
+    (`.sn-lc-shape`) so it is exactly as tall as the item it becomes at every width; plain bars only for
+    content of unknown length.
+  scope:
+  - component
+  - page
+  check_type: visual
+  test: At 390 px, 768 px and 1280 px the generating row's height equals the same row's height once filled
+    (within 1 px).
   status: active
   replaced_by: null
   history_ref: null
@@ -11173,8 +13689,8 @@
   - js
   check_type: dom
   test: Weights have two decimals and sum to 1.00.
-  status: active
-  replaced_by: null
+  status: deprecated
+  replaced_by: MUS-080
   history_ref: null
 - id: MUS-048
   statement: Charts split by pillar shall use chart-1, chart-2 and chart-3 in that order.
@@ -11484,6 +14000,17 @@
   - component
   check_type: dom
   test: critical renders StatusPill bad Critical.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: MUS-080
+  statement: The genre mix control shall be a SliderGroup of relative weights 0.00-1.00 with two decimals
+    and the resulting share of each pillar shown; the weights are not required to sum to 1.00.
+  scope:
+  - component
+  - js
+  check_type: dom
+  test: Weights have two decimals, a share is shown per pillar and no total is enforced.
   status: active
   replaced_by: null
   history_ref: null
@@ -12784,6 +15311,292 @@
   - page
   check_type: judgement
   test: Pass if each retired route renders RetiredPageNotice before being redirected.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: NAV-134
+  statement: The tabs of one rail shall be views of the page's one thing and shall never hold different
+    functions; a second function shall be its own page reached by a link.
+  scope:
+  - page
+  check_type: judgement
+  test: Name the one thing every tab of the rail shows; if a tab needs another name, it is another page.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: NAV-135
+  statement: '`Tabs` and `SegmentedControl` shall switch views of one thing in place and shall never be
+    a route to another function: no tab or segment shall open another page or module or start an action.'
+  scope:
+  - page
+  - html
+  check_type: dom
+  test: Activating each tab or segment changes only the panel or mode and the `?tab=` or `?mode=` parameter;
+    the path does not change and no request that writes is sent.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: OBX-001
+  statement: 'Every change made on this device that is not yet saved shall be in the outbox from the moment
+    it is made: being sent, waiting, not saved, not applied or superseded.'
+  scope:
+  - js
+  check_type: judgement
+  test: '`SongNodes.resp.outbox.list()` holds the change straight after `edit`.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: OBX-002
+  statement: A row shall be kept in the browser's storage under the page's key as soon as the change is
+    made, and shall be read back when the page next opens.
+  scope:
+  - js
+  check_type: judgement
+  test: The storage key `sn-outbox:` plus the page holds the row before the save resolves.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: OBX-003
+  statement: A row shall leave only when its change is saved or the person discards it; no timer, reload,
+    new day or weekly run shall remove one.
+  scope:
+  - js
+  check_type: judgement
+  test: A waiting row survives a reload and a date change.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: OBX-004
+  statement: When the page opens with rows kept from before, the waiting ones shall be sent again in their
+    original order and the others listed; "Kept from earlier" shall be a toast only when no row needs
+    the person.
+  scope:
+  - js
+  - copy
+  check_type: judgement
+  test: 'Reload with one not-saved row: no toast, the count shows with `data-attn`.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: OBX-005
+  statement: A waiting change shall be sent again when the connection returns and every 30 s until then,
+    one at a time in the order made.
+  scope:
+  - js
+  check_type: judgement
+  test: Offline rows are retried at 30 s and flushed in order on reconnect.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: OBX-006
+  statement: A change that cannot be kept on the device shall be said at once and guarded by the browser's
+    leave prompt.
+  scope:
+  - js
+  - page
+  check_type: judgement
+  test: With storage refused the warn InlineMessage shows and closing the page prompts.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: OBX-007
+  statement: The outbox shall keep what the change was (kind, item, old and new value, when) and shall
+    not keep a credential, an API key, a token or a file's contents.
+  scope:
+  - js
+  check_type: judgement
+  test: Stored rows hold only those fields and an optional payload without secrets.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: OBX-008
+  statement: 'While the outbox holds a row the ConnectionStatus shall hold one `button.sn-outbox__count`
+    with an icon and the count in words: "3 changes waiting", "1 change not saved", "3 waiting, 1 not
+    saved".'
+  scope:
+  - html
+  - component
+  - copy
+  check_type: dom
+  test: With rows present exactly one `.sn-outbox__count` is inside `.sn-connection-status` and its text
+    matches the pattern.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: OBX-009
+  statement: The count button shall take `data-attn` with the warning icon when any row is not saved,
+    not applied or superseded, shall open the outbox, and shall not be drawn with no rows.
+  scope:
+  - component
+  - js
+  check_type: dom
+  test: '`data-attn` is present only with such rows; with zero rows the button is absent.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: OBX-010
+  statement: The count shall be of this device's own changes; changes from another device or the weekly
+    run are LiveChange.
+  scope:
+  - page
+  check_type: judgement
+  test: A remote change does not alter the count.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: OBX-011
+  statement: The outbox shall be a SideSheet (`aside.sn-side-sheet.sn-outbox`) named "Changes waiting",
+    with the SideSheet head and close button and a body holding one lede sentence and the list.
+  scope:
+  - html
+  - component
+  check_type: dom
+  test: The open outbox matches `.sn-side-sheet.sn-outbox` with `.sn-side-sheet__head` and `.sn-side-sheet__body`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: OBX-012
+  statement: The list shall be `ul.sn-outbox__list` with one `li.sn-outbox__row` per change, the changes
+    needing the person first, then waiting, each group oldest first.
+  scope:
+  - html
+  - component
+  check_type: dom
+  test: Row order follows needs-first then time.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: OBX-013
+  statement: A row shall show its state as a StatusPill word, what was changed in words, the old and new
+    value, and when in the page's date format.
+  scope:
+  - component
+  - copy
+  check_type: dom
+  test: Each row has `.sn-pill`, `.sn-outbox__what`, `.sn-outbox__val` and `.sn-outbox__when`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: OBX-014
+  statement: A not-saved or not-applied row shall have Try again and Discard, a superseded row Reapply
+    and Discard, a waiting row Send now and Discard, and a row being sent no buttons.
+  scope:
+  - component
+  check_type: dom
+  test: Buttons per `data-state` match the table.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: OBX-015
+  statement: A not-applied row shall give the server's reason in the server's words.
+  scope:
+  - copy
+  check_type: dom
+  test: '`.sn-outbox__why` holds the reason passed with the refusal.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: OBX-016
+  statement: Try again shall send the change again and, if it is still the newest change to its item,
+    shall show the person's value on the item again with its SaveMark.
+  scope:
+  - js
+  check_type: judgement
+  test: Try again on the newest failed change restores the entered value on the control.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: OBX-017
+  statement: Discard shall grey the row in place with one Undo button for 8 s and then remove it, and
+    the item shall show the saved value.
+  scope:
+  - component
+  - js
+  check_type: dom
+  test: After Discard the row has `.sn-lc-gone` and one Undo button for 8 s.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: OBX-018
+  statement: A superseded row shall say which device's change or that the weekly run's change stands and
+    shall offer Reapply and Discard.
+  scope:
+  - copy
+  - component
+  check_type: judgement
+  test: The row's reason names a device or the weekly run, not a person.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: OBX-019
+  statement: With no rows left the sheet shall say "Every change from this device is saved." and the count
+    button shall go.
+  scope:
+  - copy
+  - component
+  check_type: dom
+  test: An empty outbox shows `.sn-outbox__empty` and no `.sn-outbox__count`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: OBX-020
+  statement: The sheet's rows shall update in place as changes are saved; a row saved while the sheet
+    is open shall show "Saved" for 4 s and then leave.
+  scope:
+  - js
+  - component
+  check_type: dom
+  test: A row flips to the ok pill "Saved" and is removed 4 s later without the sheet closing.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: OBX-021
+  statement: Escape and the close button shall shut the sheet and return focus to the count button.
+  scope:
+  - js
+  - component
+  check_type: dom
+  test: After closing, `document.activeElement` is `.sn-outbox__count` when it still exists.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: OBX-022
+  statement: 'The outbox shall have no "Discard all" and no "Send all": Send now on a waiting row sends
+    the queue in order.'
+  scope:
+  - component
+  check_type: dom
+  test: No such buttons exist in `.sn-outbox`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: OBX-023
+  statement: Print shall not show the outbox; a printed sheet made while rows wait shall say so.
+  scope:
+  - print
+  check_type: dom
+  test: 'In print media `.sn-outbox` and `.sn-outbox__count` compute `display: none`.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: OBX-024
+  statement: A page shall keep and list its waiting changes with `SongNodes.resp.outbox` and the `sn-outbox`
+    classes of the bundle, and shall not use a queue, panel or storage key of its own.
+  scope:
+  - js
+  - css
+  check_type: lint
+  test: No page script writes its own pending-change storage key and no page CSS defines `.sn-outbox*`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: OBX-025
+  statement: A change kept because the device is offline or the service cannot be reached shall be a Waiting
+    row, never a not-applied one, and shall not be reported as a failure.
+  scope:
+  - js
+  check_type: judgement
+  test: 'Reject with `{offline: true}`: the row state is `waiting` and no fail event fires.'
   status: active
   replaced_by: null
   history_ref: null
@@ -14385,6 +17198,53 @@
   status: active
   replaced_by: null
   history_ref: null
+- id: PLT-076
+  statement: When browser storage refuses a write, a theme choice (dark, light or booth) and every other
+    view setting (text size, density, reduce motion, a dismissed warning) shall still take effect for
+    the visit, and the refusal shall be logged once for each setting at warn, through `SongNodes.diag.warn`
+    when Diagnostics is on the page and `console.warn` otherwise.
+  scope:
+  - js
+  check_type: dom
+  test: 'With `Storage.prototype.setItem` throwing, choose Booth: `data-theme` is `booth`, `SongNodes.prefs.get().theme`
+    is `booth`, and exactly one warn line names the theme setting; choosing again logs nothing more.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: PLT-077
+  statement: A refused view setting shall not be shown as a banner or a toast and shall not be retried;
+    the next visit shall open on the defaults.
+  scope:
+  - page
+  - js
+  check_type: judgement
+  test: With storage blocked no message appears on the first screen; the Preferences footer reads "Kept
+    for this visit only".
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: PLT-078
+  statement: A page shall read and set view settings only through `SongNodes.prefs` and `SongNodes.dismissal`;
+    it shall not read or write their storage keys itself.
+  scope:
+  - js
+  - html
+  check_type: lint
+  test: Fail if page code calls `localStorage` with a key starting `sn-theme`, `sn-text-size`, `sn-density`,
+    `sn-motion` or `sn-dismiss`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: PLT-079
+  statement: '`SongNodes.prefs.init` shall only read: opening a page shall not write a setting back to
+    storage.'
+  scope:
+  - js
+  check_type: dom
+  test: 'With `setItem` throwing, load a page and call `prefs.init()`: no warn line is logged.'
+  status: active
+  replaced_by: null
+  history_ref: null
 - id: PRT-001
   statement: Nothing shall download or print unless the person asks.
   scope:
@@ -15169,6 +18029,2030 @@
   - js
   check_type: judgement
   test: Target tracks export matches include/exclude list.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: PRT-080
+  statement: Printed tables shall carry a hairline between columns as well as between rows, portrait and
+    landscape.
+  scope:
+  - component
+  - page
+  check_type: visual
+  test: Print emulation shows a `line` hairline between cells of every `.sn-table`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: PRT-081
+  statement: 'Every printed page shall carry "Page n of N" in its bottom-right page margin box: the unnamed
+    page, `doc`, `wide` and the `PrintSheet`''s `sheet` page, generated by `build_tokens.py` from the
+    caption style.'
+  scope:
+  - print
+  - css
+  check_type: lint
+  test: '`02-theme-media.css` has an `@bottom-right` box with `counter(page)` and `counter(pages)` in
+    `@page`, `@page doc`, `@page wide` and `@page sheet`; a PDF of the PrintSheet shows "Page 1 of 1".'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: PRT-082
+  statement: 'A `PrintSheet` shall not print a typed page number: the page number in its footer shall
+    be `.sn-page-print__pageno`, shown on screen and hidden in print.'
+  scope:
+  - print
+  - html
+  check_type: dom
+  test: 'In print media `.sn-page-print__pageno` computes `display: none`, and no other footer text reads
+    "Page".'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: PRT-083
+  statement: 'On paper colour shall never be the only carrier: every status, tier, compatibility level,
+    pillar and rotation shall print with its word, glyph, number or pattern, so a set list or library
+    sheet reads the same in greyscale.'
+  scope:
+  - print
+  check_type: visual
+  test: 'Print to greyscale: every coloured mark still has a word, glyph, number or pattern beside or
+    in it.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: PRT-084
+  statement: An icon on paper shall sit beside its word and carry its screen meaning; no icon shall be
+    printed for decoration.
+  scope:
+  - print
+  - html
+  check_type: judgement
+  test: Every printed icon other than the slot lock has its word beside it.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: PSZ-001
+  statement: Every page shall be 2,000,000 B or smaller as saved or served, before compression.
+  scope:
+  - page
+  check_type: lint
+  test: Built page file size is at most 2,000,000 B.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-001
+  statement: 'A page shall paint its interface (AppHeader, navigation, PageHeader and the LoadingState
+    in each data slot) before any heavy step runs: reads, folds, layouts and calculations shall start
+    through `SongNodes.save.start(steps)`, after the first paint.'
+  scope:
+  - page
+  - js
+  check_type: judgement
+  test: The first frame shows the shell and the loading states; `SongNodes.save.stats().firstPaint` is
+    set before the first step runs.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-002
+  statement: The interface shall be painted within 1,000 ms of opening the page.
+  scope:
+  - page
+  check_type: dom
+  test: '`SongNodes.save.stats().firstPaint` is 1,000 or less on the reference laptop.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-003
+  statement: 'No task of a page shall block the main thread longer than 50 ms while it loads: a loop over
+    many items shall run through `SongNodes.save.chunk`, which yields to the browser between slices of
+    at most 30 ms.'
+  scope:
+  - page
+  - js
+  check_type: dom
+  test: '`SongNodes.save.stats().longest` is 50 or less after start-up with the full library.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-004
+  statement: While a heavy step runs the page shall scroll, open its navigation and answer a press within
+    100 ms.
+  scope:
+  - page
+  check_type: judgement
+  test: A press during a 200,000-item step is answered within 100 ms.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-005
+  statement: A heavy step that fails shall show the ErrorState for its own slot only; the other slots
+    shall load on.
+  scope:
+  - page
+  check_type: judgement
+  test: A forced failure of one step leaves the other regions loaded and one ErrorState.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-006
+  statement: A press of a save control shall show the Saving state on that control at once (`aria-busy="true"`,
+    the spinner and the word "Saving"), within 100 ms and before anything is written.
+  scope:
+  - component
+  - page
+  check_type: dom
+  test: Straight after the click handler returns the control has `aria-busy="true"` and reads "Saving";
+    every value of `stats().busy` is 100 or less.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-007
+  statement: '`SongNodes.save()` shall put the write in its lane''s ordered queue and return; the page
+    shall stay usable while the queue runs.'
+  scope:
+  - js
+  - page
+  check_type: judgement
+  test: '`SongNodes.save` returns a job before `run` is called; the page scrolls and takes presses while
+    a 3 s write is in flight.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-008
+  statement: 'One write shall be in flight in a lane at a time and writes in a lane shall run in the order
+    they were pressed: none shall be dropped or reordered.'
+  scope:
+  - js
+  check_type: dom
+  test: Three saves A, B, C behind a slow target are written A, B, C with at most one in flight.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-009
+  statement: 'A write that is not answered in 10 s shall be tried again, five tries in all, with the LiveChange
+    backoff; a write rejected with `{refused: true}` shall not be tried again, and a save with its own
+    deadline shall be tried once.'
+  scope:
+  - js
+  check_type: dom
+  test: 'An unanswered write calls `run` five times; a `{refused: true}` write once; a write with `timeout`
+    once.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-010
+  statement: 'A save shall not lock the page or disable the pressed control: the control is busy, the
+    person may keep working and may press it again, and the later save shall be written after the earlier
+    one.'
+  scope:
+  - component
+  - page
+  check_type: dom
+  test: A busy save control has no `disabled` and no `aria-disabled`; a second press queues a second job.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-011
+  statement: A write still unwritten 1 s after it began shall change the control to "Still saving" and
+    raise the `waiting` event; it shall not raise a toast.
+  scope:
+  - component
+  check_type: dom
+  test: After 1 s of a 3 s write the control reads "Still saving", one `waiting` event has fired and no
+    `.sn-toast` exists.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-012
+  statement: 'A written save that is not quiet shall be confirmed once with "Saved <what>": through the
+    app''s Toast when the page has given one with `setToast`, otherwise through the polite live region
+    only.'
+  scope:
+  - component
+  - copy
+  check_type: dom
+  test: A landed save calls the toast function once with "Saved the set order", or sets the live region
+    text.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-013
+  statement: 'A save that was refused, not answered or failed shall be said by one warn InlineMessage
+    with `role="alert"` (`.sn-save-said`) straight after the pressed control: what was not saved and why,
+    one **Try again** button and a dismiss button. It shall stay until Try again, dismissal or a later
+    save from the same control lands.'
+  scope:
+  - component
+  - page
+  check_type: dom
+  test: A refused save leaves one `.sn-inline-message.sn-save-said[data-status="warn"][role="alert"]`
+    after the control with one `.sn-inline-message__action` and one `.sn-inline-message__dismiss`; it
+    is still there after 10 s.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-014
+  statement: A save that did not land shall not be reported by a toast, a Banner or a dialog, and shall
+    not have a second retry control.
+  scope:
+  - page
+  check_type: judgement
+  test: Review of every save failure path finds only the InlineMessage or a SaveMark.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-015
+  statement: 'A save that did not land shall never be lost silently: it shall raise its message (or, when
+    quiet, the caller''s SaveMark), the `fail` event (`SongNodes.save.on("fail", fn)`, area `save-queue`),
+    and one Diagnostics line when `SongNodes.diag` is present.'
+  scope:
+  - js
+  - page
+  check_type: dom
+  test: A refused save fires one `fail` event and writes one `error save-queue` line.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-016
+  statement: A page shall queue its saves with `SongNodes.save` (`SongNodes.live.send` for a move, `SongNodes.resp`
+    for a change to one item) and shall not write its own save queue, retry loop, saving label or save-failed
+    message.
+  scope:
+  - js
+  - page
+  check_type: lint
+  test: No page script retries a write in its own loop or sets "Saving" on a control itself.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-017
+  statement: The helper shall make no network request and keep no storage of its own, and shall never
+    change what is written, only when.
+  scope:
+  - js
+  check_type: lint
+  test: '`source/js/20-save.src.js` holds no `fetch`, `XMLHttpRequest` or `WebSocket`, and touches browser
+    storage only in `setting`.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-018
+  statement: '`SongNodes.save({ quiet: true })` shall queue a write in the same ordered queue with no
+    busy control, no message and no confirmation of its own: the caller (SaveMark) reports it from the
+    events.'
+  scope:
+  - js
+  - component
+  check_type: dom
+  test: A quiet save changes no element and fires the same events.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-019
+  statement: A change to one item that can fail (a rating, a tag, a note, a slot) should be sent through
+    `SongNodes.resp`, which uses this queue, so the change keeps its mark after any confirmation has left.
+  scope:
+  - page
+  check_type: judgement
+  test: Item edits on TrackDetailPage and LibraryPage use `SongNodes.resp`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-020
+  statement: A save may state its own deadline (`timeout`, in ms) when the write is known to take longer
+    than 10 s (a long playlist push). Such a save shall be tried once, never re-sent by the helper, and
+    its message shall say it had no answer in that time.
+  scope:
+  - js
+  - copy
+  check_type: dom
+  test: A save with `timeout` calls `run` once; missed, its message reads "no answer from <target> in
+    <n> s".
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-021
+  statement: Every save shall have a job id (`ctx.id`, and `uid` on the job) that stays the same across
+    the helper's own tries and across Try again; a page's `retry(id)` shall be handed it, and a page that
+    writes to a service shall send the id with the request so a retry can be told from a new write.
+  scope:
+  - js
+  check_type: dom
+  test: '`ctx.id` is equal on every try of one job and on its Try again.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-022
+  statement: 'A save shall name its target as its lane: `api` (the SongNodes API; the default), `spotify`,
+    `tidal` or `storage` (browser storage). Saves in one lane shall run one after another; saves in different
+    lanes shall not wait for each other. A page shall not give a lane to each save.'
+  scope:
+  - js
+  - page
+  check_type: lint
+  test: Every `lane:` in a `SongNodes.save` call is one of the four names; a slow `spotify` write does
+    not delay an `api` write.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-023
+  statement: A save whose `run(ctx)` sends a request itself (`fetch` or `XMLHttpRequest` inside the `SongNodes.save`
+    call) shall send `ctx.id` with it.
+  scope:
+  - js
+  check_type: lint
+  test: Each such `run` body references `ctx.id`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-024
+  statement: 'A page shall not race its own timer against a save (`Promise.race` with a `setTimeout` inside
+    the `SongNodes.save` call): a longer write shall state `timeout`.'
+  scope:
+  - js
+  check_type: lint
+  test: No `Promise.race` with `setTimeout` inside a `SongNodes.save` call.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-025
+  statement: 'A save job shall emit exactly one terminal event: `saved`, `kept` or `fail` with `why` (`refused`,
+    `unanswered` or `failed`) and `attempt`. `why` shall be read from the error itself and the browser''s
+    online flag (`{refused: true}` or a refusal error name is refused; `{offline: true}`, `{unreachable:
+    true}` or an offline browser is away; no answer in time is unanswered), never from the code that caught
+    it.'
+  scope:
+  - js
+  check_type: dom
+  test: Each of a healthy, away, refusing and silent target yields one terminal event with the matching
+    `why`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-026
+  statement: 'A save whose target is away (offline, or the service cannot be reached) shall not be tried
+    again and shall not be a failure: the helper shall raise `kept`, not `fail`, count it in `stats().kept`,
+    and a save that is not quiet shall show one warn InlineMessage with `role="status"` and no Try again
+    ("Kept on this device: <what> will be saved when …"). The caller shall keep the change and send it
+    again with the same job id.'
+  scope:
+  - js
+  - component
+  - copy
+  check_type: dom
+  test: An away write calls `run` once, fires `kept` and no `fail`, leaves `stats().failed` unchanged,
+    and `SongNodes.save.again(job)` later writes it once with the same id.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-027
+  statement: A view setting (theme, text size, density, motion, a remembered tab) shall be written with
+    `SongNodes.save.setting`. When browser storage refuses the write the choice shall still take effect
+    for the visit (kept in memory and read before storage), the refusal shall be logged once per key at
+    warn in `storage`, and a later write that storage accepts shall clear the memory copy.
+  scope:
+  - js
+  - page
+  check_type: dom
+  test: With `Storage.prototype.setItem` throwing, choosing Booth sets `data-theme="booth"`, `settingValue`
+    returns it, and two writes leave one `warn storage` line.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-028
+  statement: The `name` of a save shall be the kind of change ("set order", "track rating"), never a title;
+    events and Diagnostics lines shall carry ids, the lane, the name and the label only, never the saved
+    value.
+  scope:
+  - js
+  - copy
+  check_type: judgement
+  test: No `name:` in a `SongNodes.save` call holds a track, artist, set or playlist title.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-029
+  statement: '`SongNodes.save` shall work the same with or without `SongNodes.diag`; when it is present
+    each start-up step shall be logged in `start`, a kept save at warn and a failed save at error in `save-queue`,
+    and a healthy save shall write no `save-queue` line.'
+  scope:
+  - js
+  check_type: dom
+  test: '`source/test_save_diag.py` passes with the Diagnostics helper present and removed.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: QSV-030
+  statement: A kept or failed save message should end with a source link to where the target's state is
+    shown (`source`, drawn by `SongNodes.sourceLink`).
+  scope:
+  - page
+  - copy
+  check_type: judgement
+  test: Save messages on pages that have a service status page end with `.sn-link--src`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-001
+  statement: The actions a row or card offers shall be counted as the set its row type can offer to anyone,
+    enabled and disabled alike.
+  scope:
+  - component
+  - page
+  check_type: judgement
+  test: Every row of one list uses the same RowActions form.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-003
+  statement: Six actions or fewer shall all be shown as buttons in one `.sn-ract` group; the row shall
+    have no kebab.
+  scope:
+  - component
+  check_type: visual
+  test: A row with six or fewer actions has no `.sn-ract-kebab`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-004
+  statement: Seven actions or more shall show one primary button and one kebab; every other action shall
+    be a kebab item.
+  scope:
+  - component
+  check_type: visual
+  test: A row with seven or more actions has exactly one `.sn-ract-kebab`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-008
+  statement: One to three actions shall be a column (`.sn-ract--col`); four to six shall be a two-column
+    grid (`.sn-ract--grid`).
+  scope:
+  - component
+  check_type: visual
+  test: Column vs grid matches the action count.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-015
+  statement: The row kebab shall use the vertical three-dot icon; page OverflowMenu shall keep the ellipsis
+    (preserved SongNodes rule).
+  scope:
+  - component
+  - page
+  check_type: visual
+  test: '`.sn-ract-kebab` is vertical dots; AppHeader OverflowMenu is still ellipsis.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-026
+  statement: Print shall hide the RowActions area.
+  scope:
+  - component
+  - page
+  check_type: visual
+  test: Print emulation shows no `.sn-ract-zone`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-030
+  statement: The RowActions form shall be decided per row type by its action count, so every row in one
+    list has the same form; a row that cannot use an action shall keep it listed, disabled, with its reason.
+  scope:
+  - component
+  - page
+  check_type: judgement
+  test: All rows of a list show the same buttons; unusable ones are disabled, not missing.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-031
+  statement: The primary shall be the action a person is most likely to do next on that row, shall not
+    be a destructive one, and there shall be one primary per row.
+  scope:
+  - component
+  check_type: judgement
+  test: Each row has at most one `.sn-btn--primary` and it is not the destructive action.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-032
+  statement: An action shall be a visible button or a kebab item, never both.
+  scope:
+  - component
+  check_type: judgement
+  test: No kebab item repeats a visible button's action.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-033
+  statement: Visible row actions shall sit in one `div.sn-ract` grid; a row or card shall not hold a loose
+    line of buttons that wraps by chance.
+  scope:
+  - html
+  - component
+  check_type: dom
+  test: Two or more action buttons in a row or card foot share one `.sn-ract` parent.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-034
+  statement: 'Every button in a RowActions group shall have the same width and the same height: the widest
+    label sets the width, and the height is `control-md`, or `control-sm` in a row of small controls.'
+  scope:
+  - css
+  - component
+  check_type: dom
+  test: Bounding boxes of the buttons in one `.sn-ract` are equal in width and height.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-035
+  statement: The gap between buttons in a RowActions group shall be `space-2`, the same across and down.
+  scope:
+  - css
+  - component
+  check_type: dom
+  test: Computed row-gap and column-gap of `.sn-ract` equal `space-2`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-036
+  statement: A RowActions label shall be on one line and centred; a label too long for its column shall
+    be shortened, and a button shall not grow taller.
+  scope:
+  - css
+  - copy
+  - component
+  check_type: dom
+  test: No button in `.sn-ract` is taller than its control height.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-037
+  statement: In a RowActions group the primary shall be first and a destructive action last; the destructive
+    action shall be a plain `.sn-btn` whose label ends in "…" when it asks first, and `sn-btn--danger`
+    shall appear only on the confirm step, so a list shall not carry a danger button on every row.
+  scope:
+  - html
+  - css
+  - component
+  check_type: visual
+  test: No `.sn-ract .sn-btn--danger` exists; at rest a list shows no danger button.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-038
+  statement: After the primary, row actions shall run in the order a person is likely to use them.
+  scope:
+  - component
+  check_type: judgement
+  test: Review the order against how the row is used.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-039
+  statement: A RowActions group shall not hold a split button, a caret button or an icon-only button;
+    the kebab is not part of the group.
+  scope:
+  - html
+  - component
+  check_type: dom
+  test: '`.sn-ract` contains no `.sn-btn--icon`.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-040
+  statement: 'The row kebab shall be the trigger of an OverflowMenu: one `button.sn-ract-kebab` holding
+    `ellipsis-vertical` and no text, with `aria-haspopup="menu"`, `aria-expanded`, `aria-controls` and
+    an `aria-label` that names the row; it shall not carry a `title` attribute.'
+  scope:
+  - html
+  - component
+  check_type: dom
+  test: Each `.sn-ract-kebab` has those attributes, an `aria-label` starting "More actions for", and no
+    `title`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-041
+  statement: The kebab shall be a `control-sm` square in a table row or set slot and a `control-md` square
+    on a card, and shall be the last control of the row's actions area (`.sn-ract-zone`).
+  scope:
+  - css
+  - html
+  - component
+  check_type: dom
+  test: '`.sn-ract-kebab` is square and is the last control in its zone.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-042
+  statement: The kebab's panel shall be an OverflowMenu menu (`.sn-overflow-menu__menu.sn-ract-panel`,
+    `role="menu"`), right-aligned under its kebab and never wider than the screen less 32px.
+  scope:
+  - html
+  - css
+  - component
+  check_type: dom
+  test: The panel has `role="menu"`, its right edge lines up with the kebab and it fits a 390px screen.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-043
+  statement: A destructive kebab item shall be last, after a separator, in `status-bad`, with a label
+    ending in "…", and shall ask before it acts.
+  scope:
+  - html
+  - component
+  check_type: visual
+  test: The last item is `.sn-overflow-menu__item--danger` preceded by `.sn-overflow-menu__sep`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-044
+  statement: A kebab item the person cannot use shall stay listed with `aria-disabled="true"` and its
+    reason in words under the label.
+  scope:
+  - html
+  - copy
+  - component
+  check_type: dom
+  test: Disabled items have `.sn-overflow-menu__reason` text named by `aria-describedby`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-045
+  statement: In an open kebab panel, Escape shall close it and return focus to the kebab, a press outside
+    shall close it, Up and Down shall move between items, and Home and End shall jump.
+  scope:
+  - js
+  - component
+  check_type: dom
+  test: Keyboard test on the open panel.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-046
+  statement: After a kebab action, focus shall return to that row's kebab; if the row has left the view,
+    to the next row's first action.
+  scope:
+  - js
+  - component
+  check_type: judgement
+  test: Run an action from the kebab and check `document.activeElement`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-047
+  statement: Under 768px the kebab's panel shall stay a menu under its kebab; it shall not become a full-width
+    sheet and shall not open a SideSheet over a SideSheet.
+  scope:
+  - css
+  - component
+  check_type: judgement
+  test: At 390px the panel is anchored to the kebab.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-048
+  statement: 'A row kebab shall hold actions on its own row only: no link to another page and no nested
+    menu.'
+  scope:
+  - component
+  check_type: judgement
+  test: No kebab item navigates away or opens a submenu.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-049
+  statement: 'A page shall not draw its own row-action layout or ask: the `.sn-ract` and `.sn-rask` classes
+    shall take no page rules.'
+  scope:
+  - css
+  - page
+  check_type: lint
+  test: No page stylesheet selects `.sn-ract*` or `.sn-rask*`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-050
+  statement: In a fixed-height row (a DataTable row or a SetSlot) one to three actions shall be one line
+    of equal small buttons (`.sn-ract--line`), and four or more shall take the primary-and-kebab form;
+    RowActions shall not change the row's height.
+  scope:
+  - html
+  - css
+  - component
+  check_type: dom
+  test: Rows with and without actions in one DataTable have the same height.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-051
+  statement: Links, toggles and reorder controls (open a set, lock a slot, move a slot) shall not be counted
+    as row actions and shall not be drawn in a RowActions group.
+  scope:
+  - component
+  check_type: judgement
+  test: SetSlot keeps lock and move as its own icon controls; a set opens from the link on its name.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-052
+  statement: A destructive row action that can be undone shall act at once and offer Undo in a Toast,
+    with no ellipsis in its label; one that removes a single saved row for good shall ask in the row;
+    one that destroys a set, a connection or a key, or needs more than one sentence or a typed name, shall
+    open a ConfirmDialog.
+  scope:
+  - component
+  - page
+  check_type: judgement
+  test: Check each destructive row action against the three cases.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-053
+  statement: The in-row ask (`span.sn-rask`) shall appear in place of the row's actions, in the same cell,
+    and nothing else in the row shall move.
+  scope:
+  - html
+  - css
+  - component
+  check_type: visual
+  test: 'Open an ask at 960px: the row''s height and its other cells are unchanged.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-054
+  statement: An in-row ask shall be one sentence and two buttons, Cancel first and the action second.
+  scope:
+  - copy
+  - component
+  check_type: judgement
+  test: '`.sn-rask` holds one `.sn-rask__q` and two buttons in that order.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-055
+  statement: The ask's action button shall name its outcome as verb and object ("Remove filter") and shall
+    be the only `sn-btn--danger` in the list.
+  scope:
+  - copy
+  - html
+  - component
+  check_type: dom
+  test: '`[data-rask="yes"]` is `.sn-btn--danger` and its text is not "OK" or "Yes".'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-056
+  statement: The question of an in-row ask or a ConfirmDialog opened from a row shall name the thing it
+    acts on, shall not say "this", and shall say when the action cannot be undone.
+  scope:
+  - copy
+  - component
+  check_type: judgement
+  test: The question contains the row's name.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-057
+  statement: Cancel shall have focus when an in-row ask or a row's ConfirmDialog opens.
+  scope:
+  - js
+  - component
+  check_type: dom
+  test: On open, `document.activeElement` is the Cancel button.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-058
+  statement: Escape shall cancel an in-row ask; after Cancel the row's actions shall come back and focus
+    shall return to the control that opened the ask.
+  scope:
+  - js
+  - component
+  check_type: dom
+  test: 'Press Escape in an ask: `.sn-rask` is gone and the "Remove…" button has focus.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-059
+  statement: When the answer removes the row, focus shall go to the first action of the next row, or of
+    the previous row when the last one went; with no row left it shall go to the list's heading, which
+    carries `tabindex="-1"` and labels the list.
+  scope:
+  - js
+  - component
+  check_type: dom
+  test: Remove the first, the last and the only row and check `document.activeElement` each time.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-060
+  statement: When the answer needs a typed value or more than a sentence of context, the ask shall be
+    a ConfirmDialog, not an in-row ask.
+  scope:
+  - component
+  check_type: judgement
+  test: No `.sn-rask` holds an input or more than one sentence.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-061
+  statement: An element that does nothing on press shall not be a `button` or a link, and shall have no
+    hover edge, pressed state, `aria-pressed`, pointer cursor or focus stop.
+  scope:
+  - html
+  - css
+  - component
+  - page
+  check_type: dom
+  test: Every `button` and `a` on a page has a handler or an `href` that does something; static tiles
+    and cards are `div` or `article`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-062
+  statement: A FigureTile shall be a static element; only the one link in its footer shall take a press.
+  scope:
+  - html
+  - component
+  check_type: dom
+  test: '`.sn-figure-tile` is not a `button` or `a` and has no `tabindex`.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RAC-063
+  statement: A SetCard shall be a static `article` whose only controls are the Open link on its name and
+    its RowActions; a LauncherCard with nowhere to go shall be drawn without its link and without the
+    hover lift.
+  scope:
+  - html
+  - component
+  check_type: dom
+  test: '`.sn-set-card` is not wrapped in a link; a LauncherCard without `href` has no `.sn-launcher-card__link`.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-001
+  statement: 'Every press, tick, choice and keystroke shall change something the person can see in the
+    same task: the pressed control takes its pressed, selected or busy state before any request, save
+    or calculation starts.'
+  scope:
+  - js
+  - page
+  check_type: dom
+  test: 'Press each control with the network held: its pressed, selected or `aria-busy` state is set in
+    the same task as the event.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-002
+  statement: A press shall be answered within 100 ms and its event shall take at most 200 ms on a device
+    four times slower than the build machine.
+  scope:
+  - js
+  - page
+  check_type: judgement
+  test: With 4x CPU throttling, the worst event duration in `SongNodes.resp.stats().worstEvent` is 200
+    or less.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-003
+  statement: A result that takes longer than 100 ms shall be worked out after the acknowledgement has
+    painted, in slices, and shall not be worked out inside the press's own task.
+  scope:
+  - js
+  check_type: judgement
+  test: Long work is started through `SongNodes.save.afterPaint` and sliced with `SongNodes.save.chunk`;
+    no task over 50 ms follows a press.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-004
+  statement: While the person's own press changes what a slot shows and data is on screen, the old content
+    shall stay in place as `.sn-stale` with `aria-busy="true"` and the control that started it shall be
+    busy; the slot shall not be emptied first.
+  scope:
+  - js
+  - page
+  check_type: dom
+  test: 'Change a filter with the network held: the slot keeps its rows, has `.sn-stale` and `aria-busy="true"`.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-005
+  statement: A `.sn-stale` slot shall take no presses that would act on rows or figures about to change;
+    scrolling and reading shall stay possible.
+  scope:
+  - css
+  - page
+  check_type: dom
+  test: 'A `.sn-stale` slot computes `pointer-events: none` and its scroll container still scrolls.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-006
+  statement: A result that has not arrived after 1 s shall name what is being worked out in the control
+    or the status line, and after 10 s shall count; a wait shall not be silent or an unlabelled movement.
+  scope:
+  - copy
+  - page
+  check_type: judgement
+  test: 'Hold a request 12 s: words name the work from 1 s and a count shows from 10 s.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-007
+  statement: 'A later press of the same kind shall replace a result still being worked out: the older
+    work is dropped, only the newest result is drawn, and results shall not arrive out of order.'
+  scope:
+  - js
+  check_type: judgement
+  test: 'Answer two searches in reverse order: the list shows the results of the newer one.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-008
+  statement: Typing in a filter or search box shall redraw the list at most once every 150 ms (`SongNodes.resp.debounce`)
+    and shall not rebuild rows that did not change.
+  scope:
+  - js
+  check_type: dom
+  test: 'Type ten characters in one second: the list redraws seven times or fewer and unchanged row nodes
+    are the same nodes.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-009
+  statement: A list or table of more than 200 rows shall be drawn in slices, the first screen first, with
+    the rest keeping their height by skeleton rows or `.sn-cv-auto`.
+  scope:
+  - js
+  - page
+  check_type: judgement
+  test: 'Load 1,000 rows: the first screen paints before the rest and no task exceeds 50 ms.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-010
+  statement: A timer, poll or live update shall not redraw a slot whose data did not change, and shall
+    not move or reset what the person is typing in, has open or has scrolled to.
+  scope:
+  - js
+  - page
+  check_type: judgement
+  test: 'Let a poll return unchanged data while typing and scrolled: no node is replaced and the caret
+    and scroll position are unchanged.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-011
+  statement: 'Every slot shall have its final height before its data arrives: a Skeleton of the same shape,
+    a fixed token height, or the height it had last time on this device.'
+  scope:
+  - page
+  - css
+  check_type: dom
+  test: Each data slot's height before and after its data differs by one row or less.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-012
+  statement: The page's layout shift while loading and after any press shall be at most 0.1, and nothing
+    above or beside what the person is reading shall move.
+  scope:
+  - page
+  check_type: dom
+  test: '`SongNodes.resp.stats().cls` is 0.1 or less after the load and after each kind of press.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-013
+  statement: 'A Banner, TaskNotice or Toast that arrives after the first paint shall not push content
+    down: it takes space kept for it or sits over the page.'
+  scope:
+  - page
+  - css
+  check_type: dom
+  test: 'Raise each after the load: no element below it changes its top position.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-014
+  statement: A page shall choose each slot's loading state from the Which loading state table, and the
+    same slot shall not show two of them.
+  scope:
+  - page
+  check_type: judgement
+  test: No slot holds a skeleton together with a StagedProgress, a LoadingState top line or `.sn-stale`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-015
+  statement: A first load with counted steps shall stay a StagedProgress; a Skeleton shall not replace
+    a count the page can give.
+  scope:
+  - page
+  check_type: judgement
+  test: Loads with steps or usually over 10 s use StagedProgress.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-016
+  statement: 'Only drawing shall be put off, never a figure: the data for every figure a page shows is
+    read with the page''s load, so a lazily drawn section shows the same numbers the moment it is drawn.'
+  scope:
+  - js
+  - page
+  check_type: judgement
+  test: A lazily drawn section makes no request for a figure when it is drawn.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-017
+  statement: The first screen, the AppHeader, the NavDrawer, the PageHeader with its FigureTile row and
+    the ConnectionStatus shall not be lazy.
+  scope:
+  - page
+  check_type: judgement
+  test: None of these is passed to `SongNodes.resp.lazy`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-018
+  statement: A section, chart or long table that starts more than one screen below the first shall be
+    drawn when it comes within one screen of view (`SongNodes.resp.lazy`) and until then shall hold its
+    height with a Skeleton.
+  scope:
+  - js
+  - page
+  check_type: dom
+  test: Before scrolling, such a section is `.sn-skeleton` with its final height; it is drawn before it
+    enters the viewport.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-019
+  statement: Everything lazy should also be drawn in the browser's idle time after the load, in page order,
+    so that in ordinary use the person does not see a section arrive.
+  scope:
+  - js
+  check_type: judgement
+  test: After idle, `SongNodes.resp.stats().lazySeen` is 0 on a page left alone for 5 s.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-020
+  statement: A tab, a Disclosure body, a SideSheet or a Dialog shall be drawn the first time it is opened
+    and kept afterwards, and shall open at once with a Skeleton when drawing it takes longer than 100
+    ms.
+  scope:
+  - js
+  - component
+  check_type: dom
+  test: 'Open each with drawing delayed 500 ms: it opens in the same task, as a skeleton.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-021
+  statement: The graph engine and any packed data shall be started the first time they are needed or in
+    idle time, whichever comes first, and shall not be started before the first paint.
+  scope:
+  - js
+  check_type: judgement
+  test: No engine start or unpack appears in the trace before first paint.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-022
+  statement: A long section that is drawn but off screen may take `.sn-cv-auto`; the browser's find and
+    anchors shall still reach it.
+  scope:
+  - css
+  - page
+  check_type: dom
+  test: Find-in-page reaches text inside a `.sn-cv-auto` section.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-023
+  statement: Print, an export, a PrintSheet, select-all and a link to a section shall first build every
+    lazy section (`SongNodes.resp.buildAll`) and wait for it; paper and files shall not hold a placeholder.
+  scope:
+  - js
+  - print
+  check_type: judgement
+  test: 'Print straight after load: the output holds no `.sn-skeleton`.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-024
+  statement: Data shall be read lazily only for something the person has not asked for yet; the slot then
+    shows a Skeleton with its sentence, and a page shall not read lazily behind a scroll.
+  scope:
+  - js
+  - page
+  check_type: judgement
+  test: No request is triggered by scroll position alone.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-025
+  statement: A lazily drawn section that fails shall show what failed in its place at the same height
+    with Try again, and the rest of the page shall be unaffected.
+  scope:
+  - component
+  - page
+  check_type: dom
+  test: 'Make a lazy build throw: the slot shows `.sn-skeleton__failed` at the placeholder''s height and
+    other slots are drawn.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-026
+  statement: 'A change the person makes to one item shall show at once, before it is saved, when it can
+    be put back exactly and nothing irreversible follows from it: set order, tags, notes, ratings, energy
+    and key corrections, and settings.'
+  scope:
+  - js
+  - page
+  check_type: judgement
+  test: Each such change is on screen in the same task as its event.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-027
+  statement: An optimistic value shall carry its SaveMark (or, for a move, the LiveChange waiting border)
+    from 1 s after the press until it is saved; a value on screen with no mark is saved.
+  scope:
+  - component
+  - page
+  check_type: dom
+  test: 'Hold a save 3 s: the mark is present from 1 s until the save resolves.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-028
+  statement: 'Deleting a set, removing a streaming service, saving API keys and any write to a Spotify
+    or TIDAL playlist shall not be optimistic: the control goes busy and the new state shows only when
+    the server or the service has answered.'
+  scope:
+  - js
+  - page
+  check_type: judgement
+  test: 'Hold each of these requests: the page shows the old state and a busy control until the answer.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-029
+  statement: A total, state or chart worked out from a value that is not yet saved shall itself be marked
+    with the tag "Includes unsaved changes" until every value in it is saved.
+  scope:
+  - page
+  - copy
+  check_type: dom
+  test: While a SaveMark is on a value, each figure derived from it carries the tag.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-030
+  statement: When a save fails for good the item shall go back to the saved value, the person's value
+    shall be kept in its SaveMark and in the Outbox, and nothing on the page shall still show the unsaved
+    value as if it were saved.
+  scope:
+  - js
+  - page
+  check_type: judgement
+  test: 'Refuse a save: the control shows the saved value and the mark and the Outbox row hold the entered
+    one.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-031
+  statement: A put-back shall not overwrite a newer change the person has made to the same item, shall
+    not move focus and shall not close what they have open.
+  scope:
+  - js
+  check_type: judgement
+  test: 'Fail an older change after a newer one: the newer value stays and focus is unchanged.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-032
+  statement: A change that is waiting, was put back or was refused shall stay in the Outbox until it is
+    saved or the person discards it; a toast leaving, a reload, a closed tab or a new day shall not remove
+    it.
+  scope:
+  - js
+  - page
+  check_type: judgement
+  test: 'Reload with rows waiting: the rows are listed again.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-033
+  statement: A page shall not drop, overwrite or re-order a waiting change on its own; changes shall be
+    saved in the order they were made.
+  scope:
+  - js
+  check_type: judgement
+  test: Three changes made offline are sent in the order made when the connection returns.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-034
+  statement: While any change is waiting or not saved the ConnectionStatus shall show the count, and the
+    count shall open the Outbox.
+  scope:
+  - component
+  - page
+  check_type: dom
+  test: With a row in the outbox, `.sn-connection-status .sn-outbox__count` exists and opens the sheet.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-035
+  statement: A change that could not be kept on the device shall be said at once in a warn InlineMessage,
+    and while one exists the page shall ask the browser to confirm before it is closed; this is the one
+    use of the browser's leave prompt.
+  scope:
+  - js
+  - page
+  check_type: judgement
+  test: With storage refused, the message shows and `beforeunload` is guarded; with storage working there
+    is no guard.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-036
+  statement: 'An error from a save, a request or a calculation shall not be swallowed: every `catch` around
+    one shows a state or passes the error on, and an empty `catch` is allowed only around an optional
+    convenience, with a comment saying which.'
+  scope:
+  - js
+  check_type: judgement
+  test: Every `catch` block around a save or request sets a visible state, rethrows, or calls a fail hook.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-037
+  statement: Print, export and anything sent to Spotify or TIDAL shall use saved values only, and shall
+    say how many changes are waiting when there are any.
+  scope:
+  - print
+  - js
+  check_type: judgement
+  test: 'Print with a row waiting: the sheet shows the saved value and the count of waiting changes.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-038
+  statement: 'A page shall say the same thing in the item''s mark, the Outbox row and the announcement,
+    in plain words: what was changed, to what, when, and what happened to it.'
+  scope:
+  - copy
+  check_type: judgement
+  test: The three texts for one failed change name the same item, values and outcome.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-039
+  statement: 'A page should test its budgets with `SongNodes.resp.stats()` and `SongNodes.save.stats()`
+    on real data: a slow server, a server that refuses saves, offline, and a device four times slower.'
+  scope:
+  - page
+  check_type: judgement
+  test: The page's test record lists the four conditions with the stats read under each.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: RSP-040
+  statement: 'A page shall be checked with a refused save for every kind of change it can make: the value
+    goes back, the mark and the Outbox row say so, and after a reload the row is still there.'
+  scope:
+  - page
+  check_type: judgement
+  test: One refused-save case per registered kind passes.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SKL-001
+  statement: 'A skeleton shall be the loading state only of a slot whose layout is known before its data:
+    a table, a tile row, a list of cards, a chart, a block of text lines.'
+  scope:
+  - component
+  - page
+  check_type: judgement
+  test: Each skeleton stands in a slot of one of these shapes.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SKL-002
+  statement: A skeleton shall not be used for a first load with counted steps, for a refresh or re-query
+    with data on screen, or where the layout depends on the data.
+  scope:
+  - component
+  - page
+  check_type: judgement
+  test: Those cases show StagedProgress, the LoadingState refresh, `.sn-stale` or the LoadingState message.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SKL-003
+  statement: The skeleton shall be in the page's first render or appear in the same task as the press
+    that asks for the slot.
+  scope:
+  - js
+  - page
+  check_type: dom
+  test: The first frame after navigation or the press holds `.sn-skeleton` in the slot.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SKL-004
+  statement: Where the data is already held this session no skeleton shall be drawn.
+  scope:
+  - js
+  check_type: judgement
+  test: 'Switch back to a loaded tab: no `.sn-skeleton` appears.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SKL-005
+  statement: The slot shall carry `.sn-skeleton` and `aria-busy="true"` and shall hold only the loading
+    sentence and the placeholder shapes.
+  scope:
+  - html
+  - component
+  check_type: dom
+  test: '`.sn-skeleton[aria-busy="true"]` has no child other than `.sn-skeleton__say`, the sentence row
+    and placeholder shapes.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SKL-006
+  statement: The loading sentence shall be a `p.sn-skeleton__say` with `role="status"` at the top of the
+    slot (in a table, a first row spanning every column), in the page's own words, with its line kept
+    from the start and its words shown from 1 s.
+  scope:
+  - html
+  - copy
+  - component
+  check_type: dom
+  test: The sentence element exists from the first frame and is visible once `data-slow` is set at 1 s.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SKL-007
+  statement: A table skeleton shall hold `tr.sn-skeleton__row` rows at the table's row height, one bar
+    per column at the column's usual length, with the real `thead` drawn from the start and the sentence
+    row counted as one of the rows.
+  scope:
+  - html
+  - component
+  check_type: dom
+  test: Sentence row plus skeleton rows equals the requested count; each row is `--row-h` tall; `thead`
+    is present.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SKL-008
+  statement: A tile skeleton shall be a `.sn-figure-tile--skeleton` with the tile's real label where it
+    is known, a block where the figure will be and a bar where the delta will be.
+  scope:
+  - html
+  - component
+  check_type: dom
+  test: Each skeleton tile has an `.sn-skel` first, then `.sn-figure-tile__label` or a bar, then a bar.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SKL-009
+  statement: A card skeleton shall be `.sn-skeleton__card` boxes at `skeleton-card-h` or the remembered
+    height, with a tag bar, a title bar and a text bar and no energy wave.
+  scope:
+  - html
+  - component
+  check_type: dom
+  test: '`.sn-skeleton__card` holds three `.sn-skeleton__bar` and nothing else.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SKL-010
+  statement: A chart skeleton shall be one `.sn-skeleton__chart` at the chart's height with the horizontal
+    grid and the zero line and no bars, lines or points.
+  scope:
+  - html
+  - component
+  - chart
+  check_type: dom
+  test: '`.sn-skeleton__chart` has no child elements.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SKL-011
+  statement: 'A skeleton shall not show a made-up figure, word, bar height, wave or trend: nothing in
+    it can be read as data.'
+  scope:
+  - component
+  check_type: judgement
+  test: No placeholder varies in a way that suggests values.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SKL-012
+  statement: The placeholder's height shall equal the filled slot's height to within one row, so filling
+    it moves nothing below.
+  scope:
+  - component
+  - page
+  check_type: dom
+  test: Slot height before and after `fill` differs by at most the sentence line.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SKL-013
+  statement: The number of rows, tiles or cards shall be the number this slot last showed on this device,
+    else the number that fills the slot's first screen, and shall not exceed 12.
+  scope:
+  - js
+  check_type: judgement
+  test: With `remember` set, the second load draws the count of the first, capped at 12.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SKL-014
+  statement: Skeleton blocks shall be `.sn-skel`, so every skeleton on the page looks and pulses alike.
+  scope:
+  - html
+  - css
+  check_type: lint
+  test: Every placeholder block inside `.sn-skeleton` has class `sn-skel`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SKL-015
+  statement: Under reduced motion the blocks shall stand still.
+  scope:
+  - css
+  check_type: dom
+  test: With reduced motion, `.sn-skeleton .sn-skel` has no running animation.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SKL-016
+  statement: A skeleton shall use no state colour, no accent and no spinner.
+  scope:
+  - css
+  - component
+  check_type: visual
+  test: Skeleton blocks are `surface-2` or `surface-3` only and no `.sn-spinner` is inside `.sn-skeleton`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SKL-017
+  statement: When the data is ready the content shall replace the placeholder in place with no entrance
+    animation, `.sn-skeleton` and `aria-busy` shall be removed, and the live region should say the slot
+    is ready once.
+  scope:
+  - js
+  - component
+  check_type: dom
+  test: After `fill`, the slot has neither `.sn-skeleton` nor `aria-busy` and no animation runs on the
+    new content.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SKL-018
+  statement: A slot shall fill as a whole; where a slot's parts arrive at different times each part shall
+    be its own skeleton.
+  scope:
+  - js
+  - page
+  check_type: judgement
+  test: No slot is half placeholder, half data.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SKL-019
+  statement: A skeleton still showing after 10 s should add a count to its sentence when the page can
+    give one.
+  scope:
+  - copy
+  - js
+  check_type: judgement
+  test: 'Hold a countable load 12 s: the sentence carries a count.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SKL-020
+  statement: A load that fails or stalls shall turn the slot into the failed state at the same height,
+    with what failed and Try again; a skeleton shall not be left pulsing.
+  scope:
+  - component
+  - js
+  check_type: dom
+  test: After `fail`, the slot holds `.sn-skeleton__failed` with a warn InlineMessage and a button, and
+    no `.sn-skel`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SKL-021
+  statement: A skeleton shall take no pointer events and hold no focusable element.
+  scope:
+  - css
+  - html
+  check_type: dom
+  test: 'No element inside `.sn-skeleton` is focusable and placeholder shapes compute `pointer-events:
+    none`.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SKL-022
+  statement: 'Print shall show no skeleton: a slot not yet filled is built first.'
+  scope:
+  - print
+  check_type: dom
+  test: 'In print media `.sn-skeleton` computes `display: none` and `buildAll` has run.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SKL-023
+  statement: A page shall draw a slot skeleton with `SongNodes.resp.skeleton` and the `sn-skeleton` and
+    `sn-skel` classes of the bundle, and shall not draw a skeleton, shimmer or pulse of its own.
+  scope:
+  - css
+  - js
+  check_type: lint
+  test: No page CSS defines a shimmer or pulse animation or a rule for `.sn-skeleton*`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SUG-001
+  statement: A suggestion row (one line that proposes one change a person may take or leave) may show
+    its actions as icon actions; every other row shall keep the labelled forms of RowActions.
+  scope:
+  - component
+  - page
+  check_type: judgement
+  test: '`.sn-sugact` appears only inside suggestion rows.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SUG-002
+  statement: Icon actions shall sit in one `div.sn-sugact` at the end of the row, each as one `span.sn-sugact__item`
+    holding a `control-sm` icon control (`.sn-sugact__btn`) and its `span.sn-sugact__tip` with `role="tooltip"`
+    and an `id`.
+  scope:
+  - html
+  - component
+  check_type: dom
+  test: Each `.sn-sugact__item` has one control and one tooltip with an id.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SUG-003
+  statement: An icon action shall carry an `aria-label` that gives the action and the track, and `aria-describedby`
+    naming its tip; it shall not carry a `title` attribute.
+  scope:
+  - html
+  - component
+  check_type: dom
+  test: Each `.sn-sugact__btn` has `aria-label`, a resolving `aria-describedby` and no `title`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SUG-004
+  statement: An icon action's tip shall say exactly what a press will change, in the row's own figures
+    (slot, set, time), as plain text of 40 words or fewer.
+  scope:
+  - copy
+  - component
+  check_type: judgement
+  test: Each ready tip names the slot or set it changes and holds no link or button.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SUG-005
+  statement: An icon action shall act on the press and shall not open a confirmation; an action that changes
+    data shall confirm with a Toast that offers Undo, and an action that cannot be undone shall not be
+    an icon action.
+  scope:
+  - component
+  - page
+  check_type: judgement
+  test: Add to set and Dismiss act at once and show a Toast with Undo; no icon action opens a dialog.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SUG-006
+  statement: An icon action's tip shall open after 500 ms of hover, at once on keyboard focus and on a
+    long press on a touch screen; a tap shall act without opening the tip, Escape shall close it, and
+    a page shall not write a handler of its own for it.
+  scope:
+  - js
+  - component
+  check_type: dom
+  test: 'With `SongNodes.suggestionTips()` installed: hover 500 ms shows the tip, a tap triggers the action,
+    Escape hides the tip.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SUG-007
+  statement: An action that cannot be taken shall stay in its place with `aria-disabled="true"` and `data-state="unavailable"`,
+    keep its focus stop, and give the reason in its tip, starting "Not available:"; a press on it shall
+    open the tip.
+  scope:
+  - html
+  - copy
+  - component
+  check_type: dom
+  test: Unavailable controls are not removed and have no `disabled` attribute; their tip begins "Not available:".
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SUG-008
+  statement: A done action shall show `circle-check` in `status-ok` with `data-state="done"` and a tip
+    that says what was done, when, and where to reverse it; a queued action shall carry `data-state="queued"`,
+    a `brand` dot and a tip that says it is waiting and will not be lost.
+  scope:
+  - html
+  - css
+  - component
+  check_type: dom
+  test: Done and queued controls carry the attribute, the mark and a matching tip and name.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SUG-009
+  statement: A suggestion row shall show at most four icon actions, in the order add to set, preview,
+    open in graph, dismiss; a row type with more shall use RowActions.
+  scope:
+  - html
+  - component
+  check_type: dom
+  test: Each `.sn-sugact` has four or fewer items in that order.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SUG-010
+  statement: Each icon action shall use the icon the SuggestionActions action table gives for its meaning;
+    a new action shall be added to the table first.
+  scope:
+  - component
+  check_type: judgement
+  test: 'Icons match the table: plus, play or pause, the Graph go icon, x.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SUG-011
+  statement: The preview action shall be a toggle with `aria-pressed` that plays through the same shared
+    player as MiniAudioPreview, so only one preview plays at a time; with no clip it shall be not available.
+  scope:
+  - html
+  - js
+  - component
+  check_type: dom
+  test: Starting one preview sets every other preview control to `aria-pressed="false"`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SUG-012
+  statement: The open-in-graph action shall be a link drawn with the Graph module's go icon that opens
+    in a new tab, and its name shall say so.
+  scope:
+  - html
+  - component
+  check_type: dom
+  test: The control is an `a[target="_blank"]` whose `aria-label` ends "(opens in a new tab)".
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SUG-013
+  statement: After an add, focus shall stay on the same action; after a dismiss, focus shall go to the
+    first action of the next row, or the previous row, or the list's heading when no row is left; Undo
+    shall return focus to the action it reversed.
+  scope:
+  - js
+  - component
+  check_type: judgement
+  test: 'Keyboard through add, dismiss and Undo: focus is never lost to the page body.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SUG-014
+  statement: A failed icon action shall not be reported in a toast; the row shall show an InlineMessage
+    with a way to try again.
+  scope:
+  - component
+  - page
+  check_type: judgement
+  test: 'Force an add to fail: an InlineMessage appears on the row and no toast.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SUG-015
+  statement: Print shall hide the icon actions.
+  scope:
+  - print
+  - component
+  check_type: visual
+  test: Print emulation shows no `.sn-sugact`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SUG-016
+  statement: A page shall not write rules of its own for the `.sn-sugact` or `.sn-sugrow` classes.
+  scope:
+  - css
+  - page
+  check_type: lint
+  test: No page stylesheet selects `.sn-sugact*` or `.sn-sugrow*`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SVM-001
+  statement: A changed control, cell or row shall show the person's value in the same task as the press
+    or the field's change event, before anything is saved.
+  scope:
+  - js
+  - component
+  check_type: dom
+  test: With the save held, the control shows the new value in the event's own task.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SVM-002
+  statement: The mark shall be one `span.sn-save-mark` directly after the changed control (in a table,
+    inside the changed cell), and an item shall have at most one mark.
+  scope:
+  - html
+  - component
+  check_type: dom
+  test: Each marked control has exactly one sibling or cell-level `.sn-save-mark`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SVM-003
+  statement: From 1 s after the change until it is saved the mark shall be `data-state="saving"` with
+    the word "Saving" and the changed control shall carry `data-save="pending"`; a change saved within
+    1 s shall show no mark.
+  scope:
+  - component
+  - js
+  check_type: dom
+  test: 'Save in 300 ms: no mark. Save in 3 s: the mark shows from 1 s.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SVM-004
+  statement: 'A retried save shall count its tries in the mark: "Saving · try 2 of 5".'
+  scope:
+  - copy
+  - component
+  check_type: dom
+  test: On the second try the mark text matches "Saving · try 2 of 5".
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SVM-005
+  statement: A change that cannot be sent now (offline, or the service cannot be reached) shall be `data-state="waiting"`
+    with "Waiting to be sent · since" and the time, kept on the device and sent when the connection returns.
+  scope:
+  - component
+  - js
+  - copy
+  check_type: dom
+  test: 'Reject with `{offline: true}`: the mark is `waiting` and the row is in storage.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SVM-006
+  statement: A change that was visibly waiting shall show `data-state="saved"` "Saved" for 4 s when it
+    is saved and then the mark shall leave; its tick shall be `fg-2`, not `status-ok`.
+  scope:
+  - component
+  - css
+  check_type: dom
+  test: After a slow save the mark reads "Saved" for 4 s and its icon colour is not `status-ok`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SVM-007
+  statement: 'A change that fails for good shall be `data-state="back"`: the control shows the saved value
+    again with `data-save="back"` and the mark reads "Not saved: put back to" the old value and "You entered"
+    the new one, with Try again and Discard.'
+  scope:
+  - component
+  - copy
+  - js
+  check_type: dom
+  test: After five unanswered tries the control holds the old value and the mark has both buttons.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SVM-008
+  statement: A `back` mark shall stay until the person presses Try again or Discard or changes the item
+    again; it shall not leave on a timer.
+  scope:
+  - js
+  check_type: judgement
+  test: A `back` mark is still present after 60 s.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SVM-009
+  statement: 'A refused change shall say why in the server''s words after the fixed words: "Not applied:",
+    the reason, "Put back to" the old value.'
+  scope:
+  - copy
+  check_type: dom
+  test: 'Reject with `{refused: true, reason}`: the mark text holds the reason.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SVM-010
+  statement: Where the page's rule is that a change is not put back while offline, the item shall keep
+    the person's value as `waiting` and be sent again every 30 s; it shall be put back only when it is
+    refused.
+  scope:
+  - js
+  check_type: judgement
+  test: 'With `keep: true` and no answer, the value stays and the mark is `waiting`.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SVM-011
+  statement: A rating, an energy or key correction, tags, a note, a tick, a switch or other setting and
+    a choice in a list should be optimistic when the old value can be shown again exactly.
+  scope:
+  - page
+  check_type: judgement
+  test: These controls use `SongNodes.resp.edit`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SVM-012
+  statement: 'Deleting a set, removing a streaming service, saving API keys and any write to a Spotify
+    or TIDAL playlist shall not use a SaveMark: they show a busy control and change only when answered.'
+  scope:
+  - page
+  - component
+  check_type: judgement
+  test: None of these calls `SongNodes.resp.edit`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SVM-013
+  statement: A move or re-order of a slot or row shall be DragDrop with the LiveChange waiting border,
+    not a SaveMark, and should be registered with the outbox through a kind that has no target.
+  scope:
+  - page
+  - component
+  check_type: judgement
+  test: Running-order moves show the waiting border and appear in the Outbox when they fail.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SVM-014
+  statement: 'A newer change to the same item shall not be overwritten by an older change''s result or
+    put-back: the newest value the person entered stays, and each change that failed keeps its own Outbox
+    row.'
+  scope:
+  - js
+  check_type: judgement
+  test: 'Fail change one after making change two: the control shows change two and the outbox lists change
+    one.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SVM-015
+  statement: A put-back shall not move focus, close a dialog or scroll the page.
+  scope:
+  - js
+  check_type: dom
+  test: '`document.activeElement` and scroll position are the same before and after a put-back.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SVM-016
+  statement: A figure worked out from a marked value shall carry the tag "Includes unsaved changes" until
+    the value is saved.
+  scope:
+  - page
+  - copy
+  check_type: dom
+  test: The tag is visible while any contributing value has a mark.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SVM-017
+  statement: Every state shall be said once in the page's polite live region, a put-back mark shall be
+    `role="alert"`, and a failed or put-back change shall not raise a toast.
+  scope:
+  - js
+  - component
+  check_type: dom
+  test: After a put-back no `.sn-toast` exists and the mark has `role="alert"`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SVM-018
+  statement: 'Colour shall not be the only cue: each state has its words, and the changed control''s `title`
+    repeats them.'
+  scope:
+  - component
+  - html
+  check_type: dom
+  test: Each mark has text and its control's `title` equals it.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SVM-019
+  statement: Print shall show saved values only and no mark.
+  scope:
+  - print
+  check_type: dom
+  test: 'In print media `.sn-save-mark` computes `display: none`.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SVM-020
+  statement: The mark shall be `surface-3` ground with a one-pixel edge in its state's colour, text in
+    `fg` or `fg-2`, caption size, and shall wrap under its control rather than widen a table column.
+  scope:
+  - css
+  - component
+  check_type: visual
+  test: Mark text contrast is 4.5:1 or more in dark, light and booth; the column width is unchanged by
+    a mark.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SVM-021
+  statement: The mark's buttons shall be small Buttons on the mark's second line, so a row grows only
+    while a change is not saved.
+  scope:
+  - component
+  - css
+  check_type: visual
+  test: '`.sn-save-mark__acts` holds `.sn-btn--sm` buttons below the words.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SVM-022
+  statement: A page shall mark a changed item with `SongNodes.resp.edit` and the `sn-save-mark` and `data-save`
+    hooks of the bundle, and shall not use a saving mark, spinner or colour of its own.
+  scope:
+  - css
+  - js
+  check_type: lint
+  test: No page CSS defines a rule for `.sn-save-mark*` or `[data-save]`.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: SVM-023
+  statement: 'An away result (offline, or the service cannot be reached) shall not be marked or reported
+    as refused: the change waits, and only the server''s own refusal is "Not applied".'
+  scope:
+  - js
+  - copy
+  check_type: judgement
+  test: 'Reject with `{offline: true}`: no text says "Not applied" and no fail event has `why: refused`.'
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: TSK-001
+  statement: A data finding that needs someone to act shall be a TaskNotice, not a plain warning or a
+    toast.
+  scope:
+  - component
+  - page
+  check_type: judgement
+  test: Findings with Done/Defer/Dismiss use `.task`; SongNodes toasts stay confirmations only.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: TSK-016
+  statement: Task state shall be kept in the page's shared store and shall never be kept in browser storage.
+  scope:
+  - component
+  - page
+  check_type: lint
+  test: No localStorage/sessionStorage key holds task state.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: TSK-038
+  statement: A task notice shall never be printed.
+  scope:
+  - component
+  check_type: visual
+  test: Print emulation hides `.task` notices.
   status: active
   replaced_by: null
   history_ref: null
@@ -16017,6 +20901,37 @@
   - component
   check_type: dom
   test: Tooltip BPM/key elements compute JetBrains Mono.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: TYP-086
+  statement: A font size, line height or font weight in CSS shall be a type-scale token (`--fs-*`, `--lh-*`,
+    `--fw-*`) or come from a named type class, and shall not be written as a number.
+  scope:
+  - css
+  check_type: lint
+  test: Fail if new or changed CSS sets `font-size`, `line-height`, `font-weight` or a `font` shorthand
+    with a literal size, line height or weight.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: TYP-087
+  statement: A size that is not on the type scale shall snap to the nearest named style, the smaller when
+    it sits halfway between two, and shall never be given a token or a name of its own.
+  scope:
+  - css
+  check_type: judgement
+  test: Every font size on the page equals one of the named styles at the current text-size setting.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: TYP-088
+  statement: '`html` shall set `text-size-adjust: 100%` (with the `-webkit-` form), so a phone in landscape
+    does not enlarge the text.'
+  scope:
+  - css
+  check_type: lint
+  test: '`getComputedStyle(document.documentElement).textSizeAdjust` is `100%`.'
   status: active
   replaced_by: null
   history_ref: null
@@ -17155,6 +22070,27 @@
   - component
   check_type: lint
   test: Pass if button and tab labels of two or more words avoid Title Case capitalisation.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: WRT-117
+  statement: An InfoTip button's name shall name the subject ("About the energy tiers", "How rotation
+    is worked out") and shall never be "Info" or "Help" alone.
+  scope:
+  - copy
+  - html
+  check_type: lint
+  test: Fail if a `.sn-infotip__btn` has `aria-label` equal to "Info", "Help" or "More info".
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: WRT-118
+  statement: The words of an InfoTip shall be moved verbatim from the notice it replaces; only a printed
+    file or folder path shall be taken out.
+  scope:
+  - copy
+  check_type: judgement
+  test: Each tip's text equals the old notice text.
   status: active
   replaced_by: null
   history_ref: null

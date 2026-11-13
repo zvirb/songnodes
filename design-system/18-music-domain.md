@@ -96,7 +96,7 @@ Rotation is a category, never a status: no green/amber/red.
 
 ## Pillars
 
-House, Techno, UK garage. Neutral `CategoryTag`s; the genre mix control sets weights (0.00–1.00, two decimals, summing to 1.00: "House 0.45 · Techno 0.35 · UK garage 0.20"). Charts that split by pillar use `chart-1`, `chart-2`, `chart-3` in that order.
+House, Techno, UK garage. Neutral `CategoryTag`s; the genre mix control is a `SliderGroup` of relative weights (0.00–1.00, two decimals, not required to sum to anything: "House 0.45 · Techno 0.35 · UK garage 0.20"), with each pillar's share of the mix shown beside it ("House 45% of the mix"; DR-062, 1.13.0). Charts that split by pillar use `chart-1`, `chart-2`, `chart-3` in that order.
 
 ## Sources and the weekly run
 

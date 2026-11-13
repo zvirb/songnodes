@@ -18,6 +18,8 @@ The same pages run in a desktop browser at home, on a laptop in a dark booth wit
 - `prefers-contrast: more` on dark or light: no automatic switch; show a one-time `InlineMessage` suggesting Booth.
 - `prefers-reduced-motion`: durations go to 0 except progress indication (handled in `00-core.css`). The force graph starts paused and settles without animation.
 
+When the browser refuses to store a preference (private window, blocked site data), the choice still applies for the visit and the refusal is logged once at warn (`SongNodes.save.setting`, QSV-027); the next visit opens on the system setting.
+
 ### No flash of the wrong theme
 
 Put this inline as the first script in `<head>`, before any stylesheet, in `frontend/index.html` and every artifact:
@@ -52,6 +54,10 @@ Booth laptops may be offline; venue wifi often blocks CDNs.
 - Writes while offline: set drafts save locally (autosave); shared saves are disabled with the reason "Saving needs a connection. Your draft is kept on this device."
 - Service worker (PWA): register one for the app shell with `stale-while-revalidate` for static assets and `network-first` with cache fallback for `GET /api/*` reads. This reverses the current `index.html` script that unregisters all service workers and deletes all caches, and the no-cache `<meta>` tags. Cache-bust by hashed file names (Vite default), not by disabling caching.
 - Never cache auth callbacks, API keys or write endpoints.
+
+## Diagnostics (1.14.0)
+
+Every console line the app writes goes through `SongNodes.diag` in one format: `[SN <page> <build>] <level> <area>: <message> {name, count, ms, type, code, why, attempt}`. Milestones are `debug`, problems the page recovers from are `warn`, and `error` is kept for a failure that needs a person, so a console error always means a real fault. The helper captures script errors, unhandled rejections, assets that did not load and long tasks by itself; every catch block calls `SongNodes.diag.report`. A line holds names, counts and timings only: never a track, artist or set title, a token, an API key or a path. Lines are kept in memory only (the last 300). "Copy diagnostics" is a CommandPalette action on every page and a button on LogPage and MonitoringPage. See `Diagnostics`.
 
 ## Embedding in other hosts
 

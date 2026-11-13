@@ -35,7 +35,7 @@
           </div>
         </fieldset>
       </div>
-      <div class="sn-preferences-panel__foot"><span>Saved on this device only</span><button class="sn-btn sn-btn--quiet sn-btn--sm" type="button" id="reset">Reset to defaults</button></div>
+      <div class="sn-preferences-panel__foot"><span id="pp-where">Saved on this device only</span><button class="sn-btn sn-btn--quiet sn-btn--sm" type="button" id="reset">Reset to defaults</button></div>
     </section>
     <div class="sample">
       <div class="sn-preview__label">Sample · changes apply as you choose</div>
@@ -138,10 +138,10 @@
     }).join("") + "</div>";
   }
 
-  var MOTION_KEY = "sn-motion";
-  function readMotion() { try { return localStorage.getItem(MOTION_KEY) || "system"; } catch (e) { return "system"; } }
-  /** Not in SongNodes.prefs yet: sets html[data-motion="reduce"] and remembers it. */
-  function setMotion(v) { try { if (v === "reduce") localStorage.setItem(MOTION_KEY, v); else localStorage.removeItem(MOTION_KEY); } catch (e) {} if (v === "reduce") root.setAttribute("data-motion", "reduce"); else root.removeAttribute("data-motion"); }
+  /* Every setting goes through SongNodes.prefs: when browser storage refuses the write, the choice still applies for this visit
+     (prefs keeps it in memory and logs the refusal once at warn), so this panel never reads or writes storage itself. */
+  function readMotion() { return P.get().motion === "reduce" ? "reduce" : "system"; }
+  function setMotion(v) { P.setMotion(v === "reduce" ? "reduce" : "system"); }
   var sysReduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   document.getElementById("sysMotion").textContent = "(currently " + (sysReduce ? "reduced" : "full motion") + ")";
   document.getElementById("pp-close").innerHTML = S.icon("x");
@@ -156,7 +156,7 @@
   document.getElementById("density").innerHTML = snSegHtml("Row density", [{ value: "comfortable", label: "Comfortable" }, { value: "compact", label: "Compact" }], cur.density, "sn-segmented-control--block").replace('aria-label="Row density"', 'aria-labelledby="lbl-density"');
   var motion = readMotion(); document.querySelector('input[name="motion"][value="' + motion + '"]').checked = true;
 
-  function state() { var g = P.get(); document.getElementById("state").textContent = "Theme " + g.theme + " (showing " + root.getAttribute("data-theme") + ") · text " + g.textSize.toUpperCase() + " · " + g.density + " rows · motion " + (readMotion() === "reduce" ? "always reduced" : "follows device"); }
+  function state() { var g = P.get(); document.getElementById("pp-where").textContent = P.keptForVisit().length ? "Kept for this visit only" : "Saved on this device only"; document.getElementById("state").textContent = "Theme " + g.theme + " (showing " + root.getAttribute("data-theme") + ") · text " + g.textSize.toUpperCase() + " · " + g.density + " rows · motion " + (readMotion() === "reduce" ? "always reduced" : "follows device"); }
   var NAMES = { system: "System", dark: "Dark", light: "Light", booth: "Booth", s: "small", m: "medium", l: "large", xl: "extra large" };
   var themeCtl = snSeg(tg, function (v) { P.setTheme(v); snSay("Theme set to " + NAMES[v]); state(); });
   var sizeCtl = snSeg(document.querySelector("#size .sn-segmented-control"), function (v) { P.setTextSize(v); snSay("Text size set to " + NAMES[v]); state(); });
