@@ -1,0 +1,14 @@
+{
+  "project_root": "../..",
+  "timezone": "Australia/Sydney",
+  "mode": "proposal-only",
+  "stale_seconds": 7200,
+  "writable": ["frontend/src", "frontend/tests", "scripts", "tests", "docs/design-system"],
+  "read_only": ["design-system", "frontend/src/styles/design-system"],
+  "forbidden": [".git", ".codex-worktrees", ".env", "services", "sql"],
+  "roles": {"frontend": ["diagnose", "stage", "verify"], "integrator": ["verify", "apply"], "planner": ["import", "recover", "validate"]},
+  "verification_inputs": ["frontend", "scripts", "tests", "design-system", "AGENTS.md", ".gitignore"],
+  "verification_commands": [["{python}", "scripts/check_design_system.py", "--check", "--strict"], ["node", "frontend/node_modules/typescript/bin/tsc", "--noEmit", "-p", "frontend"]],
+  "shared_sources": ["frontend/src/lib/songnodes.tsx", "frontend/src/styles/design-system/bundle.css", "frontend/src/styles/design-system/tokens.css"],
+  "build_units": {"shell": ["file:frontend/src/shell/AppShell.tsx", "file:frontend/src/styles/app.css"]}
+}

@@ -3231,3 +3231,14 @@ Original-head security checks pass; E2E fails on eight inherited screenshot base
 - Coverage gaps: five patterns need concrete examples (*, /callback/:service, /settings/:settingId, /track/:id, /tracks/:id). Editorial/data-truth and unreached-state review remains manual; this is not full certification. Earlier Python run needed UTF-8 mode on Windows; corrected invocation passed.
 - Exact next task: fix AppHeader sticky scrolling in its own owned-path package, using the Home top:-500 result as reproduction; supply real parameter examples for complete route coverage.
 <!-- SLOT:DSLINT1 END -->
+
+<!-- SLOT:WQ1 BEGIN -->
+### WQ1 — Persistent design-system work queue (2026-11-13)
+- User scope: build the attached queue specification, import discovered deviations, finish the lock implementation before committing, then commit/sync all latest repository changes. The later finish instruction expanded the first-core-only package; no deviation task execution or deployment was requested.
+- Owned implementation paths: plan/agent-queue/; tests/test_agent_queue.py; STATUS.md (this slot). Existing unrelated design-system, pipeline and deployment-note changes are preserved for the separately requested repository snapshot commit.
+- Implemented: atomic metadata mutex, all-or-nothing file/folder/special-resource claims, heartbeat, operator-attested stale recovery, origin-idempotent import, dependency/role checks, retirement/split/deferred transitions, isolated verification, guarded optional apply, rollback backups/journals and idempotent completion recovery.
+- Git safety: active state, locks, proposals, test snapshots and journals are ignored under branch-specific .runtime/. QUEUE.md carries sanitized task definitions/terminal evidence with no active owners. git-check rejects force-added runtime files or staged ownership. New-branch isolation is regression-tested; source application remains disabled in proposal-only configuration.
+- Backlog: 99 distinct observation tasks preserve all 669 audit occurrences; five coverage-gap tasks; 104 total Ready, zero claims. Existing imported IDs remain immutable; new IDs add UUID suffixes for branch-safe allocation. Generated versioned data: QUEUE.md and reports/design-system-audit.json. The historical static tracker is untouched.
+- Checks: queue/source-checker Python suite passed 53 tests; browser-audit Node suite passed 3; frontend type-check passed; strict source scan found 0 findings; repository diff whitespace check passed. Final regression rerun follows the last small ownership/verification guards. No live task was claimed or applied.
+- Next: commit verified queue changes and the user-requested existing project snapshot, fetch/check main, push this branch, and verify remote parity. Then review WQ00001 (header observations) in a new authorized worker run; no schedule is enabled.
+<!-- SLOT:WQ1 END -->

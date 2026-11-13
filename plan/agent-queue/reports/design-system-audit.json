@@ -1,0 +1,4979 @@
+{
+  "routes": [
+    {
+      "pattern": "*",
+      "shell": true
+    },
+    {
+      "pattern": "/",
+      "path": "/",
+      "shell": true
+    },
+    {
+      "pattern": "/callback/:service",
+      "shell": false
+    },
+    {
+      "pattern": "/callback/spotify",
+      "path": "/callback/spotify",
+      "shell": false
+    },
+    {
+      "pattern": "/graph",
+      "path": "/graph",
+      "shell": true
+    },
+    {
+      "pattern": "/harmony",
+      "path": "/harmony",
+      "shell": true
+    },
+    {
+      "pattern": "/library",
+      "path": "/library",
+      "shell": true
+    },
+    {
+      "pattern": "/library/buy",
+      "path": "/library/buy",
+      "shell": true
+    },
+    {
+      "pattern": "/library/review",
+      "path": "/library/review",
+      "shell": true
+    },
+    {
+      "pattern": "/login",
+      "path": "/login",
+      "shell": true
+    },
+    {
+      "pattern": "/oauth/callback",
+      "path": "/oauth/callback",
+      "shell": false
+    },
+    {
+      "pattern": "/paths",
+      "path": "/paths",
+      "shell": true
+    },
+    {
+      "pattern": "/pipeline",
+      "path": "/pipeline",
+      "shell": true
+    },
+    {
+      "pattern": "/pipeline/runs",
+      "path": "/pipeline/runs",
+      "shell": true
+    },
+    {
+      "pattern": "/sets",
+      "path": "/sets",
+      "shell": true
+    },
+    {
+      "pattern": "/settings",
+      "path": "/settings",
+      "shell": true
+    },
+    {
+      "pattern": "/settings/:settingId",
+      "shell": true
+    },
+    {
+      "pattern": "/sources",
+      "path": "/sources",
+      "shell": true
+    },
+    {
+      "pattern": "/sources/import",
+      "path": "/sources/import",
+      "shell": true
+    },
+    {
+      "pattern": "/sources/targets",
+      "path": "/sources/targets",
+      "shell": true
+    },
+    {
+      "pattern": "/track/:id",
+      "shell": true
+    },
+    {
+      "pattern": "/tracks/:id",
+      "shell": true
+    }
+  ],
+  "source": {
+    "strict": true,
+    "checkedFiles": 280,
+    "pendingFiles": [],
+    "excludedFiles": [
+      "frontend/src/lib/graphColours.ts"
+    ],
+    "excludedPrefixes": [
+      "frontend/src/styles/design-system/"
+    ],
+    "findings": []
+  },
+  "pages": [
+    {
+      "route": "/",
+      "path": "/",
+      "theme": "dark",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/"
+    },
+    {
+      "route": "/",
+      "path": "/",
+      "theme": "dark",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/"
+    },
+    {
+      "route": "/",
+      "path": "/",
+      "theme": "dark",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/",
+      "scrollCheck": "not exercised: document has no scroll range"
+    },
+    {
+      "route": "/",
+      "path": "/",
+      "theme": "dark",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -115 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/"
+    },
+    {
+      "route": "/",
+      "path": "/",
+      "theme": "light",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/"
+    },
+    {
+      "route": "/",
+      "path": "/",
+      "theme": "light",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/"
+    },
+    {
+      "route": "/",
+      "path": "/",
+      "theme": "light",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/",
+      "scrollCheck": "not exercised: document has no scroll range"
+    },
+    {
+      "route": "/",
+      "path": "/",
+      "theme": "light",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -115 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/"
+    },
+    {
+      "route": "/",
+      "path": "/",
+      "theme": "booth",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/"
+    },
+    {
+      "route": "/",
+      "path": "/",
+      "theme": "booth",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/"
+    },
+    {
+      "route": "/",
+      "path": "/",
+      "theme": "booth",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -66 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/"
+    },
+    {
+      "route": "/",
+      "path": "/",
+      "theme": "booth",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -244 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/"
+    },
+    {
+      "route": "/callback/spotify",
+      "path": "/callback/spotify",
+      "theme": "dark",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/callback/spotify"
+    },
+    {
+      "route": "/callback/spotify",
+      "path": "/callback/spotify",
+      "theme": "dark",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/callback/spotify"
+    },
+    {
+      "route": "/callback/spotify",
+      "path": "/callback/spotify",
+      "theme": "dark",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/callback/spotify"
+    },
+    {
+      "route": "/callback/spotify",
+      "path": "/callback/spotify",
+      "theme": "dark",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/callback/spotify"
+    },
+    {
+      "route": "/callback/spotify",
+      "path": "/callback/spotify",
+      "theme": "light",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/callback/spotify"
+    },
+    {
+      "route": "/callback/spotify",
+      "path": "/callback/spotify",
+      "theme": "light",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/callback/spotify"
+    },
+    {
+      "route": "/callback/spotify",
+      "path": "/callback/spotify",
+      "theme": "light",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/callback/spotify"
+    },
+    {
+      "route": "/callback/spotify",
+      "path": "/callback/spotify",
+      "theme": "light",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/callback/spotify"
+    },
+    {
+      "route": "/callback/spotify",
+      "path": "/callback/spotify",
+      "theme": "booth",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/callback/spotify"
+    },
+    {
+      "route": "/callback/spotify",
+      "path": "/callback/spotify",
+      "theme": "booth",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/callback/spotify"
+    },
+    {
+      "route": "/callback/spotify",
+      "path": "/callback/spotify",
+      "theme": "booth",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/callback/spotify"
+    },
+    {
+      "route": "/callback/spotify",
+      "path": "/callback/spotify",
+      "theme": "booth",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/callback/spotify"
+    },
+    {
+      "route": "/graph",
+      "path": "/graph",
+      "theme": "dark",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/graph"
+    },
+    {
+      "route": "/graph",
+      "path": "/graph",
+      "theme": "dark",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/graph"
+    },
+    {
+      "route": "/graph",
+      "path": "/graph",
+      "theme": "dark",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/graph"
+    },
+    {
+      "route": "/graph",
+      "path": "/graph",
+      "theme": "dark",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/graph"
+    },
+    {
+      "route": "/graph",
+      "path": "/graph",
+      "theme": "light",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/graph"
+    },
+    {
+      "route": "/graph",
+      "path": "/graph",
+      "theme": "light",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/graph"
+    },
+    {
+      "route": "/graph",
+      "path": "/graph",
+      "theme": "light",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/graph"
+    },
+    {
+      "route": "/graph",
+      "path": "/graph",
+      "theme": "light",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/graph"
+    },
+    {
+      "route": "/graph",
+      "path": "/graph",
+      "theme": "booth",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/graph"
+    },
+    {
+      "route": "/graph",
+      "path": "/graph",
+      "theme": "booth",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/graph"
+    },
+    {
+      "route": "/graph",
+      "path": "/graph",
+      "theme": "booth",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/graph"
+    },
+    {
+      "route": "/graph",
+      "path": "/graph",
+      "theme": "booth",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/graph"
+    },
+    {
+      "route": "/harmony",
+      "path": "/harmony",
+      "theme": "dark",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/harmony"
+    },
+    {
+      "route": "/harmony",
+      "path": "/harmony",
+      "theme": "dark",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/harmony"
+    },
+    {
+      "route": "/harmony",
+      "path": "/harmony",
+      "theme": "dark",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/harmony"
+    },
+    {
+      "route": "/harmony",
+      "path": "/harmony",
+      "theme": "dark",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/harmony"
+    },
+    {
+      "route": "/harmony",
+      "path": "/harmony",
+      "theme": "light",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/harmony"
+    },
+    {
+      "route": "/harmony",
+      "path": "/harmony",
+      "theme": "light",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/harmony"
+    },
+    {
+      "route": "/harmony",
+      "path": "/harmony",
+      "theme": "light",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/harmony"
+    },
+    {
+      "route": "/harmony",
+      "path": "/harmony",
+      "theme": "light",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/harmony"
+    },
+    {
+      "route": "/harmony",
+      "path": "/harmony",
+      "theme": "booth",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/harmony"
+    },
+    {
+      "route": "/harmony",
+      "path": "/harmony",
+      "theme": "booth",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/harmony"
+    },
+    {
+      "route": "/harmony",
+      "path": "/harmony",
+      "theme": "booth",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/harmony"
+    },
+    {
+      "route": "/harmony",
+      "path": "/harmony",
+      "theme": "booth",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/harmony"
+    },
+    {
+      "route": "/library",
+      "path": "/library",
+      "theme": "dark",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library"
+    },
+    {
+      "route": "/library",
+      "path": "/library",
+      "theme": "dark",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library"
+    },
+    {
+      "route": "/library",
+      "path": "/library",
+      "theme": "dark",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library"
+    },
+    {
+      "route": "/library",
+      "path": "/library",
+      "theme": "dark",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library"
+    },
+    {
+      "route": "/library",
+      "path": "/library",
+      "theme": "light",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "axe:target-size",
+          "message": "serious: All touch targets must be 24px large, or leave sufficient space",
+          "targets": [
+            [
+              "tr[data-row=\"6\"] > .sn-data-table__track > .sn-track-cell > .sn-track-cell__meta > .sn-track-cell__links > .sn-link--ext[rel=\"noopener noreferrer\"][target=\"_blank\"]:nth-child(1)"
+            ],
+            [
+              "tr[data-row=\"8\"] > .sn-data-table__track > .sn-track-cell > .sn-track-cell__meta > .sn-track-cell__flag--info.sn-ml-flag-toggle.sn-track-cell__flag"
+            ],
+            [
+              "tr[data-row=\"14\"] > .sn-data-table__track > .sn-track-cell > .sn-track-cell__meta > .sn-track-cell__links > .sn-link--ext[rel=\"noopener noreferrer\"][target=\"_blank\"]:nth-child(2)"
+            ],
+            [
+              "tr[data-row=\"21\"] > .sn-data-table__track > .sn-track-cell > .sn-track-cell__meta > .sn-track-cell__flag--info.sn-ml-flag-toggle.sn-track-cell__flag"
+            ],
+            [
+              "tr[data-row=\"23\"] > .sn-data-table__track > .sn-track-cell > .sn-track-cell__meta > .sn-track-cell__links > .sn-link--ext[rel=\"noopener noreferrer\"][target=\"_blank\"]:nth-child(2)"
+            ],
+            [
+              "tr[data-row=\"26\"] > .sn-data-table__track > .sn-track-cell > .sn-track-cell__meta > .sn-track-cell__flag--info.sn-ml-flag-toggle.sn-track-cell__flag"
+            ],
+            [
+              "tr[data-row=\"33\"] > .sn-data-table__track > .sn-track-cell > .sn-track-cell__meta > .sn-track-cell__flag--info.sn-ml-flag-toggle.sn-track-cell__flag"
+            ],
+            [
+              "tr[data-row=\"79\"] > .sn-data-table__track > .sn-track-cell > .sn-track-cell__meta > .sn-track-cell__flag--info.sn-ml-flag-toggle.sn-track-cell__flag"
+            ],
+            [
+              "tr[data-row=\"82\"] > .sn-data-table__track > .sn-track-cell > .sn-track-cell__meta > .sn-track-cell__flag--info.sn-ml-flag-toggle.sn-track-cell__flag"
+            ],
+            [
+              "tr[data-row=\"95\"] > .sn-data-table__track > .sn-track-cell > .sn-track-cell__meta > .sn-track-cell__links > .sn-link--ext[rel=\"noopener noreferrer\"][target=\"_blank\"]:nth-child(2)"
+            ],
+            [
+              "tr[data-row=\"106\"] > .sn-data-table__track > .sn-track-cell > .sn-track-cell__meta > .sn-track-cell__links > .sn-link--ext[rel=\"noopener noreferrer\"][target=\"_blank\"]:nth-child(2)"
+            ],
+            [
+              "tr[data-row=\"118\"] > .sn-data-table__track > .sn-track-cell > .sn-track-cell__meta > .sn-track-cell__flag--info.sn-ml-flag-toggle.sn-track-cell__flag"
+            ],
+            [
+              "tr[data-row=\"137\"] > .sn-data-table__track > .sn-track-cell > .sn-track-cell__meta > .sn-track-cell__flag--info.sn-ml-flag-toggle.sn-track-cell__flag"
+            ],
+            [
+              "tr[data-row=\"142\"] > .sn-data-table__track > .sn-track-cell > .sn-track-cell__meta > .sn-track-cell__links > .sn-link--ext[rel=\"noopener noreferrer\"][target=\"_blank\"]:nth-child(2)"
+            ],
+            [
+              "tr[data-row=\"145\"] > .sn-data-table__track > .sn-track-cell > .sn-track-cell__meta > .sn-track-cell__links > .sn-link--ext[rel=\"noopener noreferrer\"][target=\"_blank\"]:nth-child(2)"
+            ]
+          ]
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library"
+    },
+    {
+      "route": "/library",
+      "path": "/library",
+      "theme": "light",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "axe:target-size",
+          "message": "serious: All touch targets must be 24px large, or leave sufficient space",
+          "targets": [
+            [
+              "tr[data-row=\"9\"] > .sn-data-table__track > .sn-track-cell > .sn-track-cell__meta > .sn-track-cell__flag--info.sn-ml-flag-toggle.sn-track-cell__flag"
+            ],
+            [
+              "tr[data-row=\"10\"] > .sn-data-table__track > .sn-track-cell > .sn-track-cell__meta > .sn-track-cell__flag--info.sn-ml-flag-toggle.sn-track-cell__flag"
+            ],
+            [
+              "tr[data-row=\"19\"] > .sn-data-table__track > .sn-track-cell > .sn-track-cell__meta > .sn-track-cell__flag--info.sn-ml-flag-toggle.sn-track-cell__flag"
+            ],
+            [
+              "tr[data-row=\"24\"] > .sn-data-table__track > .sn-track-cell > .sn-track-cell__meta > .sn-track-cell__links > .sn-link--ext[rel=\"noopener noreferrer\"][target=\"_blank\"]:nth-child(2)"
+            ],
+            [
+              "tr[data-row=\"28\"] > .sn-data-table__track > .sn-track-cell > .sn-track-cell__meta > .sn-track-cell__links > .sn-link--ext[rel=\"noopener noreferrer\"][target=\"_blank\"]:nth-child(1)"
+            ],
+            [
+              "tr[data-row=\"34\"] > .sn-data-table__track > .sn-track-cell > .sn-track-cell__meta > .sn-track-cell__links > .sn-link--ext[rel=\"noopener noreferrer\"][target=\"_blank\"]:nth-child(2)"
+            ],
+            [
+              "tr[data-row=\"36\"] > .sn-data-table__track > .sn-track-cell > .sn-track-cell__meta > .sn-track-cell__links > .sn-link--ext[rel=\"noopener noreferrer\"][target=\"_blank\"]:nth-child(2)"
+            ],
+            [
+              "tr[data-row=\"37\"] > .sn-data-table__track > .sn-track-cell > .sn-track-cell__meta > .sn-track-cell__links > .sn-link--ext[rel=\"noopener noreferrer\"][target=\"_blank\"]:nth-child(2)"
+            ],
+            [
+              "tr[data-row=\"38\"] > .sn-data-table__track > .sn-track-cell > .sn-track-cell__meta > .sn-track-cell__links > .sn-link--ext[rel=\"noopener noreferrer\"][target=\"_blank\"]:nth-child(2)"
+            ],
+            [
+              "tr[data-row=\"67\"] > .sn-data-table__track > .sn-track-cell > .sn-track-cell__meta > .sn-track-cell__links > .sn-link--ext[rel=\"noopener noreferrer\"][target=\"_blank\"]:nth-child(1)"
+            ],
+            [
+              "tr[data-row=\"75\"] > .sn-data-table__track > .sn-track-cell > .sn-track-cell__meta > .sn-track-cell__links > .sn-link--ext[rel=\"noopener noreferrer\"][target=\"_blank\"]:nth-child(2)"
+            ],
+            [
+              "tr[data-row=\"89\"] > .sn-data-table__track > .sn-track-cell > .sn-track-cell__meta > .sn-track-cell__flag--info.sn-ml-flag-toggle.sn-track-cell__flag"
+            ],
+            [
+              "tr[data-row=\"93\"] > .sn-data-table__track > .sn-track-cell > .sn-track-cell__meta > .sn-track-cell__flag--info.sn-ml-flag-toggle.sn-track-cell__flag"
+            ],
+            [
+              "tr[data-row=\"98\"] > .sn-data-table__track > .sn-track-cell > .sn-track-cell__meta > .sn-track-cell__flag--info.sn-ml-flag-toggle.sn-track-cell__flag"
+            ]
+          ]
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library"
+    },
+    {
+      "route": "/library",
+      "path": "/library",
+      "theme": "light",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library"
+    },
+    {
+      "route": "/library",
+      "path": "/library",
+      "theme": "light",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library"
+    },
+    {
+      "route": "/library",
+      "path": "/library",
+      "theme": "booth",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library"
+    },
+    {
+      "route": "/library",
+      "path": "/library",
+      "theme": "booth",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library"
+    },
+    {
+      "route": "/library",
+      "path": "/library",
+      "theme": "booth",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library"
+    },
+    {
+      "route": "/library",
+      "path": "/library",
+      "theme": "booth",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library"
+    },
+    {
+      "route": "/library/buy",
+      "path": "/library/buy",
+      "theme": "dark",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -223 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library/buy"
+    },
+    {
+      "route": "/library/buy",
+      "path": "/library/buy",
+      "theme": "dark",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -336 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library/buy"
+    },
+    {
+      "route": "/library/buy",
+      "path": "/library/buy",
+      "theme": "dark",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -87 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library/buy"
+    },
+    {
+      "route": "/library/buy",
+      "path": "/library/buy",
+      "theme": "dark",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -116 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library/buy"
+    },
+    {
+      "route": "/library/buy",
+      "path": "/library/buy",
+      "theme": "light",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -223 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library/buy"
+    },
+    {
+      "route": "/library/buy",
+      "path": "/library/buy",
+      "theme": "light",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -336 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library/buy"
+    },
+    {
+      "route": "/library/buy",
+      "path": "/library/buy",
+      "theme": "light",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -87 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library/buy"
+    },
+    {
+      "route": "/library/buy",
+      "path": "/library/buy",
+      "theme": "light",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -116 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library/buy"
+    },
+    {
+      "route": "/library/buy",
+      "path": "/library/buy",
+      "theme": "booth",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -316 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library/buy"
+    },
+    {
+      "route": "/library/buy",
+      "path": "/library/buy",
+      "theme": "booth",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -416 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library/buy"
+    },
+    {
+      "route": "/library/buy",
+      "path": "/library/buy",
+      "theme": "booth",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -109 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library/buy"
+    },
+    {
+      "route": "/library/buy",
+      "path": "/library/buy",
+      "theme": "booth",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -140 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library/buy"
+    },
+    {
+      "route": "/library/review",
+      "path": "/library/review",
+      "theme": "dark",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library/review",
+      "scrollCheck": "not exercised: document has no scroll range"
+    },
+    {
+      "route": "/library/review",
+      "path": "/library/review",
+      "theme": "dark",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -129 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library/review"
+    },
+    {
+      "route": "/library/review",
+      "path": "/library/review",
+      "theme": "dark",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library/review",
+      "scrollCheck": "not exercised: document has no scroll range"
+    },
+    {
+      "route": "/library/review",
+      "path": "/library/review",
+      "theme": "dark",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library/review",
+      "scrollCheck": "not exercised: document has no scroll range"
+    },
+    {
+      "route": "/library/review",
+      "path": "/library/review",
+      "theme": "light",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library/review",
+      "scrollCheck": "not exercised: document has no scroll range"
+    },
+    {
+      "route": "/library/review",
+      "path": "/library/review",
+      "theme": "light",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -129 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library/review"
+    },
+    {
+      "route": "/library/review",
+      "path": "/library/review",
+      "theme": "light",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library/review",
+      "scrollCheck": "not exercised: document has no scroll range"
+    },
+    {
+      "route": "/library/review",
+      "path": "/library/review",
+      "theme": "light",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library/review",
+      "scrollCheck": "not exercised: document has no scroll range"
+    },
+    {
+      "route": "/library/review",
+      "path": "/library/review",
+      "theme": "booth",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -83 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library/review"
+    },
+    {
+      "route": "/library/review",
+      "path": "/library/review",
+      "theme": "booth",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -228 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library/review"
+    },
+    {
+      "route": "/library/review",
+      "path": "/library/review",
+      "theme": "booth",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library/review",
+      "scrollCheck": "not exercised: document has no scroll range"
+    },
+    {
+      "route": "/library/review",
+      "path": "/library/review",
+      "theme": "booth",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/library/review",
+      "scrollCheck": "not exercised: document has no scroll range"
+    },
+    {
+      "route": "/login",
+      "path": "/login",
+      "theme": "dark",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "console",
+          "message": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -157 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/login"
+    },
+    {
+      "route": "/login",
+      "path": "/login",
+      "theme": "dark",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "console",
+          "message": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -228 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/login"
+    },
+    {
+      "route": "/login",
+      "path": "/login",
+      "theme": "dark",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "console",
+          "message": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -131 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/login"
+    },
+    {
+      "route": "/login",
+      "path": "/login",
+      "theme": "dark",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "console",
+          "message": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -136 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/login"
+    },
+    {
+      "route": "/login",
+      "path": "/login",
+      "theme": "light",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "console",
+          "message": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -157 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/login"
+    },
+    {
+      "route": "/login",
+      "path": "/login",
+      "theme": "light",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "console",
+          "message": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -228 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/login"
+    },
+    {
+      "route": "/login",
+      "path": "/login",
+      "theme": "light",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "console",
+          "message": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -131 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/login"
+    },
+    {
+      "route": "/login",
+      "path": "/login",
+      "theme": "light",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "console",
+          "message": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -136 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/login"
+    },
+    {
+      "route": "/login",
+      "path": "/login",
+      "theme": "booth",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "console",
+          "message": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -223 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/login"
+    },
+    {
+      "route": "/login",
+      "path": "/login",
+      "theme": "booth",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "console",
+          "message": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -242 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/login"
+    },
+    {
+      "route": "/login",
+      "path": "/login",
+      "theme": "booth",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "console",
+          "message": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -135 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/login"
+    },
+    {
+      "route": "/login",
+      "path": "/login",
+      "theme": "booth",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "console",
+          "message": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -139 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/login"
+    },
+    {
+      "route": "/oauth/callback",
+      "path": "/oauth/callback",
+      "theme": "dark",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/oauth/callback"
+    },
+    {
+      "route": "/oauth/callback",
+      "path": "/oauth/callback",
+      "theme": "dark",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "axe:aria-prohibited-attr",
+          "message": "serious: Elements must only use permitted ARIA attributes",
+          "targets": [
+            [
+              ".sn-spinner"
+            ]
+          ]
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/oauth/callback"
+    },
+    {
+      "route": "/oauth/callback",
+      "path": "/oauth/callback",
+      "theme": "dark",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/oauth/callback"
+    },
+    {
+      "route": "/oauth/callback",
+      "path": "/oauth/callback",
+      "theme": "dark",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/oauth/callback"
+    },
+    {
+      "route": "/oauth/callback",
+      "path": "/oauth/callback",
+      "theme": "light",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/oauth/callback"
+    },
+    {
+      "route": "/oauth/callback",
+      "path": "/oauth/callback",
+      "theme": "light",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/oauth/callback"
+    },
+    {
+      "route": "/oauth/callback",
+      "path": "/oauth/callback",
+      "theme": "light",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/oauth/callback"
+    },
+    {
+      "route": "/oauth/callback",
+      "path": "/oauth/callback",
+      "theme": "light",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/oauth/callback"
+    },
+    {
+      "route": "/oauth/callback",
+      "path": "/oauth/callback",
+      "theme": "booth",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/oauth/callback"
+    },
+    {
+      "route": "/oauth/callback",
+      "path": "/oauth/callback",
+      "theme": "booth",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/oauth/callback"
+    },
+    {
+      "route": "/oauth/callback",
+      "path": "/oauth/callback",
+      "theme": "booth",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/oauth/callback"
+    },
+    {
+      "route": "/oauth/callback",
+      "path": "/oauth/callback",
+      "theme": "booth",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/oauth/callback"
+    },
+    {
+      "route": "/paths",
+      "path": "/paths",
+      "theme": "dark",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/paths",
+      "scrollCheck": "not exercised: document has no scroll range"
+    },
+    {
+      "route": "/paths",
+      "path": "/paths",
+      "theme": "dark",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/paths",
+      "scrollCheck": "not exercised: document has no scroll range"
+    },
+    {
+      "route": "/paths",
+      "path": "/paths",
+      "theme": "dark",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/paths",
+      "scrollCheck": "not exercised: document has no scroll range"
+    },
+    {
+      "route": "/paths",
+      "path": "/paths",
+      "theme": "dark",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/paths",
+      "scrollCheck": "not exercised: document has no scroll range"
+    },
+    {
+      "route": "/paths",
+      "path": "/paths",
+      "theme": "light",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/paths",
+      "scrollCheck": "not exercised: document has no scroll range"
+    },
+    {
+      "route": "/paths",
+      "path": "/paths",
+      "theme": "light",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/paths",
+      "scrollCheck": "not exercised: document has no scroll range"
+    },
+    {
+      "route": "/paths",
+      "path": "/paths",
+      "theme": "light",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/paths",
+      "scrollCheck": "not exercised: document has no scroll range"
+    },
+    {
+      "route": "/paths",
+      "path": "/paths",
+      "theme": "light",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/paths",
+      "scrollCheck": "not exercised: document has no scroll range"
+    },
+    {
+      "route": "/paths",
+      "path": "/paths",
+      "theme": "booth",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/paths",
+      "scrollCheck": "not exercised: document has no scroll range"
+    },
+    {
+      "route": "/paths",
+      "path": "/paths",
+      "theme": "booth",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/paths",
+      "scrollCheck": "not exercised: document has no scroll range"
+    },
+    {
+      "route": "/paths",
+      "path": "/paths",
+      "theme": "booth",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/paths",
+      "scrollCheck": "not exercised: document has no scroll range"
+    },
+    {
+      "route": "/paths",
+      "path": "/paths",
+      "theme": "booth",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/paths",
+      "scrollCheck": "not exercised: document has no scroll range"
+    },
+    {
+      "route": "/pipeline",
+      "path": "/pipeline",
+      "theme": "dark",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/pipeline"
+    },
+    {
+      "route": "/pipeline",
+      "path": "/pipeline",
+      "theme": "dark",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/pipeline"
+    },
+    {
+      "route": "/pipeline",
+      "path": "/pipeline",
+      "theme": "dark",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/pipeline"
+    },
+    {
+      "route": "/pipeline",
+      "path": "/pipeline",
+      "theme": "dark",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/pipeline"
+    },
+    {
+      "route": "/pipeline",
+      "path": "/pipeline",
+      "theme": "light",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/pipeline"
+    },
+    {
+      "route": "/pipeline",
+      "path": "/pipeline",
+      "theme": "light",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/pipeline"
+    },
+    {
+      "route": "/pipeline",
+      "path": "/pipeline",
+      "theme": "light",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/pipeline"
+    },
+    {
+      "route": "/pipeline",
+      "path": "/pipeline",
+      "theme": "light",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/pipeline"
+    },
+    {
+      "route": "/pipeline",
+      "path": "/pipeline",
+      "theme": "booth",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/pipeline"
+    },
+    {
+      "route": "/pipeline",
+      "path": "/pipeline",
+      "theme": "booth",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/pipeline"
+    },
+    {
+      "route": "/pipeline",
+      "path": "/pipeline",
+      "theme": "booth",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/pipeline"
+    },
+    {
+      "route": "/pipeline",
+      "path": "/pipeline",
+      "theme": "booth",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/pipeline"
+    },
+    {
+      "route": "/pipeline/runs",
+      "path": "/pipeline/runs",
+      "theme": "dark",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -149 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/pipeline/runs"
+    },
+    {
+      "route": "/pipeline/runs",
+      "path": "/pipeline/runs",
+      "theme": "dark",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -286 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/pipeline/runs"
+    },
+    {
+      "route": "/pipeline/runs",
+      "path": "/pipeline/runs",
+      "theme": "dark",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -21 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/pipeline/runs"
+    },
+    {
+      "route": "/pipeline/runs",
+      "path": "/pipeline/runs",
+      "theme": "dark",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -45 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/pipeline/runs"
+    },
+    {
+      "route": "/pipeline/runs",
+      "path": "/pipeline/runs",
+      "theme": "light",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -149 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/pipeline/runs"
+    },
+    {
+      "route": "/pipeline/runs",
+      "path": "/pipeline/runs",
+      "theme": "light",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -286 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/pipeline/runs"
+    },
+    {
+      "route": "/pipeline/runs",
+      "path": "/pipeline/runs",
+      "theme": "light",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -21 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/pipeline/runs"
+    },
+    {
+      "route": "/pipeline/runs",
+      "path": "/pipeline/runs",
+      "theme": "light",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -45 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/pipeline/runs"
+    },
+    {
+      "route": "/pipeline/runs",
+      "path": "/pipeline/runs",
+      "theme": "booth",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -233 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/pipeline/runs"
+    },
+    {
+      "route": "/pipeline/runs",
+      "path": "/pipeline/runs",
+      "theme": "booth",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -391 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/pipeline/runs"
+    },
+    {
+      "route": "/pipeline/runs",
+      "path": "/pipeline/runs",
+      "theme": "booth",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -39 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/pipeline/runs"
+    },
+    {
+      "route": "/pipeline/runs",
+      "path": "/pipeline/runs",
+      "theme": "booth",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -62 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/pipeline/runs"
+    },
+    {
+      "route": "/sets",
+      "path": "/sets",
+      "theme": "dark",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sets"
+    },
+    {
+      "route": "/sets",
+      "path": "/sets",
+      "theme": "dark",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sets"
+    },
+    {
+      "route": "/sets",
+      "path": "/sets",
+      "theme": "dark",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sets"
+    },
+    {
+      "route": "/sets",
+      "path": "/sets",
+      "theme": "dark",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sets"
+    },
+    {
+      "route": "/sets",
+      "path": "/sets",
+      "theme": "light",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sets"
+    },
+    {
+      "route": "/sets",
+      "path": "/sets",
+      "theme": "light",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sets"
+    },
+    {
+      "route": "/sets",
+      "path": "/sets",
+      "theme": "light",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sets"
+    },
+    {
+      "route": "/sets",
+      "path": "/sets",
+      "theme": "light",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sets"
+    },
+    {
+      "route": "/sets",
+      "path": "/sets",
+      "theme": "booth",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sets"
+    },
+    {
+      "route": "/sets",
+      "path": "/sets",
+      "theme": "booth",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sets"
+    },
+    {
+      "route": "/sets",
+      "path": "/sets",
+      "theme": "booth",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sets"
+    },
+    {
+      "route": "/sets",
+      "path": "/sets",
+      "theme": "booth",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sets"
+    },
+    {
+      "route": "/settings",
+      "path": "/settings",
+      "theme": "dark",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/settings"
+    },
+    {
+      "route": "/settings",
+      "path": "/settings",
+      "theme": "dark",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/settings"
+    },
+    {
+      "route": "/settings",
+      "path": "/settings",
+      "theme": "dark",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/settings"
+    },
+    {
+      "route": "/settings",
+      "path": "/settings",
+      "theme": "dark",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/settings"
+    },
+    {
+      "route": "/settings",
+      "path": "/settings",
+      "theme": "light",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/settings"
+    },
+    {
+      "route": "/settings",
+      "path": "/settings",
+      "theme": "light",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/settings"
+    },
+    {
+      "route": "/settings",
+      "path": "/settings",
+      "theme": "light",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/settings"
+    },
+    {
+      "route": "/settings",
+      "path": "/settings",
+      "theme": "light",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/settings"
+    },
+    {
+      "route": "/settings",
+      "path": "/settings",
+      "theme": "booth",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/settings"
+    },
+    {
+      "route": "/settings",
+      "path": "/settings",
+      "theme": "booth",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/settings"
+    },
+    {
+      "route": "/settings",
+      "path": "/settings",
+      "theme": "booth",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/settings"
+    },
+    {
+      "route": "/settings",
+      "path": "/settings",
+      "theme": "booth",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/settings"
+    },
+    {
+      "route": "/sources",
+      "path": "/sources",
+      "theme": "dark",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -173 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources"
+    },
+    {
+      "route": "/sources",
+      "path": "/sources",
+      "theme": "dark",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -106 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources"
+    },
+    {
+      "route": "/sources",
+      "path": "/sources",
+      "theme": "dark",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -90 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources"
+    },
+    {
+      "route": "/sources",
+      "path": "/sources",
+      "theme": "dark",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources",
+      "scrollCheck": "not exercised: document has no scroll range"
+    },
+    {
+      "route": "/sources",
+      "path": "/sources",
+      "theme": "light",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources",
+      "scrollCheck": "not exercised: document has no scroll range"
+    },
+    {
+      "route": "/sources",
+      "path": "/sources",
+      "theme": "light",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -106 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources"
+    },
+    {
+      "route": "/sources",
+      "path": "/sources",
+      "theme": "light",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources",
+      "scrollCheck": "not exercised: document has no scroll range"
+    },
+    {
+      "route": "/sources",
+      "path": "/sources",
+      "theme": "light",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources",
+      "scrollCheck": "not exercised: document has no scroll range"
+    },
+    {
+      "route": "/sources",
+      "path": "/sources",
+      "theme": "booth",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -371 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources"
+    },
+    {
+      "route": "/sources",
+      "path": "/sources",
+      "theme": "booth",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources"
+    },
+    {
+      "route": "/sources",
+      "path": "/sources",
+      "theme": "booth",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -152 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources"
+    },
+    {
+      "route": "/sources",
+      "path": "/sources",
+      "theme": "booth",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources",
+      "scrollCheck": "not exercised: document has no scroll range"
+    },
+    {
+      "route": "/sources/import",
+      "path": "/sources/import",
+      "theme": "dark",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources/import"
+    },
+    {
+      "route": "/sources/import",
+      "path": "/sources/import",
+      "theme": "dark",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources/import"
+    },
+    {
+      "route": "/sources/import",
+      "path": "/sources/import",
+      "theme": "dark",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -358 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources/import"
+    },
+    {
+      "route": "/sources/import",
+      "path": "/sources/import",
+      "theme": "dark",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -444 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources/import"
+    },
+    {
+      "route": "/sources/import",
+      "path": "/sources/import",
+      "theme": "light",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources/import"
+    },
+    {
+      "route": "/sources/import",
+      "path": "/sources/import",
+      "theme": "light",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources/import"
+    },
+    {
+      "route": "/sources/import",
+      "path": "/sources/import",
+      "theme": "light",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -358 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources/import"
+    },
+    {
+      "route": "/sources/import",
+      "path": "/sources/import",
+      "theme": "light",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -444 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources/import"
+    },
+    {
+      "route": "/sources/import",
+      "path": "/sources/import",
+      "theme": "booth",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources/import"
+    },
+    {
+      "route": "/sources/import",
+      "path": "/sources/import",
+      "theme": "booth",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources/import"
+    },
+    {
+      "route": "/sources/import",
+      "path": "/sources/import",
+      "theme": "booth",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -423 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources/import"
+    },
+    {
+      "route": "/sources/import",
+      "path": "/sources/import",
+      "theme": "booth",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "heading",
+          "message": "Expected one visible page h1"
+        },
+        {
+          "rule": "header",
+          "message": "Expected one visible AppHeader"
+        },
+        {
+          "rule": "skip-link",
+          "message": "Missing skip link to main"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources/import"
+    },
+    {
+      "route": "/sources/targets",
+      "path": "/sources/targets",
+      "theme": "dark",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -173 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources/targets"
+    },
+    {
+      "route": "/sources/targets",
+      "path": "/sources/targets",
+      "theme": "dark",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -402 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources/targets"
+    },
+    {
+      "route": "/sources/targets",
+      "path": "/sources/targets",
+      "theme": "dark",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources/targets",
+      "scrollCheck": "not exercised: document has no scroll range"
+    },
+    {
+      "route": "/sources/targets",
+      "path": "/sources/targets",
+      "theme": "dark",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources/targets",
+      "scrollCheck": "not exercised: document has no scroll range"
+    },
+    {
+      "route": "/sources/targets",
+      "path": "/sources/targets",
+      "theme": "light",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -173 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources/targets"
+    },
+    {
+      "route": "/sources/targets",
+      "path": "/sources/targets",
+      "theme": "light",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -402 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources/targets"
+    },
+    {
+      "route": "/sources/targets",
+      "path": "/sources/targets",
+      "theme": "light",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -90 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources/targets"
+    },
+    {
+      "route": "/sources/targets",
+      "path": "/sources/targets",
+      "theme": "light",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -173 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources/targets"
+    },
+    {
+      "route": "/sources/targets",
+      "path": "/sources/targets",
+      "theme": "booth",
+      "width": 390,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -83 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources/targets"
+    },
+    {
+      "route": "/sources/targets",
+      "path": "/sources/targets",
+      "theme": "booth",
+      "width": 390,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -500 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources/targets"
+    },
+    {
+      "route": "/sources/targets",
+      "path": "/sources/targets",
+      "theme": "booth",
+      "width": 1440,
+      "size": "m",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        },
+        {
+          "rule": "header-scroll",
+          "message": "Header moved to -152 after scrolling"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources/targets"
+    },
+    {
+      "route": "/sources/targets",
+      "path": "/sources/targets",
+      "theme": "booth",
+      "width": 1440,
+      "size": "xl",
+      "findings": [
+        {
+          "rule": "connection",
+          "message": "Missing connection status"
+        },
+        {
+          "rule": "tools",
+          "message": "Missing More actions menu"
+        }
+      ],
+      "finalURL": "http://127.0.0.1:3006/sources/targets",
+      "scrollCheck": "not exercised: document has no scroll range"
+    }
+  ],
+  "coverageGaps": [
+    "No concrete example for *",
+    "No concrete example for /callback/:service",
+    "No concrete example for /settings/:settingId",
+    "No concrete example for /track/:id",
+    "No concrete example for /tracks/:id"
+  ],
+  "manualReview": [
+    "Copy meaning, action wording and editorial correctness",
+    "Truth of displayed data, provider provenance and freshness",
+    "All loading, empty, error, offline and interactive states not reached in this run",
+    "Visual comparison with component previews; keyboard/focus, reduced motion and print checks",
+    "Route discovery supports literal declarations; computed route declarations need review"
+  ]
+}
