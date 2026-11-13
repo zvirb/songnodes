@@ -607,21 +607,42 @@
     }
   };
 
-  /* ---------- preferences (theme, text size, density) ---------- */
-  var PREF_KEYS = { theme: "sn-theme", textSize: "sn-text-size", density: "sn-density" };
-  function store(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
-  function read(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  /* ---------- preferences (theme, text size, density, motion) ----------
+     A write that browser storage refuses (private window, blocked site data, full quota) never loses the choice for the visit:
+     the value is kept in memory and read before storage until the page is closed, the setting is still applied, and the first
+     refusal of each setting is logged once at warn (SongNodes.diag.warn when present, console.warn otherwise). A later write that
+     storage accepts clears the memory copy. The next visit opens on the defaults. */
+  var PREF_KEYS = { theme: "sn-theme", textSize: "sn-text-size", density: "sn-density", motion: "sn-motion" };
+  var KEPT = {}, REFUSED = {};
+  function hasOwn(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
+  function refused(k, err) {
+    var kind = k.replace(/:.*$/, ""); if (REFUSED[kind]) return; REFUSED[kind] = 1;
+    var name = kind.replace(/^sn-/, "").replace(/-/g, " ") + (kind === "sn-dismiss" ? "ed warning" : " setting");
+    var what = "browser storage refused the " + name + ": kept for this visit only", type = err && err.name ? err.name : "Error";
+    try {
+      var d = window.SongNodes && window.SongNodes.diag;
+      if (d && typeof d.warn === "function") d.warn("storage", what, { name: name, type: type });   /* SongNodes.diag.warn(area, message, context) */
+      else if (window.console && console.warn) console.warn("SongNodes: " + what + " (" + type + ").");
+    } catch (e2) {}
+  }
+  function store(k, v) {
+    try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); delete KEPT[k]; return true; }
+    catch (e) { KEPT[k] = v == null ? null : String(v); refused(k, e); return false; }
+  }
+  function read(k) { if (hasOwn(KEPT, k)) return KEPT[k]; try { return localStorage.getItem(k); } catch (e) { return null; } }
   var prefs = {
     /** theme: "dark" | "light" | "booth" | "system" (null) */
     setTheme: function (t) { var root = document.documentElement; if (!t || t === "system") { store(PREF_KEYS.theme, null); prefs.applySystem(); } else { store(PREF_KEYS.theme, t); root.setAttribute("data-theme", t); } },
     applySystem: function () { var light = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches; document.documentElement.setAttribute("data-theme", light ? "light" : "dark"); },
     setTextSize: function (s) { store(PREF_KEYS.textSize, s); if (s && s !== "m") document.documentElement.setAttribute("data-text-size", s); else document.documentElement.removeAttribute("data-text-size"); },
     /** motion: "system" | "reduce" | "full" */
-    setMotion: function (m) { store("sn-motion", m === "system" ? null : m); if (m && m !== "system") document.documentElement.setAttribute("data-motion", m); else document.documentElement.removeAttribute("data-motion"); },
+    setMotion: function (m) { store(PREF_KEYS.motion, m === "system" ? null : m); if (m && m !== "system") document.documentElement.setAttribute("data-motion", m); else document.documentElement.removeAttribute("data-motion"); },
     setDensity: function (d) { store(PREF_KEYS.density, d); document.documentElement.setAttribute("data-density", d === "compact" ? "compact" : "comfortable"); },
-    /** Call once, as early as possible (inline in <head>), to avoid a flash of the wrong theme. */
-    init: function () { var t = read(PREF_KEYS.theme); if (t) document.documentElement.setAttribute("data-theme", t); else prefs.applySystem(); var s = read(PREF_KEYS.textSize); if (s) prefs.setTextSize(s); prefs.setDensity(read(PREF_KEYS.density) || "comfortable"); var mo = read("sn-motion"); if (mo) document.documentElement.setAttribute("data-motion", mo); },
-    get: function () { return { theme: read(PREF_KEYS.theme) || "system", textSize: read(PREF_KEYS.textSize) || "m", density: read(PREF_KEYS.density) || "comfortable", motion: read("sn-motion") || "system" }; }
+    /** Call once, as early as possible (inline in <head>), to avoid a flash of the wrong theme. Reads only: it never writes a setting back. */
+    init: function () { var t = read(PREF_KEYS.theme); if (t) document.documentElement.setAttribute("data-theme", t); else prefs.applySystem(); var s = read(PREF_KEYS.textSize); if (s && s !== "m") document.documentElement.setAttribute("data-text-size", s); document.documentElement.setAttribute("data-density", read(PREF_KEYS.density) === "compact" ? "compact" : "comfortable"); var mo = read(PREF_KEYS.motion); if (mo) document.documentElement.setAttribute("data-motion", mo); },
+    get: function () { return { theme: read(PREF_KEYS.theme) || "system", textSize: read(PREF_KEYS.textSize) || "m", density: read(PREF_KEYS.density) || "comfortable", motion: read(PREF_KEYS.motion) || "system" }; },
+    /** Keys whose last write storage refused: the value holds for this visit only. */
+    keptForVisit: function () { return Object.keys(KEPT); }
   };
 
 
@@ -650,23 +671,29 @@
   /** InfoTip behaviour, installed once per page (document-level, so tips added later work too):
       tooltip form opens after 500 ms on hover (as Tooltip, DR-055), at once on keyboard focus and tap (a tap pins it);
       panel form on click, tap, Enter or Space only.
-      One open at a time; Escape closes and returns focus; a click outside closes; it flips up or left near the viewport edge. */
+      One open at a time; a click outside closes; it flips up or left near the viewport edge.
+      Escape closes the open tip in the capture phase and consumes the key, so inside a Dialog or SideSheet the first Escape closes the tip
+      and the second closes the dialog. Focus returns to the button only when focus was inside the InfoTip, and a tip closed by Escape
+      while the pointer is on it stays closed until the pointer leaves (so a tip opened by hover does not reopen: WCAG 1.4.13, dismissable). */
   var infoTipsOn = false;
   function infoTips() {
     if (infoTipsOn || typeof document === "undefined") return; infoTipsOn = true;
-    var open = null, timer = null, pending = null, showTimer = null, touch = false, HOVER_DELAY = 500;
+    var open = null, timer = null, pending = null, showTimer = null, touch = false, shut = null, HOVER_DELAY = 500;
     function parts(w) { return [w.querySelector(":scope > .sn-infotip__btn"), w.querySelector(":scope > .sn-infotip__tip, :scope > .sn-infotip__panel")]; }
     function isPanel(w) { var t = parts(w)[1]; return !!t && t.classList.contains("sn-infotip__panel"); }
     function place(w) {
       var t = parts(w)[1], up = isPanel(w) ? "sn-popover--up" : "sn-infotip__tip--up", end = isPanel(w) ? "sn-popover--end" : "sn-infotip__tip--end";
       t.classList.remove(up, end);
       if (window.matchMedia && window.matchMedia("(max-width: 767.98px)").matches) return;
-      var r = t.getBoundingClientRect();
-      if (r.bottom > window.innerHeight - 8) t.classList.add(up);
-      if (r.right > window.innerWidth - 8) t.classList.add(end);
+      /* inside a Dialog or SideSheet the tip stays inside that box (it clips), so the flip is measured against it */
+      var box = w.closest("dialog, .sn-dialog, .sn-side-sheet"), lim = box ? box.getBoundingClientRect() : null;
+      var bottom = Math.min(window.innerHeight, lim ? lim.bottom : Infinity), right = Math.min(window.innerWidth, lim ? lim.right : Infinity), top = Math.max(0, lim ? lim.top : 0);
+      var r = t.getBoundingClientRect(), b = w.getBoundingClientRect();
+      if (r.bottom > bottom - 8 && b.top - r.height - 4 >= top + 8) t.classList.add(up);
+      if (r.right > right - 8) t.classList.add(end);
     }
     function show(w, pin) {
-      clearTimeout(showTimer); pending = null;
+      clearTimeout(showTimer); pending = null; shut = null;
       if (open && open !== w) hide(open, false);
       var p = parts(w); if (!p[1]) return;
       p[1].hidden = false; p[0].setAttribute("aria-expanded", "true"); w.dataset.pin = pin ? "1" : ""; open = w; place(w);
@@ -684,13 +711,15 @@
     });
     document.addEventListener("mouseover", function (e) {
       if (touch) return; var w = e.target.closest(".sn-infotip");
-      if (!w || isPanel(w)) return;
+      if (!w || isPanel(w) || shut === w) return;
       if (open === w) { clearTimeout(timer); return; }
       if (pending !== w) { clearTimeout(showTimer); pending = w; showTimer = setTimeout(function () { show(w, false); }, HOVER_DELAY); }
     });
     document.addEventListener("mouseout", function (e) {
       if (touch) return; var w = e.target.closest(".sn-infotip");
-      if (!w || w.contains(e.relatedTarget) || isPanel(w)) return;
+      if (!w || w.contains(e.relatedTarget)) return;
+      if (shut === w) shut = null;
+      if (isPanel(w)) return;
       if (pending === w) { clearTimeout(showTimer); pending = null; }
       if (open === w && !w.dataset.pin) timer = setTimeout(function () { hide(w, false); }, 300);
     });
@@ -699,10 +728,18 @@
       if (open && open !== w) hide(open, false);
       if (w && e.target === parts(w)[0] && !isPanel(w) && open !== w) show(w, false);
     });
-    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && open) { e.stopPropagation(); hide(open, true); } }, true);
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Escape") return;
+      if (pending) { clearTimeout(showTimer); pending = null; }
+      if (!open) return;
+      e.preventDefault(); e.stopPropagation();
+      var w = open, hovered = false; try { hovered = w.matches(":hover"); } catch (err) {}
+      hide(w, w.contains(document.activeElement)); if (hovered) shut = w;
+    }, true);
   }
   /** Dismissed warnings: kept on this device, per page and fact key (include the value, so a changed fact shows again),
-      until the next day in Melbourne. Nothing is recorded anywhere else; storage failures simply show the warning. */
+      until the next day in Melbourne. Nothing is recorded anywhere else; when storage refuses the write the warning stays
+      dismissed for this visit only (logged once at warn) and shows again on the next visit. */
   var dismissal = {
     key: function (page, fact) { return "sn-dismiss:" + page + ":" + fact; },
     isDismissed: function (page, fact) { var d = read(dismissal.key(page, fact)); return !!d && d === calendar.today(); },
@@ -710,8 +747,89 @@
     restore: function (page, fact) { store(dismissal.key(page, fact), null); }
   };
 
+  /* ---------- Toast: the one way a page raises a confirmation (components/Toast/README.md) ----------
+     SongNodes.toast("Set saved") or SongNodes.toast({ text | html, action: "Undo", onAction: fn, ms }).
+     Confirmations only: there is no warn, error or alert toast (a failure is an InlineMessage, a Banner or the component's own mark).
+     One region per page with role="status" (made on first use, or call SongNodes.toast.mount() at start so the live region exists
+     before the first words); one toast visible, up to 3 waiting (oldest dropped); 4 s, 8 s with an action; hover and focus pause it.
+     At most one action, drawn as one small button straight before the dismiss button, and only when it has a handler. Pressing it
+     calls onAction once and closes the toast; when onAction returns false (the action could not start) the toast stays.
+     A toast never takes focus; when it closes with focus inside, focus returns to where it came from. */
+  var toastState = { region: null, queue: [], current: null, timer: null, remaining: 0, started: 0, from: null, bound: false };
+  function toastRegion() {
+    var T = toastState;
+    if (T.region && document.body.contains(T.region)) return T.region;
+    var r = document.querySelector(".sn-toast__region[data-sn-toasts]") || document.querySelector(".sn-toast__region:empty");
+    if (!r) { r = document.createElement("div"); r.className = "sn-toast__region"; document.body.appendChild(r); }
+    r.setAttribute("data-sn-toasts", ""); r.setAttribute("role", "status"); r.setAttribute("aria-live", "polite"); r.setAttribute("aria-atomic", "false");
+    if (!r.getAttribute("aria-label")) r.setAttribute("aria-label", "Notifications");
+    T.region = r;
+    if (!T.bound) {
+      T.bound = true;
+      document.addEventListener("keydown", function (e) { if (e.key === "Escape" && T.current && T.region && T.region.contains(document.activeElement)) { e.stopPropagation(); toastHide("dismiss"); } }, true);
+    }
+    return r;
+  }
+  function toastHtml(t, waiting) {
+    return '<div class="sn-toast">' +
+      '<span class="sn-toast__icon">' + icon("circle-check") + "</span>" +
+      '<span class="sn-toast__text">' + (t.html != null ? t.html : esc(t.text)) + "</span>" +
+      '<span class="sn-toast__queue"' + (waiting ? "" : " hidden") + ">+" + waiting + " more</span>" +
+      (t.action && typeof t.onAction === "function" ? '<button class="sn-btn sn-btn--sm sn-toast__action" type="button" data-toast-action>' + esc(t.action) + "</button>" : "") +
+      '<button class="sn-btn sn-btn--sm sn-btn--icon sn-btn--quiet sn-toast__close" type="button" aria-label="Dismiss notification" data-toast-close>' + icon("x") + "</button></div>";
+  }
+  function toastPause() { var T = toastState; if (T.timer) { clearTimeout(T.timer); T.timer = null; T.remaining -= Date.now() - T.started; } }
+  function toastResume() { var T = toastState; if (!T.current || T.timer) return; T.started = Date.now(); T.timer = setTimeout(function () { toastHide("timeout"); }, Math.max(T.remaining, 1000)); }
+  function toastShow() {
+    var T = toastState; if (T.current || !T.queue.length) return;
+    var region = toastRegion(), t = T.current = T.queue.shift();
+    T.remaining = t.ms || (t.action && typeof t.onAction === "function" ? toast.DEFAULT_MS.action : toast.DEFAULT_MS.plain); T.from = null;
+    region.innerHTML = toastHtml(t, T.queue.length);
+    var el = region.firstChild;
+    el.addEventListener("mouseenter", toastPause); el.addEventListener("mouseleave", function () { if (!el.contains(document.activeElement)) toastResume(); });
+    el.addEventListener("focusin", function (e) { if (!T.from && e.relatedTarget && !el.contains(e.relatedTarget)) T.from = e.relatedTarget; toastPause(); });
+    el.addEventListener("focusout", function (e) { if (!el.contains(e.relatedTarget)) toastResume(); });
+    el.addEventListener("click", function (e) {
+      if (e.target.closest("[data-toast-close]")) { toastHide("dismiss"); return; }
+      if (e.target.closest("[data-toast-action]")) { var keep = false; try { keep = t.onAction() === false; } catch (err) { if (window.console) console.warn("SongNodes.toast: the action failed.", err); } if (!keep) toastHide("action"); }
+    });
+    toastResume();
+  }
+  function toastHide(why) {
+    var T = toastState; clearTimeout(T.timer); T.timer = null;
+    var t = T.current, region = T.region, el = region && region.firstChild;
+    if (!t) return;
+    if (!el) { T.current = null; if (t.done) t.done(why); toastShow(); return; }
+    var hadFocus = el.contains(document.activeElement), from = T.from;
+    el.setAttribute("data-leaving", "");
+    setTimeout(function () {
+      if (T.current !== t) return;
+      region.innerHTML = ""; T.current = null;
+      if (hadFocus && from && document.body.contains(from) && typeof from.focus === "function") from.focus();
+      if (t.done) t.done(why);
+      toastShow();
+    }, 130);
+  }
+  /** Raise a confirmation toast. Returns { dismiss(), closed } where closed (when Promise exists) resolves with
+      "timeout" | "dismiss" | "action" | "dropped" once the toast has left. */
+  function toast(o) {
+    if (typeof document === "undefined") return null;
+    var t = typeof o === "string" ? { text: o } : { text: o.text, html: o.html, action: o.action, onAction: o.onAction, ms: o.ms };
+    if (o && (o.role === "alert" || o.kind === "warn" || o.kind === "bad" || o.kind === "error") && window.console) console.warn("SongNodes.toast: a toast is a confirmation only; say a failure or warning with an InlineMessage or a Banner.");
+    var T = toastState, handle = { dismiss: function () { if (T.current === t) toastHide("dismiss"); else { var i = T.queue.indexOf(t); if (i >= 0) { T.queue.splice(i, 1); toastCount(); if (t.done) t.done("dismiss"); } } }, closed: null };
+    if (typeof Promise === "function") handle.closed = new Promise(function (res) { t.done = res; });
+    toastRegion();
+    if (T.queue.length >= 3) { var old = T.queue.shift(); if (old.done) old.done("dropped"); }   /* never more than 3 waiting */
+    T.queue.push(t); toastCount(); toastShow();
+    return handle;
+  }
+  function toastCount() { var T = toastState, q = T.current && T.region && T.region.querySelector(".sn-toast__queue"); if (q) { q.textContent = "+" + T.queue.length + " more"; q.hidden = !T.queue.length; } }
+  toast.mount = function () { return toastRegion(); };
+  /** How long a toast stays: plain, and with an action. One place to change (Toast card, Behaviour). */
+  toast.DEFAULT_MS = { plain: 4000, action: 8000 };
+
   window.SongNodes = {
-    version: "1.10.0", DOMAIN_MAP: DOMAIN_MAP,
+    version: "1.14.0", DOMAIN_MAP: DOMAIN_MAP,
     locale: LOCALE, timeZone: TZ,
     modules: MODULES, module: function (k) { for (var i = 0; i < MODULES.length; i++) if (MODULES[i].key === k) return MODULES[i]; return null; },
     icons: ICONS, icon: icon, iconNames: Object.keys(ICONS),
@@ -720,6 +838,1298 @@
     edgeBand: edgeBand, EDGE_BAND_LABEL: EDGE_BAND_LABEL, EDGE_CUTS_DEFAULT: EDGE_CUTS_DEFAULT, fitEdgeCuts: fitEdgeCuts, edgeVisibility: edgeVisibility, seatBox: seatBox, ringLayout: ringLayout, neighbourhood: neighbourhood,
     format: format, calendar: calendar, dateRange: dateRange, csv: csv, status: status, GLYPH: GLYPH,
     html: html, prefs: prefs, esc: esc,
-    goIcon: goIcon, sourceLink: sourceLink, infoTip: infoTip, infoTips: infoTips, dismissal: dismissal
+    goIcon: goIcon, sourceLink: sourceLink, infoTip: infoTip, infoTips: infoTips, dismissal: dismissal, toast: toast
   };
+})();
+
+/* SongNodes LiveChange (SN_LIVE 1.0, design system 1.11.0, 8 Nov 2026). Port of LedgerSchedule components/lib/livechange.js
+   (LS_LIVE 1.0, v5.9) by source/port_live.py: logic and timings unchanged (they match the live-* tokens); classes are .sn-lc-*.
+   SongNodes fit (08-motion, LiveChange card, DR-059 to DR-061): data-motion="full" overrides the system reduced-motion setting;
+   'another computer' is another device or the weekly run; a move put back is said by an InlineMessage, never a warning toast
+   (toasts are confirmations only); the generating placeholder and the waiting border stand still (nothing loops but the spinner).
+   SongNodes.live wraps it and defers a remote change while the person is pointing at, focused in or dragging the list. */
+window.SN_LIVE = (function () {
+  'use strict';
+  var DEF_TOAST = null, ICON = function () { return ''; };
+  var LIMIT = 12,          /* LVC-034: more items than this moving in view at once: no glide, markers only */
+    MARK_MS = 4000,        /* LVC-008: a remote marker stays 4 s once seen */
+    FAILED_MS = 8000,      /* LVC-016: a put-back marker stays as long as its warn toast (8 s, BAN-041) */
+    PENDING_AFTER = 1000,  /* LVC-014: a save still unconfirmed after 1 s shows the waiting border */
+    TRIES = 5,             /* LVC-015: five tries before a move is put back */
+    TRY_TIMEOUT = 10000,   /* LVC-015: a try the writer has not answered in 10 s counts as failed */
+    BACKOFF = 1000, BACKOFF_CAP = 16000,  /* LVC-015: exponential backoff, equal jitter: 0.5-1, 1-2, 2-4, 4-8 s */
+    GONE_HOLD = 4000,      /* LVC-028: a remote delete holds grey 4 s after the person is back at the page */
+    GONE_MIN = 1000,       /* LVC-027: a local delete holds grey at least 1 s, and for its whole Undo window */
+    STALL_MS = 60000,      /* LVC-025: a placeholder not filled in 60 s turns into a failed item (ASY-057) */
+    WAVE_PERIOD = 1600,    /* LVC-019: the placeholder sweep, left to right, until the item is filled */
+    FADE_IN = 160, FADE_OUT = 120, MARK_OUT = 400,
+    EASE = 'cubic-bezier(.2,0,.38,.9)';   /* Carbon productive standard */
+
+  /* LVC-037: the system setting, or the page's own Menu › View › Reduce motion (data-motion="reduce" on the root, MNU-108) */
+  function reduced() { var m = document.documentElement.getAttribute('data-motion'); if (m === 'full') return false; return m === 'reduce' || !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); }  /* SongNodes: data-motion=full overrides the system setting */
+
+  /* each element carries a generation: every mark, clear and remove bumps it, so a stale timer or observer does nothing */
+  function bump(e) { e._lcGen = (e._lcGen || 0) + 1; if (e._lcTimer) { clearTimeout(e._lcTimer); e._lcTimer = 0; } if (e._lcObs) { e._lcObs.disconnect(); e._lcObs = null; } return e._lcGen; }
+  function live(e, g) { return e._lcGen === g && document.contains(e); }
+
+  /* the person's input (LVC-009): a marker or a remote delete counts its time only once the person is at the page */
+  var inputWaiters = [];
+  ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(function (t) {
+    document.addEventListener(t, function () { var w = inputWaiters; inputWaiters = []; w.forEach(function (f) { f(); }); }, { capture: true, passive: true });
+  });
+  function inView(r) { return r.bottom > 0 && r.top < (window.innerHeight || 0) && r.right > 0 && r.left < (window.innerWidth || 0) && r.height > 0; }
+  function onScreen(e) { return inView(e.getBoundingClientRect()); }
+  /* whenSeen: the item is on screen AND the person has touched the page since the change; then cb. Dropped if the generation moves on. */
+  function whenSeen(e, g, cb) {
+    var seen = false, input = false, fire = function () { if (seen && input && live(e, g)) { seen = input = false; cb(); } };
+    inputWaiters.push(function () { if (!live(e, g)) return; input = true; fire(); });
+    if ('IntersectionObserver' in window) {
+      var o = new IntersectionObserver(function (en) {
+        if (!document.contains(e)) { o.disconnect(); return; }
+        if (en[0].isIntersecting) { o.disconnect(); if (e._lcObs === o) e._lcObs = null; seen = true; fire(); }
+      }, { threshold: 0 });
+      e._lcObs = o; o.observe(e);
+    } else { seen = true; fire(); }
+  }
+  /* LVC-032: duration by distance: under one row 150 ms, under about a screen-third 240 ms, otherwise 400 ms (the cap, GMO-062) */
+  function glideMs(d) { return d < 48 ? 150 : d < 400 ? 240 : 400; }
+  /* the outermost keyed elements: a keyed chip inside a keyed row moves with its row, not twice */
+  function els(root) {
+    return Array.prototype.filter.call(root.querySelectorAll('[data-key]'), function (e) {
+      for (var p = e.parentElement; p && p !== root; p = p.parentElement) if (p.hasAttribute('data-key')) return false;
+      return true;
+    });
+  }
+  function byKey(root, key) { var all = els(root); for (var i = 0; i < all.length; i++) if (all[i].dataset.key === String(key)) return all[i]; return null; }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function finish(root) {
+    /* LVC-036: a new change during an animation: the running one jumps to its end first, nothing queues */
+    els(root).forEach(function (e) { if (e.getAnimations) e.getAnimations().forEach(function (a) { if (String(a.id).indexOf('sn-lc-') === 0) a.finish(); }); });
+  }
+  function snap(root) { var m = {}; els(root).forEach(function (e) { m[e.dataset.key] = { el: e, r: e.getBoundingClientRect() }; }); return m; }
+  function anim(e, frames, ms, easing, id) {
+    if (!e.animate) return null;
+    var a = e.animate(frames, { duration: ms, easing: easing, fill: 'none' }); a.id = id; return a;
+  }
+  function done(a) { return new Promise(function (res) { if (!a) return res(); a.onfinish = a.oncancel = function () { res(); }; }); }
+  function wait(ms) { return new Promise(function (res) { setTimeout(res, ms); }); }
+
+  /* ---------- the one FLIP (LVC-031 to LVC-036) ----------
+     mutate() puts the DOM in its final state (re-using keyed elements). The final layout is measured first, so the
+     browser's scroll anchoring has already kept the reader's place; then each moved item on screen is translated back
+     to where it was and played to rest by a Web Animation (GMO-066: a transform played after layout). New items fade in. */
+  function flip(root, mutate, opts) {
+    opts = opts || {};
+    finish(root);
+    var before = snap(root);
+    mutate();
+    var after = snap(root);                      /* reading a rect lays out the final state (and anchors the scroll) */
+    var moves = [], adds = [];
+    Object.keys(after).forEach(function (k) {
+      var a = after[k], b = before[k];
+      if (!b) { if (inView(a.r)) adds.push(a.el); return; }
+      var dx = b.r.left - a.r.left, dy = b.r.top - a.r.top;
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+      if (!inView(b.r) && !inView(a.r)) return;  /* LVC-033: off screen takes its place at once */
+      moves.push({ el: a.el, dx: dx, dy: dy });
+    });
+    var go = !opts.instant && !reduced() && moves.length + adds.length <= LIMIT;
+    var list = [];
+    if (go) {
+      moves.forEach(function (m) {
+        list.push(anim(m.el, [{ transform: 'translate(' + m.dx + 'px,' + m.dy + 'px)' }, { transform: 'none' }], glideMs(Math.sqrt(m.dx * m.dx + m.dy * m.dy)), EASE, 'sn-lc-move'));
+      });
+      adds.forEach(function (e) { list.push(anim(e, [{ opacity: 0 }, { opacity: 1 }], FADE_IN, 'ease-out', 'sn-lc-in')); });
+    }
+    return { moved: moves.map(function (m) { return m.el; }), added: adds, animated: go, finished: Promise.all(list.map(done)) };
+  }
+
+  /* ---------- markers (LVC-005 to LVC-010, LVC-014 to LVC-016) ---------- */
+  /* a row's tag rides on its first cell, so it is in view however far a phone has scrolled the table sideways */
+  function host(e) { return e.tagName === 'TR' ? (e.cells[0] || e) : e; }
+  function dropTag(e) { var h = host(e), t = h.querySelector(':scope > .sn-lc-tag'); if (t) t.remove(); h.classList.remove('sn-lc-host'); }
+  function clearMark(e) {
+    if (!e) return;
+    bump(e);
+    e.classList.remove('sn-lc-remote', 'sn-lc-failed', 'sn-lc-pending', 'sn-lc-out');
+    dropTag(e);
+  }
+  /* kind: 'remote' | 'failed' | 'pending'; words: the tag ("Moved on Phone · 22:14");
+     ms: how long it stays; seen: count the time only once seen (remote) or from now (failed, which matches its toast) */
+  function mark(e, kind, words, ms, seen) {
+    if (!e) return;
+    clearMark(e);
+    var g = e._lcGen;
+    e.classList.add('sn-lc-' + kind);
+    if (words) {
+      var h = host(e); h.classList.add('sn-lc-host');
+      var t = el('span', 'sn-lc-tag ' + kind, words); t.setAttribute('aria-hidden', 'true'); h.appendChild(t);
+      e.title = words;                           /* LVC-010: the words stay in the title until the next change */
+    }
+    if (!ms) return;
+    var fade = function () {
+      if (!live(e, g)) return;
+      if (reduced()) { clearMark(e); return; }
+      e.classList.add('sn-lc-out'); e._lcTimer = setTimeout(function () { if (live(e, g)) clearMark(e); }, MARK_OUT);
+    };
+    var start = function () { e._lcTimer = setTimeout(fade, ms); };
+    if (seen) whenSeen(e, g, start); else start();     /* LVC-009 */
+  }
+
+  /* ---------- one polite live region, batched (LVC-038, LVC-039) ---------- */
+  var queue = [], qTimer = 0;
+  function region() {
+    var r = document.querySelector('.sn-lc-say');
+    if (!r) { r = el('p', 'sn-lc-say sr'); r.setAttribute('aria-live', 'polite'); document.body.appendChild(r); }
+    return r;
+  }
+  function say(text) {
+    if (!text) return;
+    queue.push(String(text).replace(/\.$/, '')); clearTimeout(qTimer);
+    qTimer = setTimeout(function () {
+      var r = region(), msg = queue.join('. ') + '.'; queue = [];
+      r.textContent = '';                        /* emptied first, so the same sentence twice is read twice */
+      requestAnimationFrame(function () { r.textContent = msg; });
+    }, 400);
+  }
+
+  /* ---------- toast (the page's own when given: opts.toast(msg, kind, action)) ----------
+     The fallback writes into the page's .toasts stack (BAN-033) as a .toast.warn with role="alert" (DND-029, LVC-040). */
+  function toast(opts, msg, action) {
+    var tf = opts.toast || DEF_TOAST; if (tf) { try { tf(msg, 'warn', action); return; } catch (e) { /* fall through to the stack */ } }
+    var stack = document.querySelector('.sn-lc-toasts');
+    if (!stack) { stack = el('div', 'sn-lc-toasts'); stack.setAttribute('aria-live', 'polite'); document.body.appendChild(stack); }
+    while (stack.children.length >= 3) stack.firstElementChild.remove();      /* BAN-038 */
+    var t = el('div', 'sn-lc-toast'); t.setAttribute('role', 'alert');
+    t.innerHTML = ICON('warning');
+    t.appendChild(el('span', null, msg));
+    if (action) {
+      var b = el('button', 'sn-btn sn-btn--sm'); b.type = 'button';
+      b.innerHTML = ICON('arrow-clockwise'); b.appendChild(document.createTextNode(action.label));
+      b.addEventListener('click', function () { t.remove(); action.fn(); }); t.appendChild(b);
+    }
+    var x = el('button', 'sn-btn sn-btn--sm sn-lc-dismiss'); x.type = 'button'; x.setAttribute('aria-label', 'Dismiss'); x.title = 'Dismiss';
+    x.innerHTML = ICON('x'); x.addEventListener('click', function () { t.remove(); }); t.appendChild(x);
+    t.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') t.remove(); });   /* BAN-067 */
+    stack.appendChild(t);
+    var timer, held = false, arm = function () { clearTimeout(timer); timer = setTimeout(function () { if (!held) t.remove(); }, FAILED_MS); };
+    t.addEventListener('mouseenter', function () { held = true; }); t.addEventListener('mouseleave', function () { held = false; arm(); });
+    t.addEventListener('focusin', function () { held = true; }); t.addEventListener('focusout', function () { held = false; arm(); });
+    arm();
+  }
+
+  /* SongNodes: changes come from a device (c.on: "Moved on Phone") or the weekly run (c.by: "Re-ordered by weekly run"), never a named person */
+  function who(verb, by, at, on) { return verb + (on ? ' on ' + on : by ? ' by ' + by : '') + (at ? ' · ' + at : ''); }
+  function summary(changes) {
+    var by = {}, order = [];
+    changes.forEach(function (c) { var k = (c.on ? c.on : (c.by || 'Another device')) + '\u0000' + (c.verb || 'Moved').toLowerCase(); if (!by[k]) { by[k] = 0; order.push(k); } by[k]++; });
+    return order.map(function (k) { var p = k.split('\u0000'), n = by[k]; return p[1].charAt(0).toUpperCase() + p[1].slice(1) + ' ' + n + ' ' + (n === 1 ? 'item' : 'items') + ' (' + p[0] + ')'; }).join('. ');
+  }
+
+  /* ---------- remote: the snapshot moved items another computer placed (LVC-004 to LVC-012) ----------
+     changes: [{ key, by, at, verb }] (verb defaults to 'Moved'); mutate re-renders to the snapshot. */
+  function remote(root, mutate, changes, opts) {
+    opts = opts || {}; changes = changes || [];
+    var res = flip(root, mutate, opts);
+    changes.forEach(function (c) { mark(byKey(root, c.key), 'remote', who(c.verb || 'Moved', c.by, c.at, c.on), MARK_MS, true); });
+    if (opts.say !== false && changes.length) say(opts.say || summary(changes));
+    return res;
+  }
+
+  /* ---------- this computer's own move: waiting, retried, saved or put back (LVC-013 to LVC-018) ----------
+     save: a function returning a promise that resolves when the snapshot writer has confirmed the move;
+     back: mutate that puts the item back where the snapshot says it is;
+     opts: { words (the toast), tag (the put-back tag, default "Not saved: put back"), retry, toast, onTry(n) }.
+     Five tries, each given 10 s, with exponential backoff and equal jitter between them; the waiting border from 1 s.
+     A newer send for the same key supersedes an older one: the older one's result is ignored. */
+  function backoff(n) { var d = Math.min(BACKOFF_CAP, BACKOFF * Math.pow(2, n - 1)); return d / 2 + Math.random() * d / 2; }
+  function timed(p) { return new Promise(function (res, rej) { var t = setTimeout(function () { rej(new Error('No answer from the SongNodes server')); }, TRY_TIMEOUT); Promise.resolve(p).then(function (v) { clearTimeout(t); res(v); }, function (x) { clearTimeout(t); rej(x); }); }); }
+  function send(root, key, save, back, opts) {
+    opts = opts || {};
+    var tokens = root._lcSend || (root._lcSend = {}), token = {}; tokens[key] = token;
+    var current = function () { return tokens[key] === token; };
+    var showing = false;
+    var t = setTimeout(function () { if (current() && !showing) { showing = true; mark(byKey(root, key), 'pending', 'Saving', 0); } }, PENDING_AFTER);
+    function attempt(n) {
+      if (!current()) return Promise.reject({ superseded: true });
+      if (n > 1) { clearTimeout(t); showing = true; mark(byKey(root, key), 'pending', 'Saving · try ' + n + ' of ' + TRIES, 0); }
+      if (opts.onTry) try { opts.onTry(n); } catch (e) { /* page hook */ }
+      return timed(Promise.resolve().then(save)).then(null, function (err) {
+        if (!current()) throw { superseded: true };
+        if (n >= TRIES) throw err;
+        return wait(backoff(n)).then(function () { return attempt(n + 1); });
+      });
+    }
+    return attempt(1).then(function (v) {
+      clearTimeout(t); if (current()) { delete tokens[key]; clearMark(byKey(root, key)); } return v;
+    }, function (err) {
+      clearTimeout(t);
+      if (!current() || (err && err.superseded)) throw err;
+      delete tokens[key];
+      clearMark(byKey(root, key));
+      flip(root, back, opts);
+      mark(byKey(root, key), 'failed', opts.tag || 'Not saved: put back', FAILED_MS, false);
+      toast(opts, opts.words || 'Couldn’t save the move after ' + TRIES + ' tries: it is back where it was.', opts.retry ? { label: 'Try again', fn: opts.retry } : null);
+      throw err;
+    });
+  }
+  /* cancel(root): forget every send in flight on this root (a page reset); their results are ignored */
+  function cancel(root) { root._lcSend = {}; }
+
+  /* ---------- a new item being generated (LVC-019 to LVC-025) ----------
+     insert() adds the placeholder element (class sn-lc-gen, the item's own shape with .sn-lc-bar lines, data-key);
+     opts: { key, label, fail: { words, retry, remove } } where label names what is coming ("run for Tue 27 Oct").
+     Not filled within 60 s, the placeholder turns into a failed item (opts.fail, LVC-025). */
+  function generating(root, insert, opts) {
+    opts = opts || {};
+    var res = flip(root, insert, opts), e = byKey(root, opts.key);
+    if (!e) return res;
+    e.classList.add('sn-lc-gen'); e.setAttribute('aria-busy', 'true'); e.setAttribute('aria-disabled', 'true');
+    var s = el('span', 'sn-sr sn-lc-gen-say', 'Generating: ' + (opts.label || 'new item')); host(e).appendChild(s);
+    /* SongNodes (LIV-017): the bars stand still; sn-lc-wave is kept only as a hook, 56-live-change.css gives it no animation */
+    e.style.setProperty('--lc-phase', -(performance.now() % WAVE_PERIOD) + 'ms');
+    e.classList.add('sn-lc-wave');
+    clearTimeout(e._lcStall);
+    e._lcStall = setTimeout(function () { if (document.contains(e) && e.classList.contains('sn-lc-gen')) failed(e, opts.fail || {}); }, STALL_MS);
+    say('New ' + (opts.label || 'item') + ' arrived, generating');
+    return res;
+  }
+  /* filled(): the page writes the real content into the same element (and removes the bars) */
+  function filled(e, fill, opts) {
+    opts = opts || {}; if (!e) return;
+    clearTimeout(e._lcStall);
+    e.classList.remove('sn-lc-wave');
+    var h = e.getBoundingClientRect().height;
+    fill();
+    e.classList.remove('sn-lc-gen', 'sn-lc-genfail'); e.removeAttribute('aria-busy'); e.removeAttribute('aria-disabled');
+    var s = e.querySelector('.sn-lc-gen-say'); if (s) s.remove();
+    if (!reduced()) anim(e, [{ opacity: 0.35 }, { opacity: 1 }], FADE_IN, 'ease-out', 'sn-lc-fill');
+    if (Math.abs(e.getBoundingClientRect().height - h) > 1 && window.console) console.warn('SN_LIVE: the filled item changed height (LVC-022)', e);
+    say(opts.say || ((opts.label || 'Item') + ' ready'));
+  }
+  /* failed(): generation failed or stalled; opts: { words, retry, remove, cols } */
+  function failed(e, opts) {
+    opts = opts || {}; if (!e) return;
+    clearTimeout(e._lcStall);
+    e.classList.remove('sn-lc-wave', 'sn-lc-gen'); e.classList.add('sn-lc-genfail'); e.removeAttribute('aria-busy'); e.removeAttribute('aria-disabled');
+    var line = el('div', 'sn-lc-failline'); line.setAttribute('role', 'alert');
+    line.innerHTML = ICON('x-circle');
+    line.appendChild(el('span', null, opts.words || 'Couldn’t generate this item.'));
+    if (opts.retry) { var b = el('button', 'sn-btn sn-btn--sm'); b.type = 'button'; b.innerHTML = ICON('arrow-clockwise'); b.appendChild(document.createTextNode('Try again')); b.onclick = opts.retry; line.appendChild(b); }
+    if (opts.remove) { var r = el('button', 'sn-btn sn-btn--sm'); r.type = 'button'; r.innerHTML = ICON('trash'); r.appendChild(document.createTextNode('Remove')); r.onclick = opts.remove; line.appendChild(r); }
+    if (e.tagName === 'TR') { var n = e.cells.length || opts.cols || 1; e.innerHTML = ''; var td = el('td'); td.colSpan = n; td.appendChild(line); e.appendChild(td); }
+    else { e.innerHTML = ''; e.appendChild(line); }
+  }
+
+  /* ---------- a deleted item (LVC-026 to LVC-030) ----------
+     opts: { by, at, label, hold } hold = ms, or a promise (the Undo window: resolves when the toast leaves, rejects on Undo).
+     Returns a promise that resolves when the item is gone ('undone' after an Undo). */
+  function remove(root, key, opts) {
+    opts = opts || {};
+    var e = typeof key === 'string' || typeof key === 'number' ? byKey(root, key) : key;
+    if (!e) return Promise.resolve();
+    clearMark(e);
+    var g = e._lcGen;
+    e.classList.add('sn-lc-gone'); e.inert = true; e.setAttribute('aria-disabled', 'true');
+    if (opts.by || opts.on) {
+      var words = who('Removed', opts.by, opts.at, opts.on), h = host(e); h.classList.add('sn-lc-host');
+      var t = el('span', 'sn-lc-tag gone', words); t.setAttribute('aria-hidden', 'true'); h.appendChild(t);
+      e.title = words;                                    /* LVC-043 */
+      say(summary([{ by: opts.by, on: opts.on, verb: 'Removed' }]));   /* LVC-039: "Removed 1 item (Laptop)" */
+    }
+    /* LVC-027: a local delete holds for its whole Undo window and at least 1 s.
+       LVC-028: a remote delete holds until 4 s after the person next touches the page; if the item is off screen
+       at that moment it goes at once, so nothing waits on a part of the page nobody is looking at. */
+    var until;
+    if (opts.hold != null) until = Promise.all([typeof opts.hold === 'number' ? wait(opts.hold) : Promise.resolve(opts.hold), wait(GONE_MIN)]);
+    else if (opts.by) until = new Promise(function (res) {
+      inputWaiters.push(function () { if (!live(e, g)) return res(); if (onScreen(e)) setTimeout(res, GONE_HOLD); else res(); });
+    });
+    else until = wait(GONE_MIN);
+    return until.then(function () {
+      if (!document.contains(e) || e._lcGen !== g) return;
+      var go = !reduced() && onScreen(e);
+      return (go ? done(anim(e, [{ opacity: 1 }, { opacity: 0 }], FADE_OUT, 'ease-in', 'sn-lc-out')) : Promise.resolve()).then(function () {
+        e.style.opacity = '0';
+        return flip(root, function () { e.remove(); }).finished;
+      });
+    }, function () { restore(e); return 'undone'; });
+  }
+  /* restore(e): un-grey an item (Undo); restore(e, { words, retry, toast }) also says the delete did not save (LVC-030) */
+  function restore(e, opts) {
+    if (!e) return;
+    bump(e);
+    e.classList.remove('sn-lc-gone'); e.inert = false; e.removeAttribute('aria-disabled'); e.style.opacity = '';
+    var t = host(e).querySelector(':scope > .sn-lc-tag.gone'); if (t) { t.remove(); host(e).classList.remove('sn-lc-host'); e.removeAttribute('title'); }
+    if (opts && opts.words) toast(opts, opts.words, opts.retry ? { label: 'Try again', fn: opts.retry } : null);
+  }
+
+  /* ---------- Menu › View › Reduce motion (MNU-108 to MNU-111) ----------
+     motionToggle(button): binds a .mi.tog to data-motion on the root and the device key 'motion'.
+     The head snippet in the card applies the stored choice before first paint. */
+  function motionToggle(b) {
+    if (!b) return;
+    var root = document.documentElement;
+    function set(on) {
+      if (on) root.setAttribute('data-motion', 'reduce'); else root.removeAttribute('data-motion');
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      try { if (on) localStorage.setItem('motion', 'reduce'); else localStorage.removeItem('motion'); } catch (x) { /* storage blocked: this visit only */ }
+    }
+    set(root.getAttribute('data-motion') === 'reduce');
+    b.addEventListener('click', function () { set(b.getAttribute('aria-pressed') !== 'true'); });
+  }
+
+  /* ---------- an item added or brought back (Undo): the gap opens, the item fades in (LVC-031) ---------- */
+  function insert(root, mutate, opts) { return flip(root, mutate, opts); }
+
+  return { version: '1.0.0', source: 'LedgerSchedule LS_LIVE 1.0 (v5.9, 8 Nov 2026)', setToast: function (f) { DEF_TOAST = f; }, setIcon: function (f) { ICON = f; }, flip: flip, remote: remote, send: send, cancel: cancel, generating: generating, filled: filled, failed: failed,
+    remove: remove, restore: restore, insert: insert, motionToggle: motionToggle, mark: mark, clearMark: clearMark, say: say,
+    reduced: reduced, limits: { LIMIT: LIMIT, MARK_MS: MARK_MS, FAILED_MS: FAILED_MS, PENDING_AFTER: PENDING_AFTER, TRIES: TRIES, TRY_TIMEOUT: TRY_TIMEOUT,
+      BACKOFF: BACKOFF, BACKOFF_CAP: BACKOFF_CAP, GONE_HOLD: GONE_HOLD, GONE_MIN: GONE_MIN, STALL_MS: STALL_MS, WAVE_PERIOD: WAVE_PERIOD } };
+})();
+
+/* SongNodes.live: the SongNodes entry point (08-motion "Layout stability when data changes"): a remote change never moves rows
+   while the person is pointing at, focused in or dragging the list; it waits, and opts.onQueued(count, apply) lets the page show
+   "2 changes – Show" (or apply them when the pointer leaves). send and remove say a put-back with an InlineMessage after the list. Everything else is SN_LIVE unchanged.
+   Comments citing LVC-, BAN-, DND- are the LedgerSchedule v5.9 rule IDs the code came from; the SongNodes rules are LIV-001 to LIV-020. */
+(function () {
+  "use strict";
+  var SN_LIVE = window.SN_LIVE; if (!SN_LIVE) return;
+  var queues = new WeakMap();
+  function busy(root) { return !!(root.matches(":hover") || root.querySelector(":focus") || root.querySelector("[aria-grabbed=true], .sn-dnd--dragging, [data-dragging]")); }
+  function flush(root) { var q = queues.get(root); if (!q || !q.items.length) return; var items = q.items; q.items = []; items.forEach(function (a) { SN_LIVE.remote(root, a.mutate, a.changes, a.opts); }); }
+  function remote(root, mutate, changes, opts) {
+    opts = opts || {};
+    if (!busy(root)) return SN_LIVE.remote(root, mutate, changes, opts);
+    var q = queues.get(root);
+    if (!q) { q = { items: [] }; queues.set(root, q); root.addEventListener("pointerleave", function () { if (!busy(root)) flush(root); }); root.addEventListener("focusout", function () { setTimeout(function () { if (!busy(root)) flush(root); }, 0); }); }
+    q.items.push({ mutate: mutate, changes: changes, opts: opts });
+    if (opts.onQueued) opts.onQueued(q.items.length, function () { flush(root); });
+    return { queued: true };
+  }
+  var api = {}; for (var k in SN_LIVE) api[k] = SN_LIVE[k];
+  /* LIV-008: a put-back is said by an InlineMessage (warn, role=alert, Try again) straight after the list, never a toast */
+  function inline(root) {
+    return function (msg, kind, action) {
+      var after = root.closest('table') || root;          /* never inside a table: after it */
+      var box = after.nextElementSibling && after.nextElementSibling.classList.contains('sn-lc-said') ? after.nextElementSibling : null;
+      if (!box) { box = document.createElement('p'); box.className = 'sn-inline-message sn-lc-said'; after.insertAdjacentElement('afterend', box); }
+      box.setAttribute('data-status', 'warn'); box.setAttribute('role', 'alert'); box.textContent = '';
+      var words = document.createElement('span'); words.textContent = msg + ' '; box.appendChild(words);
+      if (action) {
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'sn-btn sn-btn--sm sn-inline-message__action'; b.textContent = action.label;
+        b.addEventListener('click', function () { box.remove(); action.fn(); }); box.appendChild(b);
+      }
+    };
+  }
+  function send(root, key, save, back, opts) { opts = opts || {}; if (!opts.toast) opts.toast = inline(root); return SN_LIVE.send(root, key, save, back, opts); }
+  function remove(root, key, opts) { opts = opts || {}; if (!opts.toast) opts.toast = inline(root); return SN_LIVE.remove(root, key, opts); }
+  api.send = send; api.remove = remove;
+  api.remote = remote; api.queued = function (root) { var q = queues.get(root); return q ? q.items.length : 0; }; api.flush = flush;
+  window.SongNodes = window.SongNodes || {}; window.SongNodes.live = api;
+})();
+
+/* SongNodes Diagnostics (SongNodes.diag 1.0.0, design system 1.14.0). Port of LedgerSchedule components/lib/diag.js
+   (BA_DIAG 1.0.1, v5.34) by source/port_diag.py: logic, limits and the line format unchanged.
+   Line: [SN <page> <build>] <level> <area>: <message> {name, count, ms, type, code, why, attempt}
+   Milestones at console.debug, problems the page recovers from at console.warn, failures at console.error. Captures script
+   errors, unhandled rejections, assets that did not load, policy violations and long tasks by itself; a page's catch sites
+   call SongNodes.diag.report(area, error, context). Names, counts, types and timings only: never a track, artist or set
+   title, a token, an API key or a path. Memory only (the last 300 lines); no network, no storage, no styles; it never
+   throws and never changes the page. Generated file: edit source/port_diag.py, not this file. */
+(function () {
+  'use strict';
+  var SN = window.SongNodes = window.SongNodes || {};
+  if (SN.diag) return;
+  SN.diag = (function () {
+  var LIM = { BUFFER: 300, REPEAT: 5, REPEAT_MS: 60000, LONGTASK: 200, MSG: 160, VAL: 80 };
+  var KEYS = ['name', 'count', 'ms', 'type', 'code', 'why', 'attempt'];
+  var PATH = /(^|[\s"'(,;=])(?:[a-z][\w+.-]*:\/\/|[A-Za-z]:[\\/]|\\\\|\/(?=[^\s"'<>()\\/]+[\\/]))(?:[^\s"'<>()\\/]*[\\/])*([^\s"'<>()\\/?#]*)(?:[?#][^\s"'<>()]*)?/g;
+  /* SongNodes: what a line never holds besides a path. QUOTED: text in double or curly quotes (titles are written in them);
+     SECRET: key=value secrets; BEARER: a bearer token; TOKEN: 20 or more letters and digits mixed (an id, a key, a token; a file name keeps its leaf) */
+  var QUOTED = /"[^"]*"|\u201c[^\u201d]*\u201d/g, SECRET = /\b(access_token|refresh_token|token|api[_-]?key|key|secret|password|authorization)\s*[=:]\s*[^\s,;&}]+/gi,
+    BEARER = /\bBearer\s+\S+/gi, TOKEN = /\b(?=[\w-]*\d)(?=[\w-]*[A-Za-z])[\w-]{20,}\b(?!\.[a-z0-9]{2,5}(?![\w.-]))/g;
+  var buf = [], rep = {}, reps = 0, cfg = {}, t0 = Date.now(), doc = document;
+  function meta(n) { var m = doc.querySelector('meta[name="sn-' + n + '"]'); return (m && m.content) || ''; }
+  function conf(n, d) { return String(cfg[n] || meta(n) || d).replace(/\s+/g, '-'); }
+  function leaf(u) { return String(u || '').split(/[?#]/)[0].split(/[\\/]/).pop(); }
+  function scrub(s, n) { s = String(s == null ? '' : s).replace(QUOTED, '[text]').replace(BEARER, 'Bearer [hidden]').replace(SECRET, '$1=[hidden]').replace(PATH, '$1$2').replace(TOKEN, '[hidden]').replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+  function ms() { return Math.round(performance.now()); }
+  function put(level, text, ctx, now) {
+    var a = [], i, v;
+    for (i = 0; ctx && i < KEYS.length; i++) { v = ctx[KEYS[i]]; if (v != null && v !== '') a.push(KEYS[i] + ': ' + (typeof v === 'number' ? v : scrub(v, LIM.VAL))); }
+    var line = '[SN ' + conf('page', 'page') + ' ' + conf('build', 'nobuild') + '] ' + level + ' ' + text + (a.length ? ' {' + a.join(', ') + '}' : '');
+    buf.push({ t: now - t0, level: level, line: line }); if (buf.length > LIM.BUFFER) buf.shift();
+    if (window.console && console[level]) console[level](line);
+  }
+  function log(level, area, msg, ctx) {
+    try {
+      var now = Date.now(), text = area + ': ' + scrub(msg, LIM.MSG), k = level + ' ' + text, r = rep[k];
+      if (!r || now - r.t > LIM.REPEAT_MS) {
+        if (r && r.n > LIM.REPEAT) put('debug', text, { count: r.n - LIM.REPEAT, why: 'repeats not shown' }, now);
+        if (!r && ++reps > 500) { rep = {}; reps = 1; }
+        r = rep[k] = { t: now, n: 0 };
+      }
+      if (++r.n <= LIM.REPEAT) put(level, text, ctx, now);
+    } catch (e) { /* diagnostics never break the page */ }
+  }
+  /* report(area, error, { name, count, ms, why, what, level }): the one call for a catch site. An api, service or storage
+     failure logs the error's name and code only; what: the failure in the page's words; level: 'warn' when the page recovers. */
+  function report(area, err, ctx) {
+    try {
+      ctx = ctx || {}; var c = {}, i, fs = area === 'api' || area === 'service' || area === 'storage', o = err && typeof err === 'object';
+      for (i in ctx) c[i] = ctx[i];
+      if (o && c.type == null) c.type = err.name || (err.offline ? 'Away' : err.refused ? 'Refused' : err.unanswered ? 'Unanswered' : 'Error');
+      if (o && c.code == null && err.code != null) c.code = err.code;
+      log(ctx.level === 'warn' ? 'warn' : 'error', area,
+        ctx.what || (!fs && (typeof err === 'string' ? err : o && err.message)) || (err ? c.type || 'failed' : 'no result'), c);
+    } catch (e) { /* never throws */ }
+  }
+  function step(area, name, t, count) { log('debug', area, name, { ms: t, count: count }); }
+  function mark(name, ctx) { log('debug', (ctx && ctx.area) || 'start', name, { ms: ctx && ctx.ms != null ? ctx.ms : ms(), count: ctx && ctx.count }); }
+  function time(area, name) { var a = performance.now(); return function (count) { step(area, name, Math.round(performance.now() - a), count); }; }
+  function entries() { return buf.slice(); }
+  function dump() {
+    var when = '';
+    try { when = new Intl.DateTimeFormat('en-AU', { timeZone: 'Australia/Melbourne', weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date()).replace(/,/g, ''); } catch (e) { /* no Intl */ }
+    return ['SongNodes diagnostics · ' + conf('page', 'page') + ' · build ' + conf('build', 'nobuild') + ' · design system ' + conf('ds', SN.version || 'not stated') + ' · ' + buf.length + ' lines · ' + when + ' Melbourne']
+      .concat(buf.map(function (e) { return '+' + e.t + ' ms ' + e.line; })).join('\n');
+  }
+  /* copy(): the dump to the clipboard (the legacy execCommand fallback of CopyButton); resolves true or false */
+  function copy() {
+    var text = dump();
+    function old() {
+      try { var t = doc.createElement('textarea'); t.value = text; t.setAttribute('aria-hidden', 'true'); t.className = 'sn-sr'; doc.body.appendChild(t); t.select(); var ok = doc.execCommand('copy'); t.remove(); return !!ok; } catch (e) { return false; }
+    }
+    try { if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text).then(function () { return true; }, old); } catch (e) { /* fall through */ }
+    return Promise.resolve(old());
+  }
+  try {
+    window.addEventListener('error', function (e) {
+      var t = e.target;
+      if (t && t !== window && t.tagName) log(t.hasAttribute('data-fallback') ? 'warn' : 'error', 'resource', 'did not load', { name: leaf(t.src || t.href), type: t.tagName.toLowerCase() });
+      else log('error', 'script', (e.error && e.error.message) || e.message || 'script error', { name: leaf(e.filename) + (e.lineno ? ':' + e.lineno : ''), type: e.error && e.error.name });
+    }, true);
+    window.addEventListener('unhandledrejection', function (e) { report('promise', e.reason || 'rejected with no reason'); });
+    doc.addEventListener('securitypolicyviolation', function (e) { log('error', 'resource', 'blocked by the page security policy', { name: leaf(e.blockedURI), type: e.violatedDirective }); });
+    if (doc.fonts && doc.fonts.addEventListener) doc.fonts.addEventListener('loadingerror', function (e) { (e.fontfaces || []).forEach(function (f) { log('error', 'resource', 'font did not load', { name: f.family, type: 'font' }); }); });
+    if (window.PerformanceObserver) {
+      try { new PerformanceObserver(function (l) { l.getEntries().forEach(function (x) { if (x.duration > LIM.LONGTASK) log('warn', 'longtask', 'main thread busy', { ms: Math.round(x.duration) }); }); }).observe({ type: 'longtask', buffered: true }); } catch (e) { /* no longtask */ }
+      try { new PerformanceObserver(function (l) { l.getEntries().forEach(function (x) { if (x.name === 'first-contentful-paint') mark('first paint', { ms: Math.round(x.startTime) }); }); }).observe({ type: 'paint', buffered: true }); } catch (e) { /* no paint timing */ }
+    }
+    window.addEventListener('load', function () {
+      mark('loaded');   /* SongNodes.save logs its own steps, kept and failed saves through report() (QSV-015, DIA-014) */
+    });
+    mark('start');
+  } catch (e) { /* never throws */ }
+  return { version: '1.0.0', source: 'LedgerSchedule BA_DIAG 1.0.1 (v5.34, 12 Nov 2026)', config: function (o) { for (var k in o) cfg[k] = o[k]; }, mark: mark, step: step, time: time,
+    debug: function (area, msg, ctx) { log('debug', area, msg, ctx); }, warn: function (area, msg, ctx) { log('warn', area, msg, ctx); },
+      error: function (area, msg, ctx) { log('error', area, msg, ctx); }, report: report, entries: entries, dump: dump, copy: copy, limits: LIM };
+  })();
+})();
+
+/* SongNodes QuickSave (SongNodes.save 1.0.0, design system 1.14.0). Hand-port of LedgerSchedule components/lib/quicksave.js
+   (LS_QUICK 1.3.0, v5.34): the load steps, the ordered queue, the job id, the deadline, the lanes, the retry numbers and the
+   failure classes are unchanged. SongNodes fit (QuickSave card, QSV rules):
+   - no toast stack of its own: a save that did not land is said by an InlineMessage after the pressed control (toasts are
+     confirmations only); "Saved" goes to the app's Toast through setToast(), else to a polite live region;
+   - the pressed control is busy (aria-busy, spinner, "Saving"), never disabled: a second press queues behind the first;
+   - one lane per target: api (the SongNodes API, the default), spotify, tidal, storage (browser storage);
+   - away = offline or the service cannot be reached; a save kept while away is a warning (the kept event), not a failure;
+   - setting(): a view setting that browser storage refuses still applies for the visit and is logged once;
+   - it logs through SongNodes.diag when that is present and works the same without it.
+   (a) start(steps): the interface paints first; heavy steps run after the first paint, one after another, and chunk(list, fn)
+       slices long loops so no task blocks input past BUDGET.TASK.
+   (b) save(o): Saving shows at once, the write joins its lane's one ordered queue and save() returns; one write is in flight
+       in a lane at a time, so saves never overtake each other and none is dropped.
+   No network, no storage of its own (setting() writes only the key the page names). A page passes its own words. */
+(function () {
+  'use strict';
+  var SN = window.SongNodes = window.SongNodes || {};
+  var LV = (SN.live && SN.live.limits) || {};
+  var TRIES = LV.TRIES || 5, TRY_TIMEOUT = LV.TRY_TIMEOUT || 10000, BACKOFF = LV.BACKOFF || 1000, BACKOFF_CAP = LV.BACKOFF_CAP || 16000;
+  /* QSV budgets (QuickSave card, Budgets table) */
+  var BUDGET = { PAINT: 1000, BUSY: 100, TASK: 50, SLICE: 30, WAITING_AFTER: LV.PENDING_AFTER || 1000 };
+  var LANES = ['api', 'spotify', 'tidal', 'storage'];
+  var TARGET = { api: 'SongNodes', spotify: 'Spotify', tidal: 'TIDAL', storage: 'browser storage' };
+  var t0 = 0;              /* performance.now() already counts from navigation start */
+  var stats = { firstPaint: null, steps: [], longest: 0, busy: [], saves: 0, failed: 0, kept: 0 };
+  var hooks = { queued: [], sending: [], attempt: [], passed: [], waiting: [], saved: [], kept: [], fail: [], step: [], setting: [] };
+  var TOAST = null;
+  /* whyOf(err): the class of a save that did not land, read from the error itself and the browser's own online flag (QSV-025).
+     refused = the target said no ({refused:true} or a refusal error name); away = offline, or the service cannot be reached
+     ({offline:true}, {unreachable:true}, or the browser reports it is offline); unanswered = no answer in time; failed = else */
+  var REFUSAL = /^(NotAllowedError|SecurityError|NoModificationAllowedError|QuotaExceededError)$/;
+  function offline() { try { return navigator.onLine === false; } catch (e) { return false; } }
+  function whyOf(err) {
+    if (err && err.refused) return 'refused';
+    if (err && (err.offline || err.unreachable)) return 'away';
+    if (err && REFUSAL.test(err.name || '')) return 'refused';
+    if (offline()) return 'away';
+    return err && err.unanswered ? 'unanswered' : 'failed';
+  }
+  function now() { return performance.now() - t0; }
+  function diag() { return SN.diag || null; }
+  function emit(k, x) { (hooks[k] || []).forEach(function (f) { try { f(x); } catch (e) { /* a hook never breaks the page */ } }); }
+  function on(k, f) { if (!hooks[k]) return function () {}; hooks[k].push(f); return function () { var i = hooks[k].indexOf(f); if (i >= 0) hooks[k].splice(i, 1); }; }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  /* yield to the browser: scheduler.yield() where it exists, else a macrotask */
+  function yieldNow() {
+    if (window.scheduler && typeof window.scheduler.yield === 'function') return window.scheduler.yield();
+    return new Promise(function (r) { var c = new MessageChannel(); c.port1.onmessage = function () { r(); }; c.port2.postMessage(0); });
+  }
+  /* after the next paint: two frames, then a macrotask (rAF does not run in a hidden tab, so a timer backs it: at once when
+     hidden, else after BUDGET.PAINT) */
+  function afterPaint() {
+    return new Promise(function (r) {
+      var done = false, go = function () { if (!done) { done = true; setTimeout(r, 0); } };
+      requestAnimationFrame(function () { requestAnimationFrame(go); }); setTimeout(go, document.visibilityState === 'hidden' ? 0 : BUDGET.PAINT);
+    });
+  }
+  if (window.PerformanceObserver) {
+    try { new PerformanceObserver(function (l) { l.getEntries().forEach(function (e) { if (e.duration > stats.longest) stats.longest = e.duration; }); })
+      .observe({ type: 'longtask', buffered: true }); } catch (e) { /* longtask not supported: stats.longest stays the chunk measure */ }
+  }
+
+  /* ---------- (a) quick load ---------- */
+  function start(steps) {
+    return afterPaint().then(function () {
+      if (stats.firstPaint == null) stats.firstPaint = Math.round(now());
+      var p = Promise.resolve();
+      (steps || []).forEach(function (s) {
+        p = p.then(function () {
+          var a = now();
+          return Promise.resolve().then(function () { return s.run(); }).then(function (v) {
+            var r = { name: s.name, ms: Math.round(now() - a) }; stats.steps.push(r); emit('step', r);
+            var d = diag(); if (d) d.step('start', s.name, r.ms);
+            return yieldNow().then(function () { return v; });
+          }, function (err) {
+            var r = { name: s.name, ms: Math.round(now() - a), error: err }; stats.steps.push(r); emit('fail', { area: 'start', name: s.name, error: err });
+            var d = diag(); if (d) d.report('start', err, { name: s.name });
+            if (s.fail) s.fail(err); else throw err;
+          });
+        });
+      });
+      return p;
+    });
+  }
+  /* chunk(list, fn): fn(item, i) over the list in slices of at most BUDGET.SLICE ms, yielding between slices */
+  function chunk(list, fn, o) {
+    var i = 0, n = list.length, slice = (o && o.slice) || BUDGET.SLICE;
+    function more() {
+      var a = performance.now();
+      while (i < n) { fn(list[i], i); i += 1; if (performance.now() - a >= slice) break; }
+      var d = performance.now() - a; if (d > stats.longest) stats.longest = d;
+      if (o && o.progress) try { o.progress(i, n); } catch (e) { /* page hook */ }
+      return i < n ? yieldNow().then(more) : Promise.resolve(n);
+    }
+    return more();
+  }
+
+  /* ---------- what the person is told: the pressed control, one InlineMessage after it, a live region ---------- */
+  function region() {
+    var r = document.querySelector('[data-save-say]');
+    if (!r) { r = el('div', 'sn-sr'); r.setAttribute('data-save-say', ''); r.setAttribute('aria-live', 'polite'); document.body.appendChild(r); }
+    return r;
+  }
+  function announce(text) { try { var r = region(); r.textContent = ''; setTimeout(function () { r.textContent = text; }, 30); } catch (e) { /* no body yet */ } }
+  function anchorOf(o) { var a = o.near || o.button; return a && a.isConnected ? a : null; }
+  function saidAt(a) { var n = a && a.nextElementSibling; return n && n.classList && n.classList.contains('sn-save-said') ? n : null; }
+  function unsay(o) { var a = anchorOf(o), box = saidAt(a); if (box) box.remove(); }
+  /* say(o, status, text, action): one InlineMessage straight after the anchor (o.near, else the pressed control); warn with
+     role=alert for a failure, warn with role=status for a kept save. With no anchor the words go to the live region only. */
+  function say(o, alert, text, action) {
+    var a = anchorOf(o);
+    if (!a) { announce(text); return null; }
+    var box = saidAt(a);
+    if (!box) { box = el('p', 'sn-inline-message sn-save-said'); a.insertAdjacentElement('afterend', box); }
+    box.setAttribute('data-status', 'warn'); box.setAttribute('role', alert ? 'alert' : 'status'); box.textContent = '';
+    var words = el('span', null, text + ' '); box.appendChild(words);
+    if (o.source && SN.sourceLink) { var s = el('span'); s.innerHTML = SN.sourceLink(o.source); words.appendChild(s.firstChild); words.appendChild(document.createTextNode(' ')); }
+    if (action) {
+      var b = el('button', 'sn-btn sn-btn--sm sn-inline-message__action', action.label); b.type = 'button';
+      b.addEventListener('click', function () { box.remove(); action.fn(); }); box.appendChild(b);
+    }
+    var x = el('button', 'sn-btn sn-btn--sm sn-btn--icon sn-btn--quiet sn-inline-message__dismiss'); x.type = 'button'; x.setAttribute('aria-label', 'Dismiss');
+    x.innerHTML = SN.icon ? SN.icon('x') : ''; if (!SN.icon) x.textContent = 'Dismiss';
+    x.addEventListener('click', function () { box.remove(); if (o.button && o.button.isConnected) o.button.focus(); }); box.appendChild(x);
+    return box;
+  }
+  /* the pressed control: busy, never disabled (QSV-010); its label comes back when its last queued save has ended */
+  function busy(b, state) {
+    if (!b) return;
+    var icon = b.classList.contains('sn-btn--icon');
+    if (state) {
+      if (b._snLabel == null) { b._snLabel = b.innerHTML; b._snN = 0; b.style.minWidth = b.offsetWidth + 'px'; }
+      if (state === true) b._snN += 1;
+      b.setAttribute('aria-busy', 'true');
+      b.innerHTML = '<span class="sn-spinner" aria-hidden="true"></span>' + (icon ? '' : state === 'waiting' ? 'Still saving' : 'Saving');
+    } else if (b._snLabel != null) {
+      b._snN -= 1;
+      if (b._snN <= 0) { b.innerHTML = b._snLabel; b._snLabel = null; b.removeAttribute('aria-busy'); b.style.minWidth = ''; }
+    }
+  }
+
+  /* ---------- (b) quick save: one ordered queue per lane; with no lane, the SongNodes API's queue ---------- */
+  var lanes = {}, running = {}, seq = 0;
+  /* a job id that stays the same across tries and Try again (QSV-021); no storage, no network */
+  function uid() {
+    try { if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID(); } catch (e) { /* not a secure context */ }
+    return 'sn-' + Date.now().toString(36) + '-' + (seq + 1).toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+  }
+  function laneOf(o) { return o && o.lane != null && o.lane !== '' ? String(o.lane) : 'api'; }
+  function backoff(n) { var d = Math.min(BACKOFF_CAP, BACKOFF * Math.pow(2, n - 1)); return d / 2 + Math.random() * d / 2; }
+  function timed(p, ms) {
+    return new Promise(function (res, rej) {
+      var t = setTimeout(function () { var e = new Error('No answer'); e.unanswered = true; rej(e); }, ms || TRY_TIMEOUT);
+      Promise.resolve(p).then(function (v) { clearTimeout(t); res(v); }, function (x) { clearTimeout(t); rej(x); });
+    });
+  }
+  /* what an event carries: ids, the lane, the page's key and words; never the saved value */
+  function info(job, more) {
+    var x = { id: job.id, uid: job.uid, lane: job.lane, key: job.o.key, name: job.o.name || 'save', label: job.o.label || 'the change', state: job.state, quiet: !!job.o.quiet }, k;
+    for (k in more) if (Object.prototype.hasOwnProperty.call(more, k)) x[k] = more[k];
+    return x;
+  }
+  /* save({ key, name, label, run(ctx) -> Promise resolved when written (ctx.passed() when handed on; reject with
+     {refused:true} for a refusal and {offline:true} or {unreachable:true} when the target is away: neither is retried),
+     button, near, source, words: { saved, failed, kept }, retry(id),
+     timeout (ms: its own deadline, tried once), uid (an id to reuse), lane (api, spotify, tidal or storage), quiet }) */
+  function save(o) {
+    o = o || {};
+    var a = performance.now(), lane = laneOf(o), job = { id: ++seq, uid: (o.uid != null && o.uid !== '') ? String(o.uid) : uid(), lane: lane, o: o, state: 'queued' };
+    if (!o.quiet) { unsay(o); busy(o.button, true); }
+    stats.busy.push(Math.round(performance.now() - a)); stats.saves += 1;
+    job.done = new Promise(function (res, rej) { job.res = res; job.rej = rej; });
+    job.done.catch(function () { /* a save that did not land is reported by its message and the fail or kept event */ });
+    (lanes[lane] || (lanes[lane] = [])).push(job); emit('queued', info(job));
+    if (!running[lane]) setTimeout(function () { pump(lane); }, 0);
+    return job;
+  }
+  /* again(job): re-sends the same job id: the page's retry(id), else the same save with uid kept (QSV-021) */
+  function again(job) {
+    var o = job.o, c = {}, k;
+    if (o.retry) return o.retry(job.uid);
+    for (k in o) if (Object.prototype.hasOwnProperty.call(o, k)) c[k] = o[k];
+    c.uid = job.uid; return save(c);
+  }
+  function pump(lane) {
+    lane = lane || 'api'; var q = lanes[lane];
+    if (running[lane] || !q || !q.length) return;
+    running[lane] = true;
+    var job = q.shift(), o = job.o, w = o.words || {}, label = o.label || 'the change', who = TARGET[lane] || 'the service', sent = false;
+    var deadline = o.timeout > 0 ? +o.timeout : 0, tries = deadline ? 1 : TRIES;   /* QSV-020: a deadline of its own is tried once */
+    job.state = 'sending'; emit('sending', info(job));
+    /* the lane is free before the job's promise settles, so pending() is right in a done handler */
+    function free() { if (job.freed) return; job.freed = true; running[lane] = false; setTimeout(function () { pump(lane); }, 0); }
+    var slow = setTimeout(function () {
+      if (job.state !== 'sending') return;
+      if (!o.quiet) { busy(o.button, 'waiting'); announce('Still saving ' + label); }
+      emit('waiting', info(job, { passed: sent }));
+    }, BUDGET.WAITING_AFTER);
+    var ctx = { passed: function () { if (!sent) { sent = true; emit('passed', info(job)); } }, attempt: 1, id: job.uid, lane: lane, tries: tries, timeout: deadline || TRY_TIMEOUT };
+    function attempt(n) {
+      ctx.attempt = n; if (n > 1) emit('attempt', info(job, { attempt: n, tries: tries }));
+      return timed(Promise.resolve().then(function () { return o.run(ctx); }), deadline || TRY_TIMEOUT).then(null, function (err) {
+        if ((err && err.refused) || whyOf(err) === 'away' || n >= tries) throw err;
+        return wait(backoff(n)).then(function () { return attempt(n + 1); });
+      });
+    }
+    attempt(1).then(function (v) {
+      job.state = 'saved'; clearTimeout(slow);
+      if (!o.quiet) {
+        busy(o.button, false); unsay(o);
+        var text = w.saved || ('Saved ' + label);
+        if (TOAST) { try { TOAST(text); } catch (e) { announce(text); } } else announce(text);
+      }
+      emit('saved', info(job, { attempt: ctx.attempt })); free(); job.res(v);
+    }, function (err) {
+      var why = whyOf(err), n = ctx.attempt, d = diag(), name = lane + ' ' + (o.name || 'save'); clearTimeout(slow); if (!o.quiet) busy(o.button, false);
+      if (why === 'away') {   /* QSV-026: not a failure. The caller keeps the change and sends it again; one kept event, no fail event */
+        job.state = 'kept'; stats.kept += 1;
+        if (!o.quiet) say(o, false, w.kept || ('Kept on this device: ' + label + ' will be saved when ' + (offline() ? 'you are back online' : who + ' can be reached again') + '.'));
+        if (d) d.report('save-queue', err, { name: name, type: err && err.name && err.name !== 'Error' ? err.name : 'Away', why: why, level: 'warn', what: 'kept, will be sent when the service is back' });
+        emit('kept', info(job, { area: 'save-queue', why: why, attempt: n, error: err })); free(); job.rej(err); return;
+      }
+      job.state = 'failed'; stats.failed += 1;
+      var gone = why === 'refused' ? who + ' refused it' : why === 'unanswered' ? (deadline ? 'no answer from ' + who + ' in ' + Math.ceil(deadline / 1000) + ' s' : 'no answer from ' + who + ' after ' + tries + ' tries') : 'it could not be saved';
+      if (!o.quiet) say(o, true, w.failed || ('Couldn’t save ' + label + ': ' + gone + '. Nothing was lost on this page.'), { label: 'Try again', fn: function () { again(job); } });
+      if (d) d.report('save-queue', err, { name: name, why: why, attempt: n });
+      emit('fail', info(job, { area: 'save-queue', why: why, attempt: n, error: err })); free(); job.rej(err);
+    }).then(free, free);
+  }
+  /* pending(): every write waiting or in flight on the page, all lanes; pending(lane): that lane only */
+  function pending(lane) {
+    var n = 0, k;
+    if (lane !== undefined) { k = laneOf({ lane: lane }); return (lanes[k] ? lanes[k].length : 0) + (running[k] ? 1 : 0); }
+    for (k in lanes) if (Object.prototype.hasOwnProperty.call(lanes, k)) n += lanes[k].length + (running[k] ? 1 : 0);
+    return n;
+  }
+
+  /* ---------- a view setting (theme, text size, density, motion, a remembered tab) ---------- */
+  /* setting(key, value): writes browser storage; when storage refuses, the value is kept in memory until the page is closed,
+     read before storage, and the first refusal of each key is logged once at warn. A later write storage accepts clears it. */
+  var mem = {}, told = {};
+  function setting(key, value) {
+    var v = value == null ? null : String(value);
+    try {
+      if (v == null) window.localStorage.removeItem(key); else window.localStorage.setItem(key, v);
+      delete mem[key]; return true;
+    } catch (err) {
+      mem[key] = v;
+      if (!told[key]) {
+        told[key] = 1; var d = diag();
+        if (d) d.report('storage', err, { name: key + ' setting', why: 'refused', level: 'warn', what: 'storage refused the view setting: kept for this visit only' });
+        emit('setting', { key: key, kept: true, error: err });
+      }
+      return false;
+    }
+  }
+  function settingValue(key) {
+    if (Object.prototype.hasOwnProperty.call(mem, key)) return mem[key];
+    try { return window.localStorage.getItem(key); } catch (e) { return null; }
+  }
+
+  save.version = '1.0.0'; save.source = 'LedgerSchedule LS_QUICK 1.3.0 (v5.34, 12 Nov 2026)';
+  save.start = start; save.chunk = chunk; save.yield = yieldNow; save.afterPaint = afterPaint;
+  save.again = again; save.pending = pending; save.on = on; save.whyOf = whyOf;
+  save.setting = setting; save.settingValue = settingValue;
+  save.setToast = function (f) { TOAST = typeof f === 'function' ? f : null; };
+  save.stats = function () { return JSON.parse(JSON.stringify(stats)); };
+  save.budget = BUDGET; save.lanes = LANES.slice();
+  save.limits = { TRIES: TRIES, TRY_TIMEOUT: TRY_TIMEOUT, BACKOFF: BACKOFF, BACKOFF_CAP: BACKOFF_CAP };
+  save.save = save;   /* the name SongNodes.resp calls: the same function */
+  SN.save = save;
+})();
+
+/* 1.14.0 Responsive pages (SongNodes.resp 1.0.0). Hand-port of LedgerSchedule components/lib/responsive.js (LS_RESP 1.0.1:
+   the v5.18 release with the v5.34 fix that an away result is never called refused). The logic is unchanged; the names,
+   the words and the surfaces are SongNodes'.
+   Guideline: 20-responsive-pages.md (RSP). Cards: Skeleton (SKL), SaveMark (SVM), Outbox (OBX).
+   (a) skeleton(slot, o): the slot's shape under its loading sentence, filled in place; lazy(slot, build, o): built one
+       screen ahead of view and in idle time; buildAll() before print and export; stale(slot, on); debounce(fn).
+   (b) kind(name, { send, show, find }) and edit(o): the person's value shows at once, is kept in the outbox, is written
+       through SongNodes.save's one ordered queue (quiet) when that module is loaded, else through a chain of its own that
+       calls the page's send directly, and is marked until saved; a failed change is put back and kept.
+   (c) outbox: every change that is waiting or not saved, kept in the browser's storage under the page's key until it is
+       saved or the person discards it; the count sits in the ConnectionStatus and opens the list in a SideSheet.
+   SongNodes fit: a failure is never a toast (the SaveMark, the count and an InlineMessage carry it); the one toast is the
+   confirmation "Kept from earlier", and only when nothing needs the person; a filled skeleton swaps in place with no fade;
+   the loading sentence shows from 1 s in space kept for it (LoadingState).
+   No styles of its own (bundle.css: sn-skeleton*, sn-skel, sn-stale, sn-cv-auto, sn-save-mark*, [data-save], sn-outbox*,
+   sn-side-sheet*, sn-pill, sn-inline-message). No network.
+   Storage: 'sn-outbox:<page>' and 'sn-skel:<page>' (the row counts and heights a skeleton remembers). */
+(function () {
+  'use strict';
+  var S = window.SongNodes = window.SongNodes || {};
+  /* SongNodes.save is built beside this file and may load after it, so it is looked up at the time of use */
+  function Q() { return S.save || null; }
+  function lim() {
+    var a = (Q() && Q().limits) || {}, b = (S.live && S.live.limits) || {};
+    return { TRIES: a.TRIES || b.TRIES || 5, TRY_TIMEOUT: a.TRY_TIMEOUT || b.TRY_TIMEOUT || 10000, BACKOFF: a.BACKOFF || b.BACKOFF || 1000, BACKOFF_CAP: a.BACKOFF_CAP || b.BACKOFF_CAP || 16000 };
+  }
+  var LV = (S.live && S.live.limits) || {};
+  var BUDGET = { ACK: 100, EVENT: 200, MARK_AFTER: LV.PENDING_AFTER || 1000, SAVED_MS: LV.MARK_MS || 4000, UNDO_MS: LV.FAILED_MS || 8000, RESEND: 30000, TYPING: 150, CLS: 0.1, MAX_SK: 12, COUNT_AFTER: 10000 };
+  var stats = { edits: 0, written: 0, putBack: 0, kept: 0, refused: 0, lazy: 0, lazySeen: 0, lazyIdle: 0, cls: 0, worstEvent: 0, unkept: 0 };
+  var hooks = { change: [], fail: [], written: [] };
+  function emit(k, x) { (hooks[k] || []).forEach(function (f) { try { f(x); } catch (e) { /* a hook never breaks the page */ } }); }
+  function on(k, f) { if (hooks[k]) hooks[k].push(f); }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function icon(name) { var h = el('span'); h.innerHTML = typeof S.icon === 'function' ? S.icon(name, { size: 16 }) : ''; return h.firstChild; }
+  function btn(label, ic, fn, cls) { var b = el('button', cls || 'sn-btn sn-btn--sm'); b.type = 'button'; var i = ic ? icon(ic) : null; if (i) b.appendChild(i); b.appendChild(document.createTextNode(label)); b.addEventListener('click', fn); return b; }
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  /* the page's one polite live region (LiveChange's); made when the page has none */
+  function say(text) {
+    var p = document.querySelector('.sn-lc-say');
+    if (!p) { p = el('p', 'sn-lc-say sn-sr'); p.setAttribute('aria-live', 'polite'); document.body.appendChild(p); }
+    p.textContent = ''; setTimeout(function () { p.textContent = text; }, 30);
+  }
+  function store(key, val) {   /* get when val is undefined; returns false when the browser refuses */
+    try { if (val === undefined) { var s = localStorage.getItem(key); return s ? JSON.parse(s) : null; } localStorage.setItem(key, JSON.stringify(val)); return true; } catch (e) { return val === undefined ? null : false; }
+  }
+  if (window.PerformanceObserver) {
+    try { new PerformanceObserver(function (l) { l.getEntries().forEach(function (e) { if (!e.hadRecentInput) stats.cls += e.value; }); }).observe({ type: 'layout-shift', buffered: true }); } catch (e) { /* not supported */ }
+    try { new PerformanceObserver(function (l) { l.getEntries().forEach(function (e) { if (e.duration > stats.worstEvent) stats.worstEvent = e.duration; }); }).observe({ type: 'event', durationThreshold: 16, buffered: true }); } catch (e) { /* not supported */ }
+  }
+  var PAGE = (location.pathname.split('/').filter(function (x) { return x; }).pop() || 'home').replace(/\.html?$/i, '');
+  var opts = { page: PAGE, fmt: null, mount: null, sheet: null, layout: null, notice: null, onClose: null };
+  function debounce(fn, ms) { var t = 0; return function () { var a = arguments, me = this; clearTimeout(t); t = setTimeout(function () { fn.apply(me, a); }, ms == null ? BUDGET.TYPING : ms); }; }
+  function stale(slot, onOff) { if (!slot) return; slot.classList.toggle('sn-stale', !!onOff); if (onOff) slot.setAttribute('aria-busy', 'true'); else slot.removeAttribute('aria-busy'); }
+
+  /* ---------- (a) skeleton ---------- */
+  /* a bar: 'w1' | 'w2' | 'w3' (30, 48, 72 per cent; none = full), 'end' (right-aligned, a number column), 'lg' (a title) */
+  function bar(spec) {
+    var b = el('span', 'sn-skel sn-skeleton__bar'), m = /w([123])/.exec(spec || '');
+    if (m) b.setAttribute('data-w', m[1]); if (/\bend\b/.test(spec || '')) b.setAttribute('data-end', ''); if (/\blg\b/.test(spec || '')) b.setAttribute('data-lg', '');
+    return b;
+  }
+  function cell(spec) {   /* 'two' = a two-line track cell: title and meta */
+    if (!/\btwo\b/.test(spec || '')) return bar(spec);
+    var w = el('span', 'sn-skeleton__lines'); w.appendChild(bar(spec)); w.appendChild(bar('w1')); return w;
+  }
+  function skeleton(slot, o) {
+    o = o || {};
+    var isBody = slot.tagName === 'TBODY', shape = o.shape || (isBody ? 'rows' : 'lines'), mem = store('sn-skel:' + opts.page) || {}, was = (o.remember && mem[o.remember]) || {};
+    if (typeof was === 'number') was = { n: was };
+    var n = Math.max(1, Math.min(BUDGET.MAX_SK, was.n || o.n || (shape === 'chart' ? 1 : 4)));
+    var h = o.height || was.h || 0, made = [], sentence = o.say || 'Loading', slowT = 0;
+    function add(e) { made.push(e); slot.appendChild(e); return e; }
+    slot.classList.add('sn-skeleton'); slot.setAttribute('aria-busy', 'true');
+    if (h) slot.style.setProperty('--sn-skeleton-h', Math.round(h) + 'px');
+    var sayP = el('p', 'sn-skeleton__say', sentence); sayP.setAttribute('role', 'status');
+    if (o.slow) slot.setAttribute('data-slow', ''); else slowT = setTimeout(function () { slot.setAttribute('data-slow', ''); }, BUDGET.MARK_AFTER);   /* the sentence shows from 1 s, in space kept for it */
+    if (shape === 'rows' && isBody) {
+      var cols = o.cols || ['w3', 'w2', 'w1 end'], r0 = el('tr', 'sn-skeleton__sayrow'), c0 = el('td'); c0.colSpan = cols.length; c0.appendChild(sayP); r0.appendChild(c0); add(r0);
+      for (var i = 1; i < n; i++) { var tr = el('tr', 'sn-skeleton__row sn-data-table__skel');   /* the sentence row is one of the n rows, so the filled table is no taller */ tr.setAttribute('aria-hidden', 'true'); cols.forEach(function (c) { var td = el('td'); if (/\bend\b/.test(c)) td.className = 'num'; td.appendChild(cell(c)); tr.appendChild(td); }); add(tr); }
+    } else {
+      add(sayP);
+      for (var k = 0; k < n; k++) {
+        if (shape === 'tiles') {
+          var t = el('div', 'sn-figure-tile sn-figure-tile--skeleton'), lab = o.labels && o.labels[k];
+          if (slot.getAttribute('role') === 'list') t.setAttribute('role', 'listitem');
+          var fig = el('span', 'sn-skel'); fig.setAttribute('aria-hidden', 'true'); t.appendChild(fig);
+          if (lab) t.appendChild(el('span', 'sn-figure-tile__label', lab)); else t.appendChild(bar('w2'));
+          var dl = bar('w3'); dl.setAttribute('aria-hidden', 'true'); t.appendChild(dl); add(t);
+        }
+        else if (shape === 'cards') { var c = el('div', 'sn-skeleton__card'); c.setAttribute('aria-hidden', 'true'); c.appendChild(bar('w1')); c.appendChild(bar('lg w2')); c.appendChild(bar('w3')); add(c); }
+        else if (shape === 'chart') { var ch = el('div', 'sn-skeleton__chart'); ch.setAttribute('aria-hidden', 'true'); add(ch); }
+        else { var ln = bar(['w3', '', 'w2', 'w3'][k % 4]); ln.setAttribute('aria-hidden', 'true'); add(ln); }
+      }
+      if (shape === 'lines') slot.classList.add('sn-skeleton--lines'); else if (shape === 'tiles' || shape === 'cards') slot.classList.add('sn-skeleton--grid');
+    }
+    function clear() { clearTimeout(slowT); made.forEach(function (e) { e.remove(); }); made = []; slot.classList.remove('sn-skeleton', 'sn-skeleton--lines', 'sn-skeleton--grid'); slot.removeAttribute('aria-busy'); slot.removeAttribute('data-slow'); slot.style.removeProperty('--sn-skeleton-h'); }
+    return {
+      el: slot, say: function (t) { sayP.textContent = t; },
+      fill: function (content, count) {
+        clear();
+        if (typeof content === 'function') content(slot); else if (typeof content === 'string') slot.insertAdjacentHTML('beforeend', content); else if (content) slot.appendChild(content);
+        if (o.remember) {   /* the count and the height this slot showed, for the next skeleton on this device */
+          var first = shape === 'chart' || shape === 'lines' ? slot : slot.firstElementChild, keepIt = {};
+          if (typeof count === 'number') keepIt.n = count; else if (was.n) keepIt.n = was.n;
+          if (first && shape !== 'rows' && shape !== 'lines') keepIt.h = Math.round(first.getBoundingClientRect().height);
+          mem = store('sn-skel:' + opts.page) || {}; mem[o.remember] = keepIt; store('sn-skel:' + opts.page, mem);
+        }
+        if (o.ready) say(o.ready);
+      },
+      fail: function (text, retry) {
+        var cs = getComputedStyle(slot), hh = slot.getBoundingClientRect().height - (isBody ? 0 : (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0) + (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.borderBottomWidth) || 0)); clear();   /* the failed state takes the height the placeholder had */
+        var f = el('div', 'sn-skeleton__failed'), m = el('p', 'sn-inline-message sn-inline-message--boxed'); f.style.minHeight = Math.round(hh) + 'px';
+        m.setAttribute('data-status', 'warn'); m.setAttribute('role', 'alert'); m.appendChild(el('span', null, (text || 'This could not be loaded') + ' '));
+        if (retry) m.appendChild(btn('Try again', 'refresh-cw', function () { (f.closest('tr') || f).remove(); retry(); }, 'sn-btn sn-btn--sm sn-inline-message__action'));
+        f.appendChild(m);
+        if (isBody) { var tr = el('tr', 'sn-skeleton__sayrow'), td = el('td'); td.colSpan = (o.cols || [1, 2, 3]).length; td.appendChild(f); tr.appendChild(td); slot.appendChild(tr); } else slot.appendChild(f);
+      }
+    };
+  }
+
+  /* ---------- (a) lazy building ---------- */
+  var lazies = [], io = null, idleArmed = false;
+  function runLazy(L, why) {
+    if (L.p) return L.p;
+    if (io) io.unobserve(L.slot);
+    stats.lazy += 1; if (why === 'seen') stats.lazySeen += 1; else if (why === 'idle') stats.lazyIdle += 1;
+    L.p = Promise.resolve().then(function () { return L.build(L.slot); }).then(function (v) { L.sk.fill(typeof v === 'function' || typeof v === 'string' || (v && v.nodeType) ? v : null); L.done = true; },
+      function (err) { L.sk.fail((L.o.failed || 'This section could not be drawn.'), function () { L.p = null; L.sk = skeleton(L.slot, L.o); runLazy(L, 'retry'); }); emit('fail', { area: 'lazy', name: L.o.say, error: err }); });
+    return L.p;
+  }
+  function idle() {
+    var next = lazies.filter(function (L) { return !L.p; })[0]; if (!next) { idleArmed = false; return; }
+    var go = function () { runLazy(next, 'idle').then(function () { setTimeout(idle, 0); }); };
+    if (window.requestIdleCallback) requestIdleCallback(go, { timeout: 2000 }); else setTimeout(go, 200);
+  }
+  function lazy(slot, build, o) {
+    o = o || {};
+    var L = { slot: slot, build: build, o: o, sk: skeleton(slot, o), p: null, done: false }; lazies.push(L);
+    if (!io && window.IntersectionObserver) io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { var m = lazies.filter(function (x) { return x.slot === e.target; })[0]; if (m) runLazy(m, 'seen'); } }); }, { rootMargin: (o.margin || '100%') + ' 0px' });
+    if (io) io.observe(slot); else runLazy(L, 'now');
+    if (!idleArmed) { idleArmed = true; var arm = function () { setTimeout(idle, 300); }; if (document.readyState === 'complete') arm(); else window.addEventListener('load', arm, { once: true }); }
+    return { build: function () { return runLazy(L, 'asked'); } };
+  }
+  function buildAll() { return Promise.all(lazies.map(function (L) { return runLazy(L, 'all'); })); }
+  window.addEventListener('beforeprint', function () { buildAll(); });
+
+  /* ---------- (b) + (c) kinds, the outbox and its storage ---------- */
+  var kinds = {}, rows = [], latest = {}, seq = 0, unkept = false, sheet = null, sheetMade = false, countBtn = null, timer = 0;
+  var WORD = { sending: ['Sending', 'info'], waiting: ['Waiting', 'idle'], notsaved: ['Not saved', 'warn'], refused: ['Not applied', 'bad'], superseded: ['Superseded', 'warn'], written: ['Saved', 'ok'] };
+  var NEEDS = { notsaved: 1, refused: 1, superseded: 1 };
+  var UNKEPT = 'These changes could not be kept on this device. Keep this page open until they are saved.';
+  function kind(name, h) { kinds[name] = h; }
+  function key() { return 'sn-outbox:' + opts.page; }
+  function keep() {
+    var ok = store(key(), rows.filter(function (r) { return r.state !== 'written' && r.state !== 'discarded'; }).map(function (r) { var c = {}; for (var k in r) if (k.charAt(0) !== '_') c[k] = r[k]; if (c.state === 'sending') c.state = 'waiting'; return c; }));
+    if (ok === false && !unkept) { unkept = true; stats.unkept += 1; say(UNKEPT); window.addEventListener('beforeunload', guard); emit('fail', { area: 'storage', name: 'outbox', why: 'unkept' }); }
+    if (ok !== false && unkept) { unkept = false; window.removeEventListener('beforeunload', guard); }
+    paint(); emit('change', count());
+  }
+  function guard(e) { if (rows.some(function (r) { return r.state !== 'written'; })) { e.preventDefault(); e.returnValue = ''; } }
+  function count() { var c = { waiting: 0, needs: 0, total: 0 }; rows.forEach(function (r) { if (r.state === 'written' || r.state === 'discarded') return; c.total += 1; if (NEEDS[r.state]) c.needs += 1; else c.waiting += 1; }); return c; }
+  function p2(n) { return (n < 10 ? '0' : '') + n; }
+  function fmt(t) { if (opts.fmt) return opts.fmt(new Date(t)); if (S.format && S.format.dateTime) return S.format.dateTime(new Date(t)); var d = new Date(t);
+    return d.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()] + ' ' + d.getFullYear() + ', ' + p2(d.getHours()) + ':' + p2(d.getMinutes()); }
+  function hhmm(t) { if (S.format && S.format.time) return S.format.time(new Date(t)); var d = new Date(t); return p2(d.getHours()) + ':' + p2(d.getMinutes()); }
+  function txt(r, which) { var v = r[which + 'Text']; return v != null ? String(v) : String(r[which]); }
+  function show(r, value) { var h = kinds[r.kind]; if (h && h.show) try { h.show(r, value); } catch (e) { emit('fail', { area: 'show', name: r.what, error: e }); } }
+  function target(r) { var h = kinds[r.kind]; try { return (h && h.find && h.find(r)) || null; } catch (e) { return null; } }
+
+  /* the mark on the item (SaveMark): state is saving | waiting | saved | back */
+  function mark(r, state, words, withButtons) {
+    var t = target(r); if (!t) return;
+    var inCell = t.closest && t.closest('td'), host = inCell || t.parentNode, m = host.querySelector(':scope > .sn-save-mark');
+    t.removeAttribute('data-save');
+    if (!state) { if (m) m.remove(); t.removeAttribute('title'); return; }
+    if (!m) { m = el('span', 'sn-save-mark'); if (inCell) host.appendChild(m); else t.insertAdjacentElement('afterend', m); }
+    m.setAttribute('data-state', state); m.setAttribute('role', state === 'back' ? 'alert' : 'status'); m.textContent = '';
+    var ic = state === 'saved' ? icon('check') : state === 'back' ? icon('triangle-alert') : state === 'waiting' ? icon('clock') : null; if (ic) m.appendChild(ic);
+    m.appendChild(el('span', 'sn-save-mark__words', words)); t.title = words;
+    if (state === 'saving' || state === 'waiting') t.setAttribute('data-save', 'pending');
+    if (state === 'back') { t.setAttribute('data-save', 'back'); if (withButtons) { var a = el('span', 'sn-save-mark__acts'); a.appendChild(btn('Try again', 'refresh-cw', function () { retry(r.id); })); a.appendChild(btn('Discard', null, function () { discard(r.id); }, 'sn-btn sn-btn--sm sn-btn--quiet')); m.appendChild(a); } }
+  }
+  function isLatest(r) { return latest[r.kind + '|' + r.key] === r.id; }
+
+  /* one change through SongNodes.save's ordered queue (quiet), or a chain of our own that calls the page's send directly */
+  var chain = Promise.resolve();
+  function oneTry(r, n) {
+    var h = kinds[r.kind], T = lim().TRIES; if (!h || !h.send) return Promise.reject({ refused: true, reason: 'this page cannot send this kind of change' });
+    r.tries = n; if (n > 1 && r._marked) mark(r, 'saving', 'Saving · try ' + n + ' of ' + T);
+    return Promise.resolve().then(function () { return h.send(r, { attempt: n }); }).then(null, function (x) { throw x || {}; });   /* away ({offline:true}) is not retried and is kept; it is never called refused */
+  }
+  function attempt(r, n) {
+    var L = lim();
+    return new Promise(function (res, rej) {
+      var t = setTimeout(function () { rej({ unanswered: true }); }, L.TRY_TIMEOUT);
+      oneTry(r, n).then(function (v) { clearTimeout(t); res(v); }, function (x) { clearTimeout(t); rej(x); });
+    }).then(null, function (err) {
+      if (err.refused || err.offline || n >= L.TRIES) throw err;
+      var d = Math.min(L.BACKOFF_CAP, L.BACKOFF * Math.pow(2, n - 1)); return wait(d / 2 + Math.random() * d / 2).then(function () { return attempt(r, n + 1); });
+    });
+  }
+  function waitingWords(r) { return 'Waiting to be sent · since ' + hhmm(r.at); }
+  function backWords(r, refused) { return refused ? 'Not applied' + (r.why ? ': ' + r.why : '') + '. Put back to ' + txt(r, 'from') : 'Not saved: put back to ' + txt(r, 'from') + '. You entered ' + txt(r, 'to'); }
+  function send(r) {
+    r.state = 'sending'; r.why = ''; keep();
+    clearTimeout(r._t); r._marked = false;
+    r._t = setTimeout(function () { if (r.state === 'sending' && isLatest(r)) { r._marked = true; mark(r, 'saving', r.tries > 1 ? 'Saving · try ' + r.tries + ' of ' + lim().TRIES : 'Saving'); } }, BUDGET.MARK_AFTER);
+    var p, q = Q();
+    if (q && typeof q.save === 'function') { var job = q.save({ key: r.kind + '|' + r.key, label: r.what, quiet: true, run: function (ctx) { return oneTry(r, (ctx && ctx.attempt) || 1); } }); p = job && job.done ? job.done : Promise.resolve(job); }   /* SongNodes.save retries and times each try */
+    else { var own = function () { return attempt(r, 1); }; p = chain.then(own, own); chain = p.then(null, function () { /* the next change still runs; this one is reported below */ }); }
+    return p.then(function () {
+      clearTimeout(r._t); r.state = 'written'; stats.written += 1;
+      if (isLatest(r)) { if (r._marked || r._was) { mark(r, 'saved', 'Saved'); setTimeout(function () { if (isLatest(r) && r.state === 'written') mark(r, null); }, BUDGET.SAVED_MS); } else mark(r, null); }
+      keep(); emit('written', r); say(r.what + ' saved');
+      setTimeout(function () { rows = rows.filter(function (x) { return x !== r; }); paint(); }, sheet ? BUDGET.SAVED_MS : 0);
+    }, function (err) {
+      clearTimeout(r._t); err = err || {};
+      if (err.offline || (r.keep && !err.refused)) {           /* kept: never put back while offline or while the service cannot be reached */
+        r.state = 'waiting'; r._was = true; stats.kept += 1; if (isLatest(r)) mark(r, 'waiting', waitingWords(r)); keep(); arm(); return;
+      }
+      if (!isLatest(r)) rows.forEach(function (x) { if (x !== r && x.kind === r.kind && x.key === r.key && x.at >= r.at && x.from === r.to) { x.from = r.from; x.fromText = r.fromText; } });   /* a newer change now goes back to the saved value */
+      r.state = err.refused ? (err.superseded ? 'superseded' : 'refused') : 'notsaved'; r.why = err.reason || '';
+      if (err.refused) stats.refused += 1; stats.putBack += 1;
+      if (isLatest(r)) { show(r, r.from); mark(r, 'back', backWords(r, err.refused), true); }      /* a newer change is never overwritten */
+      keep(); emit('fail', { area: 'edit', name: r.what, why: r.state, error: err });
+      say(r.what + ' ' + (err.refused ? 'not applied' : 'not saved') + ': put back to ' + txt(r, 'from') + '. Your change is kept under Changes waiting.');   /* never a toast: the mark, the count and this line carry it */
+    });
+  }
+  function arm() { clearTimeout(timer); if (rows.some(function (r) { return r.state === 'waiting'; })) timer = setTimeout(flush, BUDGET.RESEND); }
+  function flush() { clearTimeout(timer); rows.filter(function (r) { return r.state === 'waiting'; }).sort(function (a, b) { return a.at - b.at; }).forEach(function (r) { send(r); }); }
+  function edit(o) {
+    if (o.from === o.to) return null;                       /* nothing changed: a second change event for the same value */
+    var r = { id: Date.now().toString(36) + '-' + (++seq), kind: o.kind, key: String(o.key), what: o.what || 'The change', from: o.from, to: o.to, fromText: o.fromText, toText: o.toText, at: Date.now(), payload: o.payload, keep: !!o.keep, state: 'sending', tries: 0, why: '' };
+    rows.filter(function (x) { return x.kind === r.kind && x.key === r.key && x.state === 'waiting'; }).forEach(function (x) {   /* a waiting change to the same item is replaced by the newer one and gives it the saved value to go back to; a failed one keeps its row */
+      r.from = x.from; r.fromText = x.fromText; clearTimeout(x._t); rows = rows.filter(function (y) { return y !== x; }); });
+    latest[r.kind + '|' + r.key] = r.id; rows.push(r); stats.edits += 1;
+    show(r, r.to); mark(r, null);
+    send(r); return r;
+  }
+  function find(id) { return rows.filter(function (r) { return r.id === id; })[0]; }
+  function retry(id) { var r = find(id); if (!r || r.state === 'sending' || r.state === 'written') return; if (isLatest(r)) { show(r, r.to); mark(r, null); } send(r); }
+  function discard(id) {
+    var r = find(id); if (!r || r.state === 'sending' || r.state === 'discarded') return;
+    if (!sheet) open();                                   /* the Undo is in the list */
+    var was = r.state; r.state = 'discarded'; if (isLatest(r)) { show(r, r.from); mark(r, null); }
+    r._undo = function () { clearTimeout(r._d); r.state = was; if (isLatest(r) && was === 'waiting') { show(r, r.to); mark(r, 'waiting', waitingWords(r)); } keep(); };
+    r._d = setTimeout(function () { rows = rows.filter(function (x) { return x !== r; }); keep(); }, BUDGET.UNDO_MS);
+    paint(); emit('change', count());
+  }
+
+  /* the count (in the ConnectionStatus, or any mount) and the list (in a SideSheet) */
+  function countWords(c) { var w = function (n, s) { return n + ' change' + (n === 1 ? '' : 's') + ' ' + s; };
+    return c.needs && c.waiting ? c.waiting + ' waiting, ' + c.needs + ' not saved' : c.needs ? w(c.needs, 'not saved') : w(c.waiting, 'waiting'); }
+  function notice() {   /* storage refused: an InlineMessage where the page keeps its notices, never a toast */
+    var host = opts.notice, m = host && host.querySelector('.sn-outbox__unkept');
+    if (!host) return;
+    if (!unkept) { if (m) m.remove(); return; }
+    if (!m) { m = el('p', 'sn-inline-message sn-inline-message--boxed sn-outbox__unkept', UNKEPT); m.setAttribute('data-status', 'warn'); m.setAttribute('role', 'alert'); host.appendChild(m); }
+  }
+  function paint() {
+    var c = count(), host = opts.mount || null;
+    if (host) {
+      if (!c.total) { if (countBtn) { countBtn.remove(); countBtn = null; } }
+      else { if (!countBtn || !countBtn.isConnected) { countBtn = el('button', 'sn-btn sn-btn--sm sn-btn--quiet sn-outbox__count'); countBtn.type = 'button'; countBtn.setAttribute('aria-haspopup', 'dialog'); countBtn.addEventListener('click', open); host.appendChild(countBtn); }
+        var attn = c.needs > 0 || unkept, i = icon(attn ? 'triangle-alert' : 'upload');
+        countBtn.textContent = ''; if (i) countBtn.appendChild(i); countBtn.appendChild(document.createTextNode(countWords(c) + (unkept ? ', not kept on this device' : '')));
+        if (attn) countBtn.setAttribute('data-attn', ''); else countBtn.removeAttribute('data-attn'); }
+    }
+    notice();
+    if (sheet) drawList();
+  }
+  function drawList() {
+    var body = sheet.querySelector('.sn-side-sheet__body'); if (!body) return; body.textContent = '';
+    var vis = rows.slice().sort(function (a, b) { return (NEEDS[b.state] ? 1 : 0) - (NEEDS[a.state] ? 1 : 0) || a.at - b.at; });
+    if (unkept) { var u = el('p', 'sn-inline-message sn-inline-message--boxed', UNKEPT); u.setAttribute('data-status', 'warn'); u.setAttribute('role', 'alert'); body.appendChild(u); }
+    if (!vis.length) { var e = el('p', 'sn-outbox__empty'), ei = icon('check'); if (ei) e.appendChild(ei); e.appendChild(el('span', null, 'Every change from this device is saved.')); body.appendChild(e); return; }
+    body.appendChild(el('p', 'sn-outbox__lede', 'Changes made on this device that SongNodes has not saved yet. They stay here until they are saved or you discard them.'));
+    var ul = el('ul', 'sn-outbox__list');
+    vis.forEach(function (r) {
+      var li = el('li', 'sn-outbox__row' + (r.state === 'discarded' ? ' sn-lc-gone' : '')), w = WORD[r.state] || ['Discarded', 'idle'], pill = el('span', 'sn-pill sn-status-pill', w[0]); li.setAttribute('data-state', r.state);
+      pill.setAttribute('data-status', w[1]); li.appendChild(pill); li.appendChild(el('span', 'sn-outbox__what', r.what));
+      li.appendChild(el('span', 'sn-outbox__val', txt(r, 'from') + ' to ' + txt(r, 'to')));
+      if (r.why) li.appendChild(el('span', 'sn-outbox__why', r.why));
+      li.appendChild(el('span', 'sn-outbox__when', fmt(r.at)));
+      var a = el('div', 'sn-outbox__acts');
+      if (r.state === 'discarded') a.appendChild(btn('Undo', 'undo-2', function () { if (r._undo) r._undo(); }));
+      else if (NEEDS[r.state]) { a.appendChild(btn(r.state === 'superseded' ? 'Reapply' : 'Try again', 'refresh-cw', function () { retry(r.id); })); a.appendChild(btn('Discard', null, function () { discard(r.id); }, 'sn-btn sn-btn--sm sn-btn--quiet')); }
+      else if (r.state === 'waiting') { a.appendChild(btn('Send now', 'upload', flush)); a.appendChild(btn('Discard', null, function () { discard(r.id); }, 'sn-btn sn-btn--sm sn-btn--quiet')); }
+      if (a.children.length) li.appendChild(a); ul.appendChild(li);
+    });
+    body.appendChild(ul);
+  }
+  var PHONE = window.matchMedia ? window.matchMedia('(max-width: 767.98px)') : { matches: false };
+  function scrim() { var l = sheet && sheet.parentNode; return l && l.querySelector ? l.querySelector(':scope > .sn-side-sheet__scrim') : null; }
+  function onKey(e) {
+    if (!sheet) return;
+    if (e.key === 'Escape' && (PHONE.matches || sheet.contains(document.activeElement))) { e.stopPropagation(); close(); return; }
+    if (e.key === 'Tab' && PHONE.matches) {   /* a modal bottom sheet on phones: focus stays inside */
+      var f = sheet.querySelectorAll('button, [href], [tabindex="-1"]'), first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  }
+  function onScrim() { close(); }
+  function open() {
+    if (sheet) return;
+    sheetMade = !opts.sheet;
+    if (sheetMade) { sheet = el('aside', 'sn-side-sheet sn-side-sheet--overlay'); (opts.layout || document.querySelector('.sn-side-sheet__layout') || document.body).appendChild(sheet); }
+    else { sheet = opts.sheet; sheet.textContent = ''; sheet.hidden = false; }   /* one side sheet at a time: its content is replaced */
+    sheet.classList.add('sn-outbox'); sheet.setAttribute('aria-labelledby', 'sn-outbox-title');
+    var hd = el('span', 'sn-side-sheet__handle'); hd.setAttribute('aria-hidden', 'true'); sheet.appendChild(hd);
+    var h = el('div', 'sn-side-sheet__head'), t = el('h2', 'sn-title title-s sn-side-sheet__title', 'Changes waiting'); t.id = 'sn-outbox-title'; t.tabIndex = -1; h.appendChild(t);
+    var x = btn('', 'x', close, 'sn-btn sn-btn--icon sn-btn--quiet'); x.setAttribute('aria-label', 'Close changes waiting'); h.appendChild(x);
+    sheet.appendChild(h); sheet.appendChild(el('div', 'sn-side-sheet__body'));
+    if (PHONE.matches) { sheet.setAttribute('role', 'dialog'); sheet.setAttribute('aria-modal', 'true'); var sc = scrim(); if (sc) { sc.hidden = false; sc.addEventListener('click', onScrim); } }
+    document.addEventListener('keydown', onKey, true);
+    drawList(); t.focus();
+  }
+  function close() {
+    if (!sheet) return;
+    var sc = scrim(); if (sc) { sc.hidden = true; sc.removeEventListener('click', onScrim); }
+    sheet.classList.remove('sn-outbox'); sheet.removeAttribute('role'); sheet.removeAttribute('aria-modal');
+    if (sheetMade) sheet.remove(); else { sheet.textContent = ''; sheet.hidden = true; }
+    sheet = null; document.removeEventListener('keydown', onKey, true);
+    rows = rows.filter(function (r) { return r.state !== 'written' && r.state !== 'discarded'; }); keep();
+    if (typeof opts.onClose === 'function') try { opts.onClose(); } catch (e) { emit('fail', { area: 'outbox', name: 'onClose', error: e }); }
+    if (countBtn) countBtn.focus();
+  }
+  function init(o) {
+    o = o || {}; for (var k in o) opts[k] = o[k];
+    var kept = store(key()) || []; rows = kept.filter(function (r) { return r && r.id && r.kind; }).concat(rows.filter(function (r) { return !kept.some(function (k2) { return k2.id === r.id; }); }));
+    rows.forEach(function (r) { latest[r.kind + '|' + r.key] = r.id; });
+    paint(); return count();
+  }
+  function resume() {   /* after the kinds are registered: show what is kept, send what was waiting, in order */
+    var c = count(); if (!c.total) return c;
+    rows.forEach(function (r) { if (!isLatest(r)) return; if (r.state === 'waiting') { show(r, r.to); mark(r, 'waiting', waitingWords(r)); r._was = true; } else if (NEEDS[r.state]) mark(r, 'back', backWords(r, r.state !== 'notsaved'), true); });
+    var words = 'Kept from earlier: ' + countWords(c), q = Q();
+    if (!c.needs && q && typeof q.toast === 'function') q.toast(words); else say(words);   /* a toast only confirms; a change that needs the person is said by the count and the marks */
+    flush(); return c;
+  }
+  window.addEventListener('storage', function (e) { if (e.key === key() && !rows.some(function (r) { return r.state === 'sending'; })) init({}); });
+
+  S.resp = { version: '1.0.0', source: 'LedgerSchedule LS_RESP 1.0.1 (v5.34, 12 Nov 2026)', budget: BUDGET, skeleton: skeleton, lazy: lazy, buildAll: buildAll, stale: stale, debounce: debounce,
+    kind: kind, edit: edit, on: on, stats: function () { var s = JSON.parse(JSON.stringify(stats)); s.cls = +s.cls.toFixed(3); s.worstEvent = Math.round(s.worstEvent); return s; },
+    outbox: { init: init, resume: resume, flush: flush, list: function () { return rows.map(function (r) { var c = {}; for (var k in r) if (k.charAt(0) !== '_') c[k] = r[k]; return c; }); }, count: count, retry: retry, discard: discard, open: open, close: close } };
+})();
+
+/* ---------- CardFlag, in-row ask, SuggestionActions (1.14.0; fitted from LedgerSchedule v5.21, v5.23, v5.29, v5.30, v5.35) ----------
+   Hand-ported: LedgerSchedule has no script for these (its flags and action tips ride on its InfoTip script).
+   SongNodes.cardFlag / cardFlags give flag markup from data and ride on SongNodes.infoTips() unchanged; this file only places the open tip.
+   SongNodes.rowAsk puts the in-row ask in place of a row's actions.
+   SongNodes.suggestionActions gives the icon-action markup; SongNodes.suggestionTips() installs its tip behaviour once. */
+(function () {
+  var S = window.SongNodes; if (!S) return;
+  var esc = S.esc, icon = S.icon;
+
+  /* The flag table (components/CardFlag/README.md is the normative copy; keep the two the same).
+     words: the tip's exact words, {name} filled from the flag's data. src: the source link's words and module. */
+  var GROUPS = ["set", "transition", "track", "service"];
+  var FLAGS = {
+    "duplicate": { group: "set", icon: "copy", tone: "warn", label: "Twice in this set", words: "Also in slot {other}.", src: { text: "Go to slot {other}", samePage: true } },
+    "locked-off-target": { group: "set", icon: "lock", tone: "warn", label: "Locked off target", words: "Locked at energy {energy}; the shape asks for {target} here. A rebuild fills around it.", src: { text: "Unlock slot {slot}", samePage: true } },
+    "key-clash": { group: "transition", icon: "piano", tone: "bad", label: "Key clash", words: "{from} to {to} after slot {prev}: these keys clash.", src: { text: "Change slot {slot} in the set builder", module: "sets" } },
+    "bpm-jump": { group: "transition", icon: "timer", tone: "bad", label: "BPM jump", words: "{from} to {to} BPM after slot {prev}: a gap of {gap}, more than 8.", src: { text: "Change slot {slot} in the set builder", module: "sets" } },
+    "energy-jump": { group: "transition", icon: "gauge", tone: "bad", label: "Energy jump", words: "{step} after slot {prev}.", src: { text: "Change slot {slot} in the set builder", module: "sets" } },
+    "no-key": { group: "track", icon: "piano", tone: "warn", label: "No key", words: "No key yet, so transitions into and out of this track show “key ?”.", src: { text: "Add the key in Key & mood", module: "harmony" } },
+    "no-bpm": { group: "track", icon: "timer", tone: "warn", label: "No BPM", words: "No BPM yet, so transitions into and out of this track show “BPM ?”.", src: { text: "Add the BPM in track detail", module: "library" } },
+    "check-energy": { group: "track", icon: "flag", tone: "warn", label: "Check energy", words: "Energy {energy} is an estimate from BPM and source.", src: { text: "Set the energy in Key & mood", module: "harmony" } },
+    "check-match": { group: "track", icon: "clipboard-check", tone: "info", label: "Check {service} match", words: "Matched to {service} by name only.", src: { text: "Review the match in Sources", module: "sources" } },
+    "analysis-pending": { group: "track", icon: "audio-waveform", tone: "info", label: "Analysis pending", words: "Waiting for the weekly run on {date} to work out key, BPM and energy." },
+    "not-on-service": { group: "service", icon: "plug", tone: "warn", label: "Not on {service}", words: "Not available on {service}, so the weekly run leaves it out of the playlist.", src: { text: "Match it by hand in track detail", module: "library" } }
+  };
+  function fill(t, d) { return String(t).replace(/\{(\w+)\}/g, function (m, k) { return d && d[k] != null ? String(d[k]) : m; }); }
+  function warn(msg) { if (window.console) console.warn("SongNodes.cardFlag: " + msg); }
+
+  /** One flag. o: { flag, id, data?, lines?, count?, href?, words? }.
+      flag is a key of SongNodes.CARD_FLAGS; id is the tip's unique id; data fills the {names} in the table's words;
+      lines (array) replaces the words with the generated lines verbatim (several lines give a count and a numbered list);
+      count overrides the number after the icon; href is where the source link goes (required for warn and bad);
+      words: true keeps the flag's words beside the icon (always kept for a bad flag). */
+  function cardFlag(o) {
+    var f = FLAGS[o.flag]; if (!f) { warn("no flag \"" + o.flag + "\" in the flag table."); return ""; }
+    var d = o.data || {}, label = fill(f.label, d), id = esc(o.id);
+    var lines = o.lines && o.lines.length ? o.lines : [fill(f.words, d)];
+    var n = o.count != null ? o.count : (lines.length > 1 ? lines.length : 0);
+    var keep = f.tone === "bad" || !!o.words;
+    var body = lines.length > 1 ? "<ol>" + lines.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") + "</ol>" : '<span class="sn-cflag__line">' + esc(lines[0]) + "</span>";
+    var src = "";
+    if (f.src && o.href) src = '<span class="sn-cflag__src">' + S.sourceLink({ text: fill(f.src.text, d), href: o.href, module: f.src.module, samePage: !!f.src.samePage }) + "</span>";
+    else if (f.tone !== "info") warn("\"" + o.flag + "\" is a warning and needs href for its source link.");
+    return '<span class="sn-infotip sn-cflag' + (keep ? " sn-cflag--words" : "") + '" data-tone="' + f.tone + '" data-flag="' + esc(o.flag) + '">' +
+      '<button type="button" class="sn-infotip__btn sn-cflag__btn' + (n ? " sn-cflag__btn--n" : "") + '" aria-label="' + esc(label + (n ? ", " + n : "")) + '" aria-expanded="false" aria-controls="' + id + '" aria-describedby="' + id + '">' +
+      icon(f.icon) + (keep ? '<span class="sn-cflag__w">' + esc(label) + "</span>" : "") + (n ? '<span class="sn-cflag__n">' + esc(n) + "</span>" : "") + "</button>" +
+      '<span class="sn-tooltip sn-infotip__tip sn-cflag__tip" id="' + id + '" role="tooltip" hidden><b class="sn-cflag__head">' + esc(label) + "</b>" + body + src + "</span></span>";
+  }
+  /** A flag row from data, in the flag table's group order. opts: { label } names the row for screen readers ("Flags for Bicep – Glue").
+      An empty list gives an empty row, which is not drawn. */
+  function cardFlags(list, opts) {
+    var keys = Object.keys(FLAGS);
+    var sorted = (list || []).slice().sort(function (a, b) {
+      var fa = FLAGS[a.flag], fb = FLAGS[b.flag]; if (!fa || !fb) return 0;
+      return (GROUPS.indexOf(fa.group) - GROUPS.indexOf(fb.group)) || (keys.indexOf(a.flag) - keys.indexOf(b.flag));
+    });
+    return '<span class="sn-cflags"' + (sorted.length && opts && opts.label ? ' role="group" aria-label="' + esc(opts.label) + '"' : "") + ">" + sorted.map(cardFlag).join("") + "</span>";
+  }
+
+  /* Tip placement shared by flags and suggestion actions. A flag sits inside clipped boxes (a track cell's second line, a table
+     box, a rounded list), so its open tip is drawn fixed to the viewport beside its button; under 768px the bottom-sheet rule of
+     the stylesheet applies instead. The first measure at 0,0 finds the containing block, so a transformed ancestor is allowed for. */
+  function phone() { return !!(window.matchMedia && window.matchMedia("(max-width: 767.98px)").matches); }
+  function placeFixed(tip, btn, end) {
+    tip.removeAttribute("data-fixed"); if (phone() || !btn) return;
+    tip.style.setProperty("--sn-tip-x", "0px"); tip.style.setProperty("--sn-tip-y", "0px"); tip.setAttribute("data-fixed", "");
+    var r = tip.getBoundingClientRect(), b = btn.getBoundingClientRect(), GAP = 4, EDGE = 8;
+    var x = end ? b.right - r.width : b.left, y = b.bottom + GAP;
+    if (x + r.width > window.innerWidth - EDGE) x = window.innerWidth - EDGE - r.width;
+    if (x < EDGE) x = EDGE;
+    if (y + r.height > window.innerHeight - EDGE && b.top - GAP - r.height >= EDGE) y = b.top - GAP - r.height;
+    tip.style.setProperty("--sn-tip-x", (x - r.left) + "px"); tip.style.setProperty("--sn-tip-y", (y - r.top) + "px");
+  }
+  function placeFlag(tip) { placeFixed(tip, tip.parentNode.querySelector(":scope > .sn-cflag__btn"), false); }
+  function placeAction(tip) { placeFixed(tip, tip.parentNode.querySelector(":scope > .sn-sugact__btn"), true); }
+  function replaceOpen() {
+    var t = document.querySelectorAll(".sn-cflag__tip:not([hidden]):not(.sn-infotip__tip--static), .sn-sugact__tip:not([hidden]):not(.sn-sugact__tip--static)");
+    for (var i = 0; i < t.length; i++) { if (t[i].classList.contains("sn-cflag__tip")) placeFlag(t[i]); else placeAction(t[i]); }
+  }
+  if (typeof document !== "undefined" && typeof MutationObserver !== "undefined") {
+    /* InfoTip opens a flag's tip by removing its hidden attribute; the tip is placed as soon as that happens. */
+    new MutationObserver(function (ms) {
+      for (var i = 0; i < ms.length; i++) { var t = ms[i].target; if (t.classList && t.classList.contains("sn-cflag__tip") && !t.hidden && !t.classList.contains("sn-infotip__tip--static")) placeFlag(t); }
+    }).observe(document.documentElement, { attributes: true, subtree: true, attributeFilter: ["hidden"] });
+    window.addEventListener("scroll", replaceOpen, true); window.addEventListener("resize", replaceOpen);
+    /* Escape while focus is on the source link inside a flag's tip: hand focus back to the flag first, so InfoTip closes the tip
+       and does not open it again when it returns focus. Runs before InfoTip's own document-level listener. */
+    window.addEventListener("keydown", function (e) {
+      var a = document.activeElement, t = e.key === "Escape" && a && a.closest ? a.closest(".sn-cflag__tip") : null;
+      if (t) { var b = t.parentNode.querySelector(":scope > .sn-cflag__btn"); if (b) b.focus(); }
+    }, true);
+  }
+
+  /** In-row ask: the question in place of the row's actions. control is the pressed "Remove…" button.
+      o: { question, confirm, onConfirm, onCancel?, row?, heading? }. question names the thing; confirm is verb + object;
+      row is the selector of the row the control sits in (default "tr, li, .sn-card"); heading is the list's heading
+      (tabindex="-1"), focused when the last row goes. Cancel has focus when it opens; Escape cancels. */
+  function rowAsk(control, o) {
+    var host = control.closest(".sn-ract-zone") || control, row = control.closest(o.row || "tr, li, .sn-card");
+    var ask = document.createElement("span"); ask.className = "sn-rask"; ask.setAttribute("role", "group"); ask.setAttribute("aria-label", o.question);
+    ask.innerHTML = '<span class="sn-rask__q">' + esc(o.question) + '</span><button type="button" class="sn-btn sn-btn--sm" data-rask="no">Cancel</button><button type="button" class="sn-btn sn-btn--sm sn-btn--danger" data-rask="yes">' + esc(o.confirm) + "</button>";
+    function first(el) { return el ? el.querySelector(".sn-ract-zone button:not([disabled]), .sn-ract-zone a[href], button:not([disabled]), a[href]") : null; }
+    function close(refocus) { if (ask.parentNode) ask.parentNode.removeChild(ask); host.hidden = false; if (refocus) control.focus(); }
+    ask.addEventListener("keydown", function (e) { if (e.key === "Escape") { e.stopPropagation(); close(true); if (o.onCancel) o.onCancel(); } });
+    ask.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-rask]"); if (!b) return;
+      if (b.getAttribute("data-rask") === "no") { close(true); if (o.onCancel) o.onCancel(); return; }
+      var next = row ? (row.nextElementSibling || row.previousElementSibling) : null;
+      close(false); if (o.onConfirm) o.onConfirm();
+      if (row && document.contains(row)) { control.focus(); return; }
+      var t = first(next && document.contains(next) ? next : null) || o.heading || null; if (t) t.focus();
+    });
+    host.hidden = true; host.parentNode.insertBefore(ask, host.nextSibling);
+    ask.querySelector('[data-rask="no"]').focus();
+    return ask;
+  }
+
+  /** SuggestionActions markup. list: up to four of { id, label, tip, icon?, go?, href?, act?, state?, pressed? }.
+      label is the action's short name with the track ("Add Bicep – Glue to the set"); tip says what a press does, or why it cannot
+      be taken, or what was done; state: "unavailable" | "done" | "queued"; go + href make a link that opens that module in a new tab;
+      pressed (boolean) makes a toggle (the preview). opts: { label } names the group. */
+  function suggestionActions(list, opts) {
+    var a = (list || []).slice(0, 4);
+    if (list && list.length > 4) { if (window.console) console.warn("SongNodes.suggestionActions: at most four icon actions on a row; use RowActions for more."); }
+    return '<div class="sn-sugact"' + (opts && opts.label ? ' role="group" aria-label="' + esc(opts.label) + '"' : "") + ">" + a.map(function (x) {
+      var id = esc(x.id), st = x.state || "", glyph = x.go ? S.goIcon(x.go) : icon(st === "done" ? "circle-check" : x.icon);
+      var attrs = ' class="sn-btn sn-btn--sm sn-btn--icon sn-btn--quiet sn-sugact__btn" aria-label="' + esc(x.label) + '" aria-describedby="' + id + '"' +
+        (x.act ? ' data-act="' + esc(x.act) + '"' : "") + (st ? ' data-state="' + esc(st) + '"' : "") + (st === "unavailable" ? ' aria-disabled="true"' : "") +
+        (typeof x.pressed === "boolean" ? ' aria-pressed="' + x.pressed + '"' : "");
+      var ctl = x.go && x.href && st !== "unavailable" ? "<a" + attrs + ' href="' + esc(x.href) + '" target="_blank" rel="noopener">' + glyph + "</a>" : '<button type="button"' + attrs + ">" + glyph + "</button>";
+      return '<span class="sn-sugact__item">' + ctl + '<span class="sn-tooltip sn-sugact__tip" id="' + id + '" role="tooltip" hidden>' + esc(x.tip) + "</span></span>";
+    }).join("") + "</div>";
+  }
+  /** SuggestionActions tips, installed once per page (document-level): a tip opens after 500 ms of hover, at once on keyboard focus,
+      and on a long press on a touch screen; a tap acts and never opens the tip. A press on an action that is not available or is
+      done opens its tip instead of acting. Escape closes the tip and leaves focus where it is. One tip at a time. */
+  var tipsOn = false;
+  function suggestionTips() {
+    if (tipsOn || typeof document === "undefined") return; tipsOn = true;
+    var open = null, timer = null, pressTimer = null, longPressed = false, touch = false, DELAY = 500;
+    function tipOf(item) { return item.querySelector(":scope > .sn-sugact__tip"); }
+    function hide() { clearTimeout(timer); if (open) { var t = tipOf(open); if (t) t.hidden = true; open = null; } }
+    function show(item) {
+      clearTimeout(timer); if (open === item) return; hide();
+      var t = tipOf(item); if (!t) return; t.hidden = false; open = item; placeAction(t);
+    }
+    function itemOf(e) { return e.target && e.target.closest ? e.target.closest(".sn-sugact__item") : null; }
+    document.addEventListener("mouseover", function (e) {
+      if (touch) return; var it = itemOf(e); if (!it || open === it) return;
+      clearTimeout(timer); timer = setTimeout(function () { show(it); }, DELAY);
+    });
+    document.addEventListener("mouseout", function (e) {
+      if (touch) return; var it = itemOf(e); if (!it || it.contains(e.relatedTarget)) return;
+      clearTimeout(timer); if (open === it) hide();
+    });
+    document.addEventListener("focusin", function (e) {
+      var it = itemOf(e); if (!it) { if (open) hide(); return; }
+      var kb = true; try { kb = e.target.matches(":focus-visible"); } catch (x) {}
+      if (kb) show(it);
+    });
+    document.addEventListener("focusout", function (e) { var it = itemOf(e); if (it && open === it && !it.contains(e.relatedTarget)) hide(); });
+    document.addEventListener("pointerdown", function (e) {
+      touch = e.pointerType !== "mouse"; longPressed = false; var it = itemOf(e);
+      if (open && open !== it) hide();
+      if (touch && it) { clearTimeout(pressTimer); pressTimer = setTimeout(function () { longPressed = true; show(it); }, DELAY); }
+    }, true);
+    function endPress() { clearTimeout(pressTimer); }
+    document.addEventListener("pointerup", endPress, true); document.addEventListener("pointercancel", endPress, true);
+    document.addEventListener("contextmenu", function (e) { if (touch && itemOf(e)) e.preventDefault(); });
+    document.addEventListener("click", function (e) {
+      var b = e.target.closest ? e.target.closest(".sn-sugact__btn") : null; if (!b) return;
+      var st = b.getAttribute("data-state");
+      if (longPressed) { longPressed = false; e.preventDefault(); e.stopPropagation(); return; }
+      if (b.getAttribute("aria-disabled") === "true" || st === "done") { e.preventDefault(); e.stopPropagation(); show(b.parentNode); return; }
+      hide();
+    }, true);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && open) { e.stopPropagation(); hide(); } }, true);
+  }
+
+  S.CARD_FLAGS = FLAGS; S.CARD_FLAG_GROUPS = GROUPS;
+  S.cardFlag = cardFlag; S.cardFlags = cardFlags; S.rowAsk = rowAsk;
+  S.suggestionActions = suggestionActions; S.suggestionTips = suggestionTips;
 })();

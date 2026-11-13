@@ -21,6 +21,7 @@ The title is the link and stretches over the whole card (`.sn-launcher-card__lin
   </div></div>
 ```
 Focus shows on the card (`:has(.sn-launcher-card__link:focus-visible)`), hover lifts the card border to the module hue. Never put another interactive control inside a launcher card.
+A launcher card with nowhere to go (a module not set up yet) is drawn without `sn-launcher-card__link`, without the hover lift and without a focus stop: something that does nothing on press is never a link (RAC-061, RAC-063).
 `dt` comes first in the markup and is shown under the figure (`column-reverse`).
 
 ## Variants

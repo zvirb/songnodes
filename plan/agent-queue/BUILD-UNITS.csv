@@ -1,0 +1,2 @@
+unit,source,shared_resources,outputs,gate
+shell,frontend/src/shell/AppShell.tsx;frontend/src/styles/app.css,frontend/src/lib/songnodes.tsx;frontend/src/styles/design-system/bundle.css;frontend/src/styles/design-system/tokens.css,reports/RUN/proposal/frontend/src/shell/AppShell.tsx;reports/RUN/proposal/frontend/src/styles/app.css,source conformance;type-check;targeted browser audit;independent review before integration

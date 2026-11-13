@@ -71,6 +71,8 @@ How the interface says "nothing here", "working on it", "done" and "that went wr
 | Scraper circuit open | "1001tracklists is paused after 5 failed requests. It tries again at 21:45 AEDT." | Not by the person; wait |
 | Partial enrichment | "Enriched 38 of 42 tracks. 4 have no match on Beatport." + list | For the 4 only |
 
+"Kept on this device" is literal: the change is in the Outbox, counted in the ConnectionStatus, and sent when the connection is back (20-responsive-pages). A save that fails is shown by its SaveMark and the Outbox, never by a toast.
+
 ## Message types and limits
 
 | Type | Component | Use | Limit |
@@ -106,7 +108,21 @@ Imported from BeanAlliance v4.19, v4.19.1 and v4.20–v4.20.2 (Markus, 1 Nov 202
 | Add to set, lock slot | The row updates; count in the header updates; no toast |
 | Save set, import tracklist, send to TIDAL | `Toast`: "Saved “Peak time Friday”." / "Sent 24 tracks to TIDAL. 2 had no TIDAL ID." |
 | Long background job finished | `Toast` + `FreshnessStamp` update |
-| Settings saved | `InlineMessage` next to the save button for 6 s, or autosave with "Saved" `StatusPill` |
+| Settings saved | `InlineMessage` next to the save button for 6 s, or autosave with "Saved" `StatusPill`; a single setting changed in place shows at once with a SaveMark while it is not yet saved |
+
+## Saving (1.14.0)
+
+Every save goes through `SongNodes.save` (QuickSave). The pressed control shows "Saving" at once and stays usable; the write joins one ordered queue for its target (the SongNodes API, Spotify, TIDAL or browser storage) and is tried up to five times. After 1 s unwritten the control reads "Still saving". What happens next depends on why it did not land:
+
+| Class | Means | The person sees |
+|---|---|---|
+| Saved | written | a Toast "Saved the set order" (confirmation only) |
+| Kept (away) | offline, or the service cannot be reached | a warn InlineMessage after the control: "Kept on this device: … will be saved when you are back online." No Try again: it is sent again by itself. A warning, not an error |
+| Refused | the target said no | a warn InlineMessage with `role="alert"`: "Couldn’t save …: SongNodes refused it. Nothing was lost on this page." and **Try again** |
+| Unanswered | no answer in 10 s on each of five tries, or in the save's own deadline | the same, "no answer from Spotify after 5 tries" |
+| Failed | anything else | the same, "it could not be saved" |
+
+A failed or kept save is never a toast. Budgets: interface painted within 1,000 ms, "Saving" within 100 ms of the press, no main-thread task over 50 ms while loading, input answered within 100 ms during a heavy step. See `QuickSave`.
 
 ## Destructive actions
 
@@ -114,6 +130,7 @@ Imported from BeanAlliance v4.19, v4.19.1 and v4.20–v4.20.2 (Markus, 1 Nov 202
 - Low-stakes single-item delete inside a working view: an armed `Button` (first click turns it `danger` with "Click again to delete", resets after 4 s).
 - Irreversible or wide-reaching actions (delete a saved set, clear the scraping queue, revoke an API key, overwrite a TIDAL playlist): `ConfirmDialog` with the object name and count in the title, the consequence in the body, a `.sn-btn--danger` button repeating the verb, Cancel focused by default.
 - Bulk actions state the count: "Archive 12 target tracks?"
+- One saved row removed for good (a saved filter, a tracklist import): the in-row ask of `RowActions`. No dialog.
 
 ## Data freshness
 
@@ -137,3 +154,8 @@ Imported from BeanAlliance v4.19, v4.19.1 and v4.20–v4.20.2 (Markus, 1 Nov 202
 - Name the source that is unreachable: "Can’t reach TIDAL", "Graph updates paused: live connection lost", "MusicBrainz is slow (8 s)". Never "A service is unavailable".
 - `ServiceStatus` lists each source on `MonitoringPage` and `SettingsPage` with its `StatusPill` (Healthy, Degraded, Down, Paused after errors, Not set up), last success stamp and next attempt.
 - When a source is down, everything that does not depend on it keeps working, and features that do are disabled with the reason (02-information-architecture, permissions).
+
+
+## Toast wrap (1.12.0)
+
+A toast wraps only when it must (BAN-130): the sentence keeps the first line beside its icon; a short toast stays on one line; the action and dismiss that do not fit take the next line, end-aligned; a button never wraps inside itself.

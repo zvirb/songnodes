@@ -7,6 +7,7 @@
     "node": ">=26"
   },
   "scripts": {
+    "audit:design-system": "node scripts/design-system-audit.mjs",
     "dev": "vite --host",
     "build": "vite build",
     "preview": "vite preview",

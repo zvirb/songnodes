@@ -1,7 +1,7 @@
 /* ===== SongNodes core ===== (source/css/00-core.css; bundle.css = all source/css/*.css in order) */
 
 /* -- base ------------------------------------------------------------ */
-html { font-size: 100%; -webkit-text-size-adjust: 100%; }
+html { font-size: 100%; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 html[data-text-size="s"] { font-size: 93.75%; }
 html[data-text-size="l"] { font-size: 112.5%; }
 html[data-text-size="xl"] { font-size: 125%; }

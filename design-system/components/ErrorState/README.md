@@ -5,6 +5,7 @@ Explains a failed load in a panel: what happened, what it affects, whether retry
 ## When to use
 - A panel, tab or page could not load or save its data.
 - Not for page-wide conditions that persist (use Banner), field errors (use `sn-field__error` / InlineMessage), or confirmations (Toast). Never use a Toast for an error that needs action.
+A single slot that failed behind a Skeleton keeps its height and shows the Skeleton's compact failed form (a warn InlineMessage with Try again); ErrorState is for a panel or page.
 
 ## Anatomy
 ```html

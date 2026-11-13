@@ -23,6 +23,7 @@ The graph workspace: what to play next from the track that is on now, with the g
 - Empty: no now playing → `EmptyState` "Pick a track to start" with search; canvas shows the whole graph.
 - Error: canvas region only: `ErrorState` "SongNodes couldn’t load the graph (503)" with Try again and reference; recommendations from cache stay.
 - Offline: `ConnectionStatus` offline in the header, banner under it; graph frozen at the last data.
+- Optimistic edits use SaveMark; the Outbox count sits in the ConnectionStatus; first loads of known-shape slots use Skeleton (20-responsive-pages).
 
 ## Responsive
 ≥768px: recommendations | canvas | side sheet. <768px: recommendations list first, canvas behind "Show graph"; side sheet opens as a bottom sheet with scrim. Wall (≥1920): wider panels, canvas full-bleed (no `content-max`). Booth: Play mode, larger type, recommendations first; the canvas is secondary.

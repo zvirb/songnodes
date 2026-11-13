@@ -26,6 +26,7 @@ Opened directly at `/track/:id` (or `/library/:trackId`). From a list, the same 
 - Empty: no analysis yet → waveform replaced by `EmptyState` "Not analysed yet" + "Queue audio analysis"; no connections → "No connections yet. Import a tracklist that includes it."
 - Error: per region (waveform, plays, connections), each with its own `ErrorState`.
 - Offline: cached detail with stamp; Add to set queues locally.
+- Optimistic edits use SaveMark; the Outbox count sits in the ConnectionStatus; first loads of known-shape slots use Skeleton (20-responsive-pages).
 
 ## Responsive
 ≥1100px: main column + 360px aside. Below: one column, aside after Raw data; connected tracks become stacked cards below 600px; the heard-on table scrolls inside its box. Wall: capped at 1400px. Booth: same content, larger type.

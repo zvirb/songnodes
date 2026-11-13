@@ -268,10 +268,13 @@ export interface ShortcutSheetProps {
 }
 
 export interface PreferencesPanelProps {
-  /** Current preferences, from SongNodes.prefs.get() plus motion. */
+  /** Current preferences, from SongNodes.prefs.get() (theme, text size, density, motion). */
   value: { theme: "system" | "dark" | "light" | "booth"; textSize: "s" | "m" | "l" | "xl"; density: "comfortable" | "compact"; motion: "system" | "reduce" };
   /** Called on every change; apply immediately via SongNodes.prefs. */
   onChange: (next: PreferencesPanelProps["value"]) => void;
+  /** Settings browser storage refused to save (SongNodes.prefs.keptForVisit()): they hold for this visit only,
+   *  and the footer reads "Kept for this visit only" instead of "Saved on this device only" (1.14.0). */
+  keptForVisit?: string[];
   /** Called by the close button. */
   onClose?: () => void;
 }
@@ -399,6 +402,7 @@ export interface SearchFieldProps {
   /** Register the "/" shortcut and show its hint; default false. */
   shortcut?: boolean;
 }
+
 /** One option in an AutocompleteSearchField popup. */
 export interface AutocompleteOption {
   /** Stable id (unique within the field). */
@@ -1574,10 +1578,28 @@ export interface InlineMessageProps {
 export interface ToastOptions {
   /** Past-tense confirmation: "Set saved", "Tracklist copied: 18 tracks". */
   message: ReactNode;
-  /** One optional action, usually Undo; must also be available elsewhere (e.g. Ctrl/Cmd+Z, history). */
-  action?: { label: string; onAction: () => void };
+  /** One optional action, usually Undo; must also be available elsewhere (e.g. Ctrl/Cmd+Z, history).
+   *  Drawn as one small button straight before the dismiss button. onAction is called once and the toast closes;
+   *  return false when the action could not start and the toast stays (1.14.0). */
+  action?: { label: string; onAction: () => void | false };
   /** Visible time in ms: default 4000, 8000 with an action. Pauses on hover and focus. */
   durationMs?: number;
+}
+
+/** What SongNodes.toast(...) returns (1.14.0). */
+export interface ToastHandle {
+  /** Close this toast now, or take it out of the queue. */
+  dismiss(): void;
+  /** Resolves once the toast has left: by its timer, the dismiss button, its action, or dropped from a full queue. */
+  closed: Promise<"timeout" | "dismiss" | "action" | "dropped"> | null;
+}
+/** SongNodes.toast (1.14.0): the one way a page raises a toast. Confirmations only: there is no role, kind or status option. */
+export interface SongNodesToast {
+  (options: string | { text?: string; html?: string; action?: string; onAction?: () => void | false; ms?: number }): ToastHandle | null;
+  /** Make the empty role="status" region at start, so the live region exists before the first words. */
+  mount(): HTMLElement;
+  /** Visible time in ms: plain, and with an action. */
+  DEFAULT_MS: { plain: number; action: number };
 }
 
 export interface ToastProps {
@@ -1586,7 +1608,7 @@ export interface ToastProps {
   /** Placement: bottom centre, bottom right from the desktop breakpoint. */
   placement?: "auto";
   /** Push a toast; never for errors that need action (use Banner, ErrorState or InlineMessage). */
-  toast?: (options: ToastOptions) => void;
+  toast?: (options: ToastOptions) => ToastHandle | void;
 }
 
 export interface DialogProps {
@@ -1742,8 +1764,53 @@ export interface InfoTipProps {
   about: string;
   /** Tooltip form: the words, plain text, 40 words or fewer. Opens after 500 ms on hover, at once on keyboard focus and tap. */
   text?: string;
-  /** Panel form: a title and the content (may hold a list, links, mono file names). Opens on click, tap, Enter or Space only. */
+  /** Panel form: a title and the content (may hold a list, links, mono file names). Opens on click, tap, Enter or Space only.
+   *  Inside a heading every part is a span: paragraphs as sn-infotip__p, a short closing line as sn-infotip__note (1.14.0). */
   panel?: { title: string; content: ReactNode };
+  /** Where the tip sits (1.14.0): after a heading or label (default), or after the words of a subject with no heading (p.sn-infotip-line). */
+  placement?: "after" | "line";
+}
+
+/** LiveChange (1.11.0, LedgerSchedule v5.9 LiveChange): the only way a list moves on its own (LIV-001 to LIV-021). */
+export interface LiveChangeChange {
+  /** data-key of the item that changed. */
+  key: string;
+  /** Verb for the tag; default "Moved" ("Re-ordered", "Added"). */
+  verb?: string;
+  /** The device it happened on: "Phone" gives "Moved on Phone · 22:14". */
+  on?: string;
+  /** A process instead of a device: "weekly run". Never a person's name. */
+  by?: string;
+  /** hh:mm of the change. */
+  at?: string;
+}
+export interface LiveChangeSendOptions {
+  /** The InlineMessage words when the move is put back. */
+  words?: string;
+  /** Put-back tag; default "Not saved: put back". */
+  tag?: string;
+  /** Try again action. */
+  retry?: () => void;
+  /** Replace the default InlineMessage after the list. */
+  toast?: (msg: string, kind: "warn", action: { label: string; fn: () => void } | null) => void;
+  onTry?: (n: number) => void;
+}
+export interface SongNodesLive {
+  version: string;
+  /** A change from another device or the weekly run; queued while the list is pointed at, focused or dragged. */
+  remote(root: Element, mutate: () => void, changes: LiveChangeChange[], opts?: { onQueued?: (count: number, apply: () => void) => void; say?: string | false }): { queued: true } | { moved: Element[]; animated: boolean; finished: Promise<void> };
+  /** My own move: waits, retries five times, saves or is put back. Rejects when put back. */
+  send(root: Element, key: string, save: () => Promise<unknown>, back: () => void, opts?: LiveChangeSendOptions): Promise<unknown>;
+  cancel(root: Element): void;
+  generating(root: Element, insert: () => void, opts: { key: string; label?: string; fail?: { words?: string; retry?: () => void; remove?: () => void } }): unknown;
+  filled(el: Element, fill: () => void, opts?: { label?: string }): void;
+  remove(root: Element, key: string, opts?: { on?: string; by?: string; at?: string; label?: string; words?: string; retry?: () => void }): Promise<void>;
+  flip(root: Element, mutate: () => void, opts?: object): unknown;
+  queued(root: Element): number;
+  flush(root: Element): void;
+  reduced(): boolean;
+  say(text: string): void;
+  limits: Record<string, number>;
 }
 /* SongNodes design system — Pages A (documentation types: route-level page props and the data each page loads). */
 
@@ -2087,64 +2154,552 @@ export interface PrintSheetProps {
   /** Shape name ("Peak time (three waves)"). */ shape: string;
   /** Running order, up to 24 slots per A4 page. */ slots: PrintSlot[];
   /** Genre mix line ("House 50 · Techno 30 · UK garage 20"). */ genreMix?: string;
-  /** Full URL of the view for the footer. */ url: string;
+  /** Full URL of the view for the footer. The page number is not a prop: "Page n of N" prints in the page margin (@page sheet, 1.14.0). */ url: string;
   /** Library freshness for the footer. */ dataFrom: IsoTime;
   /** Adds the blank 30 mm notes column. */ notesColumn?: boolean;
 }
+/* SongNodes design system: saving and diagnostics (documentation types for the SongNodes.save and SongNodes.diag helpers). */
 
-/* ---- window.SongNodes helpers (components/bundle.js) ---- */
-export type ModuleKey = "graph" | "library" | "sets" | "paths" | "harmony" | "sources" | "pipeline" | "services";
-export type DesignStatus = "ok" | "fair" | "warn" | "bad" | "info" | "running" | "idle";
-export type CompatLevel = "perfect" | "compatible" | "possible" | "clash" | "unknown";
-/** Energy move identifiers (energy-move-1, 1.8.0). */
-export type EnergyMove = "hold" | "step_up" | "lift" | "jarring" | "reset_drop" | "step_down" | "unknown";
-export interface SongNodesHelpers {
-  version: string; locale: "en-AU"; timeZone: "Australia/Melbourne";
-  modules: { key: ModuleKey; label: string; icon: string; summary: string }[];
-  icon(name: string, opts?: { size?: number; label?: string; cls?: string }): string;
-  /** Go icon (1.6.0): the module's icon at 84% with a half-size external-link badge, in the module's colour. "Opens that page in a new tab." */
-  goIcon(module: ModuleKey, opts?: { size?: number }): string;
-  /** Source link markup (1.6.0): another module opens in a new tab, led by its go icon. */
-  sourceLink(link: { text: string; href: string; module?: ModuleKey; samePage?: boolean }): string;
-  /** InfoTip markup (1.6.0): tooltip form with `text`, panel form with `panel` (its html is trusted markup). */
-  infoTip(tip: { id: string; about: string; text?: string; panel?: { title: string; html: string } }): string;
-  /** Installs InfoTip behaviour once per page (document-level; safe to call again). */
-  infoTips(): void;
-  /** Dismissed warnings on this device, per page and fact key, until the next day in Melbourne (1.6.0). */
-  dismissal: { key(page: string, fact: string): string; isDismissed(page: string, fact: string): boolean; dismiss(page: string, fact: string): void; restore(page: string, fact: string): void };
-  /** The 109 icon names in the set. An unknown name draws circle-help and logs one console warning (1.3.0). */
-  iconNames: string[];
-  camelot(input: string | null | undefined): string | null;
-  keyName(code: string): string | null;
-  compat(a: string, b: string): { level: CompatLevel; label: string };
-  tier(energy: number): "low" | "building" | "high" | null;
-  /** Energy step a → b (harmonic-1): delta rounded half away from zero; `move` is the energy-move-1 identifier (1.8.0). */
-  energyStep(prev: number, next: number, before?: number): { level: CompatLevel; label: string; move: EnergyMove };
-  /** Words and context-free verdict for a stored energy move ("push" for lift, "trough reset" for reset_drop) (1.8.0). */
-  energyMove(move: string): { level: CompatLevel; label: string; move: EnergyMove };
-  /** Strength band 1–4 of a link weight 0–1 (GraphStyles, 1.5.0). */
-  edgeBand(weight: number, cuts?: [number, number, number]): GraphEdgeBand;
-  EDGE_BAND_LABEL: Record<GraphEdgeBand, "Weak" | "Fair" | "Strong" | "Very strong">;
-  EDGE_CUTS_DEFAULT: [number, number, number];
-  /** Fit band cut points to the library: quartiles (used), cross-checked by 4-class natural breaks; agree = every cut within 0.10. Under 200 links: defaults. */
-  fitEdgeCuts(weights: number[]): { cuts: [number, number, number]; quartiles: number[] | null; breaks: number[] | null; agree: boolean | null; links: number; method: "quartiles" | "default" };
-  /** Band and visibility for each link: Weak links only when one of either end's two strongest, touching the anchor, or touching a focused track. Weakest first (draw order). */
-  edgeVisibility<L extends { source: string | number; target: string | number; weight: number }>(links: L[], opts?: { cuts?: [number, number, number]; anchor?: string | number; focus?: Array<string | number> }): Array<{ link: L; band: GraphEdgeBand; show: boolean; focus: boolean }>;
-  /** Box a track keeps clear around its seat: node + state ring, its label at zoom 1.5 (at 100% for now playing) and the Now tag. [left, top, right, bottom] from the centre. */
-  seatBox(radius: number, labelWidth?: number, nowPlaying?: boolean): [number, number, number, number];
-  /** Ring layout (DR-034). Same input, same output. Heap-based since 1.9.1 (8,000 tracks in about 0.25 s). */
-  ringLayout(nodes: Array<{ id: string | number; box?: [number, number, number, number] }>, links: Array<{ source: string | number; target: string | number; weight: number }>, opts?: { anchor?: string | number; first?: number; step?: number; aspect?: number; seatGap?: number; prev?: Record<string, GraphSeat> }): { pos: Record<string, GraphSeat>; anchor: string | number; rings: number };
-  /** Neighbourhood view (1.9.0, DR-057): the anchor and the tracks reached in at most `steps` links (default graph-hood-steps, 3), at most `max` (graph-hood-max, 200), strongest link first. n log n. */
-  neighbourhood(nodes: Array<{ id: string | number }>, links: Array<{ source: string | number; target: string | number; weight: number }>, opts?: { anchor?: string | number; steps?: number; max?: number }): { ids: Array<string | number>; hops: Record<string, number>; anchor: string | number | null; total: number; capped: boolean };
-  /** Tempo move a → b (harmonic-1): gap rounded half up; half/double time judged on that gap, never better than compatible (1.8.0). */
-  bpmStep(a: number, b: number): { level: CompatLevel; label: string; relation: "direct" | "half_time" | "double_time" | null; gap: number | null };
-  format: { date(d: Date | string): string; day(d: Date | string): string; month(d: Date | string): string; time(d: Date | string): string; dateTime(d: Date | string): string; zone(d: Date | string): string; stamp(d: Date | string): string; relative(d: Date | string, now?: Date): string; duration(seconds: number): string; span(seconds: number): string; count(n: number): string; bpm(b: number): string; percent(x: number, digits?: number): string; dateOnly(isoDate: string): string; dayLong(d: Date | string): string; range(from: string, to: string): string };
-  calendar: { today(now?: Date): string; iso(y: number, m: number, d: number): string; month(y: number, m: number): ({ iso: string; y: number; m: number; d: number; wd: number } | null)[][]; addDays(iso: string, n: number): string; addMonths(iso: string, n: number): string; compare(a: string, b: string): -1 | 0 | 1; days(a: string, b: string): number; weekStart(iso: string): string; preset(id: DateRangePresetId, today?: string): [string, string] | null; PRESET_LABELS: Record<DateRangePresetId, string>; MONTHS_LONG: string[]; WDAYS_LONG: string[] };
-  dateRange(el: HTMLElement, opts?: { from?: string | null; to?: string | null; today?: string; title?: string; outcome?: string; preset?: string | null; presets?: (DateRangePresetId | { id: string; label: string; range: [string, string] | (() => [string, string]) })[]; marks?: DateRangeMark[]; onChange?(from: string | null, to: string | null, presetId: string | null): void; onApply?(from: string, to: string): void; onClear?(): void; onClose?(): void }): { el: HTMLElement; get(): { from: string | null; to: string | null; preset: string | null }; set(from: string | null, to: string | null, presetId?: string | null): void; focus(): void; show(iso: string): void };
-  /** CSV writer (15-print-export, 1.4.0): UTF-8 with BOM, CRLF, RFC 4180 quoting, and the formula guard (a text cell starting with = + - @, tab or CR gets a leading apostrophe; numbers the export writes are never guarded). */
-  csv: { BOM: "﻿"; EOL: "\r\n"; guarded(text: string): boolean; cell(value: string | number | null | undefined, opts?: { numeric?: boolean }): string; row(values: (string | number | null | undefined | { value: string | number | null | undefined; numeric?: boolean })[]): string; file(header: string[], rows: (string | number | null | undefined | { value: string | number | null | undefined; numeric?: boolean })[][]): string };
-  status(raw: string, domain?: "confidence" | "priority"): { status: DesignStatus; label: string; glyph: string };
-  html: { energy(e: number): string; key(k: string, withName?: boolean): string; pill(raw: string, label?: string): string; compat(level: CompatLevel, label?: string): string; link(mod: ModuleKey, href: string, text: string): string; title(lead: string, title: string, size?: "title-l" | "title-m" | "title-s"): string };
-  prefs: { init(): void; setTheme(t: "dark" | "light" | "booth" | "system"): void; setTextSize(s: "s" | "m" | "l" | "xl"): void; setDensity(d: "comfortable" | "compact"): void; setMotion(m: "system" | "reduce" | "full"): void; get(): { theme: string; textSize: string; density: string; motion: string } };
+/** QuickSave (1.14.0, LedgerSchedule v5.34 QuickSave): how a page opens fast and saves fast (QSV-001 to QSV-030). */
+
+/** One lane per target: the SongNodes API (the default), Spotify, TIDAL, browser storage. */
+export type SaveLane = "api" | "spotify" | "tidal" | "storage";
+/** queued → sending → saved | kept | failed. */
+export type SaveState = "queued" | "sending" | "saved" | "kept" | "failed";
+/** away = offline or the service cannot be reached (kept, not a failure); the other three end in `fail`. */
+export type SaveWhy = "away" | "refused" | "unanswered" | "failed";
+export type SaveEventName = "queued" | "sending" | "attempt" | "passed" | "waiting" | "saved" | "kept" | "fail" | "step" | "setting";
+
+/** What `run` is handed. */
+export interface SaveContext {
+  /** The job id: the same on every try and on Try again. Send it with the request. */
+  id: string;
+  /** The try, from 1. */
+  attempt: number;
+  lane: SaveLane;
+  /** Tries the helper will make: 5, or 1 with a deadline. */
+  tries: number;
+  /** Milliseconds each try is given. */
+  timeout: number;
+  /** Call when the write has been handed on but is not written yet. */
+  passed(): void;
 }
-declare global { interface Window { SongNodes: SongNodesHelpers } }
+/** Reject `run` with one of these so the helper knows what happened. */
+export interface SaveRejection {
+  /** The target said no: not tried again. */
+  refused?: boolean;
+  /** Offline: kept, not tried again. */
+  offline?: boolean;
+  /** The service cannot be reached: kept, not tried again. */
+  unreachable?: boolean;
+  name?: string;
+  code?: string | number;
+}
+export interface SaveOptions {
+  /** The write. Resolves when written. */
+  run(ctx: SaveContext): Promise<unknown> | unknown;
+  /** The target; default "api". Never one lane per save. */
+  lane?: SaveLane;
+  /** The kind of change, for events and diagnostics: "set order". Never a title. */
+  name?: string;
+  /** What was saved, in the page's words, for the messages: "the set order". */
+  label?: string;
+  /** The page's own key for the item, passed through to events. */
+  key?: string;
+  /** The pressed control: it turns busy ("Saving") and the message goes after it. */
+  button?: HTMLElement;
+  /** The element the message goes after, when not the control. */
+  near?: HTMLElement;
+  /** Where the target's state is shown; drawn by SongNodes.sourceLink at the end of the message. */
+  source?: { href: string; text: string; module?: string; samePage?: boolean };
+  /** Its own deadline in ms for a write known to take longer than 10 s. Tried once. */
+  timeout?: number;
+  /** A job id to reuse. */
+  uid?: string;
+  /** Builds Try again from the page's current state; handed the job id. */
+  retry?: (id: string) => SaveJob | void;
+  /** Whole sentences that replace the built ones. */
+  words?: { saved?: string; kept?: string; failed?: string };
+  /** No busy control, no message, no confirmation: the caller (SaveMark) reports it from the events. */
+  quiet?: boolean;
+}
+export interface SaveJob {
+  /** Counter on this page. */
+  id: number;
+  /** The job id that stays the same on retry. */
+  uid: string;
+  lane: SaveLane;
+  state: SaveState;
+  /** Resolves when written; rejects when kept or failed (already caught by the helper). */
+  done: Promise<unknown>;
+}
+/** What every save event carries: ids, the lane and the page's words, never the saved value. */
+export interface SaveEvent {
+  id: number;
+  uid: string;
+  lane: SaveLane;
+  key?: string;
+  name: string;
+  label: string;
+  state: SaveState;
+  quiet: boolean;
+  /** attempt, saved, kept, fail: the try count. */
+  attempt?: number;
+  /** attempt: tries the helper will make. */
+  tries?: number;
+  /** waiting: whether `run` had called `ctx.passed()`. */
+  passed?: boolean;
+  /** kept ("away") and fail ("refused" | "unanswered" | "failed"). */
+  why?: SaveWhy;
+  /** kept and fail: "save-queue"; a failed start-up step: "start". */
+  area?: "save-queue" | "start";
+  /** kept and fail: the error `run` rejected with. */
+  error?: unknown;
+}
+export interface SaveStep {
+  /** Step name for diagnostics: "read the library". */
+  name: string;
+  run(): Promise<unknown> | unknown;
+  /** Show that slot's ErrorState; without it a failure stops the chain. */
+  fail?(err: unknown): void;
+}
+export interface SaveStats {
+  /** ms from opening to the first paint. */
+  firstPaint: number | null;
+  steps: { name: string; ms: number; error?: unknown }[];
+  /** Longest main-thread task or chunk slice, ms. */
+  longest: number;
+  /** ms each save() took to show Saving. */
+  busy: number[];
+  saves: number;
+  failed: number;
+  kept: number;
+}
+export interface SongNodesSave {
+  /** Shows Saving at once, queues the write in its lane and returns the job. */
+  (o: SaveOptions): SaveJob;
+  version: string;
+  /** Runs heavy steps after the first paint, one after another. */
+  start(steps: SaveStep[]): Promise<unknown>;
+  /** A long loop in slices of at most 30 ms. */
+  chunk<T>(list: T[], fn: (item: T, i: number) => void, o?: { slice?: number; progress?: (done: number, total: number) => void }): Promise<number>;
+  yield(): Promise<void>;
+  afterPaint(): Promise<void>;
+  /** Sends a kept or failed job again with the same job id. */
+  again(job: SaveJob): SaveJob | void;
+  /** Writes waiting or in flight: every lane, or one. */
+  pending(lane?: SaveLane): number;
+  /** Listen; returns a function that stops listening. */
+  on(event: SaveEventName, fn: (e: SaveEvent & { key?: string; kept?: boolean; ms?: number }) => void): () => void;
+  whyOf(err: unknown): SaveWhy;
+  /** A view setting: when storage refuses, it is kept for the visit and logged once. Returns whether storage took it. */
+  setting(key: string, value: string | null): boolean;
+  settingValue(key: string): string | null;
+  /** The app's Toast for "Saved …"; without it the words go to a polite live region. */
+  setToast(fn: ((text: string) => void) | null): void;
+  stats(): SaveStats;
+  /** ms: PAINT 1000, BUSY 100, TASK 50, SLICE 30, WAITING_AFTER 1000. */
+  budget: Record<"PAINT" | "BUSY" | "TASK" | "SLICE" | "WAITING_AFTER", number>;
+  lanes: SaveLane[];
+  /** TRIES 5, TRY_TIMEOUT 10000, BACKOFF 1000, BACKOFF_CAP 16000 (LiveChange's). */
+  limits: Record<"TRIES" | "TRY_TIMEOUT" | "BACKOFF" | "BACKOFF_CAP", number>;
+}
+
+/** Diagnostics (1.14.0, LedgerSchedule v5.16 Diagnostics): one console line format on every page (DIA-001 to DIA-030). */
+
+export type DiagLevel = "debug" | "warn" | "error";
+export type DiagArea = "start" | "api" | "service" | "storage" | "save-queue" | "calc" | "render" | "audio" | "print" | "resource" | "script" | "promise" | "longtask";
+/** The only keys a line keeps; anything else is dropped. Names and counts, never a title, token, key or path. */
+export interface DiagContext {
+  /** A step, a control, a service or a file's leaf name: "set order", "Spotify preview". */
+  name?: string;
+  count?: number;
+  ms?: number;
+  /** The error's type. */
+  type?: string;
+  code?: string | number;
+  /** "refused", "away", "conflict", "rate limited". */
+  why?: string;
+  attempt?: number;
+}
+export interface DiagReportContext extends DiagContext {
+  /** The failure in the page's words: "notes not saved". */
+  what?: string;
+  /** "warn" when the page recovers by itself; otherwise the line is an error. */
+  level?: "warn";
+}
+export interface DiagEntry {
+  /** ms since the helper started. */
+  t: number;
+  level: DiagLevel;
+  /** `[SN <page> <build>] <level> <area>: <message> {…}` */
+  line: string;
+}
+export interface SongNodesDiag {
+  version: string;
+  /** Name the page (lower case, hyphens) and the build; call again on a route change. */
+  config(o: { page?: string; build?: string; ds?: string }): void;
+  debug(area: DiagArea, message: string, ctx?: DiagContext): void;
+  warn(area: DiagArea, message: string, ctx?: DiagContext): void;
+  error(area: DiagArea, message: string, ctx?: DiagContext): void;
+  /** The one call for a catch site. `report("calc", null, { name })` logs "no result". */
+  report(area: DiagArea, error: unknown, ctx?: DiagReportContext): void;
+  /** A milestone: "ready". */
+  mark(name: string, ctx?: { ms?: number; count?: number; area?: DiagArea }): void;
+  step(area: DiagArea, name: string, ms: number, count?: number): void;
+  /** Starts a timer; call the result with a count when the step is done. */
+  time(area: DiagArea, name: string): (count?: number) => void;
+  entries(): DiagEntry[];
+  /** Header line plus one line per entry. */
+  dump(): string;
+  /** Puts the dump on the clipboard; resolves false when the browser refuses. */
+  copy(): Promise<boolean>;
+  /** BUFFER 300, REPEAT 5, REPEAT_MS 60000, LONGTASK 200, MSG 160, VAL 80. */
+  limits: Record<"BUFFER" | "REPEAT" | "REPEAT_MS" | "LONGTASK" | "MSG" | "VAL", number>;
+}
+/* SongNodes design system: responsive pages (documentation types for SongNodes.resp and the Skeleton, SaveMark and Outbox components). */
+import type { ReactNode } from "react";
+
+/** Shape of a slot held by a Skeleton. */
+export type SkeletonShape = "rows" | "tiles" | "cards" | "chart" | "lines";
+
+export interface SkeletonProps {
+  /** The shape of the slot; a tbody defaults to "rows", anything else to "lines". */
+  shape?: SkeletonShape;
+  /** Rows, tiles or cards to hold (1 to 12): what fills the first screen, unless a count is remembered. */
+  count?: number;
+  /** For "rows": one spec per column, e.g. "w3 two", "w1 end". w1/w2/w3 = 30/48/72 per cent, end = number column, two = two-line cell. */
+  columns?: string[];
+  /** For "tiles": the real labels, where they are known before the figures. */
+  labels?: string[];
+  /** The loading sentence in the page's own words: "Loading 1,284 tracks…". Shown from 1 s. */
+  sentence: string;
+  /** Announced once when the slot is filled: "Library figures ready". */
+  readyMessage?: string;
+  /** Key under which the count and height this slot showed are kept on this device. */
+  remember?: string;
+  /** Height in px for a tile, card or chart, when the page knows it. */
+  height?: number;
+  /** Set when the load failed: what failed, shown at the placeholder's height. */
+  failed?: string;
+  /** Try again for a failed slot. */
+  onRetry?: () => void;
+  /** The real content; replaces the placeholder in place. */
+  children?: ReactNode;
+}
+
+/** State of a SaveMark. */
+export type SaveMarkState = "saving" | "waiting" | "saved" | "back";
+
+export interface SaveMarkProps {
+  state: SaveMarkState;
+  /** The words: "Saving · try 2 of 5", "Waiting to be sent · since 22:14", "Saved", "Not saved: put back to 6. You entered 8". */
+  words: string;
+  /** Shown only for "back". */
+  onRetry?: () => void;
+  /** Shown only for "back". */
+  onDiscard?: () => void;
+}
+
+/** State of one outbox row. */
+export type OutboxState = "sending" | "waiting" | "notsaved" | "refused" | "superseded" | "written" | "discarded";
+
+export interface OutboxRow {
+  id: string;
+  kind: string;
+  key: string;
+  /** What was changed, in words: "Energy for Bicep – Glue". */
+  what: string;
+  from: unknown;
+  to: unknown;
+  fromText?: string;
+  toText?: string;
+  /** When the change was made (ms since epoch). */
+  at: number;
+  state: OutboxState;
+  tries: number;
+  /** The server's reason for a refusal, or which change stands for a superseded row. */
+  why: string;
+  /** Never put back while offline; only when refused. */
+  keep: boolean;
+  payload?: unknown;
+}
+
+export interface OutboxProps {
+  rows: OutboxRow[];
+  /** Storage refused: the changes are not kept on this device. */
+  unkept?: boolean;
+  onRetry(id: string): void;
+  onDiscard(id: string): void;
+  onSendNow(): void;
+  onClose(): void;
+}
+
+export interface RespKind {
+  /** Send the change. Reject with { refused: true, reason?, superseded? } for a refusal and { offline: true } when it cannot be sent now. */
+  send(item: OutboxRow, ctx: { attempt: number }): Promise<unknown> | unknown;
+  /** Show a value on the item. */
+  show?(item: OutboxRow, value: unknown): void;
+  /** The control or cell the SaveMark attaches to; null for a change with no single control (a move). */
+  find?(item: OutboxRow): Element | null;
+}
+
+export interface RespSkeletonOptions {
+  shape?: SkeletonShape; n?: number; cols?: string[]; labels?: string[]; say?: string; ready?: string; remember?: string; height?: number; slow?: boolean;
+}
+export interface RespSkeleton {
+  el: Element;
+  say(text: string): void;
+  fill(content?: string | Node | ((slot: Element) => void) | null, count?: number): void;
+  fail(text?: string, retry?: () => void): void;
+}
+export interface RespLazyOptions extends RespSkeletonOptions { margin?: string; failed?: string; }
+export interface RespEdit {
+  kind: string; key: string | number; what?: string; from: unknown; to: unknown; fromText?: string; toText?: string; payload?: unknown; keep?: boolean;
+}
+export interface RespCount { waiting: number; needs: number; total: number; }
+export interface RespOutboxOptions {
+  page?: string; mount?: Element | null; sheet?: HTMLElement | null; layout?: Element | null; notice?: Element | null;
+  fmt?: (d: Date) => string; onClose?: () => void;
+}
+export interface RespStats {
+  edits: number; written: number; putBack: number; kept: number; refused: number; lazy: number; lazySeen: number; lazyIdle: number; cls: number; worstEvent: number; unkept: number;
+}
+
+/** window.SongNodes.resp */
+export interface SongNodesResp {
+  version: string;
+  budget: Record<string, number>;
+  skeleton(slot: Element, options?: RespSkeletonOptions): RespSkeleton;
+  lazy(slot: Element, build: (slot: Element) => unknown, options?: RespLazyOptions): { build(): Promise<void> };
+  buildAll(): Promise<unknown[]>;
+  stale(slot: Element | null, on: boolean): void;
+  debounce<T extends (...args: never[]) => void>(fn: T, ms?: number): T;
+  kind(name: string, handlers: RespKind): void;
+  edit(change: RespEdit): OutboxRow | null;
+  on(event: "change" | "fail" | "written", fn: (detail: unknown) => void): void;
+  stats(): RespStats;
+  outbox: {
+    init(options?: RespOutboxOptions): RespCount;
+    resume(): RespCount;
+    flush(): void;
+    list(): OutboxRow[];
+    count(): RespCount;
+    retry(id: string): void;
+    discard(id: string): void;
+    open(): void;
+    close(): void;
+  };
+}
+/* SongNodes design system — Figure pages (group 72, 1.14.0). Documentation types for the React components SongNodes should
+   implement: the summary band, FigureTile's link form and state tiles, ProgressRing and ProgressBar on a held scale, and the
+   Heatmap's not-measured cell. These add to FigureTileProps, ProgressRingProps, ProgressBarProps and HeatmapProps. */
+
+/** A tile with no trustworthy figure. The words on screen are fixed per state. */
+export type FigureTileState = "not-connected" | "awaiting" | "implausible";
+
+/** Fixed state words: "Not connected", "Awaiting the weekly run", "Implausible". */
+export interface FigureTileStateProps {
+  /** Which state replaces the figure. */
+  state: FigureTileState;
+  /** What the figure would count, sentence case ("Spotify plays"). */
+  label: string;
+  /** One note: what connecting adds, the next run, or the implausible figure and its reason. */
+  note: string;
+}
+
+/** The link form: the whole tile is the link; nothing inside it is a link or a button. */
+export interface FigureTileLinkProps {
+  /** A section id on this page ("#missing") or the figure's detail page. Same tab. */
+  href: string;
+  /** Destination words shown with a chevron ("Missing data"). */
+  goLabel: string;
+}
+
+/** Extra props a FigureTile takes on a figure page. */
+export interface FigureTileFigurePageProps {
+  /** Make the whole tile a link. Not allowed together with FigureTileProps.href (the footer link). */
+  link?: FigureTileLinkProps;
+  /** Show a state in place of the figure; `figure` is then ignored and never rendered. */
+  state?: FigureTileStateProps;
+  /** The figure comes from a model, not a measurement: adds the "Estimate" tag to the label. */
+  estimate?: boolean;
+}
+
+/** The summary band of a figure page: at most four link tiles, one reading sentence, one rest line. */
+export interface FigureBandProps {
+  /** Accessible name of the band ("Library this week"). */
+  label: string;
+  /** One to four tiles, each the headline of one section, in section order. */
+  tiles: Array<{ figure?: string; unit?: string; label: string; delta?: string } & FigureTileFigurePageProps>;
+  /** One sentence: the result, the biggest gap and where to look. */
+  read: string;
+  /** State tiles that did not fit, as one line ("Not connected: TIDAL plays. Awaiting the weekly run: Vault."). */
+  rest?: string;
+}
+
+/** A set against its length, for ProgressRing (size 64) and ProgressBar (default or lg). All values in minutes. */
+export interface HeldProgressProps {
+  /** The set's name; also the accessible name. */
+  label: string;
+  /** The held scale: the set length the person chose. Changes only when they change it. */
+  length: number;
+  /** Minutes planned in the set as it stands; may exceed `length`. */
+  planned: number;
+  /** Minutes in the saved set that the set on screen no longer holds; 0 or omitted when nothing is removed. */
+  removed?: number;
+  /** Tracks behind `removed`, for the words ("2 tracks removed since the last save (11 min)"). */
+  removedTracks?: number;
+  /** Slots with no track, for "5 slots empty". */
+  emptySlots?: number;
+}
+
+/** Heatmap cell values on a figure page: adds "unmeasured" to number | null | "future". */
+export type HeatmapCellValue = number | null | "future" | "unmeasured";
+
+/** Why a cell is not measured, used in its aria-label and the readout ("the tracklist was not scraped"). */
+export interface HeatmapNotMeasured {
+  row: number;
+  column: number;
+  reason: string;
+}
+/* SongNodes design system: card flags, row actions and suggestion actions (documentation types for the React components and the bundle helpers). */
+import type { ReactNode } from "react";
+
+/** Tone of a card flag; drawn in status-info, status-warn or status-bad. A bad flag keeps its words beside the icon. */
+export type CardFlagTone = "info" | "warn" | "bad";
+/** Group order of a flag row. */
+export type CardFlagGroup = "set" | "transition" | "track" | "service";
+/** The flags of the flag table (components/CardFlag/README.md). */
+export type CardFlagKey =
+  | "duplicate" | "locked-off-target"
+  | "key-clash" | "bpm-jump" | "energy-jump"
+  | "no-key" | "no-bpm" | "check-energy" | "check-match" | "analysis-pending"
+  | "not-on-service";
+
+/** One row of the flag table, as held in SongNodes.CARD_FLAGS. */
+export interface CardFlagDef {
+  group: CardFlagGroup;
+  /** Lucide icon name from the allowed subset. */
+  icon: string;
+  tone: CardFlagTone;
+  /** The meaning: the button's name and the tip's head. May hold {names} filled from data ("Not on {service}"). */
+  label: string;
+  /** The tip's exact words, with {names} filled from data. */
+  words: string;
+  /** The source link's words and where it leads; absent only on an info flag with nothing to change. */
+  src?: { text: string; module?: string; samePage?: boolean };
+}
+
+export interface CardFlagProps {
+  /** Which row of the flag table. */
+  flag: CardFlagKey;
+  /** Unique id of the tip (aria-controls and aria-describedby point at it). */
+  id: string;
+  /** Figures that fill the {names} in the table's words: slot numbers, keys, the service, the run date. */
+  data?: Record<string, string | number>;
+  /** Generated lines, verbatim, in place of the table's words. Several lines give a count and a numbered list. */
+  lines?: string[];
+  /** Number shown after the icon; defaults to the number of lines when there are several. */
+  count?: number;
+  /** Where the source link goes. Required for warn and bad flags. */
+  href?: string;
+  /** Keep the flag's words beside the icon. Always on for a bad flag. */
+  words?: boolean;
+}
+
+export interface CardFlagsProps {
+  /** The flags of one track, slot or set; drawn in the flag table's group order. An empty list draws nothing. */
+  flags: CardFlagProps[];
+  /** Names the row for screen readers: "Flags for Bicep – Glue". */
+  label: string;
+}
+
+/** One action of a row or card, as counted by RowActions (enabled and disabled alike). */
+export interface RowAction {
+  /** Visible label, verb first, sentence case; ends in "…" when the press opens an ask, a dialog or a field. */
+  label: string;
+  /** Lucide icon name; used only when the action is a kebab item. */
+  icon?: string;
+  /** The one action most likely next on the row; never a destructive one. */
+  primary?: boolean;
+  /** Last in the group or the menu; a plain button in the group, status-bad in the menu. */
+  destructive?: boolean;
+  /** When set, the action stays listed, disabled, with this reason ("Connect TIDAL in Services first"). */
+  disabledReason?: string;
+  /** What the press does when it can be undone or is not destructive. */
+  onSelect?: () => void;
+  /** For a destructive action that asks in the row: the question and the confirm label. */
+  ask?: { question: string; confirm: string; onConfirm: () => void };
+}
+
+export interface RowActionsProps {
+  /** Every action the row type can offer. Six or fewer are shown; seven or more give one primary and a kebab. */
+  actions: RowAction[];
+  /** The row's name, for the kebab ("More actions for Overmono – So U Kno") and for repeated button labels. */
+  rowName: string;
+  /** "card" lays six or fewer out as a column (1 to 3) or a two-column grid (4 to 6); "row" is a fixed-height row:
+      one line for 1 to 3, the kebab form from 4. Default "card". */
+  context?: "card" | "row";
+  /** Small controls, for a table row or slot. Default true when context is "row". */
+  small?: boolean;
+}
+
+/** Options of SongNodes.rowAsk(control, options): the in-row ask in place of a row's actions. */
+export interface RowAskOptions {
+  /** One sentence naming the thing: "Remove the saved filter “Garage 128–134” for good?". */
+  question: string;
+  /** Verb + object: "Remove filter". */
+  confirm: string;
+  onConfirm: () => void;
+  onCancel?: () => void;
+  /** Selector of the row the control sits in. Default "tr, li, .sn-card". */
+  row?: string;
+  /** The list's heading (tabindex="-1"), focused when the last row goes. */
+  heading?: HTMLElement;
+}
+
+export type SuggestionActionState = "unavailable" | "done" | "queued";
+
+export interface SuggestionAction {
+  /** Unique id of the tip. */
+  id: string;
+  /** The action and the track: "Add Sammy Virji – If U Need It to the set". */
+  label: string;
+  /** Plain text, 40 words or fewer: what a press does, why it cannot be taken, or what was done and when. */
+  tip: string;
+  /** Lucide icon name: plus (add to set), play or pause (preview), x (dismiss). Omit when go is set. */
+  icon?: string;
+  /** Module key whose go icon the action shows; with href it is a link that opens in a new tab ("graph"). */
+  go?: string;
+  href?: string;
+  /** Name of the action for the page's click handler (data-act): "add", "preview", "dismiss". */
+  act?: string;
+  state?: SuggestionActionState;
+  /** Makes the action a toggle (the preview): true while playing. */
+  pressed?: boolean;
+}
+
+export interface SuggestionActionsProps {
+  /** At most four, in the order add to set, preview, open in graph, dismiss. */
+  actions: SuggestionAction[];
+  /** Names the group: "Actions for Sammy Virji – If U Need It". */
+  label: string;
+  children?: ReactNode;
+}
+
+/** Helpers added to window.SongNodes by source/js/40-flags.src.js. */
+export interface SongNodesFlagsApi {
+  CARD_FLAGS: Record<CardFlagKey, CardFlagDef>;
+  CARD_FLAG_GROUPS: CardFlagGroup[];
+  /** Markup of one flag. */
+  cardFlag(o: CardFlagProps): string;
+  /** Markup of a flag row, in group order. */
+  cardFlags(list: CardFlagProps[], opts?: { label?: string }): string;
+  /** Puts the in-row ask in place of the row's actions; returns the ask element. */
+  rowAsk(control: HTMLElement, o: RowAskOptions): HTMLElement;
+  /** Markup of a suggestion row's icon actions. */
+  suggestionActions(list: SuggestionAction[], opts?: { label?: string }): string;
+  /** Installs the suggestion-action tips once per page. */
+  suggestionTips(): void;
+}

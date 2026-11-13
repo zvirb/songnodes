@@ -1,4 +1,4 @@
-<!-- @dsCard group="Inputs" height=349 subtitle="Label with its help in an InfoTip, optional marking, character count, error with aria-invalid, read-only, disabled with reason, multi-line" -->
+<!-- @dsCard group="Inputs" height=540 subtitle="Label with its help in an InfoTip, optional marking, character count, error with aria-invalid, read-only, disabled with reason, multi-line; and one aligned row of fields with a number field, a select, a file input and a button" -->
 <!doctype html>
 <html>
 <head><meta charset="utf-8"><title>TextField — preview</title>
@@ -40,6 +40,33 @@
       <textarea class="sn-textarea" id="tf-notes" data-max="140" aria-describedby="tf-notes-sr" rows="3">Loop the last 16 bars of Glue, bring So U Kno in on the breakdown, then cut the low end for 8 bars and swap at the drop.</textarea>
       <span class="sn-sr" id="tf-notes-sr" aria-live="polite"></span>
     </div>
+  </div>
+  <div class="sn-preview__label">One row of fields (.sn-field-row): labels on one line, controls start and end at one height; an error or a range hangs below its own field</div>
+  <div class="sn-field-row" id="tf-row">
+    <div class="sn-field sn-text-field">
+      <div class="sn-text-field__head"><label class="sn-text-field__label" for="tr-name"><span>Set name</span></label><span class="sn-infotip"><button type="button" class="sn-infotip__btn" aria-label="About set name" aria-expanded="false" aria-controls="tr-name-help" aria-describedby="tr-name-help" data-icon="info"></button><span class="sn-tooltip sn-infotip__tip" id="tr-name-help" role="tooltip" hidden>Shown on the saved sets list.</span></span></div>
+      <input class="sn-input" id="tr-name" value="" aria-invalid="true" aria-describedby="tr-name-help tr-name-err">
+      <span class="sn-field__error" id="tr-name-err">Enter a set name.</span>
+    </div>
+    <div class="sn-field sn-number-field">
+      <label for="tr-len" id="tr-len-l">Length</label>
+      <div class="sn-number-field__box">
+        <button class="sn-number-field__step" type="button" tabindex="-1" aria-label="Decrease length">−</button>
+        <input class="sn-number-field__input" id="tr-len" role="spinbutton" inputmode="numeric" value="92" aria-valuenow="92" aria-valuemin="30" aria-valuemax="360" aria-valuetext="92 minutes" aria-labelledby="tr-len-l tr-len-u">
+        <span class="sn-number-field__unit" id="tr-len-u">min</span>
+        <button class="sn-number-field__step" type="button" tabindex="-1" aria-label="Increase length">+</button>
+      </div>
+      <span class="sn-number-field__range">30–360 min</span>
+    </div>
+    <div class="sn-field sn-select-field">
+      <label for="tr-shape">Shape</label>
+      <select class="sn-select" id="tr-shape"><option>Peak time, three waves</option><option>Warm-up</option><option>Closing</option></select>
+    </div>
+    <div class="sn-field">
+      <div class="sn-field__head"><label class="sn-field__label" for="tr-file">Cover image</label><span class="sn-infotip"><button type="button" class="sn-infotip__btn" aria-label="About the cover image" aria-expanded="false" aria-controls="tr-file-help" aria-describedby="tr-file-help" data-icon="info"></button><span class="sn-tooltip sn-infotip__tip" id="tr-file-help" role="tooltip" hidden>A JPEG or PNG up to 2 MB, shown on the saved set.</span></span></div>
+      <input type="file" id="tr-file" accept="image/jpeg,image/png" aria-describedby="tr-file-help">
+    </div>
+    <div class="sn-field-row__action"><button class="sn-btn sn-btn--primary" type="button">Save set</button></div>
   </div>
 </div>
 <script>

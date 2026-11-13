@@ -139,3 +139,8 @@ Peak time Friday · 1 h 52 min · 24 tracks
 | Library CSV | The rows currently filtered, visible columns + IDs | Hidden columns; JSON adds the filter and sort used |
 | Graph stats CSV / JSON | Metrics table shown, with generated time | Node positions |
 | Target tracks JSON | All target tracks with priority and archive state | Search history |
+
+## Column hairlines and live markers on paper (1.11.0)
+
+- Printed tables carry a 1px `line` hairline between columns as well as rows, portrait and landscape (PRT-080, from LedgerSchedule v5.6). Built in `62-print-document.css`.
+- Print shows the final state only: no LiveChange tag or outline and no removed item (LIV-020).

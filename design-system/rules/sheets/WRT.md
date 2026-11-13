@@ -117,3 +117,6 @@
 | WRT-113 | Energy tiers shall be Low 1-4, Building 5-7 and High 8-10. | lint | Tier mapping function returns Low for 1-4, Building for 5-7, High for 8-10. |
 | WRT-114 | Rotation values shall be High, Standard and Vault. | lint | Rotation enum equals {High, Standard, Vault}. |
 | WRT-115 | Each slot shall offer 3 spares. | dom | Count of spare suggestions per slot equals 3. |
+| WRT-116 | Button and tab labels shall use sentence case and shall not use Title Case. | lint | Pass if button and tab labels of two or more words avoid Title Case capitalisation. |
+| WRT-117 | An InfoTip button's name shall name the subject ("About the energy tiers", "How rotation is worked out") and shall never be "Info" or "Help" alone. | lint | Fail if a `.sn-infotip__btn` has `aria-label` equal to "Info", "Help" or "More info". |
+| WRT-118 | The words of an InfoTip shall be moved verbatim from the notice it replaces; only a printed file or folder path shall be taken out. | judgement | Each tip's text equals the old notice text. |

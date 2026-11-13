@@ -286,4 +286,6 @@
 @media print {
   @page doc { size: A4 portrait; margin: 14mm 12mm 18mm; @bottom-right { content: "Page " counter(page) " of " counter(pages); font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 0.75rem; color: #616166; } }
   @page wide { size: A4 landscape; margin: 12mm 12mm 16mm; @bottom-right { content: "Page " counter(page) " of " counter(pages); font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 0.75rem; color: #616166; } }
+  @page { @bottom-right { content: "Page " counter(page) " of " counter(pages); font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 0.75rem; color: #616166; } }
+  @page sheet { size: A4 portrait; margin: 14mm 12mm 18mm; @bottom-right { content: "Page " counter(page) " of " counter(pages); font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 0.75rem; vertical-align: top; padding-top: 1mm; color: #616166; } }
 }

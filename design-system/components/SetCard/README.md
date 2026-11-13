@@ -17,6 +17,8 @@ The card for a saved set: name, shape, length, track count, peaks, a mini energy
 </article>
 ```
 
+The card is a static `article`: it does nothing on press. Its only controls are the Open link on the name and its `RowActions` (six actions, a two-column grid in `sn-card__foot`: Duplicate, Send to TIDAL, Copy tracklist, Export as CSV, Rename…, Delete set…). One counted `CardFlag` per kind sits in a `__meta` line under the stats.
+
 ## TIDAL states
 Not sent (no pill, or idle "Not sent"); queued (idle "Queued for Sunday's run"); sent (ok "Sent to TIDAL 20 Oct"); failed (bad, with the reason: "TIDAL send failed: sign-in expired").
 

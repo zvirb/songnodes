@@ -16,6 +16,7 @@ import argparse
 import re
 import subprocess
 import glob
+import json
 from typing import List, Tuple, Set, Optional
 
 # Constants
@@ -69,8 +70,7 @@ def get_git_files(mode: str) -> List[str]:
         res = subprocess.run(cmd, capture_output=True, text=True, check=True)
         files = [line.strip().replace("\\", "/") for line in res.stdout.splitlines() if line.strip()]
     except Exception as e:
-        sys.stderr.write(f"Error running git command: {e}\n")
-        return []
+        raise RuntimeError(f"Cannot enumerate source files with git: {e}") from e
 
     if mode == "staged":
         # Filter staged files to frontend/src/**/*.{ts,tsx,css}
@@ -380,8 +380,11 @@ def main():
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--check", action="store_true", help="Check all tracked frontend source files")
     group.add_argument("--staged", action="store_true", help="Check only staged frontend source files")
+    parser.add_argument("--strict", action="store_true", help="Include pending files and layout debt")
+    parser.add_argument("--json", action="store_true", help="Emit a machine-readable audit report")
 
     args = parser.parse_args()
+    os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     mode = "staged" if args.staged else "check"
 
     is_gha = os.environ.get("GITHUB_ACTIONS") == "true"
@@ -396,7 +399,7 @@ def main():
             continue
         if any(f.startswith(prefix) for prefix in EXCLUDED_PREFIXES):
             continue
-        if f in pending_files:
+        if f in pending_files and not args.strict:
             continue
         active_files.append(f)
 
@@ -408,7 +411,7 @@ def main():
             all_violations.append((f, line_no, msg))
 
     if mode == "check":
-        baseline = load_layout_baseline()
+        baseline = set() if args.strict else load_layout_baseline()
         all_violations.extend(check_undefined_classes(files_to_check, baseline))
         all_violations.extend(check_previews_one_primary())
         # Baseline is shrink-only: drop entries that no longer apply
@@ -436,6 +439,18 @@ def main():
                 all_violations.append(
                     (pf, 1, f"No longer needs an exemption; remove it from frontend/design-system-pending.txt")
                 )
+
+    if args.json:
+        print(json.dumps({
+            "strict": args.strict,
+            "checkedFiles": len(active_files),
+            "pendingFiles": sorted(pending_files),
+            "excludedFiles": sorted(EXCLUDED_FILES),
+            "excludedPrefixes": list(EXCLUDED_PREFIXES),
+            "findings": [{"file": f, "line": line, "message": msg}
+                         for f, line, msg in all_violations],
+        }))
+        sys.exit(1 if all_violations else 0)
 
     if all_violations:
         for f, line_no, msg in all_violations:

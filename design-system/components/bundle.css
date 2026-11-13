@@ -3,7 +3,7 @@
 /* ===== SongNodes core ===== (source/css/00-core.css; bundle.css = all source/css/*.css in order) */
 
 /* -- base ------------------------------------------------------------ */
-html { font-size: 100%; -webkit-text-size-adjust: 100%; }
+html { font-size: 100%; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 html[data-text-size="s"] { font-size: 93.75%; }
 html[data-text-size="l"] { font-size: 112.5%; }
 html[data-text-size="xl"] { font-size: 125%; }
@@ -532,6 +532,8 @@ html[data-motion="reduce"] .sn-skel { animation: none !important; }
 @media print {
   @page doc { size: A4 portrait; margin: 14mm 12mm 18mm; @bottom-right { content: "Page " counter(page) " of " counter(pages); font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 0.75rem; color: #616166; } }
   @page wide { size: A4 landscape; margin: 12mm 12mm 16mm; @bottom-right { content: "Page " counter(page) " of " counter(pages); font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 0.75rem; color: #616166; } }
+  @page { @bottom-right { content: "Page " counter(page) " of " counter(pages); font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 0.75rem; color: #616166; } }
+  @page sheet { size: A4 portrait; margin: 14mm 12mm 18mm; @bottom-right { content: "Page " counter(page) " of " counter(pages); font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 0.75rem; vertical-align: top; padding-top: 1mm; color: #616166; } }
 }
 
 /* ===== Navigation group (source/css/10-navigation.css) =====
@@ -1019,6 +1021,8 @@ html[data-motion="reduce"] .sn-autocomplete__popup { animation: none; }
 .sn-number-field__step:disabled { color: var(--fg-disabled); cursor: not-allowed; background: transparent; }
 .sn-number-field__step:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
 .sn-number-field__range { font: 400 0.75rem/1.3 var(--font-data); color: var(--fg-3); }
+/* 1.13.0: optional equivalent line ("= 1 h 30 min"), plain text after the range line. */
+.sn-number-field__equiv { font: 400 0.75rem/1.3 var(--font-data); color: var(--fg-2); }
 @media (pointer: coarse) { .sn-number-field__step { width: var(--touch-min); } .sn-number-field__box { min-height: var(--touch-min); } }
 
 /* -- SelectField ------------------------------------------------------ */
@@ -1080,12 +1084,14 @@ html[data-motion="reduce"] .sn-autocomplete__popup { animation: none; }
 .sn-range-slider__main { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
 .sn-range-slider__num { width: calc(var(--rs-ch, 3) * 1ch + 26px); flex: none; min-height: var(--control-sm); padding: 0 var(--space-2); text-align: center; background: var(--sunk); color: var(--fg); border: 1px solid var(--line-strong); border-radius: var(--radius-control); font: 600 0.875rem/1 var(--font-data); font-variant-numeric: tabular-nums; }
 .sn-range-slider__num[aria-invalid="true"] { border: 2px solid var(--status-bad); }
-.sn-range-slider__rail { position: relative; flex: 1; min-width: 120px; margin: 0 11px; height: 44px; touch-action: none; cursor: pointer; }
-.sn-range-slider__track { position: absolute; left: 0; right: 0; top: 14px; height: 6px; border-radius: var(--radius-pill); background: var(--progress-track); box-shadow: inset 0 0 0 1px var(--line); }
-.sn-range-slider__fill { position: absolute; top: 14px; height: 6px; border-radius: var(--radius-pill); background: var(--brand); }
-.sn-range-slider__thumb { position: absolute; top: 17px; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--fg); border: 3px solid var(--brand); box-shadow: var(--shadow-1); cursor: grab; touch-action: none; }
-.sn-range-slider__thumb::after { content: ""; position: absolute; inset: -11px; border-radius: 50%; }
-.sn-range-slider__thumb:hover { transform: scale(1.08); }
+.sn-range-slider__rail { --rs-top: 14px; position: relative; flex: 1; min-width: 120px; margin: 0 calc(var(--slider-thumb) / 2); height: var(--touch-min); touch-action: none; cursor: pointer; }
+/* 1.13.0: the unfilled track's 1px edge is line-strong (it was line: 1.44 dark, 1.29 light, below the 3:1 that WCAG 1.4.11 asks of a control's edge). */
+.sn-range-slider__track { position: absolute; left: 0; right: 0; top: var(--rs-top); height: var(--slider-track-h); border-radius: var(--radius-pill); background: var(--progress-track); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.sn-range-slider__fill { position: absolute; top: var(--rs-top); height: var(--slider-track-h); border-radius: var(--radius-pill); background: var(--brand); }
+/* 1.13.0: a 2px bg halo outside the brand ring, so the thumb's edge shows where it crosses the brand fill (5.0 dark, 5.7 light, 11.7 booth; the ring alone merged with the fill). */
+.sn-range-slider__thumb { position: absolute; top: calc(var(--rs-top) + var(--slider-track-h) / 2); width: var(--slider-thumb); height: var(--slider-thumb); margin: calc(var(--slider-thumb) / -2) 0 0 calc(var(--slider-thumb) / -2); border-radius: 50%; background: var(--fg); border: var(--slider-thumb-ring) solid var(--brand); outline: 2px solid var(--bg); box-shadow: var(--shadow-1); cursor: grab; touch-action: none; }
+.sn-range-slider__thumb::after { content: ""; position: absolute; inset: calc(var(--slider-thumb) / -2); border-radius: 50%; }
+.sn-range-slider__thumb:hover { transform: scale(1.15); }
 .sn-range-slider__thumb:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 .sn-range-slider__thumb[data-drag] { cursor: grabbing; }
 .sn-range-slider__ticks { position: absolute; left: 0; right: 0; top: 26px; height: 18px; pointer-events: none; }
@@ -1095,6 +1101,9 @@ html[data-motion="reduce"] .sn-autocomplete__popup { animation: none; }
 .sn-range-slider__tick:first-child::before { margin-left: 0; }
 .sn-range-slider__tick:last-child { transform: translateX(-100%); }
 .sn-range-slider__tick:last-child::before { margin-right: 0; }
+.sn-range-slider[aria-disabled="true"] { opacity: var(--opacity-disabled); }
+.sn-range-slider[aria-disabled="true"] .sn-range-slider__rail, .sn-range-slider[aria-disabled="true"] .sn-range-slider__thumb { cursor: not-allowed; }
+.sn-range-slider[aria-disabled="true"] .sn-range-slider__thumb:hover { transform: none; }
 .sn-range-slider__help { font-size: 0.8125rem; color: var(--fg-3); }
 .sn-range-slider__error { font-size: 0.8125rem; color: var(--status-bad); }
 .sn-range-slider__error::before { content: "✕ "; }
@@ -1821,6 +1830,52 @@ html[data-motion="reduce"] .sn-autocomplete__popup { animation: none; }
   margin-bottom: var(--space-4);
 }
 
+/* ===== 36 SliderGroup and OrderList ===== (source/css/36-controls.css, added 1.13.0)
+   Imported from BeanAlliance's linked Slider group and OrderList (v4.21 to v5.7), fitted to SongNodes: Lucide
+   arrows, the sn- namespace, the RangeSlider and DragDrop looks reused (20-inputs.css, 35-drag-drop.css). Behaviour
+   (keys, pointer, rebalancing, announcing) lives in the components; these are the looks. Tokens only. */
+
+/* -- SliderGroup: related weights, each a RangeSlider rail with its number box and its share ----------
+   Row: label, slider (rail only, no head: the row label names the thumb), number box, share in words.
+   Relative mode (default) has no total line. Linked mode sets data-total on the group and adds one
+   .sn-slider-group__total line: data-state="ok" "Total 1.00 of 1.00", "bad" "Total 1.10 of 1.00" (the group
+   also carries aria-invalid). The glyph leads the words: never colour alone. */
+.sn-slider-group { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+.sn-slider-group__row { display: grid; grid-template-columns: 9rem minmax(10rem, 1fr) auto 11rem; align-items: center; column-gap: var(--space-3); row-gap: var(--space-1); min-width: 0; }
+.sn-slider-group__label { font: 600 0.875rem/1.3 var(--font-body); color: var(--fg); }
+.sn-slider-group__row > .sn-range-slider { min-width: 0; }
+/* no __main wrapper in a group row, so the rail is a column item: keep its own height; track on the row's centre line */
+.sn-slider-group__row .sn-range-slider__rail { flex: none; --rs-top: calc((var(--touch-min) - var(--slider-track-h)) / 2); }
+.sn-slider-group__share { font: 400 0.8125rem/1.4 var(--font-data); font-variant-numeric: tabular-nums; color: var(--fg-2); white-space: nowrap; }
+.sn-slider-group__total { --t: var(--fg-2); --t-glyph: ""; display: flex; align-items: baseline; gap: var(--space-1); margin: 0; padding-top: var(--space-2); border-top: 1px solid var(--line); color: var(--t); font: 600 0.8125rem/1.4 var(--font-data); font-variant-numeric: tabular-nums; }
+.sn-slider-group__total::before { content: var(--t-glyph); }
+.sn-slider-group__total[data-state="ok"] { --t: var(--status-ok); --t-glyph: "\25CF"; }
+.sn-slider-group__total[data-state="bad"] { --t: var(--status-bad); --t-glyph: "\2715"; }
+.sn-slider-group:not([data-total]) .sn-slider-group__total { display: none; }
+.sn-slider-group[aria-disabled="true"] { opacity: var(--opacity-disabled); }
+@media (max-width: 639.98px) {
+  .sn-slider-group__row { grid-template-columns: minmax(0, 1fr) auto; }
+  .sn-slider-group__label { grid-column: 1 / -1; grid-row: 1; }
+  .sn-slider-group__row > .sn-range-slider { grid-column: 1; grid-row: 2; }
+  .sn-slider-group__row > .sn-range-slider__num { grid-column: 2; grid-row: 2; }
+  .sn-slider-group__share { grid-column: 1 / -1; grid-row: 3; }
+}
+
+/* -- OrderList: a short fixed list whose order is the setting ----------------------------------------
+   Each li: the DragDrop handle (.sn-drag-handle), the rank, the words, then Move up and Move down, which are
+   plain .sn-btn.sn-btn--quiet.sn-btn--sm.sn-btn--icon buttons (00-core.css: 32px, 44px on touch). The held row
+   takes .sn-drag-origin and the landing is marked by .sn-drop-line (35-drag-drop.css). At a list end the button
+   carries aria-disabled="true": still focusable and drawn, dimmed by .sn-btn. */
+ol.sn-order-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); max-width: min(100%, var(--prose-max)); }
+.sn-order-list__row { display: flex; align-items: center; gap: var(--space-2); min-height: var(--row-comfortable); padding: var(--space-1) var(--space-2); background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--radius-control); color: var(--fg); }
+.sn-order-list__n { flex: none; width: var(--space-6); text-align: right; font: 400 0.8125rem/1 var(--font-data); font-variant-numeric: tabular-nums; color: var(--fg-3); }
+.sn-order-list__label { flex: 1 1 auto; min-width: 0; font: 600 0.9375rem/1.3 var(--font-body); color: var(--fg); }
+.sn-order-list__btns { flex: none; display: flex; align-items: center; gap: var(--space-1); }
+.sn-order-list[aria-disabled="true"] .sn-drag-handle { opacity: var(--opacity-disabled); cursor: not-allowed; }
+/* The landing line takes no room: its margins cancel the extra gap, so rows do not jump while dragging. */
+.sn-order-list > .sn-drop-line { margin-block: calc((var(--space-2) + 2px) / -2); }
+@media (pointer: coarse) { .sn-order-list__row { min-height: var(--touch-min); } }
+
 /* ===== Charts group (source/css/40-charts.css) =====
    ChartFrame · EnergyWave · ProgressBar · ProgressRing · Heatmap · CamelotWheel · GraphStyles · GraphControls · Sparkline · WaveformStrip
    Charts are inline SVG drawn at 1 user unit = 1 CSS px; marks take colour from tokens through these classes or style="--c: var(--chart-N)". */
@@ -2274,9 +2329,11 @@ html[data-motion="reduce"] .sn-autocomplete__popup { animation: none; }
 /* -- Toast ------------------------------------------------------------------------------- */
 .sn-toast__region { position: fixed; z-index: var(--z-toast); left: 50%; bottom: var(--space-6); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: var(--space-2); width: max-content; max-width: calc(100vw - 2 * var(--space-4)); pointer-events: none; }
 @media (min-width: 1100px) { .sn-toast__region { left: auto; right: var(--space-6); transform: none; align-items: flex-end; } }
-.sn-toast { pointer-events: auto; display: flex; align-items: center; gap: var(--space-3); min-height: 48px; max-width: min(30rem, 100%); padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4); background: var(--surface-3); color: var(--fg); border: 1px solid var(--line-strong); border-radius: var(--radius-control); box-shadow: var(--shadow-2); font-size: 0.875rem; line-height: 1.4; animation: sn-toast-in var(--duration-base) var(--ease-standard); }
+.sn-toast { pointer-events: auto; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: var(--space-3); row-gap: var(--space-1); min-height: 48px; max-width: min(30rem, 100%); padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4); background: var(--surface-3); color: var(--fg); border: 1px solid var(--line-strong); border-radius: var(--radius-control); box-shadow: var(--shadow-2); font-size: 0.875rem; line-height: 1.4; animation: sn-toast-in var(--duration-base) var(--ease-standard); }
+/* BAN-130 / LIV fitted: sentence keeps the first line; actions that do not fit take the next line, end-aligned; a button never wraps inside itself */
+.sn-toast__text { flex: 1 1 12rem; min-width: 12rem; font-weight: 500; }   /* basis 12rem, not auto: a long sentence keeps its first line beside the icon and wraps inside itself (1.14.0) */
+.sn-toast__action, .sn-toast__close, .sn-toast__queue { flex: none; white-space: nowrap; }
 .sn-toast__icon { display: grid; place-items: center; color: var(--fg); }
-.sn-toast__text { flex: 1 1 auto; min-width: 0; font-weight: 500; }
 .sn-toast__text q { quotes: "“" "”"; font-weight: 600; }
 .sn-toast__action { margin-left: var(--space-1); }
 .sn-toast__close { color: var(--fg); }
@@ -2475,6 +2532,244 @@ fieldset.sn-side-sheet__section { border: 0; padding: 0; margin: 0; }
   mask-composite: subtract; }
 .sn-go__badge { right: 0; bottom: 0; width: 50% !important; height: 50% !important; stroke-width: 3; }
 @media print { .sn-go { display: none; } }
+
+/* 1.11.0 LiveChange (LIV rules; port of LedgerSchedule v5.9 LiveChange by source/port_live_css.py, tokens only).
+   SongNodes fit: nothing loops but the spinner (08-motion), so the waiting border's dashes and the generating placeholder stand still;
+   00-core.css already collapses every animation under reduced motion. */
+.sn-lc-remote,.sn-lc-pending{--sn-lc-c:var(--status-info)}
+.sn-lc-failed{--sn-lc-c:var(--status-warn)}
+.sn-lc-remote,.sn-lc-failed{outline:var(--live-mark-w) solid var(--sn-lc-c);outline-offset:calc(var(--live-mark-w)*-1);transition:outline-color var(--live-glide-max) var(--ease-exit)}
+.sn-lc-out{--sn-lc-c:transparent}
+tr.sn-lc-remote:not(:focus-visible),tr.sn-lc-failed:not(:focus-visible){outline-width:0}
+tr.sn-lc-remote>td,tr.sn-lc-failed>td{box-shadow:inset 0 var(--live-mark-w) 0 var(--sn-lc-c),inset 0 calc(var(--live-mark-w)*-1) 0 var(--sn-lc-c);transition:box-shadow var(--live-glide-max) var(--ease-exit)}
+tr.sn-lc-remote>td:first-child,tr.sn-lc-failed>td:first-child{box-shadow:inset 0 var(--live-mark-w) 0 var(--sn-lc-c),inset 0 calc(var(--live-mark-w)*-1) 0 var(--sn-lc-c),inset var(--live-mark-w) 0 0 var(--sn-lc-c)}
+tr.sn-lc-remote>td:last-child,tr.sn-lc-failed>td:last-child{box-shadow:inset 0 var(--live-mark-w) 0 var(--sn-lc-c),inset 0 calc(var(--live-mark-w)*-1) 0 var(--sn-lc-c),inset calc(var(--live-mark-w)*-1) 0 0 var(--sn-lc-c)}
+tr.sn-lc-out>td{--sn-lc-c:transparent}
+/* waiting on the snapshot writer (LVC-014): the dashes march; standing still under reduced motion */
+.sn-lc-pending:not(tr),tr.sn-lc-pending>td{background-image:linear-gradient(90deg,var(--sn-lc-c) 50%,transparent 0),linear-gradient(90deg,var(--sn-lc-c) 50%,transparent 0);background-repeat:repeat-x;background-size:calc(var(--dash)*2) var(--live-mark-w);background-position:0 0,0 100%}
+.sn-lc-pending:not(tr),tr.sn-lc-pending>td:first-child,tr.sn-lc-pending>td:last-child{background-image:linear-gradient(90deg,var(--sn-lc-c) 50%,transparent 0),linear-gradient(90deg,var(--sn-lc-c) 50%,transparent 0),linear-gradient(0deg,var(--sn-lc-c) 50%,transparent 0),linear-gradient(0deg,var(--sn-lc-c) 50%,transparent 0);background-repeat:repeat-x,repeat-x,repeat-y,repeat-y;background-size:calc(var(--dash)*2) var(--live-mark-w),calc(var(--dash)*2) var(--live-mark-w),var(--live-mark-w) calc(var(--dash)*2),var(--live-mark-w) calc(var(--dash)*2);background-position:0 0,0 100%,0 0,100% 0}
+tr.sn-lc-pending>td:first-child{background-size:calc(var(--dash)*2) var(--live-mark-w),calc(var(--dash)*2) var(--live-mark-w),var(--live-mark-w) calc(var(--dash)*2),0 0}
+tr.sn-lc-pending>td:last-child{background-size:calc(var(--dash)*2) var(--live-mark-w),calc(var(--dash)*2) var(--live-mark-w),0 0,var(--live-mark-w) calc(var(--dash)*2)}
+/* the tag: who and when, across the item's top edge, never over its own line of text */
+.sn-lc-host{position:relative}
+.sn-lc-tag{position:absolute;top:0;right:var(--space-2);transform:translateY(-50%);z-index:var(--z-sticky);height:var(--control-sm);padding:0 var(--space-1);display:inline-flex;align-items:center;border:1px solid var(--status-info);border-radius:var(--radius-pill);background:var(--surface-3);color:var(--status-info);font-family:var(--font-body);font-size:0.75rem;font-weight:600;line-height:1;white-space:nowrap;pointer-events:none;transition:opacity var(--live-glide-max) var(--ease-exit)}
+td.sn-lc-host>.sn-lc-tag{right:auto;left:var(--space-2)}
+.sn-lc-tag.failed{border-color:var(--status-warn);color:var(--status-warn)}
+.sn-lc-tag.pending{border-style:dashed}
+.sn-lc-tag.gone{border-color:var(--line-strong);color:var(--fg-2)}
+.sn-lc-out .sn-lc-tag{opacity:0}
+/* an item being generated (LVC-019 to LVC-025): bars in the item's own shape, a light band sweeping left to right */
+.sn-lc-gen{cursor:progress}
+.sn-lc-gen>*,.sn-lc-gen td>*{pointer-events:none}
+.sn-lc-bar{position:relative;overflow:hidden;display:block;height:var(--live-bar-h);width:100%;border-radius:var(--radius-pill);background:var(--line-strong)}
+.sn-lc-bar.w3{width:72%}.sn-lc-bar.w2{width:48%}.sn-lc-bar.w1{width:30%}
+.sn-lc-bar.end{margin-left:auto}
+.sn-lc-bar+.sn-lc-bar{margin-top:var(--space-1)}
+.sn-lc-bar.lg{height:calc(var(--live-bar-h)*1.5)}
+td>.sn-lc-bar{display:inline-block;vertical-align:middle}td>.sn-lc-bar.end{display:block}
+td>.sn-lc-bar+.sn-lc-bar{margin-top:0}
+.sn-lc-genfail .sn-lc-failline{display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-2);color:var(--status-bad);font-size:0.8125rem}
+.sn-lc-genfail .sn-lc-failline .sn-btn{color:var(--fg)}
+/* a deleted item (LVC-026 to LVC-030): grey, held, then gone */
+.sn-lc-gone{filter:grayscale(1);background:var(--surface-2)}
+.sn-lc-gone,.sn-lc-gone :not(.sn-lc-tag){color:var(--fg-3);border-color:var(--line)}
+.sn-lc-gone img,.sn-lc-gone svg,.sn-lc-gone .ph:not(.sn-lc-tag .ph){opacity:.42}
+.sn-lc-say{margin:0}
+@media print{.sn-lc-tag{display:none}.sn-lc-remote,.sn-lc-failed,.sn-lc-pending{outline-width:0}tr.sn-lc-remote>td,tr.sn-lc-failed>td,tr.sn-lc-pending>td,.sn-lc-pending:not(tr){box-shadow:none;background-image:none}.sn-lc-gone{display:none}}
+
+/* SongNodes fit (LVC-022): each placeholder bar takes exactly one text line, so a generating row is as tall as the filled one */
+.sn-lc-gen > td > .sn-lc-bar { display: block; margin-block: calc((1lh - var(--live-bar-h)) / 2); }
+.sn-lc-gen > td > .sn-lc-bar + .sn-lc-bar { margin-top: 0; }
+
+/* LIV-021: a placeholder that knows its content's shape reserves the height of the row it becomes. .sn-lc-shape holds the
+   expected text, invisible; each wrapped line shows one still bar, so on a phone the placeholder wraps exactly like the filled row. */
+.sn-lc-shape { color: transparent; user-select: none; -webkit-user-select: none; -webkit-box-decoration-break: clone; box-decoration-break: clone; border-radius: var(--radius-pill); background-image: linear-gradient(var(--line-strong), var(--line-strong)); background-repeat: no-repeat; background-size: 100% var(--live-bar-h); background-position: 0 50%; }
+
+/* RowActions (1.12.0 from LedgerSchedule v5.10 RAC): six or fewer = equal-button group; seven or more = primary + kebab.
+   Page-level OverflowMenu keeps the ellipsis icon (preserved SongNodes rule); a row kebab uses the vertical three-dot. */
+.sn-ract-zone { display: flex; align-items: flex-start; justify-content: flex-end; gap: var(--space-2); flex: none; }
+.sn-ract { display: inline-grid; gap: var(--space-2); align-items: stretch; }
+.sn-ract--col { grid-template-columns: minmax(0, 1fr); }
+.sn-ract--grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sn-ract > .sn-btn { width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sn-ract-menu { position: relative; flex: none; }
+.sn-ract-kebab[aria-expanded="true"] { background: var(--accent-wash, var(--hover-bg)); border-color: var(--accent, var(--line-strong)); }
+.sn-ract-panel { min-width: var(--menu-min, 12rem); max-width: calc(100vw - 32px); }
+@media print { .sn-ract-zone { display: none !important; } }
+
+/* TaskNotice (1.12.0 from LedgerSchedule v5.12 TSK): a data finding as a shared task. SongNodes warnings stay InlineMessages;
+   a TaskNotice is used when the finding needs Done / Defer / Dismiss-until-fact-changes kept in a shared store. */
+.sn-banner.task, .sn-inline.task { flex-wrap: wrap; align-items: flex-start; }
+.sn-task-acts { display: flex; gap: var(--space-1); flex: none; align-items: center; margin-left: auto; }
+.sn-task-defer { display: flex; flex-wrap: wrap; gap: var(--space-1); align-items: center; flex: 1 0 100%; justify-content: flex-end; }
+.sn-task-defer[hidden] { display: none; }
+.sn-task-days { width: 5rem; height: var(--control-h-sm, 2rem); box-sizing: border-box; font: inherit; font-variant-numeric: tabular-nums; text-align: right; padding: 0 var(--space-2); border: 1px solid var(--line-strong); border-radius: var(--radius-control); background: var(--surface); color: var(--fg); }
+.sn-task-msg { flex: 1 0 100%; margin: 0; text-align: right; font-size: 0.8125rem; color: var(--status-crit, var(--fg)); }
+.sn-task-msg:empty { display: none; }
+.sn-btn.tasked { background: transparent; border-color: transparent; color: var(--fg-2); }
+.sn-btn.tasked.done { color: var(--status-ok, var(--fg)); }
+.sn-btn.tasked.deferred { color: var(--status-info, var(--fg)); }
+@media print { .sn-banner.task, .sn-inline.task, .sn-task-row, .sn-btn.tasked { display: none !important; } }
+
+/* -- CardFlag (1.14.0, from LedgerSchedule v5.21, v5.23, v5.29; CFL rules) ---------------------------
+   One icon-only InfoTip button per generated line on a track row, set slot or set card.
+   Markup: span.sn-cflags > span.sn-infotip.sn-cflag[data-tone] > button.sn-infotip__btn.sn-cflag__btn + span.sn-tooltip.sn-infotip__tip.sn-cflag__tip
+   Behaviour is InfoTip's (SongNodes.infoTips); 40-flags.src.js only places the open tip. Print: .sn-infotip already does not print. */
+.sn-cflags { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); min-width: 0; vertical-align: middle; }
+.sn-cflags:empty { display: none; }
+.sn-cflags > .sn-infotip.sn-cflag { margin-left: 0; }
+.sn-track-cell__meta > .sn-cflags { flex: none; flex-wrap: nowrap; margin-left: var(--space-1); }
+.sn-cflag > .sn-cflag__btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1); font: 600 0.75rem/1 var(--font-body); }
+.sn-cflag[data-tone="info"] > .sn-cflag__btn { color: var(--status-info); }
+.sn-cflag[data-tone="warn"] > .sn-cflag__btn { color: var(--status-warn); }
+.sn-cflag[data-tone="bad"] > .sn-cflag__btn { color: var(--status-bad); }
+.sn-cflag > .sn-cflag__btn--n, .sn-cflag--words > .sn-cflag__btn { width: auto; min-width: var(--space-6); padding: 0 var(--space-1); }
+/* A track cell clips its second line, so the focus ring is drawn inside the button there. */
+.sn-track-cell__meta .sn-cflag__btn:focus-visible { outline-offset: -2px; }
+.sn-cflag__n { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.sn-cflag__w { white-space: nowrap; }
+.sn-cflag__head { display: block; font-weight: 700; }
+.sn-cflag__tip ol { margin: 0; padding-left: var(--space-4); }
+.sn-cflag__src { display: block; margin-top: var(--space-1); }
+.sn-cflag__tip .sn-link, .sn-cflag__tip .sn-go { color: inherit; }
+/* Open tip, 768px and wider: fixed beside its button (set by SongNodes, 40-flags.src.js), so a clipped row never cuts it. */
+.sn-cflag__tip[data-fixed], .sn-cflag__tip[data-fixed].sn-infotip__tip--up, .sn-cflag__tip[data-fixed].sn-infotip__tip--end, .sn-sugact__tip[data-fixed] { position: fixed; top: var(--sn-tip-y, 0); left: var(--sn-tip-x, 0); right: auto; bottom: auto; }
+.sn-table td.sn-cflags-cell { white-space: normal; }
+
+/* -- RowActions, completed (1.14.0; the group, kebab and print rules stay in 57-row-task.css) ---------
+   .sn-ract--line: the visible group in a fixed-height row (DataTable row, SetSlot): one line of equal buttons.
+   The kebab is an OverflowMenu: div.sn-overflow-menu.sn-ract-menu > button.sn-ract-kebab + div.sn-overflow-menu__menu.sn-ract-panel */
+.sn-ract-zone[hidden] { display: none; }
+.sn-ract--line { grid-auto-flow: column; grid-auto-columns: 1fr; }
+.sn-ract-zone > .sn-overflow-menu.sn-ract-menu { display: inline-flex; }
+.sn-ract-menu > .sn-ract-kebab[aria-expanded="true"] { background: var(--surface-3); border-color: var(--line-strong); color: var(--fg); }
+.sn-overflow-menu__menu.sn-ract-panel { min-width: min(16.5rem, calc(100vw - var(--space-8))); }
+.sn-card__foot > .sn-ract-zone { flex: 1 1 100%; }
+.sn-card__foot > .sn-ract-zone > .sn-ract { display: grid; flex: 1 1 auto; }
+
+/* In-row ask: the question in place of the pressed "Remove…" button; the danger look is on its confirm step only.
+   span.sn-rask[role=group][aria-label=question] > span.sn-rask__q + button.sn-btn[data-rask=no] + button.sn-btn.sn-btn--danger[data-rask=yes] */
+.sn-rask { display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--space-2); min-width: 0; }
+.sn-rask[hidden] { display: none; }
+.sn-rask__q { flex: 1 1 12rem; min-width: 0; font: 600 0.8125rem/1.35 var(--font-body); color: var(--fg); text-align: right; }
+@media (max-width: 767.98px) { .sn-rask { justify-content: flex-start; } .sn-rask__q { flex-basis: 100%; text-align: left; } }
+@media print { .sn-rask { display: none; } }
+
+/* -- SuggestionActions (1.14.0, from LedgerSchedule v5.35; SUG rules) ---------------------------------
+   Up to four icon actions on a suggestion row, each with its words in a tooltip.
+   div.sn-sugact > span.sn-sugact__item > (button | a).sn-btn.sn-btn--sm.sn-btn--icon.sn-btn--quiet.sn-sugact__btn + span.sn-tooltip.sn-sugact__tip */
+.sn-sugact { display: inline-flex; align-items: center; gap: var(--space-1); flex: none; }
+.sn-sugact__item { position: relative; display: inline-flex; }
+.sn-sugact__btn { position: relative; }
+.sn-sugact__btn[data-state="done"], .sn-sugact__btn[data-state="done"]:hover { color: var(--status-ok); }
+.sn-sugact__btn[aria-pressed="true"], .sn-sugact__btn[aria-pressed="true"]:hover { background: var(--fg); border-color: var(--fg); color: var(--bg); }
+.sn-sugact__btn[data-state="queued"]::after { content: ""; position: absolute; top: var(--space-1); right: var(--space-1); width: var(--space-2); height: var(--space-2); border-radius: var(--radius-pill); background: var(--brand); box-shadow: 0 0 0 var(--stroke-mark) var(--surface-1); }
+.sn-sugact__tip { top: calc(100% + var(--space-1)); right: 0; width: max-content; max-width: 16rem; }
+.sn-sugact__tip--static { position: relative; top: auto; right: auto; display: block; width: auto; }
+@media (pointer: coarse) { .sn-sugact { gap: var(--space-3); } .sn-sugact__btn::before { content: ""; position: absolute; inset: calc((var(--touch-min) - var(--control-sm)) / -2); } }
+@media (max-width: 767.98px) {
+  .sn-sugact__tip, .sn-sugact__tip[data-fixed], .sn-cflag__tip[data-fixed] { position: fixed; top: auto; left: max(var(--space-4), env(safe-area-inset-left, 0px)); right: max(var(--space-4), env(safe-area-inset-right, 0px)); bottom: calc(var(--space-6) + env(safe-area-inset-bottom, 0px)); width: auto; max-width: none; }
+  .sn-sugact__tip--static { position: relative; left: auto; right: auto; bottom: auto; }
+}
+@media print { .sn-sugact { display: none; } }
+
+/* Suggestion row: one proposed next track a person may take or leave.
+   ul.sn-sugrow-list > li.sn-sugrow > __track (TrackCell) + __data (BPM, key, fit) + SuggestionActions */
+.sn-sugrow-list { list-style: none; margin: 0; padding: 0; background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--radius-card); overflow: hidden; }
+.sn-sugrow { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 0 var(--space-3); min-height: var(--row-two-line); padding: 0 var(--space-2) 0 var(--space-3); border-top: 1px solid var(--line); }
+.sn-sugrow:first-child { border-top: 0; }
+.sn-sugrow__track { min-width: 0; }
+.sn-sugrow__data { display: flex; align-items: center; gap: var(--space-2); font-size: 0.8125rem; color: var(--fg-2); white-space: nowrap; }
+.sn-sugrow[data-state="done"] { background: var(--sunk); }
+@media (max-width: 767.98px) {
+  .sn-sugrow { grid-template-columns: minmax(0, 1fr) auto; padding-top: var(--space-1); padding-bottom: var(--space-1); }
+  .sn-sugrow__data { grid-column: 1; grid-row: 2; }
+  .sn-sugrow > .sn-sugact { grid-column: 2; grid-row: 1 / span 2; }
+}
+
+/* ---------- QuickSave (1.14.0, LedgerSchedule v5.34 QuickSave): the message SongNodes.save places after the pressed control ---------- */
+/* An InlineMessage (warn; role=alert for a save that did not land, role=status for one kept while away). In a wrapping row of
+   buttons it takes a line of its own: glyph, sentence and dismiss on the first line, Try again under the sentence. Diagnostics adds no styles: its button is a CopyButton. */
+.sn-save-said { flex: 1 1 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: var(--space-1) var(--space-2); margin-block: var(--space-2) 0; }
+.sn-save-said > span:first-child { grid-column: 2; grid-row: 1; }
+.sn-save-said .sn-inline-message__action { grid-column: 2; grid-row: 2; justify-self: start; margin-left: 0; }
+.sn-save-said .sn-inline-message__dismiss { grid-column: 3; grid-row: 1; margin: calc(-1 * var(--space-1)) 0 0; }
+@media print { .sn-save-said { display: none; } }
+
+/* 1.14.0 Responsive pages (RSP): Skeleton (SKL), SaveMark (SVM), Outbox (OBX), the stale slot and the kept-size section.
+   Fitted from LedgerSchedule v5.18 (.sk*, .svm*, .obx*, .stale, .cv-auto). Tokens only. The skeleton's blocks are the
+   existing .sn-skel (LoadingState); these rules only place them. The list is drawn inside a SideSheet and the count
+   inside a ConnectionStatus, with those components' own classes. */
+
+/* -- Skeleton ---------------------------------------------------------------------------- */
+.sn-skeleton { cursor: progress; }
+.sn-skeleton > :not(.sn-skeleton__say, .sn-skeleton__failed), .sn-skeleton td > * { pointer-events: none; }
+.sn-skeleton__say { grid-column: 1 / -1; flex: 1 0 100%; min-height: 1.35em; margin: 0 0 var(--space-2); font-size: 0.8125rem; line-height: 1.35; color: var(--fg-2); text-align: left; visibility: hidden; }
+.sn-skeleton[data-slow] .sn-skeleton__say { visibility: visible; }
+.sn-table tr.sn-skeleton__sayrow:hover > td, .sn-table tr.sn-skeleton__row:hover > td { background: transparent; }
+tr.sn-skeleton__sayrow .sn-skeleton__say { margin: 0; }
+tr.sn-skeleton__row > td { height: var(--row-h); box-sizing: border-box; }
+.sn-skeleton__bar { width: 100%; height: 0.8em; }
+.sn-skeleton__bar[data-w="3"] { width: 72%; }
+.sn-skeleton__bar[data-w="2"] { width: 48%; }
+.sn-skeleton__bar[data-w="1"] { width: 30%; }
+.sn-skeleton__bar[data-end] { margin-left: auto; }
+.sn-skeleton__bar[data-lg] { height: 1.2em; }
+.sn-skeleton__lines { display: flex; flex-direction: column; gap: var(--space-1); }
+.sn-skeleton--grid { position: relative; padding-top: calc(0.8125rem * 1.35 + var(--space-2)); }
+.sn-skeleton--grid > .sn-skeleton__say { position: absolute; top: 0; left: 0; right: 0; margin: 0; }
+.sn-skeleton > .sn-figure-tile--skeleton { box-sizing: border-box; min-height: var(--sn-skeleton-h, 0); }
+.sn-skeleton > .sn-figure-tile--skeleton > .sn-skel:first-child { height: 2.1rem; }
+.sn-skeleton > .sn-figure-tile--skeleton > .sn-skeleton__bar { height: 1.0125rem; }
+.sn-skeleton__card { box-sizing: border-box; display: flex; flex-direction: column; gap: var(--space-3); height: var(--sn-skeleton-h, var(--skeleton-card-h)); padding: var(--space-4); background: var(--surface-1); border: 1px solid var(--line); border-radius: var(--radius-card); }
+.sn-skeleton__chart { box-sizing: border-box; height: var(--sn-skeleton-h, var(--skeleton-chart-h)); border-bottom: 1px solid var(--line-strong); background-image: linear-gradient(to bottom, var(--chart-grid) 1px, transparent 0); background-size: 100% 25%; }
+.sn-skeleton--lines .sn-skeleton__bar + .sn-skeleton__bar { margin-top: var(--space-2); }
+.sn-skeleton__failed { grid-column: 1 / -1; flex: 1 0 100%; box-sizing: border-box; display: flex; align-items: flex-start; min-width: 0; }
+.sn-skeleton__failed > .sn-inline-message { flex: 1 1 auto; flex-wrap: wrap; align-items: center; }
+.sn-skeleton__failed > .sn-inline-message > span { flex: 1 1 12rem; min-width: 0; }
+
+/* -- A slot being worked out again, and a built section the browser may skip ------------- */
+.sn-stale { opacity: var(--opacity-stale); pointer-events: none; transition: opacity var(--duration-fast) var(--ease-standard); }
+.sn-cv-auto { content-visibility: auto; contain-intrinsic-size: auto var(--skeleton-chart-h); }
+
+/* -- SaveMark ---------------------------------------------------------------------------- */
+.sn-save-mark { --sn-sv-c: var(--status-info); display: inline-flex; align-items: center; gap: var(--space-1) var(--space-2); box-sizing: border-box; min-height: var(--space-6); max-width: 100%; margin-left: var(--space-2); padding: 0 var(--space-2); border: 1px solid var(--sn-sv-c); border-radius: var(--radius-pill); background: var(--surface-3); color: var(--fg); font: 400 0.75rem/1.35 var(--font-body); text-align: left; white-space: normal; vertical-align: middle; }
+.sn-save-mark[data-state="saving"] { border-style: dashed; }
+.sn-save-mark[data-state="waiting"] { --sn-sv-c: var(--line-strong); border-style: dashed; color: var(--fg-2); }
+.sn-save-mark[data-state="saved"] { --sn-sv-c: var(--line-strong); color: var(--fg-2); }
+.sn-save-mark[data-state="back"] { --sn-sv-c: var(--status-warn); flex-wrap: wrap; padding: var(--space-2); border-radius: var(--radius-control); }
+.sn-save-mark > .sn-icon { flex: none; width: 1.1em; height: 1.1em; }
+.sn-save-mark[data-state="back"] > .sn-icon { color: var(--status-warn); }
+.sn-save-mark__words { flex: 1 1 0; min-width: 0; }
+.sn-save-mark:not([data-state="back"]) > .sn-save-mark__words { flex: 0 1 auto; }
+.sn-save-mark__acts { flex: 1 0 100%; display: flex; flex-wrap: wrap; gap: var(--space-2); }
+td > .sn-save-mark { display: flex; width: fit-content; margin: var(--space-1) 0; padding-top: var(--space-1); padding-bottom: var(--space-1); border-radius: var(--radius-control); }
+[data-save="pending"] { outline: var(--live-mark-w) dashed var(--status-info); outline-offset: calc(var(--live-mark-w) * -1); }
+[data-save="back"] { outline: var(--live-mark-w) solid var(--status-warn); outline-offset: calc(var(--live-mark-w) * -1); }
+
+/* -- Outbox ------------------------------------------------------------------------------ */
+.sn-outbox__count { white-space: nowrap; color: var(--fg); }
+.sn-connection-status:has(> .sn-outbox__count) { flex-wrap: wrap; row-gap: var(--space-1); max-width: 100%; }
+.sn-outbox__count[data-attn] { box-shadow: inset 0 0 0 1px var(--status-warn); }
+.sn-outbox__count[data-attn] > .sn-icon { color: var(--status-warn); }
+body > .sn-outbox.sn-side-sheet--overlay { position: fixed; }
+.sn-outbox__lede { margin: 0; font-size: 0.8125rem; line-height: 1.45; color: var(--fg-2); }
+.sn-outbox__empty { display: flex; align-items: center; gap: var(--space-2); margin: 0; font-size: 0.875rem; color: var(--fg-2); }
+.sn-outbox__list { list-style: none; margin: 0; padding: 0; }
+.sn-outbox__row { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--space-1) var(--space-2); padding: var(--space-3) 0; border-top: 1px solid var(--line); font-size: 0.875rem; line-height: 1.4; }
+.sn-outbox__row:first-child { border-top: 0; padding-top: 0; }
+.sn-outbox__what { min-width: 0; font-weight: 600; color: var(--fg); overflow-wrap: anywhere; }
+.sn-outbox__val, .sn-outbox__when, .sn-outbox__why, .sn-outbox__acts { grid-column: 1 / -1; min-width: 0; }
+.sn-outbox__val, .sn-outbox__when, .sn-outbox__why { font-size: 0.8125rem; color: var(--fg-2); overflow-wrap: anywhere; }
+.sn-outbox__val, .sn-outbox__when { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.sn-outbox__acts { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-1); }
+.sn-outbox__row.sn-lc-gone { background: transparent; }
+
+@media print {
+  .sn-skeleton, .sn-save-mark, .sn-outbox, .sn-outbox__count { display: none; }
+  [data-save] { outline-width: 0; }
+  .sn-stale { opacity: unset; }
+}
 
 /* SongNodes design system — Pages A: page layouts only (HomePage, LibraryPage, SetBuilderPage, GraphExplorerPage,
    TrackDetailPage, SettingsPage, AuthCallbackPage). These classes place components; they never restyle them.
@@ -2795,6 +3090,8 @@ th.sn-page-matrix__rowhead { position: static; text-transform: none; letter-spac
 /* Print document (1.10.0): the generic print rules of 15-print-export for every page that is not a PrintSheet.
    Light values for print come from 02-theme-media.css (generated by build_tokens.py).
    Named pages @page doc and @page wide (with page numbers) are generated into 02-theme-media.css by build_tokens.py.
+   1.14.0: every printed page carries "Page n of N" in its bottom-right margin box: the unnamed @page, @page doc, @page wide and
+   @page sheet (the PrintSheet) are all generated there, because a margin box cannot read the page's CSS variables.
    Documents: class sn-print-doc on body gives A4 portrait pages numbered "Page X of Y".
    Landscape pages: put class sn-print-wide on a section, figure or diagram to give it its own A4 landscape page.
    Interactive containers expand: tab panels marked sn-print-expand and closed <details> print open. */
@@ -2822,6 +3119,19 @@ th.sn-page-matrix__rowhead { position: static; text-transform: none; letter-spac
   .sn-data-table__box { max-height: none; overflow: visible; }
   a.sn-link--ext[data-host]::after { content: " (" attr(data-host) ")"; color: var(--fg-3); }
   svg { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}
+
+/* 1.11.0 (from LedgerSchedule v5.6 GPR-081, PRT-080): printed tables carry a hairline between columns as well as rows, portrait and landscape */
+@media print {
+  .sn-table th + th, .sn-table td + td { border-left: 1px solid var(--line); }
+}
+
+/* 1.14.0 (from LedgerSchedule v4.24 and v5.6): the PrintSheet takes the named page "sheet", whose bottom-right margin box prints
+   "Page n of N" at the top of the margin, clear of the sheet's own footer line; the page number typed in the footer is for the
+   screen only. On paper colour is never the only carrier: a status keeps its glyph and word, an icon keeps its word beside it. */
+@media print {
+  .sn-page-print__paper { page: sheet; }
+  .sn-page-print__pageno { display: none; }
 }
 
 /* ReportPage (1.10.0): long documents such as investigation reports and briefs.
@@ -3016,3 +3326,137 @@ th.sn-page-matrix__rowhead { position: static; text-transform: none; letter-spac
 .sn-rchart__band--near { fill: var(--surface-3); }
 .sn-rchart__mark { stroke: var(--fg); stroke-width: 2; }
 .sn-rchart__lane { stroke: var(--chart-grid); stroke-width: 1; shape-rendering: crispEdges; }
+
+/* Figure pages (1.14.0, fitted from LedgerSchedule KPI pages, KpiTile states, ProgressRing and Meter on a held scale,
+   HeatScale "Not measured"). Adds to FigureTile (30-data.css), ProgressBar, ProgressRing and Heatmap (40-charts.css);
+   every earlier class keeps working. Rules: KPG and FIG sheets; prose: 21-figure-pages.md. */
+
+/* -- FigureBand: the summary band of a figure page: at most four tiles, one reading sentence, one rest line ------------ */
+.sn-figure-band { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.sn-figure-band__item { display: grid; min-width: 0; }
+.sn-figure-band__read { margin: 0; max-width: var(--prose-max); font-size: 0.9375rem; line-height: 1.45; color: var(--fg); }
+.sn-figure-band__rest { margin: 0; max-width: var(--prose-max); font-size: 0.8125rem; line-height: 1.4; color: var(--fg-2); }
+
+/* -- FigureTile, link form: the whole tile is the link; nothing inside it is a link or a button ----------------------- */
+.sn-figure-tile--link { text-decoration: none; cursor: pointer; border-color: var(--line-strong); transition: border-color var(--duration-fast) var(--ease-standard); }
+.sn-figure-tile--link:hover { border-color: var(--fg); }
+.sn-figure-tile--link.sn-figure-tile--tonal { border-color: var(--m-line); }
+.sn-figure-tile--link.sn-figure-tile--tonal:hover { border-color: var(--m-ink); }
+.sn-figure-tile__go { display: inline-flex; align-items: center; gap: var(--space-1); margin-top: auto; padding-top: var(--space-2); font-size: 0.8125rem; line-height: 1.4; font-weight: 600; color: var(--fg-2); }
+.sn-figure-tile__go .sn-icon { flex: none; transition: transform var(--duration-fast) var(--ease-standard); }
+.sn-figure-tile--link:hover .sn-figure-tile__go { color: var(--fg); }
+.sn-figure-tile--link:hover .sn-figure-tile__go .sn-icon { transform: translateX(var(--space-1)); }
+.sn-figure-tile--tonal .sn-figure-tile__go, .sn-figure-tile--tonal.sn-figure-tile--link:hover .sn-figure-tile__go { color: var(--m-ink); }
+@media (prefers-reduced-motion: reduce) { .sn-figure-tile--link:hover .sn-figure-tile__go .sn-icon { transform: none; } }
+
+/* -- FigureTile, state tiles: words in place of the figure, never a faked 0 ------------------------------------------- */
+.sn-figure-tile__state { display: flex; align-items: center; gap: var(--space-2); min-height: 2.1rem; font-family: var(--font-display); font-size: 1rem; line-height: 1.3; font-weight: 700; color: var(--fg-2); }
+.sn-figure-tile__state .sn-icon { flex: none; }
+.sn-figure-tile[data-state="not-connected"]:not(.sn-figure-tile--tonal) { background: var(--surface-2); }
+.sn-figure-tile[data-state="not-connected"]:not(.sn-figure-tile--tonal) .sn-figure-tile__delta { color: var(--fg-2); }
+.sn-figure-tile[data-state="implausible"] .sn-figure-tile__state .sn-icon { color: var(--status-warn); }
+.sn-figure-tile--tonal .sn-figure-tile__state { color: var(--m-ink); }
+.sn-figure-tile--tonal[data-state="implausible"] .sn-figure-tile__state .sn-icon { color: currentColor; }
+/* the "Estimate" tag sits inside the label and keeps its own case */
+.sn-figure-tile__tag { margin-left: var(--space-1); vertical-align: baseline; }
+
+/* -- ProgressBar and ProgressRing on a held scale: one key, a hatched or dashed cut-out for what was removed ---------- */
+.sn-progress-bar__key, .sn-progress-ring__key { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin: 0; padding: 0; list-style: none; font-size: 0.75rem; line-height: 1.35; color: var(--fg-2); }
+.sn-progress-bar__key li, .sn-progress-ring__key li { display: inline-flex; align-items: center; gap: var(--space-2); }
+.sn-progress-bar__swatch, .sn-progress-ring__swatch { flex: none; box-sizing: border-box; width: var(--space-4); height: var(--space-2); border-radius: var(--radius-chip); background: var(--progress-track); }
+.sn-progress-bar__swatch[data-part="filled"], .sn-progress-ring__swatch[data-part="filled"] { background: var(--progress-fill); }
+.sn-progress-bar__swatch[data-part="removed"], .sn-progress-ring__swatch[data-part="removed"],
+.sn-progress-bar__removed { background-color: var(--surface-1); background-image: repeating-linear-gradient(135deg, var(--line-strong) 0 var(--stroke-mark), transparent var(--stroke-mark) calc(var(--dash) + var(--dash-gap))); }
+.sn-progress-bar__swatch[data-part="removed"], .sn-progress-ring__swatch[data-part="removed"] { border: 1px dashed var(--line-strong); }
+
+/* bar: the track's full width is the held scale (the set length); filled first, then the removed part, then open track */
+.sn-progress-bar--held .sn-progress-bar__fill { border-radius: 0; }
+.sn-progress-bar__removed { position: absolute; top: 0; bottom: 0; left: var(--p, 0%); width: var(--removed, 0%); box-sizing: border-box; border-left: 1px dashed var(--line-strong); }
+.sn-progress-bar__caption { font-size: 0.75rem; line-height: 1.35; color: var(--fg-2); }
+
+/* ring: removed work is a cut-out in the card's ground with dashed edges inside and out; never a status colour */
+.sn-progress-ring--held .sn-progress-ring__fill { stroke-linecap: butt; }
+.sn-progress-ring__removed { fill: none; stroke: var(--surface-1); }
+.sn-card--tonal .sn-progress-ring__removed { stroke: var(--m-bg); }
+.sn-progress-ring__removed-edge { fill: none; stroke: var(--line-strong); stroke-width: 1; stroke-dasharray: var(--dash) var(--dash-gap); }
+.sn-card--tonal .sn-progress-ring__removed-edge { stroke: var(--m-ink); }
+.sn-progress-ring--held { align-items: flex-start; gap: var(--space-3); }
+.sn-progress-ring--held .sn-progress-ring__text { gap: var(--space-1); }
+.sn-progress-ring--held .sn-progress-ring__text span { color: var(--fg-2); }
+.sn-card--tonal .sn-progress-ring--held .sn-progress-ring__text span { color: var(--m-muted); }
+
+/* -- Heatmap: a cell that could not be measured: a slashed outline, never step 0 and never the dashed "no episode" ---- */
+.sn-heatmap__cell[data-unmeasured] { fill: var(--chart-surface); stroke: var(--line-strong); stroke-width: 1; }
+.sn-heatmap__slash { fill: none; stroke: var(--line-strong); stroke-width: var(--stroke-mark); pointer-events: none; }
+.sn-heatmap__ramp { flex-wrap: wrap; }
+.sn-heatmap__ramp-none, .sn-heatmap__ramp-unmeasured { white-space: nowrap; }
+.sn-heatmap__ramp-unmeasured { display: inline-flex; align-items: center; gap: var(--space-1); font-family: var(--font-body); }
+.sn-heatmap__ramp-unmeasured::before { content: ""; box-sizing: border-box; width: 0.625rem; height: 0.625rem; border: 1px solid var(--line-strong); border-radius: calc(var(--radius-chip) / 2);
+  background: linear-gradient(to top right, transparent calc(50% - var(--stroke-mark) / 2), var(--line-strong) calc(50% - var(--stroke-mark) / 2), var(--line-strong) calc(50% + var(--stroke-mark) / 2), transparent calc(50% + var(--stroke-mark) / 2)); }
+
+@media print {
+  .sn-progress-bar__removed, .sn-progress-bar__swatch, .sn-progress-ring__swatch, .sn-heatmap__ramp-unmeasured::before { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .sn-figure-tile--link { border-color: var(--line); }
+  .sn-figure-tile__go .sn-icon { display: none; }
+}
+
+/* ==========================================================================
+   67-fixes.css: small imports from LedgerSchedule (v4.22.2 to v5.33), fitted to SongNodes in 1.14.0.
+   Form alignment (.sn-field-row), InfoTip parts in a heading and in a dialog, the link drawn as a button,
+   a file input inside a field. Tokens only: type comes from the type-scale tokens (--fs-*, --lh-*, --fw-*).
+   ========================================================================== */
+
+/* -- Form alignment: one row of fields (22-forms-and-load.md; INP-150 to INP-160) --------------------------
+   .sn-field-row is the only layout for fields that sit side by side: a grid aligned to the top, so a hint,
+   an error or a readout hangs below its own field and never moves a neighbour. Every label line is one
+   height (the 24px InfoTip button), every control starts at one height and is control-md tall. */
+.sn-field-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--field-min)), 1fr)); gap: var(--space-4) var(--space-3); align-items: start; min-width: 0; }
+.sn-field-row > * { min-width: 0; }
+.sn-field-row > :is(.sn-range-slider, .sn-date-field) { gap: var(--space-1); }
+.sn-field-row > :is(.sn-field, .sn-range-slider, .sn-date-field) > :is(label, legend, .sn-field__label, .sn-field__head, .sn-text-field__head, .sn-range-slider__head):first-child { display: flex; align-items: center; height: var(--space-6); margin: 0; padding: 0; white-space: nowrap; }
+.sn-field-row > .sn-field > :is(label, .sn-field__label):first-child { overflow: hidden; text-overflow: ellipsis; }
+.sn-field-row .sn-number-field__box { min-height: var(--control-md); }
+.sn-field-row .sn-range-slider__main { align-items: flex-start; min-height: var(--control-md); }
+.sn-field-row .sn-range-slider__num { min-height: var(--control-md); }
+.sn-field-row .sn-range-slider__rail { --rs-top: calc((var(--control-md) - var(--slider-track-h)) / 2); }
+/* a label that shares its line with an InfoTip is still the field's label: same type as a label on its own
+   (.sn-field > label did not reach a label inside .sn-field__head or .sn-text-field__head) */
+.sn-field :is(.sn-field__head, .sn-text-field__head) > label { font: var(--fw-body-strong) var(--fs-body-s)/var(--lh-label) var(--font-body); color: var(--fg-2); }
+.sn-field-row--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sn-field-row--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.sn-field-row--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.sn-field-row__span-2 { grid-column: span 2; }
+.sn-field-row__span-all { grid-column: 1 / -1; }
+/* a button beside the fields starts where their controls start: one label line and the field's gap down */
+.sn-field-row__action { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); min-height: var(--control-md); margin-top: calc(var(--space-6) + var(--space-1)); }
+@media (max-width: 767.98px) {
+  .sn-field-row, .sn-field-row--2, .sn-field-row--3, .sn-field-row--4 { grid-template-columns: minmax(0, 1fr); }
+  .sn-field-row__span-2 { grid-column: auto; }
+  .sn-field-row__action { margin-top: 0; }
+  .sn-field-row > :is(.sn-field, .sn-range-slider, .sn-date-field) > :is(label, legend, .sn-field__label, .sn-field__head, .sn-text-field__head, .sn-range-slider__head):first-child { height: auto; min-height: var(--space-6); white-space: normal; }
+}
+
+/* -- InfoTip: parts that sit inside a heading, a subject with no heading, and a tip inside a Dialog or SideSheet ----
+   A heading holds phrasing content only, so every part of a panel in a heading is a span: a paragraph is
+   .sn-infotip__p, a short closing line (a source or a build line) .sn-infotip__note. Bold moved verbatim
+   stays inline. .sn-infotip-line names a subject that has no heading or label of its own, then carries the tip. */
+.sn-infotip__p, .sn-infotip__note { display: block; margin: 0; color: var(--fg-2); font: inherit; }
+.sn-infotip__note { color: var(--fg-3); }
+.sn-infotip__panel :is(b, strong) { display: inline; font-weight: var(--fw-body-strong); color: var(--fg); }
+.sn-infotip__panel .sn-popover__title { display: block; }
+.sn-infotip-line { display: flex; align-items: center; gap: var(--space-1); min-height: var(--space-6); margin: 0; font-weight: var(--fw-body-strong); color: var(--fg); }
+.sn-infotip-line > .sn-infotip { margin-left: 0; font-weight: var(--fw-body); }
+:is(.sn-dialog, .sn-side-sheet) .sn-popover.sn-infotip__panel { max-width: min(24rem, 100%, calc(100vw - 2 * var(--space-4))); max-height: 60vh; }
+.sn-dialog__title > :is(h1, h2, h3) > .sn-infotip, .sn-side-sheet__head :is(h1, h2, h3) > .sn-infotip { vertical-align: middle; }
+
+/* -- Button: a link drawn as a button (from LedgerSchedule v5.24). .sn-btn already removes the underline and dims
+   aria-disabled; a link has no disabled state of its own, so it also stops taking the pointer. ---------------------- */
+a.sn-btn[aria-disabled="true"] { pointer-events: none; }
+
+/* -- Field: a native file input inside a field (from LedgerSchedule v5.24). Only the Choose file button is a box:
+   the input itself loses the field's border, ground and padding. FileDrop stays the drop zone for imports. ---------- */
+.sn-field input[type="file"], input[type="file"].sn-input { width: 100%; min-height: var(--control-md); padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--fg-2); font: var(--fw-body-s) var(--fs-body-s)/var(--lh-body-s) var(--font-body); }
+.sn-field input[type="file"]::file-selector-button { min-height: var(--control-md); margin: 0 var(--space-3) 0 0; padding: 0 var(--space-4); border: 1px solid var(--line-strong); border-radius: var(--radius-control); background: var(--surface-1); color: var(--fg); font: var(--fw-body-strong) var(--fs-body-strong)/var(--lh-body-strong) var(--font-body); cursor: pointer; }
+.sn-field input[type="file"]::file-selector-button:hover { background: var(--surface-2); }
+.sn-field input[type="file"]:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.sn-field input[type="file"]:disabled { opacity: var(--opacity-disabled); cursor: not-allowed; }

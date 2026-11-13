@@ -16,7 +16,7 @@ A page of records that accumulate (target tracks, the import log, run history, a
 | Bulk bar `.sn-page-log__bulk` | In the `DataTable` bar when rows are selected: Activate, Pause, Archive, Delete…, Clear selection |
 | Entry | `Dialog --m`: `TextField` Title and Artist, `ChipInput` Genres and Search terms, `SelectField` Priority |
 | Confirm | `ConfirmDialog` for Delete ("Delete 2 target tracks?"), Cancel focused |
-| Run log | `SectionHeading` + `DataTable`: run (mono stamp), added, updated, errors, duration, result `StatusPill`, "Job log" `TextLink` (Pipeline colour) |
+| Run log | `SectionHeading` + `DataTable`: run (mono stamp), added, updated, errors, duration, result `StatusPill`, "Job log" `TextLink` (Pipeline colour); the `SectionHeading` end slot holds the small CopyButton "Copy diagnostics" (Diagnostics, DIA-027) |
 
 ## Data
 `TargetTrack[]` and `RunLogEntry[]` (see `61-pages-b.d.ts`); next run time.

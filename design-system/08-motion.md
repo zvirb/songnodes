@@ -25,6 +25,7 @@ When `prefers-reduced-motion: reduce` is set, or "Reduce motion" is on in `Prefe
 - Graph camera moves cut instead of glide; "Focus in graph" centres the node instantly.
 - The graph simulation computes its layout without drawing intermediate ticks (run ticks off-screen, then render), and pauses once settled. Dragging a node moves only that node; neighbours do not spring.
 - No pulse or shimmer: skeletons are static `surface-2` blocks; the spinner is a static ring next to the busy label ("Saving…"). Text, not motion, says that work is happening.
+- LiveChange (1.11.0): nothing glides or fades; markers, tags, the waiting border and the InlineMessage are unchanged (LIV-016).
 - Real progress (`ProgressBar`, `StagedProgress`) still updates its value, without easing.
 
 This meets WCAG 2.3.3 (Animation from interactions, AAA) and 2.2.2 (Pause, stop, hide).
@@ -51,6 +52,25 @@ This meets WCAG 2.3.3 (Animation from interactions, AAA) and 2.2.2 (Pause, stop,
 - A row being hovered, focused or dragged never moves because of a background update.
 - Set rebuild ("Build set", "Try another take"): slots keep their positions; changed slots swap content in place; the `EnergyWave` animates bar heights only (`scaleY`, 320 ms), the target line stays still. Locked slots never change.
 - Removing a slot collapses the gap instantly (or in 120 ms); the Undo toast restores it in the same place.
+- While the answer to the person's own filter, search, tab or period change loads, the old content stays in place dimmed (`sn-stale`, `opacity-stale`, a `duration-fast` opacity change); it is never emptied first (20-responsive-pages).
+
+## When the data changes under you: LiveChange (1.11.0)
+
+Imported from LedgerSchedule v5.9 LiveChange and fitted to SongNodes (rules LIV-001 to LIV-021; component `LiveChange`, helper `SongNodes.live`). Five changes may move on their own in a list, set or table; anything else stays still.
+
+| Change | What the person sees | Motion (full) | Reduce motion |
+|---|---|---|---|
+| Moved on another device or by the weekly run | The item glides from where it was; `status-info` outline `live-mark-w` and a tag "Moved on Phone · 22:14" / "Re-ordered by weekly run · 03:00" for `live-mark-hold` after it is seen | glide `live-glide-short`/`-mid`/`-max` by distance, `live-ease` | jumps; outline and tag the same |
+| My move, waiting on the server | Stays where I put it; after `live-pending-after` a still dashed border and "Saving", then "Saving · try n of 5" | none (the border does not march) | same |
+| My move, not saved after five tries | Glides back to where the server has it; `status-warn` outline "Not saved: put back"; an InlineMessage (warn, `role=alert`) after the list with **Try again**. Never a warning toast: toasts are confirmations only (*Feedback and system status*) | glide | jumps |
+| An item that arrived and is still being made (an imported track being analysed, a slot being filled) | Still placeholder bars in its own shape and the height of the row it becomes (`.sn-lc-shape` when the content is known, LIV-021), `aria-busy`, no input; filled in place with a `live-fade-in` fade; not filled within `live-stall`, a failed item with **Try again** and **Remove** | fade only | no fade |
+| Removed here or elsewhere | Greys in place and becomes inert (Undo window here, until I am back elsewhere), then fades and its neighbours close the gap | fade, glide | jumps |
+
+- The rule above still wins: nothing moves while the person points at, is focused in or drags the list. `SongNodes.live.remote` queues the change and the page offers "N changes – Show".
+- More than `live-glide-limit` (12) items on screen in one update: nothing glides; each changed item carries its marker.
+- Only `transform` and `opacity` animate, only on screen. One polite live region per page says each update once.
+- Nothing loops (Motion allowance): the Bean Alliance sweep over placeholders and the marching waiting border are not adopted: SongNodes' existing rule is preserved (DR-060).
+- `data-motion="full"` on `html` overrides a reduced-motion system setting for LiveChange as everywhere else.
 
 ## Preserving scroll position
 

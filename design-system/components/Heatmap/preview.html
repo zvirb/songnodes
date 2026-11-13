@@ -1,4 +1,4 @@
-<!-- @dsCard group="Charts" height=655 subtitle="Key × energy library coverage and plays-by-day calendar per show; single-hue ramp with min and max; counts on focus; arrow-key cell navigation" -->
+<!-- @dsCard group="Charts" height=700 subtitle="Key × energy library coverage and plays-by-day calendar per show; single-hue ramp with min and max; counts on focus; arrow-key cell navigation; a slashed Not measured cell with its key entry" -->
 <!doctype html>
 <html>
 <head><meta charset="utf-8"><title>Heatmap — preview</title>
@@ -30,7 +30,7 @@
         <div class="sn-chart-frame__head">
           <div class="sn-chart-frame__titles">
             <h3 class="sn-title title-s" id="cTitle"><span class="sn-lead">Sources:</span> Plays by day</h3>
-            <p class="sn-chart-frame__sub">Library tracks played per episode · 12 weeks, 3 Aug – 24 Oct 2026</p>
+            <p class="sn-chart-frame__sub" id="cSub">Library tracks played per episode · 12 weeks, 3 Aug – 24 Oct 2026</p>
           </div>
         </div>
         <div class="sn-row" role="group" aria-label="Show" id="cShows"></div>
@@ -150,10 +150,11 @@ var K = (function () {
   var S = window.SongNodes, F = S.format;
   var BINS = [0, 1, 4, 8, 13, 19, 26]; // lower bounds of steps 0..6
   function step(n) { var s = 0; for (var i = 0; i < BINS.length; i++) if (n >= BINS[i]) s = i; return s; }
-  function ramp(el, min, max, none) {
+  function ramp(el, min, max, none, unmeasured) {
     el.innerHTML = "<span>" + min + '</span><span class="sn-heatmap__ramp-steps" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span>' + max + "</span>" +
-      (none ? '<span class="sn-heatmap__ramp-none">' + none + "</span>" : "");
-    el.setAttribute("aria-label", "Colour scale from " + min + " to " + max + (none ? ". Dashed outline: " + none : ""));
+      (none ? '<span class="sn-heatmap__ramp-none">' + none + "</span>" : "") +
+      (unmeasured ? '<span class="sn-heatmap__ramp-unmeasured">Not measured</span>' : "");
+    el.setAttribute("aria-label", "Colour scale from " + min + " to " + max + (none ? ". Dashed outline: " + none : "") + (unmeasured ? ". Slashed outline: not measured" : ""));
   }
 
   /** grid heatmap: rows × cols of rect cells, roving focus, arrow keys, counts on focus */
@@ -177,8 +178,9 @@ var K = (function () {
       cells.push(cfg.cols.map(function (c, j) {
         var v = cfg.value(i, j), x = lw + j * cw + gapX(j);
         var a = { x: x + 1, y: y + 1, width: cw - 2, height: ch - 2, rx: 2, "class": "sn-heatmap__cell", role: "gridcell", tabindex: -1, "aria-label": cfg.describe(i, j, v) };
-        if (v === null) a["data-none"] = ""; else if (v === "future") a["data-future"] = ""; else a["data-step"] = step(v);
+        if (v === null) a["data-none"] = ""; else if (v === "future") a["data-future"] = ""; else if (v === "unmeasured") a["data-unmeasured"] = ""; else a["data-step"] = step(v);
         var rect = K.el("rect", a, g); rect._v = v; rect._rc = [i, j];
+        if (v === "unmeasured") K.el("line", { x1: x + 1, y1: y + ch - 1, x2: x + cw - 1, y2: y + 1, "class": "sn-heatmap__slash", "aria-hidden": "true" }, g);
         return rect;
       }));
     });
@@ -245,13 +247,17 @@ var K = (function () {
     if (s.id === "all") { var hit = shows.slice(1).filter(function (x) { return x.day === d; })[0]; return hit ? plays(hit.id, w, d) : null; }
     if (d !== s.day) return null;
     if (s.id === "pbs" && w === 6) return null; // no episode (station fundraiser)
+    if (s.id === "rrr" && (w === 4 || w === 5)) return "unmeasured"; // the episode aired but its tracklist was never scraped
     return [3, 5, 4, 7, 6, 9, 0, 8, 11, 10, 13, 15][(w + (s.id === "rrr" ? 3 : s.id === "jjj" ? 6 : 0)) % 12] + (s.id === "jjj" ? 3 : 0);
   }
   var cur = "all", cRead = document.getElementById("cRead");
   function drawCal() {
     var cmax = 0;
     for (var w = 0; w < 12; w++) for (var d = 0; d < 7; d++) { var v = plays(cur, w, d); if (typeof v === "number" && v > cmax) cmax = v; }
-    ramp(document.getElementById("cRamp"), 0, cmax, "No episode");
+    var anyUn = 0;
+    for (var w3 = 0; w3 < 12; w3++) for (var d3 = 0; d3 < 7; d3++) if (plays(cur, w3, d3) === "unmeasured") anyUn += 1;
+    document.getElementById("cSub").textContent = "Library tracks played per episode · 12 weeks, 3 Aug – 24 Oct 2026" + (anyUn ? " · " + anyUn + (anyUn === 1 ? " episode" : " episodes") + " not measured" : "");
+    ramp(document.getElementById("cRamp"), 0, cmax, "No episode", anyUn);
     var cols = [], groups = [];
     for (var w2 = 0; w2 < 12; w2++) {
       var dt = new Date(start.getTime() + w2 * 7 * 864e5);
@@ -263,9 +269,9 @@ var K = (function () {
       labelledby: "cTitle", corner: "Day", cw: 22, ch: 22, lw: 34, top: 40, start: [5, 11],
       rows: DAYS.map(function (d) { return { label: d, aria: d }; }), cols: cols, colGroups: groups,
       value: function (r, c) { var dt = dateOf(r, c); if (dt > today) return "future"; return plays(cur, c, r); },
-      describe: function (r, c, v) { var dt = dateOf(r, c); return S.format.day(dt) + ": " + (v === "future" ? "not yet" : v === null ? "no episode" : v + " library tracks played"); },
-      readout: function (r, c, v) { var dt = dateOf(r, c); return "<b>" + S.format.day(dt) + "</b> · " + (v === "future" ? "not yet aired" : v === null ? "no episode" : "<b>" + v + "</b> library tracks played"); },
-      idle: "Hover or focus a day for its count. Dashed outline: no episode that day."
+      describe: function (r, c, v) { var dt = dateOf(r, c); return S.format.day(dt) + ": " + (v === "future" ? "not yet" : v === null ? "no episode" : v === "unmeasured" ? "not measured, the tracklist was not scraped" : v + " library tracks played"); },
+      readout: function (r, c, v) { var dt = dateOf(r, c); return "<b>" + S.format.day(dt) + "</b> · " + (v === "future" ? "not yet aired" : v === null ? "no episode" : v === "unmeasured" ? "Not measured: the episode aired but its tracklist was not scraped" : "<b>" + v + "</b> library tracks played"); },
+      idle: "Hover or focus a day for its count. Dashed outline: no episode that day." + (anyUn ? " Slashed outline: not measured." : "")
     });
   }
   var seg = document.getElementById("cShows");

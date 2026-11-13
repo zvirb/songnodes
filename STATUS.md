@@ -3220,3 +3220,58 @@ Original-head security checks pass; E2E fails on eight inherited screenshot base
 - Next task: Review and merge `song_adjacency_graph_stats`, and refresh Linux Playwright Home visual snapshots if required by CI.
 <!-- SLOT:HOMESTATS END -->
 
+
+<!-- SLOT:BADGE1 BEGIN -->
+### BADGE1 — Diagnose serving-index warning (2026-11-13)
+- Scope: read-only badge and freshness diagnosis; owned path: STATUS.md (this slot only). Slot added because none existed.
+- Completed: warning is missing + stale > 0; screenshot has 0 missing and 8,134 stale despite 100% row coverage. Backend compares projection_tracks timestamps and energy contract against silver_enriched_tracks; this is not direct graph freshness.
+- Checks: read frontend mapping, backend /outbox/status wiring and reconcile SQL; source trace confirmed. No tests run (diagnosis only); no live database queried.
+- Unresolved: which stale predicate applies to those 8,134 rows requires live read-only SQL. Next task: count timestamp mismatches versus energy-contract mismatches before proposing any repair.
+<!-- SLOT:BADGE1 END -->
+
+<!-- SLOT:BADGE2 BEGIN -->
+### BADGE2 — Clarify pipeline warnings (2026-11-13)
+- Started: show only warning causes, in the icon warning colour.
+- Owned paths: frontend/src/features/pipeline/usePipelineTelemetry.ts; frontend/src/pages/ScraperProgressPage.tsx; STATUS.md (this slot).
+- Changed: warning rows show only their cause in var(--status-warn); serving warnings omit zero counts and name the serving index accurately, with singular/plural wording.
+- Checks: npm run type-check passed; python scripts/check_design_system.py --check passed; git diff --check passed. Existing telemetry tests could not run: vitest executable unavailable.
+- Unresolved: unit test runner unavailable; no commit created. Next: visually verify the warning row in the running app and rerun telemetry tests when Vitest is available.
+<!-- SLOT:BADGE2 END -->
+
+<!-- SLOT:BADGE3 BEGIN -->
+### BADGE3 — Verify warning count provenance (2026-11-13)
+- Scope: read-only source and live endpoint verification; owned path STATUS.md (this new slot only).
+- Verified: page uses live GET /outbox/status through usePipelineTelemetry; no hardcoded 8134/30163 found in frontend or services. Live API returned missing=0, stale=8134, source_total=projection_total=30163.
+- Checks: independent read-only PostgreSQL aggregate returned 30163 joined tracks, 8134 source timestamp mismatches, 0 energy-contract mismatches, stale_total=8134. All queries succeeded; no data changed.
+- Limitation: timestamp mismatch establishes freshness drift, not necessarily changed metadata values. Next task: investigate why those source updates were not reprojected, if requested.
+<!-- SLOT:BADGE3 END -->
+
+<!-- SLOT:HDR1 BEGIN -->
+### HDR1 — Inspect desktop header conformance (2026-11-13)
+- Started: compare app-shell header placement with AppHeader specification. Owned path: STATUS.md (this new slot only); implementation is read-only.
+- Findings: AppShell uses the canonical sticky header class; imported bundle has top:0 and z-header. AppShell omits connection status and More actions, and Search navigates to Library rather than opening CommandPalette. html/body overflow:auto warrants live scroll verification before attributing a positioning defect.
+- Checks: source inspection only; no runtime/browser checks or tests run. No implementation changed. Unresolved: actual desktop appearance and sticky behaviour. Exact next task: reproduce desktop scrolling in the running app and inspect computed header/ancestor overflow.
+<!-- SLOT:HDR1 END -->
+
+<!-- SLOT:DSLINT1 BEGIN -->
+### DSLINT1 — Audit design-system conformance (2026-11-13)
+- Started: extend existing conformance tooling into a repeatable all-route audit. Existing checks found in scripts/check_design_system.py and frontend/tests/e2e (design-rules and accessibility); coverage gaps include exempt files, discovered routes and sticky shell behaviour.
+- Owned paths: scripts/check_design_system.py; tests/test_check_design_system.py; frontend/scripts/design-system-audit.mjs; frontend/scripts/design-system-audit.test.mjs; frontend/package.json; docs/design-system/AUDIT.md; STATUS.md (this slot only).
+- Checks planned: Python checker tests; Node audit tests; audit discovery/source run; rendered audit if the local frontend is available; git diff --check on owned files.
+- Changed: reused existing checker with strict/no-baseline JSON reporting, cwd-independent execution and fail-closed git enumeration; added route-discovered real-browser audit command, regression tests and docs/design-system/AUDIT.md. No application page changed.
+- Checks: Python tests 15 passed (python -X utf8 -m pytest tests/test_check_design_system.py -q); Node tests 3 passed; normal and strict source scans passed with 0 findings; route discovery found 22 patterns; diff whitespace check passed.
+- Live audit: 204 cases on 17 concrete routes across dark/light/booth, 390/1440 and normal/XL text; exit 1 with 669 repeated findings and no audit-error exceptions. Includes 138 header-scroll findings, missing shell/header controls, headings, console errors and axe findings. Report: frontend/test-results/design-system-audit-live.json (generated, not committed).
+- Coverage gaps: five patterns need concrete examples (*, /callback/:service, /settings/:settingId, /track/:id, /tracks/:id). Editorial/data-truth and unreached-state review remains manual; this is not full certification. Earlier Python run needed UTF-8 mode on Windows; corrected invocation passed.
+- Exact next task: fix AppHeader sticky scrolling in its own owned-path package, using the Home top:-500 result as reproduction; supply real parameter examples for complete route coverage.
+<!-- SLOT:DSLINT1 END -->
+
+<!-- SLOT:WQ1 BEGIN -->
+### WQ1 — Persistent design-system work queue (2026-11-13)
+- User scope: build the attached queue specification, import discovered deviations, finish the lock implementation before committing, then commit/sync all latest repository changes. The later finish instruction expanded the first-core-only package; no deviation task execution or deployment was requested.
+- Owned implementation paths: plan/agent-queue/; tests/test_agent_queue.py; STATUS.md (this slot). Existing unrelated design-system, pipeline and deployment-note changes are preserved for the separately requested repository snapshot commit.
+- Implemented: atomic metadata mutex, all-or-nothing file/folder/special-resource claims, heartbeat, operator-attested stale recovery, origin-idempotent import, dependency/role checks, retirement/split/deferred transitions, isolated verification, guarded optional apply, rollback backups/journals and idempotent completion recovery.
+- Git safety: active state, locks, proposals, test snapshots and journals are ignored under branch-specific .runtime/. QUEUE.md carries sanitized task definitions/terminal evidence with no active owners. git-check rejects force-added runtime files or staged ownership. New-branch isolation is regression-tested; source application remains disabled in proposal-only configuration.
+- Backlog: 99 distinct observation tasks preserve all 669 audit occurrences; five coverage-gap tasks; 104 total Ready, zero claims. Existing imported IDs remain immutable; new IDs add UUID suffixes for branch-safe allocation. Generated versioned data: QUEUE.md and reports/design-system-audit.json. The historical static tracker is untouched.
+- Checks: queue/source-checker Python suite passed 53 tests; browser-audit Node suite passed 3; frontend type-check passed; strict source scan found 0 findings; repository diff whitespace check passed. Final regression rerun passed the same 53 tests after the last ownership/verification guards. No live task was claimed or applied.
+- Git: queue commit 7674ef14 and existing-project snapshot e3594533 were pushed to origin/dslint1/design-system-audit; local and remote source heads matched. Git safety guard and deleted-path check passed; main was already an ancestor. Runtime ownership and .codex-worktrees remain excluded. No main merge or deployment was performed. Next task: review WQ00001 in a newly authorized worker run; all 104 tasks remain unclaimed and no schedule is enabled.
+<!-- SLOT:WQ1 END -->

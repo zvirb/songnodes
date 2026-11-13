@@ -12683,8 +12683,8 @@
   - js
   check_type: dom
   test: Weights have two decimals and sum to 1.00.
-  status: active
-  replaced_by: null
+  status: deprecated
+  replaced_by: MUS-080
   history_ref: null
   source: 18-music-domain.md:-20--20
 - id: MUS-048

@@ -606,21 +606,42 @@
     }
   };
 
-  /* ---------- preferences (theme, text size, density) ---------- */
-  var PREF_KEYS = { theme: "sn-theme", textSize: "sn-text-size", density: "sn-density" };
-  function store(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
-  function read(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  /* ---------- preferences (theme, text size, density, motion) ----------
+     A write that browser storage refuses (private window, blocked site data, full quota) never loses the choice for the visit:
+     the value is kept in memory and read before storage until the page is closed, the setting is still applied, and the first
+     refusal of each setting is logged once at warn (SongNodes.diag.warn when present, console.warn otherwise). A later write that
+     storage accepts clears the memory copy. The next visit opens on the defaults. */
+  var PREF_KEYS = { theme: "sn-theme", textSize: "sn-text-size", density: "sn-density", motion: "sn-motion" };
+  var KEPT = {}, REFUSED = {};
+  function hasOwn(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
+  function refused(k, err) {
+    var kind = k.replace(/:.*$/, ""); if (REFUSED[kind]) return; REFUSED[kind] = 1;
+    var name = kind.replace(/^sn-/, "").replace(/-/g, " ") + (kind === "sn-dismiss" ? "ed warning" : " setting");
+    var what = "browser storage refused the " + name + ": kept for this visit only", type = err && err.name ? err.name : "Error";
+    try {
+      var d = window.SongNodes && window.SongNodes.diag;
+      if (d && typeof d.warn === "function") d.warn("storage", what, { name: name, type: type });   /* SongNodes.diag.warn(area, message, context) */
+      else if (window.console && console.warn) console.warn("SongNodes: " + what + " (" + type + ").");
+    } catch (e2) {}
+  }
+  function store(k, v) {
+    try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); delete KEPT[k]; return true; }
+    catch (e) { KEPT[k] = v == null ? null : String(v); refused(k, e); return false; }
+  }
+  function read(k) { if (hasOwn(KEPT, k)) return KEPT[k]; try { return localStorage.getItem(k); } catch (e) { return null; } }
   var prefs = {
     /** theme: "dark" | "light" | "booth" | "system" (null) */
     setTheme: function (t) { var root = document.documentElement; if (!t || t === "system") { store(PREF_KEYS.theme, null); prefs.applySystem(); } else { store(PREF_KEYS.theme, t); root.setAttribute("data-theme", t); } },
     applySystem: function () { var light = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches; document.documentElement.setAttribute("data-theme", light ? "light" : "dark"); },
     setTextSize: function (s) { store(PREF_KEYS.textSize, s); if (s && s !== "m") document.documentElement.setAttribute("data-text-size", s); else document.documentElement.removeAttribute("data-text-size"); },
     /** motion: "system" | "reduce" | "full" */
-    setMotion: function (m) { store("sn-motion", m === "system" ? null : m); if (m && m !== "system") document.documentElement.setAttribute("data-motion", m); else document.documentElement.removeAttribute("data-motion"); },
+    setMotion: function (m) { store(PREF_KEYS.motion, m === "system" ? null : m); if (m && m !== "system") document.documentElement.setAttribute("data-motion", m); else document.documentElement.removeAttribute("data-motion"); },
     setDensity: function (d) { store(PREF_KEYS.density, d); document.documentElement.setAttribute("data-density", d === "compact" ? "compact" : "comfortable"); },
-    /** Call once, as early as possible (inline in <head>), to avoid a flash of the wrong theme. */
-    init: function () { var t = read(PREF_KEYS.theme); if (t) document.documentElement.setAttribute("data-theme", t); else prefs.applySystem(); var s = read(PREF_KEYS.textSize); if (s) prefs.setTextSize(s); prefs.setDensity(read(PREF_KEYS.density) || "comfortable"); var mo = read("sn-motion"); if (mo) document.documentElement.setAttribute("data-motion", mo); },
-    get: function () { return { theme: read(PREF_KEYS.theme) || "system", textSize: read(PREF_KEYS.textSize) || "m", density: read(PREF_KEYS.density) || "comfortable", motion: read("sn-motion") || "system" }; }
+    /** Call once, as early as possible (inline in <head>), to avoid a flash of the wrong theme. Reads only: it never writes a setting back. */
+    init: function () { var t = read(PREF_KEYS.theme); if (t) document.documentElement.setAttribute("data-theme", t); else prefs.applySystem(); var s = read(PREF_KEYS.textSize); if (s && s !== "m") document.documentElement.setAttribute("data-text-size", s); document.documentElement.setAttribute("data-density", read(PREF_KEYS.density) === "compact" ? "compact" : "comfortable"); var mo = read(PREF_KEYS.motion); if (mo) document.documentElement.setAttribute("data-motion", mo); },
+    get: function () { return { theme: read(PREF_KEYS.theme) || "system", textSize: read(PREF_KEYS.textSize) || "m", density: read(PREF_KEYS.density) || "comfortable", motion: read(PREF_KEYS.motion) || "system" }; },
+    /** Keys whose last write storage refused: the value holds for this visit only. */
+    keptForVisit: function () { return Object.keys(KEPT); }
   };
 
 
@@ -649,23 +670,29 @@
   /** InfoTip behaviour, installed once per page (document-level, so tips added later work too):
       tooltip form opens after 500 ms on hover (as Tooltip, DR-055), at once on keyboard focus and tap (a tap pins it);
       panel form on click, tap, Enter or Space only.
-      One open at a time; Escape closes and returns focus; a click outside closes; it flips up or left near the viewport edge. */
+      One open at a time; a click outside closes; it flips up or left near the viewport edge.
+      Escape closes the open tip in the capture phase and consumes the key, so inside a Dialog or SideSheet the first Escape closes the tip
+      and the second closes the dialog. Focus returns to the button only when focus was inside the InfoTip, and a tip closed by Escape
+      while the pointer is on it stays closed until the pointer leaves (so a tip opened by hover does not reopen: WCAG 1.4.13, dismissable). */
   var infoTipsOn = false;
   function infoTips() {
     if (infoTipsOn || typeof document === "undefined") return; infoTipsOn = true;
-    var open = null, timer = null, pending = null, showTimer = null, touch = false, HOVER_DELAY = 500;
+    var open = null, timer = null, pending = null, showTimer = null, touch = false, shut = null, HOVER_DELAY = 500;
     function parts(w) { return [w.querySelector(":scope > .sn-infotip__btn"), w.querySelector(":scope > .sn-infotip__tip, :scope > .sn-infotip__panel")]; }
     function isPanel(w) { var t = parts(w)[1]; return !!t && t.classList.contains("sn-infotip__panel"); }
     function place(w) {
       var t = parts(w)[1], up = isPanel(w) ? "sn-popover--up" : "sn-infotip__tip--up", end = isPanel(w) ? "sn-popover--end" : "sn-infotip__tip--end";
       t.classList.remove(up, end);
       if (window.matchMedia && window.matchMedia("(max-width: 767.98px)").matches) return;
-      var r = t.getBoundingClientRect();
-      if (r.bottom > window.innerHeight - 8) t.classList.add(up);
-      if (r.right > window.innerWidth - 8) t.classList.add(end);
+      /* inside a Dialog or SideSheet the tip stays inside that box (it clips), so the flip is measured against it */
+      var box = w.closest("dialog, .sn-dialog, .sn-side-sheet"), lim = box ? box.getBoundingClientRect() : null;
+      var bottom = Math.min(window.innerHeight, lim ? lim.bottom : Infinity), right = Math.min(window.innerWidth, lim ? lim.right : Infinity), top = Math.max(0, lim ? lim.top : 0);
+      var r = t.getBoundingClientRect(), b = w.getBoundingClientRect();
+      if (r.bottom > bottom - 8 && b.top - r.height - 4 >= top + 8) t.classList.add(up);
+      if (r.right > right - 8) t.classList.add(end);
     }
     function show(w, pin) {
-      clearTimeout(showTimer); pending = null;
+      clearTimeout(showTimer); pending = null; shut = null;
       if (open && open !== w) hide(open, false);
       var p = parts(w); if (!p[1]) return;
       p[1].hidden = false; p[0].setAttribute("aria-expanded", "true"); w.dataset.pin = pin ? "1" : ""; open = w; place(w);
@@ -683,13 +710,15 @@
     });
     document.addEventListener("mouseover", function (e) {
       if (touch) return; var w = e.target.closest(".sn-infotip");
-      if (!w || isPanel(w)) return;
+      if (!w || isPanel(w) || shut === w) return;
       if (open === w) { clearTimeout(timer); return; }
       if (pending !== w) { clearTimeout(showTimer); pending = w; showTimer = setTimeout(function () { show(w, false); }, HOVER_DELAY); }
     });
     document.addEventListener("mouseout", function (e) {
       if (touch) return; var w = e.target.closest(".sn-infotip");
-      if (!w || w.contains(e.relatedTarget) || isPanel(w)) return;
+      if (!w || w.contains(e.relatedTarget)) return;
+      if (shut === w) shut = null;
+      if (isPanel(w)) return;
       if (pending === w) { clearTimeout(showTimer); pending = null; }
       if (open === w && !w.dataset.pin) timer = setTimeout(function () { hide(w, false); }, 300);
     });
@@ -698,10 +727,18 @@
       if (open && open !== w) hide(open, false);
       if (w && e.target === parts(w)[0] && !isPanel(w) && open !== w) show(w, false);
     });
-    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && open) { e.stopPropagation(); hide(open, true); } }, true);
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Escape") return;
+      if (pending) { clearTimeout(showTimer); pending = null; }
+      if (!open) return;
+      e.preventDefault(); e.stopPropagation();
+      var w = open, hovered = false; try { hovered = w.matches(":hover"); } catch (err) {}
+      hide(w, w.contains(document.activeElement)); if (hovered) shut = w;
+    }, true);
   }
   /** Dismissed warnings: kept on this device, per page and fact key (include the value, so a changed fact shows again),
-      until the next day in Melbourne. Nothing is recorded anywhere else; storage failures simply show the warning. */
+      until the next day in Melbourne. Nothing is recorded anywhere else; when storage refuses the write the warning stays
+      dismissed for this visit only (logged once at warn) and shows again on the next visit. */
   var dismissal = {
     key: function (page, fact) { return "sn-dismiss:" + page + ":" + fact; },
     isDismissed: function (page, fact) { var d = read(dismissal.key(page, fact)); return !!d && d === calendar.today(); },
@@ -709,8 +746,89 @@
     restore: function (page, fact) { store(dismissal.key(page, fact), null); }
   };
 
+  /* ---------- Toast: the one way a page raises a confirmation (components/Toast/README.md) ----------
+     SongNodes.toast("Set saved") or SongNodes.toast({ text | html, action: "Undo", onAction: fn, ms }).
+     Confirmations only: there is no warn, error or alert toast (a failure is an InlineMessage, a Banner or the component's own mark).
+     One region per page with role="status" (made on first use, or call SongNodes.toast.mount() at start so the live region exists
+     before the first words); one toast visible, up to 3 waiting (oldest dropped); 4 s, 8 s with an action; hover and focus pause it.
+     At most one action, drawn as one small button straight before the dismiss button, and only when it has a handler. Pressing it
+     calls onAction once and closes the toast; when onAction returns false (the action could not start) the toast stays.
+     A toast never takes focus; when it closes with focus inside, focus returns to where it came from. */
+  var toastState = { region: null, queue: [], current: null, timer: null, remaining: 0, started: 0, from: null, bound: false };
+  function toastRegion() {
+    var T = toastState;
+    if (T.region && document.body.contains(T.region)) return T.region;
+    var r = document.querySelector(".sn-toast__region[data-sn-toasts]") || document.querySelector(".sn-toast__region:empty");
+    if (!r) { r = document.createElement("div"); r.className = "sn-toast__region"; document.body.appendChild(r); }
+    r.setAttribute("data-sn-toasts", ""); r.setAttribute("role", "status"); r.setAttribute("aria-live", "polite"); r.setAttribute("aria-atomic", "false");
+    if (!r.getAttribute("aria-label")) r.setAttribute("aria-label", "Notifications");
+    T.region = r;
+    if (!T.bound) {
+      T.bound = true;
+      document.addEventListener("keydown", function (e) { if (e.key === "Escape" && T.current && T.region && T.region.contains(document.activeElement)) { e.stopPropagation(); toastHide("dismiss"); } }, true);
+    }
+    return r;
+  }
+  function toastHtml(t, waiting) {
+    return '<div class="sn-toast">' +
+      '<span class="sn-toast__icon">' + icon("circle-check") + "</span>" +
+      '<span class="sn-toast__text">' + (t.html != null ? t.html : esc(t.text)) + "</span>" +
+      '<span class="sn-toast__queue"' + (waiting ? "" : " hidden") + ">+" + waiting + " more</span>" +
+      (t.action && typeof t.onAction === "function" ? '<button class="sn-btn sn-btn--sm sn-toast__action" type="button" data-toast-action>' + esc(t.action) + "</button>" : "") +
+      '<button class="sn-btn sn-btn--sm sn-btn--icon sn-btn--quiet sn-toast__close" type="button" aria-label="Dismiss notification" data-toast-close>' + icon("x") + "</button></div>";
+  }
+  function toastPause() { var T = toastState; if (T.timer) { clearTimeout(T.timer); T.timer = null; T.remaining -= Date.now() - T.started; } }
+  function toastResume() { var T = toastState; if (!T.current || T.timer) return; T.started = Date.now(); T.timer = setTimeout(function () { toastHide("timeout"); }, Math.max(T.remaining, 1000)); }
+  function toastShow() {
+    var T = toastState; if (T.current || !T.queue.length) return;
+    var region = toastRegion(), t = T.current = T.queue.shift();
+    T.remaining = t.ms || (t.action && typeof t.onAction === "function" ? toast.DEFAULT_MS.action : toast.DEFAULT_MS.plain); T.from = null;
+    region.innerHTML = toastHtml(t, T.queue.length);
+    var el = region.firstChild;
+    el.addEventListener("mouseenter", toastPause); el.addEventListener("mouseleave", function () { if (!el.contains(document.activeElement)) toastResume(); });
+    el.addEventListener("focusin", function (e) { if (!T.from && e.relatedTarget && !el.contains(e.relatedTarget)) T.from = e.relatedTarget; toastPause(); });
+    el.addEventListener("focusout", function (e) { if (!el.contains(e.relatedTarget)) toastResume(); });
+    el.addEventListener("click", function (e) {
+      if (e.target.closest("[data-toast-close]")) { toastHide("dismiss"); return; }
+      if (e.target.closest("[data-toast-action]")) { var keep = false; try { keep = t.onAction() === false; } catch (err) { if (window.console) console.warn("SongNodes.toast: the action failed.", err); } if (!keep) toastHide("action"); }
+    });
+    toastResume();
+  }
+  function toastHide(why) {
+    var T = toastState; clearTimeout(T.timer); T.timer = null;
+    var t = T.current, region = T.region, el = region && region.firstChild;
+    if (!t) return;
+    if (!el) { T.current = null; if (t.done) t.done(why); toastShow(); return; }
+    var hadFocus = el.contains(document.activeElement), from = T.from;
+    el.setAttribute("data-leaving", "");
+    setTimeout(function () {
+      if (T.current !== t) return;
+      region.innerHTML = ""; T.current = null;
+      if (hadFocus && from && document.body.contains(from) && typeof from.focus === "function") from.focus();
+      if (t.done) t.done(why);
+      toastShow();
+    }, 130);
+  }
+  /** Raise a confirmation toast. Returns { dismiss(), closed } where closed (when Promise exists) resolves with
+      "timeout" | "dismiss" | "action" | "dropped" once the toast has left. */
+  function toast(o) {
+    if (typeof document === "undefined") return null;
+    var t = typeof o === "string" ? { text: o } : { text: o.text, html: o.html, action: o.action, onAction: o.onAction, ms: o.ms };
+    if (o && (o.role === "alert" || o.kind === "warn" || o.kind === "bad" || o.kind === "error") && window.console) console.warn("SongNodes.toast: a toast is a confirmation only; say a failure or warning with an InlineMessage or a Banner.");
+    var T = toastState, handle = { dismiss: function () { if (T.current === t) toastHide("dismiss"); else { var i = T.queue.indexOf(t); if (i >= 0) { T.queue.splice(i, 1); toastCount(); if (t.done) t.done("dismiss"); } } }, closed: null };
+    if (typeof Promise === "function") handle.closed = new Promise(function (res) { t.done = res; });
+    toastRegion();
+    if (T.queue.length >= 3) { var old = T.queue.shift(); if (old.done) old.done("dropped"); }   /* never more than 3 waiting */
+    T.queue.push(t); toastCount(); toastShow();
+    return handle;
+  }
+  function toastCount() { var T = toastState, q = T.current && T.region && T.region.querySelector(".sn-toast__queue"); if (q) { q.textContent = "+" + T.queue.length + " more"; q.hidden = !T.queue.length; } }
+  toast.mount = function () { return toastRegion(); };
+  /** How long a toast stays: plain, and with an action. One place to change (Toast card, Behaviour). */
+  toast.DEFAULT_MS = { plain: 4000, action: 8000 };
+
   window.SongNodes = {
-    version: "1.10.0", DOMAIN_MAP: DOMAIN_MAP,
+    version: "1.14.0", DOMAIN_MAP: DOMAIN_MAP,
     locale: LOCALE, timeZone: TZ,
     modules: MODULES, module: function (k) { for (var i = 0; i < MODULES.length; i++) if (MODULES[i].key === k) return MODULES[i]; return null; },
     icons: ICONS, icon: icon, iconNames: Object.keys(ICONS),
@@ -719,6 +837,6 @@
     edgeBand: edgeBand, EDGE_BAND_LABEL: EDGE_BAND_LABEL, EDGE_CUTS_DEFAULT: EDGE_CUTS_DEFAULT, fitEdgeCuts: fitEdgeCuts, edgeVisibility: edgeVisibility, seatBox: seatBox, ringLayout: ringLayout, neighbourhood: neighbourhood,
     format: format, calendar: calendar, dateRange: dateRange, csv: csv, status: status, GLYPH: GLYPH,
     html: html, prefs: prefs, esc: esc,
-    goIcon: goIcon, sourceLink: sourceLink, infoTip: infoTip, infoTips: infoTips, dismissal: dismissal
+    goIcon: goIcon, sourceLink: sourceLink, infoTip: infoTip, infoTips: infoTips, dismissal: dismissal, toast: toast
   };
 })();

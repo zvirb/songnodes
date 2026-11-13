@@ -58,7 +58,7 @@ One icon, one meaning. If the meaning is not in this table, use text.
 | `arrow-down` | Move down one slot | `SetSlot`, ordered lists |
 | `arrow-up` | Move up one slot | `SetSlot`, ordered lists |
 | `arrow-up-down` | Sort options | Sort menu on phones |
-| `audio-waveform` | Audio analysis | `WaveformStrip` header, analysis jobs |
+| `audio-waveform` | Audio analysis; analysis pending (card flag) | `WaveformStrip` header, analysis jobs |
 | `bell` | Alert settings | Settings, monitoring alerts |
 | `bug` | Report a problem / diagnostics | Help menu, dev diagnostics |
 | `calendar` | Pick a date | `DateField` |
@@ -72,14 +72,14 @@ One icon, one meaning. If the meaning is not in this table, use text.
 | `chevron-right` | Next / open detail | `PeriodNav`, `MediaViewer`, drill-in rows |
 | `chevron-up` | Collapse | Open `Disclosure` |
 | `circle-alert` | Error | `InlineMessage` bad, `ErrorState`, `Toast` bad |
-| `circle-check` | Success | `Toast` ok, `Banner` ok |
+| `circle-check` | Success; a done suggestion action | `Toast` ok, `Banner` ok |
 | `circle-dot` | Set as now playing | Context menu, Play mode |
 | `circle-help` | Help | Help menu; fallback for unknown icon names |
 | `circle-x` | Clear the field | `SearchField`, `ChipInput` |
-| `clipboard-check` | Review queue | Data-quality review |
+| `clipboard-check` | Review queue; check a service match (card flag) | Data-quality review |
 | `clock` | Time / last heard | Meta lines, column hints |
 | `cloud-off` | Server unreachable, showing cached data | `ConnectionStatus` |
-| `copy` | Copy | `CopyButton` |
+| `copy` | Copy; twice in this set (card flag) | `CopyButton` |
 | `crosshair` | Reset view | Graph canvas |
 | `database` | Database | `ServiceStatus` |
 | `disc-3` | Track | Track detail, track rows without artwork |
@@ -92,10 +92,10 @@ One icon, one meaning. If the meaning is not in this table, use text.
 | `file-input` | Import a file | `FileDrop`, import actions |
 | `file-json` | JSON file | Export menu item |
 | `file-text` | Text or CSV file | Export menu item, tracklist text |
-| `flag` | Flagged for a check | Flagged rows, "Needs an energy check" |
+| `flag` | Flagged for a check; "Check energy" card flag | Flagged rows, "Needs an energy check" |
 | `focus` | Isolate neighbourhood | Graph |
 | `funnel` | Filters | "Filters" button opening `FilterRail` |
-| `gauge` | Energy | Energy controls and filter labels |
+| `gauge` | Energy; energy jump (card flag) | Energy controls and filter labels |
 | `git-merge` | Merge duplicates | Artist attribution fixer |
 | `grip-vertical` | Drag to reorder | `SetSlot`, sortable lists |
 | `hash` | External ID | ISRC, Spotify ID rows |
@@ -113,7 +113,7 @@ One icon, one meaning. If the meaning is not in this table, use text.
 | `list-filter` | Saved filter presets | `FilterRail` |
 | `list-music` | Set builder module | Drawer, launcher, links to Set builder |
 | `locate-fixed` | Find in graph | Graph, track rows |
-| `lock` | Locked slot | `SetSlot` |
+| `lock` | Locked slot; locked off target (card flag) | `SetSlot` |
 | `lock-open` | Unlocked slot | `SetSlot` |
 | `log-out` | Disconnect a service | Settings connections |
 | `map-pin` | Waypoint | Pathfinder |
@@ -126,9 +126,9 @@ One icon, one meaning. If the meaning is not in this table, use text.
 | `music` | Genre / pillar | Filter group labels |
 | `pause` | Pause | Graph simulation, preview |
 | `pencil` | Edit | Rows, detail pages |
-| `piano` | Key & mood module | Drawer, launcher, links to Key & mood |
+| `piano` | Key & mood module; no key and key clash (card flags) | Drawer, launcher, links to Key & mood |
 | `play` | Play / resume | Preview, graph simulation |
-| `plug` | Services module | Drawer, launcher, links to Services |
+| `plug` | Services module; not on a service (card flag) | Drawer, launcher, links to Services |
 | `plus` | Add | Add to set, new item, `NumberField` stepper |
 | `printer` | Print | "Print set" (SongNodes `PrintSheet` only) |
 | `radio-tower` | Sources module | Drawer, launcher, links to Sources |
@@ -149,7 +149,7 @@ One icon, one meaning. If the meaning is not in this table, use text.
 | `sun` | Light theme | `PreferencesPanel` |
 | `table-2` | Table view | View switch, "Show as table" |
 | `tag` | Tags | `CategoryTag` filters, tag editing |
-| `timer` | Set length | Set controls |
+| `timer` | Set length; no BPM and BPM jump (card flags) | Set controls |
 | `trash-2` | Delete | Overflow menus (always confirmed) |
 | `triangle-alert` | Warning | `InlineMessage` warn, `Banner` warn |
 | `undo-2` | Undo | Set builder, toasts |

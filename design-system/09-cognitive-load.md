@@ -157,6 +157,7 @@ Feedback and motion
 - [ ] Destructive actions follow the undo / armed / confirm rules.
 - [ ] No entrance animation on data; durations within budget; reduced motion tested.
 - [ ] Rows never move under the pointer on live updates; scroll is preserved across filters, sorts, tabs and Back.
+- [ ] Every press is answered in the same task; a re-query keeps the old content dimmed; optimistic changes carry a SaveMark and are in the Outbox; no `catch` is empty.
 - [ ] No programmatic scroll without an explicit user action.
 
 Cognitive load

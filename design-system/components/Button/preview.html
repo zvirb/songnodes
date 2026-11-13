@@ -1,4 +1,4 @@
-<!-- @dsCard group="Actions" height=215 subtitle="Primary, secondary, quiet, module, danger; sizes; icon-only; busy and disabled" -->
+<!-- @dsCard group="Actions" height=290 subtitle="Primary, secondary, quiet, module, danger; sizes; icon-only; busy and disabled; a link drawn as a button, and one that cannot be followed yet" -->
 <!doctype html>
 <html>
 <head><meta charset="utf-8"><title>Button — preview</title></head>
@@ -14,6 +14,8 @@
   </div>
   <div class="sn-preview__label">Sizes, icon-only and states</div>
   <div class="sn-preview__row" id="row2"></div>
+  <div class="sn-preview__label">Link buttons (a launcher call to action): no underline; aria-disabled when it cannot be followed yet</div>
+  <div class="sn-preview__row" id="row3"></div>
 </div>
 <script>
   var S = window.SongNodes, r = document.getElementById("row2");
@@ -25,6 +27,12 @@
     '<button class="sn-btn sn-btn--icon sn-btn--quiet" type="button" aria-label="More actions">' + S.icon("ellipsis") + '</button>' +
     '<button class="sn-btn" type="button" aria-busy="true"><span class="sn-spinner"></span>Saving…</button>' +
     '<button class="sn-btn sn-btn--primary" type="button" disabled>Save set</button>';
+  document.getElementById("row3").innerHTML =
+    '<a class="sn-btn sn-btn--primary" href="#sets">' + S.icon("list-music") + 'Build your first set</a>' +
+    '<a class="sn-btn" href="#library">Open the library</a>' +
+    '<a class="sn-btn" role="link" aria-disabled="true" aria-describedby="why-tidal">' + S.icon("share-2") + 'Open in TIDAL</a>' +
+    '<span class="sn-dim" id="why-tidal">TIDAL needs a sign-in first.</span>';
+  document.querySelectorAll('#row3 a[href]').forEach(function (a) { a.addEventListener("click", function (e) { e.preventDefault(); }); });
 </script>
 </body>
 </html>

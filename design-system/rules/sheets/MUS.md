@@ -81,3 +81,4 @@
 | MUS-077 | ValidationSeverity warning shall map to warn "Warning" and info to info "Note". | lint | status("warning") and status("info") return those. |
 | MUS-078 | TaskPriority values shall pass through a separate priority() mapping shown as neutral CategoryTags ("Low", "Medium", "High") and never through status(). | lint | Priority UI uses priority() and CategoryTag. |
 | MUS-079 | A critical priority shall be shown as a StatusPill bad ✕ "Critical". | dom | critical renders StatusPill bad Critical. |
+| MUS-080 | The genre mix control shall be a SliderGroup of relative weights 0.00-1.00 with two decimals and the resulting share of each pillar shown; the weights are not required to sum to 1.00. | dom | Weights have two decimals, a share is shown per pillar and no total is enforced. |

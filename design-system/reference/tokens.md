@@ -171,11 +171,22 @@
 | size.row-compact | `32px` | Table row height in compact density. |
 | size.row-comfortable | `40px` | Table row height, default density. |
 | size.row-two-line | `56px` | Two-line rows (title + meta) in lists and the running order. |
+| size.skeleton-card-h | `320px` | Skeleton: height held for a SetCard whose height is not yet remembered on this device. |
+| size.skeleton-chart-h | `240px` | Skeleton: height held for a ChartFrame plot (axes only, no marks) whose height is not yet remembered on this device. |
 | size.header-h | `56px` | App header height. |
 | size.drawer-w | `300px` | Navigation drawer width (max 86vw on phones). |
 | size.rail-w | `248px` | Filter rail width on desktop. |
 | size.content-max | `1400px` | Max content width; wider screens centre it. |
+| size.print-wide-h | `150mm` | Print only: tallest drawing a wide figure may have on an A4 landscape page (182 mm content height less about 30 mm for the title, caption and figure notes), so the figure and its notes stay on one page. |
+| size.print-wide-w | `273mm` | Print only: content width of an A4 landscape page (@page wide, 297 mm less 12 mm margins). Wide print blocks (sn-print-wide) take it, because Chromium keeps block widths from the portrait layout on a named landscape page. |
 | size.prose-max | `68ch` | Max line length for running text and help. |
+| size.slider-track-h | `6px` | Drawn height of a slider track and its fill (1.13.0). The hit area is touch-min, never the drawn height. |
+| size.slider-thumb | `22px` | Visible diameter of a slider thumb, ring included (1.13.0). Grows slightly (scale 1.15) on hover. |
+| size.slider-thumb-ring | `3px` | Width of the brand ring round the thumb's fg disc (1.13.0). |
+| size.stroke-mark | `1.5px` | Edge of a chart mark and a dashed what-if or reference outline (from LedgerSchedule v5.5). |
+| size.dash | `4px` | Dash length of a dashed reference line and of the LiveChange waiting border (LedgerSchedule v5.5). |
+| size.dash-gap | `3px` | Gap of a dashed reference line (LedgerSchedule v5.5). |
+| size.field-min | `14rem` | Form alignment: the narrowest a field in a .sn-field-row may be before the row wraps to another line (1.14.0). |
 | zIndex.z-base | `0` | Page content. |
 | zIndex.z-sticky | `10` | Sticky table headers, sticky filter rail. |
 | zIndex.z-header | `20` | App header. |
@@ -198,6 +209,7 @@
 | breakpoint.bp-wall | `1920px` | Wall/kiosk: booth theme recommended, type scale steps up one size. |
 | opacity.opacity-disabled | `0.45` | Disabled controls (with aria-disabled). |
 | opacity.opacity-faded | `0.15` | Graph nodes and edges outside the current selection or filter. |
+| opacity.opacity-stale | `0.65` | A slot whose old content stays on screen while the answer to the person's own press (a filter, a search, a tab, a period) is worked out (sn-stale, Responsive pages): dim enough to read as not current, clear enough to keep reading. LedgerSchedule's stale-opacity is 0.55; 0.65 here so primary text (fg) stays at 4.5:1 or better on bg and surface-1 in dark, light and booth. Not opacity-disabled: a stale slot is still true until its new content lands. |
 | opacity.opacity-edge | `0.6` | Graph edges drawn without a strength band: legend line samples and the layer toggles. Graph links on the canvas use graph-edge-op-1…4. |
 | shadow.shadow-1 | `0 1px 2px rgba(0, 0, 0, 0.30)` | Resting cards (Ghost style): barely there; the border does the work. |
 | shadow.shadow-2 | `0 6px 20px rgba(0, 0, 0, 0.45)` | Popovers, menus, tooltips, the sticky header once scrolled. |
@@ -217,6 +229,22 @@
 | typography.data | `{"fontSize": "0.8125rem", "lineHeight": 1.4, "fontWeight": 400, "sample": "124 BPM \u00b7 8A \u00b7 6:12", "usage": "BPM, keys, durations, counts and IDs in rows. Tabular by nature."}` | BPM, keys, durations, counts and IDs in rows. Tabular by nature. |
 | typography.data-strong | `{"fontSize": "0.8125rem", "lineHeight": 1.4, "fontWeight": 600, "sample": "+1 key \u00b7 +2 BPM", "usage": "Emphasised data: the transition verdict, the current value."}` | Emphasised data: the transition verdict, the current value. |
 | typography.data-s | `{"fontSize": "0.6875rem", "lineHeight": 1.35, "fontWeight": 400, "sample": "trk_01HF9Z", "usage": "External IDs (ISRC, Spotify ID), chart tick labels."}` | External IDs (ISRC, Spotify ID), chart tick labels. |
+| live.live-glide-short | `150ms` | LiveChange glide under one row of travel (LVC-032). |
+| live.live-glide-mid | `240ms` | LiveChange glide up to about a third of the screen. |
+| live.live-glide-max | `400ms` | LiveChange glide cap; also the marker fade. |
+| live.live-ease | `[0.2, 0.0, 0.38, 0.9]` | Carbon productive curve for every LiveChange glide. |
+| live.live-fade-in | `160ms` | A filled placeholder or a new item fades in. |
+| live.live-fade-out | `120ms` | A removed item fades out before its neighbours close the gap. |
+| live.live-mark-hold | `4000ms` | Changed-elsewhere marker and tag stay this long once you are back at the page, then fade. |
+| live.live-failed-hold | `8000ms` | Put-back marker and its inline message. |
+| live.live-pending-after | `1000ms` | A save the server has not confirmed after this shows the waiting border. |
+| live.live-tries | `5` | Tries before a move is put back (exponential backoff with equal jitter: 0.5-1, 1-2, 2-4, 4-8 s). |
+| live.live-try-timeout | `10000ms` | A try the server has not answered in this time counts as failed. |
+| live.live-sweep | `1600ms` | One pass of a generating placeholder's sweep; runs until filled; stands still under reduced motion. |
+| live.live-stall | `60000ms` | A placeholder not filled in this time becomes a failed item. |
+| live.live-glide-limit | `12` | More items than this gliding at once: nothing glides, markers only (LedgerSchedule's value, kept: a set rebuild that moves more slots shows markers, which matches Layout stability). |
+| live.live-bar-h | `8px` | Height of a placeholder bar in an item being generated. |
+| live.live-mark-w | `2px` | Width of the changed-elsewhere, waiting and put-back outline. |
 | fontFamily.display | `"Sora", "Inter", system-ui, sans-serif` |  |
 | fontFamily.body | `"Inter", system-ui, -apple-system, "Segoe UI", sans-serif` |  |
 | fontFamily.data | `"JetBrains Mono", ui-monospace, Consolas, monospace` |  |

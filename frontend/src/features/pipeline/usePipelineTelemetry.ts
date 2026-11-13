@@ -151,7 +151,10 @@ export const mapPipelineStages = (outbox: OutboxStatusResponse, runs: ScrapeRun[
   const serving: Pick<MedallionStageInfo, 'state' | 'done' | 'total' | 'detail'> = sourceTotal === 0
     ? { state: 'waiting', done: 0, total: 0, detail: 'No tracks to serve yet' }
     : { state: missing + stale === 0 ? 'done' : 'warning', done: projected, total: sourceTotal,
-        detail: missing + stale === 0 ? 'Graph matches the catalogue' : `${SN.format.count(missing)} missing, ${SN.format.count(stale)} out of date in the graph` };
+        detail: missing + stale === 0 ? 'Graph matches the catalogue' : [
+          missing > 0 ? `${SN.format.count(missing)} serving-index ${missing === 1 ? 'track is' : 'tracks are'} missing` : '',
+          stale > 0 ? `${SN.format.count(stale)} serving-index ${stale === 1 ? 'track is' : 'tracks are'} out of date` : '',
+        ].filter(Boolean).join('; ') };
 
   return [
     { id: 'bronze', name: 'Stage 1: bronze ingestion', description: 'Complete playlists scraped with positions', ...bronze },

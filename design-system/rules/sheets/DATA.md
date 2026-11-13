@@ -163,3 +163,5 @@
 | DATA-159 | SectionHeading shall use title-m with an optional count in fg-3 and an optional right-hand action. | lint | Pass if heading uses title-m and count var(--fg-3). |
 | DATA-160 | The design-system cover shall show the wordmark "SongNodes" in Sora 800 brand, the line "Design system for SongNodes and the music library", the version and date, and one EnergyWave sample with KeyBadges. | dom | Pass if the cover contains those four items. |
 | DATA-161 | The design-system cover shall have no illustration, gradient or mark. | dom | Fail if the cover has img, svg illustration or gradient background. |
+| DATA-162 | In a `DataTable` an empty-list line or a value that is not known shall be `.sn-dim` (`fg-3`); a page shall write no colour of its own for it. | visual | The muted cell text computes the `fg-3` colour through `.sn-dim`. |
+| DATA-163 | A table that is the only child of a card shall take the card's corners through the card's clipping; a page shall add no radius to header cells. | visual | A `.sn-card` whose only child is `.sn-tablebox` or `.sn-data-table` shows rounded header corners with no page rule. |

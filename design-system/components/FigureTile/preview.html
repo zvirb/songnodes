@@ -1,4 +1,4 @@
-<!-- @dsCard group="Data" height=387 subtitle="Naarm stats row (neutral), with delta, status pill and filtered-view link; tonal tiles in a module hub; loading" -->
+<!-- @dsCard group="Data" height=1025 subtitle="Stats row with delta, pill and filtered-view link; tonal tiles; loading; the summary band of link tiles with its reading sentence; Not connected, Awaiting the weekly run, Implausible and the Estimate tag" -->
 <!doctype html>
 <html>
 <head><meta charset="utf-8"><title>FigureTile — preview</title></head>
@@ -51,6 +51,94 @@
       <span class="sn-sr">Loading</span>
     </div>
   </div>
+  <div class="sn-preview__label">Summary band on a figure page · each tile is the link to its section</div>
+  <section class="sn-figure-band" aria-label="Library this week">
+    <div class="sn-figure-tile-row" role="list">
+      <div class="sn-figure-band__item" role="listitem">
+        <a class="sn-figure-tile sn-figure-tile--link" href="#library-size">
+          <span class="sn-figure-tile__figure">1,284</span>
+          <span class="sn-figure-tile__label">Tracks in the library</span>
+          <span class="sn-figure-tile__delta">+38 on the last run</span>
+          <span class="sn-figure-tile__go">Library size <span data-icon="chevron-right"></span></span>
+        </a>
+      </div>
+      <div class="sn-figure-band__item" role="listitem">
+        <a class="sn-figure-tile sn-figure-tile--link" href="#missing">
+          <span class="sn-figure-tile__figure">673</span>
+          <span class="sn-figure-tile__label">Missing key or BPM</span>
+          <span class="sn-figure-tile__delta">52% of the library</span>
+          <span class="sn-figure-tile__go">Missing data <span data-icon="chevron-right"></span></span>
+        </a>
+      </div>
+      <div class="sn-figure-band__item" role="listitem">
+        <a class="sn-figure-tile sn-figure-tile--link" href="#sets">
+          <span class="sn-figure-tile__figure">14</span>
+          <span class="sn-figure-tile__label">Saved sets</span>
+          <span class="sn-figure-tile__delta">2 sent to TIDAL</span>
+          <span class="sn-figure-tile__go">Sets <span data-icon="chevron-right"></span></span>
+        </a>
+      </div>
+      <div class="sn-figure-band__item" role="listitem">
+        <a class="sn-figure-tile sn-figure-tile--link" href="#weekly-run">
+          <span class="sn-figure-tile__figure">52 min</span>
+          <span class="sn-figure-tile__label">Last weekly run</span>
+          <span class="sn-figure-tile__delta">Sat 7 Nov, 06:00 AEDT</span>
+          <span class="sn-figure-tile__go">Weekly run <span data-icon="chevron-right"></span></span>
+        </a>
+      </div>
+    </div>
+    <p class="sn-figure-band__read">The library grew by 38 tracks to 1,284 on the last run. Just over half still have no key or BPM: most of them came in from 1001tracklists, so start with Missing data.</p>
+  </section>
+
+  <div class="sn-preview__label">State tiles · words in place of the figure, never a 0</div>
+  <section class="sn-figure-band" aria-label="Plays and tempo">
+    <div class="sn-figure-tile-row" role="list">
+      <div class="sn-figure-tile" role="listitem">
+        <span class="sn-figure-tile__figure">3,912</span>
+        <span class="sn-figure-tile__label">Radio plays matched</span>
+        <span class="sn-figure-tile__delta">12 weeks to Sat 7 Nov</span>
+      </div>
+      <div class="sn-figure-tile" role="listitem">
+        <span class="sn-figure-tile__figure">88 min</span>
+        <span class="sn-figure-tile__label">Peak time Friday after trims <span class="sn-tag sn-figure-tile__tag">Estimate</span></span>
+        <span class="sn-figure-tile__delta">From average track lengths, not the edits</span>
+      </div>
+      <div class="sn-figure-band__item" role="listitem">
+        <a class="sn-figure-tile sn-figure-tile--link" data-state="not-connected" href="#services">
+          <span class="sn-figure-tile__state"><span data-icon="plug"></span>Not connected</span>
+          <span class="sn-figure-tile__label">Spotify plays</span>
+          <span class="sn-figure-tile__delta">Connect Spotify to count plays</span>
+          <span class="sn-figure-tile__go">Services <span data-icon="chevron-right"></span></span>
+        </a>
+      </div>
+      <div class="sn-figure-tile" role="listitem" data-state="awaiting">
+        <span class="sn-figure-tile__state"><span data-icon="clock"></span>Awaiting the weekly run</span>
+        <span class="sn-figure-tile__label">High rotation</span>
+        <span class="sn-figure-tile__delta">Next run Sat 14 Nov, 06:00 AEDT</span>
+      </div>
+    </div>
+    <p class="sn-figure-band__rest">Not connected: TIDAL plays, Beatport charts. Awaiting the weekly run: Vault, link strength.</p>
+  </section>
+
+  <div class="sn-preview__label">Implausible · marked, and left out of the total beside it</div>
+  <div class="sn-figure-tile-row" role="list" style="max-width: 560px">
+    <div class="sn-figure-tile" role="listitem">
+      <span class="sn-figure-tile__figure">124<span class="sn-figure-tile__unit">BPM</span></span>
+      <span class="sn-figure-tile__label">Median BPM, library</span>
+      <span class="sn-figure-tile__delta">1,253 tracks · 31 implausible tempos left out</span>
+    </div>
+      <div class="sn-figure-tile" role="listitem" data-state="implausible">
+        <span class="sn-figure-tile__state"><span data-icon="triangle-alert"></span>Implausible</span>
+        <span class="sn-figure-tile__label">Median BPM, new tracks</span>
+        <span class="sn-figure-tile__delta">Reads 248 BPM: 31 of 38 tempos are doubled. Left out of the library median</span>
+      </div>
+  </div>
 </div>
+<script>
+(function () {
+  var S = window.SongNodes, marks = document.querySelectorAll("[data-icon]");
+  for (var i = 0; i < marks.length; i++) { marks[i].outerHTML = S.icon(marks[i].getAttribute("data-icon"), { size: marks[i].parentNode.className.indexOf("__go") > 0 ? 16 : 20 }); }
+})();
+</script>
 </body>
 </html>

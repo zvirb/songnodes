@@ -7,6 +7,7 @@ Confirms a destructive action by naming the object, the consequence and who it a
 |---|---|
 | Reversible, or Undo is cheap (remove a slot, archive a target track) | **No confirmation.** Do it and offer Undo in a Toast |
 | Low stakes, local, nothing saved is lost (clear the current draft, reset filters, reset cues) | **Armed button**: first press arms for 3 s ("Clear the current draft?"), second press acts |
+| Removes one saved row for good, and one sentence says it all (a saved filter, a tracklist import) | **In-row ask** (`RowActions`): the question in place of the row's actions, Cancel focused |
 | Destroys saved data (delete a set, delete an API key, disconnect TIDAL) | **ConfirmDialog** |
 | Irreversible **and** shared, scheduled or large (a set shared with others or on the weekly TIDAL run, all target tracks, saved credentials) | **ConfirmDialog with typing**: type the set name to enable the danger button |
 Confirm rarely: if people see it every day they stop reading it.
@@ -50,3 +51,8 @@ Replaces every `window.confirm` "Are you sure…" in ArtistAttributionManager, T
 
 ## In the music library
 Delete a saved set (dialog), delete a shared or scheduled set (typed), "New empty set" while a draft has unsaved changes (armed "Clear the current draft?").
+
+## Over and inside a confirmation (1.14.0)
+- Nothing outside an open `ConfirmDialog` is drawn over it except a toast (see `Dialog`).
+- The consequence line ("This deletes the set and its history. It cannot be undone.") is never an `InfoTip`: the person must read it to act safely. An InfoTip after the title may only hold words that explain.
+- The buttons keep their place: Cancel, then the action. The typed confirmation enables the danger button in place; it is disabled until then, never hidden.

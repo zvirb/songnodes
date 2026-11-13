@@ -32,3 +32,6 @@ Full width in forms; inline variant in toolbars. On touch the control is 44px an
 
 ## In SongNodes / in the music library
 Sort and source selects in `TargetTracksManager.tsx`, playlist choice in `SpotifyPlaylistManager.tsx`, preset pickers in `PathBuilder.tsx`. In the Naarm Set Builder: Heard on, Shape, Pool.
+
+## In a row of fields
+Fields that sit side by side are one `.sn-field-row` (a grid aligned to the top), never a page's own flex, grid or table: every label line is one height, every control starts at one height and is `control-md` tall, and an error, a range line or a readout hangs below its own field without moving its neighbours. A field that needs more room spans columns (`sn-field-row__span-2`, `sn-field-row__span-all`); a button beside the fields sits in `sn-field-row__action`. Rules and the rendered check (`linters/check_alignment.js`) are in `22-forms-and-load.md`, *Form alignment*.

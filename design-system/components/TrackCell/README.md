@@ -20,7 +20,7 @@ The standard track identity: "Artist – Title" on line one, mix name · label �
 
 ## Variants and states
 - Now playing: `__now` (waveform icon + "Now" in `--now`); the row also gets `data-now` for the 3px bar.
-- Flags: `__flag` "Check energy" (▲, `status-warn`); `__flag--info` "Check Beatport match" (i).
+- Flags: generated lines are `CardFlag`s in one `sn-cflags` row at the end of `__meta` (1.14.0). The text flags `__flag` ("Check energy") and `__flag--info` ("Check Beatport match") are replaced by the `check-energy` and `check-match` flags and should not be used in new work. In a DataTable that has a Flags column the cell carries no flags.
 - Compact `sn-track-cell--compact` for 32px rows. DataTable in compact density hides mix, label and duration and keeps flags.
 - Long names truncate with an ellipsis; the full name is in `title` and in the detail view.
 

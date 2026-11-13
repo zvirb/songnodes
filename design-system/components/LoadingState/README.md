@@ -12,6 +12,8 @@ The single loading idiom: skeletons shaped like the content on first load, a sli
 | Over ~10 s or several steps | StagedProgress, not a skeleton |
 Never a centred spinner for more than one row, never a blank panel.
 
+A slot whose layout is known (DataTable, FigureTile row, SetCards, ChartFrame) is drawn with `Skeleton` (`SongNodes.resp.skeleton`), which places the same `sn-skel` blocks, fills the slot in place and fails it at the same height. When the person's own filter, search, tab or period change is loading, the old content stays as `sn-stale` (20-responsive-pages); the top line and "Updating…" remain the form for a background refresh.
+
 ## Rules (1.4.0, imported from BeanAlliance AsyncState v4.15)
 - **Loading shows from the first paint.** A panel never opens blank and never waits to see whether the data is quick: the skeleton is part of the first render, in the place the data will appear. This replaces the 1.0 habit of showing nothing for the first 300 ms. The skeleton has the content's final shape and height, so the swap to data moves nothing (08-motion, layout stability), and no minimum display time is needed.
 - **A refresh with data on screen is never a loading screen.** The slim top line (`__bar`) and "Updating…" in the `FreshnessStamp` are the whole of it; the data stays readable and clickable. A failed refresh keeps the data and marks the stamp ▲ (07-feedback-status); it never swaps in an ErrorState.

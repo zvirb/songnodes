@@ -42,3 +42,20 @@ Full width of the form column; forms stack to one column below `bp-tablet`. Inpu
 
 ## In SongNodes / in the music library
 Setlist name in `SetlistBuilder/index.tsx`, preset name in `FilterPanel.tsx`, `EditTrackModal.tsx` / `TrackEditModal.tsx` fields. In the Naarm Set Builder: Set name.
+
+## In a row of fields
+Fields that sit side by side are one `.sn-field-row` (a grid aligned to the top), never a page's own flex, grid or table: every label line is one height, every control starts at one height and is `control-md` tall, and an error, a range line or a readout hangs below its own field without moving its neighbours. A field that needs more room spans columns (`sn-field-row__span-2`, `sn-field-row__span-all`); a button beside the fields sits in `sn-field-row__action`. Rules and the rendered check (`linters/check_alignment.js`) are in `22-forms-and-load.md`, *Form alignment*.
+
+A label that shares its line with an InfoTip (`sn-text-field__head`, `sn-field__head`) keeps the label type of a label on its own, so a row of labels reads as one line of the same text (1.14.0).
+
+## A file input in a field
+For one optional file beside other fields (a cover image), a native `<input type="file">` inside `.sn-field` has no border, ground or padding of its own: only its Choose file button is a box, at `control-md`. Imports of data still use `FileDrop`.
+```html
+<div class="sn-field"><div class="sn-field__head"><label class="sn-field__label" for="cover">Cover image</label>…InfoTip…</div>
+  <input type="file" id="cover" accept="image/jpeg,image/png"></div>
+```
+
+## Differs from beanAlliance
+- The row is `.sn-field-row` (beanAlliance `.adjform` of `.fld`); the label line is the 24px height of the InfoTip button so a label with a tip and one without start and end together.
+- A three-part `DateField` does not share a row with single-control fields (its Day, Month and Year labels sit between the legend and the inputs); beanAlliance's date field is one control.
+- The status line beside a form's buttons is a plain `InlineMessage`; no `formmsg` class was added.

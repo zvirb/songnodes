@@ -553,8 +553,8 @@ const ScraperProgressPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="caption">
-                  {stg.description}{stg.detail ? `. ${stg.detail}` : ''}
+                <div className="caption" style={stg.state === 'warning' ? { color: 'var(--status-warn)' } : undefined}>
+                  {stg.state === 'warning' ? stg.detail : <>{stg.description}{stg.detail ? `. ${stg.detail}` : ''}</>}
                 </div>
 
                 {stg.total > 0 && (

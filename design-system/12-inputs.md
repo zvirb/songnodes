@@ -17,7 +17,9 @@ Every control says what it does, shows its state without colour alone, and can b
 | `DateRange` | Pick a from–to span on a two-month calendar popover (export, print, filter); typed dates stay in `DateField` |
 | `Checkbox` | Include/exclude a condition; form agreement |
 | `Switch` | A setting that takes effect immediately |
-| `RangeSlider` | A range of numbers (BPM 122–128, energy 5–8) |
+| `RangeSlider` | One value or a range on a bounded scale (BPM 122–128, energy 5–8, minimum strength), always with typed number boxes |
+| `SliderGroup` | Two to six related weights set together, each with its share of the whole (genre mix) |
+| `OrderList` | A short fixed list whose order is the setting, moved by handle or by Move up and Move down |
 | `ChipInput` | Many free values (tags, search terms) |
 | `KeyPicker` | Pick Camelot keys on a mini wheel or grid |
 | `FileDrop` | Drop or choose a file to import |
@@ -55,6 +57,28 @@ Every control says what it does, shows its state without colour alone, and can b
 
 Never use a `Switch` inside a form that has a Save button; never use a `Checkbox` for something that applies instantly outside a filter.
 
+## Sliders, number fields and ordered lists
+
+Added in 1.13.0, imported from BeanAlliance's `Slider`, `Stepper` and `OrderList` (v4.21 to v5.7) and fitted to SongNodes.
+
+| Need | Use | Example |
+|---|---|---|
+| One exact number, typed or nudged | `NumberField` | Target BPM 128, set length 90 min |
+| One value where its place in a bounded range matters | `RangeSlider`, single thumb, with its number box | Minimum connection strength |
+| A span between two values on a bounded scale | `RangeSlider`, two thumbs, with two number boxes | BPM 122–128, energy 5–8 |
+| Related weights judged against each other | `SliderGroup` (relative) | House, Techno, UK garage mix |
+| Parts of a fixed whole | `SliderGroup` with `data-total` (linked) | Warm-up, peak and close minutes inside 90 min |
+| A choice among a few named values | `SegmentedControl` | Play / Plan |
+| A short fixed list in priority order | `OrderList` | Which signal the next-track suggestion weighs first |
+
+- **A slider never stands alone.** Every slider is paired on the page with a typed value of the same range and step; moving one sets the other at once (WCAG 2.5.7, DR-063).
+- **One drawn slider.** Never `input[type=range]`: the system draws its own so it reads the same in every browser and all three themes. In Booth the unfilled track keeps its 1px `line-strong` edge so it holds 3:1.
+- **Typed values are kept.** A `NumberField` value typed off its step or outside its bounds stays as typed, with an error that says how to fix it; nothing is changed silently.
+- **Relative weights by default.** Genre-mix weights need not add up to anything (DR-062); each row shows its share. Use a linked group only for parts of a fixed whole, and never save one that does not sum.
+- **Ordered lists have two ways to move.** The handle (drag, or Space, arrows, Enter) and the Move up and Move down buttons; never a select per row. A move follows the surface's saving rule (below) and the list has no Save of its own.
+- **One announcement per change.** A committed change to a slider group or an order list is read once through the page's polite live region (`SongNodes.announce`); a keyboard step on a slider is read by the slider itself and not twice; a drag is not read tick by tick.
+- **No hand-built steppers.** No icon-only minus or plus button beside a number input outside `NumberField` (`INP-STEPPER`).
+
 ## Filter and search bars
 
 - Filters apply live as they change. No "Apply" button (except on phones, where the filter sheet has "Show 214 tracks").
@@ -79,13 +103,15 @@ Never use a `Switch` inside a form that has a Save button; never use a `Checkbox
 
 | Field | Rules |
 |---|---|
-| `NumberField` | `inputmode="numeric"` or `"decimal"`, unit outside the input ("min", "BPM"), steppers `minus`/`plus` optional, arrow keys step, Shift+arrow ×10. Accept "124.0" and "124". |
+| `NumberField` | `inputmode="numeric"` or `"decimal"`, unit outside the input ("min", "BPM"), steppers `minus`/`plus` optional, arrow keys step, Shift+arrow ×10, Page Up and Page Down the big step. Accept "124.0" and "124". Min, max and step come from the page; a value typed off the step keeps what was typed and shows how to fix it. An equivalent line ("= 1 h 30 min") may follow the range line. |
 | `DateField` | Shows "24 Oct 2026"; accepts typed "24/10/2026" (en-AU day first) and ISO; the range variant's `calendar` icon button ("Pick the dates on the calendar") opens `DateRange`; weeks start Monday. |
 | `SelectField` | Native `select` (`.sn-select`) up to ~15 options; above that, a searchable list. Options in a meaningful order (set shapes by energy shape, not alphabetical). |
 | `Checkbox` | `.sn-check`; the whole label is clickable; groups wrapped in `fieldset` + `legend`. |
 | `SecretField` | For API keys and tokens: masked by default, `eye`/`eye-off` reveal toggle (`aria-pressed`), `CopyButton`, shows only the last four characters after saving ("•••• 3f9a"). Never prefill a secret into the DOM after save. |
 | `ChipInput` | Enter or comma adds; Backspace on empty removes the last; paste of a list splits on commas and new lines. |
-| `RangeSlider` | Two thumbs with visible values, each also typeable; `aria-valuetext` "122 to 128 BPM". |
+| `RangeSlider` | One or two thumbs with visible values, each also typeable; `aria-valuetext` "122 to 128 BPM"; track edge `line-strong`; paired number boxes of the same range and step. |
+| `SliderGroup` | Two to six rows of label, single-thumb slider and number box; relative weights show each share, `data-total` keeps the sum and shows the total with ● or ✕. |
+| `OrderList` | Two to six rows: handle, rank, words, Move up, Move down. Rank drawn, keys stored. |
 | `KeyPicker` | Selected keys use `KeyBadge`; the wheel is optional, a 12×2 grid is the accessible default. |
 
 ## Date ranges

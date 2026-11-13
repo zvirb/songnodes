@@ -20,6 +20,84 @@ The design system has one version number, [semver](https://semver.org) `MAJOR.MI
 
 Newest first. Each entry: version, date (Melbourne), one line per change, prefixed Added / Changed / Deprecated / Removed / Fixed, with the decision record if any.
 
+**1.14.0 — 12 Nov 2026: the newer beanAlliance features, fitted to SongNodes (LedgerSchedule v4.21 to v5.36, asked for by Markus 12 Nov 2026: "import all of them but modified for this usage")**
+- Scope: everything in LedgerSchedule since the releases SongNodes already had that has a use in a one-person DJ tool. Plant examples became tracks, sets, slots, services and the weekly run; "the folder is away" became offline or a service that cannot be reached; "another person" became another device or the weekly run.
+- Added `QuickSave` (Feedback): the `SongNodes.save` helper (`source/js/20-save.src.js`). Start-up steps run after the first paint in 30 ms slices; a save shows "Saving" on the pressed control at once and joins one ordered queue per target (lanes `api`, `spotify`, `tidal`, `storage`); every save has a job id that stays the same on retry and may state its own deadline; a save that did not land is classed away, refused, unanswered or failed and is said by a warn InlineMessage after the control with Try again; a save kept while away is a warning, not an error; a view setting that browser storage refuses still applies for the visit and is logged once (QSV-001 to QSV-030). Imported from LedgerSchedule QuickSave v5.14, v5.32, v5.33, v5.34.
+- Added `Diagnostics` (Feedback): the `SongNodes.diag` helper (`source/js/10-diag.src.js`, ported by `source/port_diag.py`). One console line format `[SN <page> <build>] <level> <area>: <message> {…}` at debug, warn and error; script errors, unhandled rejections, assets that did not load, policy violations and long tasks are captured by itself; names, counts and timings only (quoted text, tokens, keys and paths are hidden); the last 300 lines in memory; `dump()` and "Copy diagnostics" as a CommandPalette action and a CopyButton on LogPage and MonitoringPage (DIA-001 to DIA-030). Imported from LedgerSchedule Diagnostics v5.16, v5.34.
+- Added `source/css/58-save-diag.css` (`.sn-save-said`, the message QuickSave places after the pressed control) and `source/types/70-save-diag.d.ts`.
+- Added `source/test_save_diag.py`: 58 checks of both helpers in headless Chromium.
+- Added `20-responsive-pages.md` (guideline, RSP-001 to RSP-040): a press is answered in the same task; old content stays, dimmed (`sn-stale`), while the answer to the person's own filter, search, tab or period change loads; typing redraws at most every 150 ms; slots hold their final height; lazy drawing one screen ahead and in idle time; everything is built before print or export; errors are never swallowed.
+- Added `Skeleton` (Feedback): the shape of a slot (DataTable rows, a FigureTile row, SetCards, a ChartFrame, lines) under its loading sentence, filled in place, failed at the same height, never reading as data; the built form of LoadingState's first-load skeleton (SKL-001 to SKL-023).
+- Added `SaveMark` (Feedback): the changed value shows at once and a mark appears from 1 s: Saving, Waiting to be sent, Saved, Not saved: put back, with Try again and Discard; set order, tags, notes, ratings and settings are optimistic; deleting a set, removing a streaming service, saving API keys and any Spotify or TIDAL playlist write wait for the answer (SVM-001 to SVM-023).
+- Added `Outbox` (Feedback): this device's changes that are waiting or not saved, kept in browser storage until saved or discarded, counted in `ConnectionStatus` and listed in a `SideSheet` (OBX-001 to OBX-025).
+- Added `SongNodes.resp` (`source/js/30-resp.src.js`): `skeleton`, `lazy`, `buildAll`, `stale`, `debounce`, `kind`, `edit`, `on`, `stats`, `outbox` (`init`, `resume`, `flush`, `list`, `count`, `retry`, `discard`, `open`, `close`); saves through `SongNodes.save` when present.
+- Added tokens `opacity-stale` (0.65), `skeleton-card-h` (320px), `skeleton-chart-h` (240px).
+- Added CSS `source/css/59-responsive.css`: `sn-skeleton*`, `sn-stale`, `sn-cv-auto`, `sn-save-mark*`, `[data-save]`, `sn-outbox*`.
+- A failed save is never a toast: the SaveMark (`role="alert"`), the count and an InlineMessage carry it.
+- Added `21-figure-pages.md` (Guideline): figure pages (HomePage, MonitoringPage, the stats views) open with a summary band of at most four link tiles and one reading sentence; each figure is worked out once and has one home; every percentage names its base; no method letters, formulas behind an `InfoTip`; implausible figures are marked and left out of totals; 100% only when measured; an "Estimate" tag; durations in hours and minutes from 120 min; differences of percentages in points (KPG-001 to KPG-036).
+- Added `FigureTile` link form (Data): the whole tile is the link (`a.sn-figure-tile--link`) with its destination named in `__go`; no link inside a link; the detail page repeats the figure once (FIG-001 to FIG-007).
+- Added `FigureTile` state tiles (Data): "Not connected" (a service that is not connected, never a 0), "Awaiting the weekly run" and "Implausible" (marked and left out of totals), words in place of the figure, plus the "Estimate" tag in a label (FIG-008 to FIG-018).
+- Added the summary band `sn-figure-band` (Data): a tile row, the reading sentence and a one-line list of the state tiles that did not fit.
+- Added `ProgressRing` held scale (Charts): a set against its length at size 64; the full circle is the set length, the arc is capped while the figure may pass 100%, tracks removed since the last save are a dashed cut-out named in words (FIG-019 to FIG-029).
+- Added `ProgressBar` held scale (Charts): the linear form for saved-set lists, with a hatched removed part, a caption and one key per list (FIG-030 to FIG-034).
+- Added `Heatmap` not-measured cell (Charts): a slashed outline with the key entry "Not measured", distinct from 0 and from the dashed "no episode" cell; left out of the bins and counted in the subtitle (FIG-035 to FIG-039).
+- Changed `FigureTile` (Data): "Don't make the whole tile a link" becomes "a tile is a link as a whole or carries one link in its footer, never both".
+- Added `CardFlag` (Music): a generated line on a track row, set slot or set card is one icon-only InfoTip button (`.sn-cflags`, `.sn-cflag`), tone `info`, `warn` or `bad`, a count when one flag stands for several lines, the words kept beside the icon on a `bad` flag, a source link ending every warn and bad tip, and one Flags cell in a DataTable row. Eleven flags in four groups (Set, Transition, Track, Service); rules CFL-001 to CFL-020. From LedgerSchedule v5.21, v5.23, v5.29.
+- Added `SongNodes.cardFlag`, `SongNodes.cardFlags` and `SongNodes.CARD_FLAGS` (the flag table in code); an open flag tip is placed fixed beside its button so a clipped row, table box or list never cuts it.
+- Completed `RowActions` (Actions): full card and preview; the kebab is an `OverflowMenu` (`.sn-ract-menu`, `.sn-ract-panel`); a one-line group `.sn-ract--line` for fixed-height rows; applied to DataTable rows, SetSlot and SetCard; rules RAC-030 to RAC-060. From LedgerSchedule v5.10 (full card) and v5.30.
+- Changed `RowActions`: a destructive row action is a plain button, last, whose label ends in "…" when it asks; `sn-btn--danger` appears only on the confirm step, so a list carries no red button on every row (RAC-037).
+- Added the in-row ask (`.sn-rask`, `SongNodes.rowAsk`): the question in place of the row's actions, naming the thing, Cancel focused, focus to the next row after a removal (RAC-052 to RAC-060). Used when one saved row is removed for good; undoable removals still act at once with Undo, and sets, connections and keys still use `ConfirmDialog`.
+- Added `SuggestionActions` (Actions): up to four icon actions on a next-track suggestion row (add to set, preview, open in graph, dismiss), each with its words in a tooltip, with not available, done and queued states (`.sn-sugact`, `.sn-sugrow`, `SongNodes.suggestionActions`, `SongNodes.suggestionTips`); rules SUG-001 to SUG-016. From LedgerSchedule v5.35. No action asks before acting: add and dismiss confirm with a Toast that offers Undo.
+- Added the static element rule: something that does nothing on press is never a button or a link (RAC-061), applied to FigureTile, SetCard and LauncherCard (RAC-062, RAC-063). From LedgerSchedule v5.12.
+- Fixed `InfoTip`: Escape on a tip opened by hover closes it and it stays closed until the pointer leaves; focus returns to the button only when focus was inside. Added the rules for an InfoTip in a dialog (after the title; Escape closes the tip first, the dialog second; never a state or error line), for a panel inside a heading, and that a key which only explains words already on every item may be an InfoTip while colour keys (Camelot, energy) stay on the page. From LedgerSchedule v4.22.2, v4.24, v5.27, v5.28.
+- Fixed preferences: when browser storage refuses a write, the theme (dark, light, booth) and other view settings still apply for the visit and the refusal is logged once. From v5.33.
+- Changed `Toast`: `role="status"`, at most one small action (Undo) before the dismiss button, wraps without breaking a button. Toasts stay confirmations only. From v5.12, v5.19.
+- Added `22-forms-and-load.md` (guideline): form alignment (labels and controls in a row of fields line up; `field-min` token; `linters/check_alignment.js`), the load budget with limits fitted to SongNodes' own page previews by more than one method (`linters/load_budget.js`, `linters/run_page_checks.py`), "the next press" (ordered buttons keep their place and the next valid press is the one primary), and that no page has a "How this works" section and tabs never hold different functions. From v4.22, v5.0, v5.20.
+- Added the type scale as tokens (`fs-*`, `lh-*`, `fw-*`, generated from the named text styles; no new sizes) and the rule that an off-scale size snaps to the nearest style and is never given a name of its own. Existing CSS is not rewritten to use them in this version. From v4.23, v5.2.
+- Added `source/css/67-fixes.css`: link buttons, muted table cell text, file input box, form message line, text size adjust, flush-card header corners, and nothing but a toast drawn over an open SideSheet or Dialog. Print: "Page n of N" in the page margin. From v4.24, v5.24, v5.31.
+- Changed `linters/check.py`: a check for "How it works" headings, and the override check now covers every `sn-` class the bundle defines.
+- Added rules in existing families (`rules/frag/batch5e.yaml`): FBK, INP, COG, TYP, PRT, PLT, LAY, NAV, A11Y, DATA, WRT, GOV.
+- Kept, fitted from Markus's earlier decisions rather than taken from LedgerSchedule (DR-065, DR-066; Q30, Q31): a failure is never a toast, and the InfoTip button carries no `title`.
+- Not adopted, with the reason: FolderPill, CopyPath, WhoIsUsing, Conflict (no shared folders); PageFamily, Menu and BoardHeader rules (SongNodes has AppHeader, NavDrawer and CommandPalette); Stepper, SignOff, TrialStamp, PolicyCard, PlanningReview, StockProjectionChart, PlanningHistory, ApprovalQueue, SkillsMatrix, WeekGrid, YearPlanner (plant planning, sign-off and roster); PrintLabel (no labels); ControlChart, LossBar, WhatIf, FactorRow, CrossCheck, RunBand, BoxPlot (process KPI charts with no music data behind them); the ProgressRing under-way arc, expected-by-now ring, plan dot, capacity mark and per-item segments (no SongNodes use); long lists as closed row groups (the library is a searchable, keyboard-driven table); the page-size budget's sub-set bundle builds (single-file folder pages only).
+- Added `tests/`: a Playwright Test suite (TypeScript) that needs no app or server and runs from the design-system folder or from the app repo's mirrored copy (`DS_ROOT`): every preview in dark, light and booth at 960 and 390 px, tokens, contrast, an axe scan of the components added or changed here, the `SongNodes` helpers, and `SongNodes.resp` with `SongNodes.save` end to end. 540 tests: 532 pass, 8 are marked as known defects, none fail. How to run: `tests/README.md`.
+- Known defects the tests found, not yet fixed (each is a `test.fixme` naming it): a save sent through `SongNodes.resp` does not keep one job id across tries or Try again (QSV-021); the "Kept from earlier" confirmation never shows because `SongNodes.resp` calls `SongNodes.save.toast`, which does not exist; offline, a rejected request is "kept" by `SongNodes.save` but put back as "Not saved" by `SongNodes.resp`; `.sn-task-days` in `57-row-task.css` uses the undeclared `var(--surface)`; two `#000` mask stops in `52-explain-and-sources.css` are raw hex; in the `Skeleton` preview the small heading of the stale table falls below 4.5:1 while dimmed; `WorkQueue` overflows a 390 px screen by 6 px. Nine classes used in previews are not defined in the bundle (listed in `tests/known-undefined-classes.txt`, which may only shrink).
+- Process note: built by five work packages, each with its own rule fragment (`rules/frag/batch5a.yaml` to `batch5e.yaml`); `source/build_bundle.py` now appends `source/js/*.src.js` in name order; `components/index.d.ts` is the `source/types/` files joined. The small-items package (the last eight bullets above) stopped before it wrote its hand-off: its files build, validate and render, but its previews were checked by machine only, and the "What to load" table in `INDEX.md` was written separately. `SongNodes.resp` was written against the `SongNodes.save` interface before the two were joined; they meet through `SongNodes.save.save` (the same function), and the joined path has not yet had a test run of its own (each half passes its own). Still to do: rewrite existing CSS to use the type-scale tokens; replace the ChartFrame and SetBuilderPage loading bars that read as data with `Skeleton`; move `SongNodes.prefs` onto `SongNodes.save.setting`.
+
+**1.13.0 — 12 Nov 2026: the two lines of this design system merged; sliders and ordered controls (imported from BeanAlliance v4.21 to v5.7, asked for by Markus 7 Nov 2026)**
+- Merged, at Markus's request of 12 Nov 2026: the published design system had gone from 1.6.0 to its own "1.7.0" (7 Nov 2026, the sliders and ordered controls below), while the copies in the repo and on the E: drive had gone from 1.6.0 through 1.7.0 to 1.12.1 (the entries under this one). Nothing in either line is dropped. Where the two used the same number, the repo line keeps it: the published line's 1.7.0 is this 1.13.0, and its DR-043, DR-044 and DR-045 are DR-062, DR-063 and DR-064. Rule ids did not collide (INP-125 to INP-149 and MUS-080 were free). Where both lines had touched a question, Markus's recorded answers of 2 Nov 2026 stand (Q9, Q11–Q16, Q18, Q23–Q27).
+- Added `SliderGroup` (Inputs): two to six related weights, each a single-thumb `RangeSlider` with its number box and its share of the whole in words. Relative by default (rows independent, shares add to exactly 100%); linked when the group has `data-total` (moving a row rebalances the others, a total line says "● Total 1.00 of 1.00" or "✕ Total 1.10 of 1.00", Save is `aria-disabled` while it does not sum). Classes `.sn-slider-group`, `__row`, `__label`, `__share`, `__total` (`data-state="ok|bad"`). DR-062, DR-063.
+- Added `OrderList` (Inputs): a short fixed list whose order is the setting, moved by the `DragDrop` handle or by Move up and Move down buttons, every move announced once. Classes `.sn-order-list`, `__row`, `__n`, `__label`, `__btns`; its Move up and Move down buttons are the standard quiet icon `.sn-btn`. DR-064.
+- Added tokens `slider-track-h` (6px), `slider-thumb` (22px), `slider-thumb-ring` (3px); new source file `source/css/36-controls.css` (SliderGroup, OrderList; the RangeSlider and NumberField changes are in `20-inputs.css`), a `preview.html` for each new component and `components/bundle.css` rebuilt; helper `SongNodes.announce(message)`, the page's one polite live region (specified here, code arrives with the first control that uses it).
+- Added rules INP-125 to INP-149 (sliders, slider groups, ordered lists, number fields) and MUS-080; checks `INP-RANGE`, `INP-STEPPER` and `INP-OVERRIDE` in `linters/check.py`.
+- Changed `RangeSlider`: the existing one-thumb form is specified in full (one thumb, fill from the start, one number box); every slider is paired with a typed value of the same range and step; a slider without min and max is not mounted; a disabled slider is `aria-disabled` with its reason; a slider is for a bounded value, never a choice among named values.
+- Fixed `RangeSlider` track contrast: the unfilled track (`progress-track`) is almost the colour of the Booth background, so every theme's track now carries a 1px `line-strong` edge; measured against the page it holds 4.31 (dark), 3.33 (light) and 8.83 (Booth) to 1 (WCAG 1.4.11 needs 3). The thumb is 22px with a 3px `brand` ring, grows to 1.15 on hover and has a 2px `bg` halo outside the ring so its edge holds 5.0, 5.7 and 11.7 to 1 where it crosses the `brand` fill.
+- Changed `NumberField`: min, max and step come from the page; a value typed off the step keeps what was typed and the error says how to fix it; Page Up and Page Down take the big step (`data-big`, default 10); an equivalent line (`__equiv`, "= 1 h 30 min") may follow the range line where the page can work it out exactly.
+- Changed (DR-062): the genre mix weights are relative, not required to sum to 1.00. MUS-047 is superseded by MUS-080; `18-music-domain` and `13-page-patterns` updated; the Naarm Set Builder controls Card uses one `SliderGroup`.
+- Not adopted from BeanAlliance, with the reason: the separate `Stepper` (SongNodes' `NumberField` already has steppers, the unit inside the box and `inputmode` text input); snapping a typed value to the nearest step on blur (SongNodes never changes a typed value silently); the unit word as a tooltip of sibling units (replaced by the equivalent line, which is visible text); `LS_CTL` (the controls library; SongNodes behaviour lives in `bundle.js`); `PolicyCard`'s sum-constrained slider with sign-off, trial stamp and change request (a production policy flow, no DJ counterpart); `ChartBand`, `TrialStamp`, `SignOff`.
+- Process note: the three slider tokens are in `source/build_tokens.py` and `tokens.css`, `tokens.json` and `tokens/tokens.json` are regenerated whole, which also settles the `graph-*` drift the published `tokens.css` had. INP-125 to INP-149 and MUS-080 are now a fragment, `rules/frag/batch4.yaml`, so `build_agentconf.py` keeps them; MUS-047 is `deprecated`, replaced by MUS-080. `components/bundle.css` is rebuilt from `source/css/` (with `36-controls.css`). Slider, slider-group and order-list behaviour is still not in `bundle.js`; the version string is 1.13.0 in `tokens.json`, `build_tokens.py` and `bundle.src.js`.
+**1.12.1 — 10 Nov 2026: provenance bump to LedgerSchedule v5.13 (no applicable change)**
+- Source: LedgerSchedule (Bean Alliance) v5.13, tokens v26 unchanged, `D:\beanAlliance\design_system\project`, `design-system.json` lastChange 2026-11-09T10:40:00Z (read-only copy, sha256 `2eb87405…`).
+- Nothing was imported: both v5.13 changes are in Bean Alliance-only components (StockProjectionChart table Floor cell, SPJ-124; PlanningReview flag-tag wrap, PRV-027). No SongNodes rule, token, component or override changed.
+- Not imported: see the v5.13 table under "LedgerSchedule v5.10 to v5.12 items not imported".
+
+**1.12.0 — 9 Nov 2026: RowActions, TaskNotice, toast wrap and page-size budget from LedgerSchedule v5.10–v5.12**
+- Added `RowActions` (`.sn-ract*`, RAC rules): six or fewer row actions as an equal-button column or grid; seven or more as one primary and a kebab. Page `OverflowMenu` keeps the ellipsis icon (preserved).
+- Added `TaskNotice` for data findings that need Done / Defer / Dismiss-until-fact-changes in a shared store (TSK rules). SongNodes toasts stay confirmations only.
+- Changed toast layout (BAN-130): a toast keeps its sentence on the first line; actions that do not fit take the next line, end-aligned.
+- Added the 2,000,000 B page-size budget (PSZ-001).
+- Not imported (Bean Alliance business or no SongNodes use): PlanningReview runs slot, StockProjectionChart, ChartKit speed chart, Line speed / Rework console modules, ApprovalQueue week board, Stepper Escape (SongNodes has no unit-tooltip Stepper; NumberField unchanged).
+- Source gap: `dismiss_v1.js`, RowActions/TaskNotice card folders and `guidelines/65-page-size.md` were named in the LedgerSchedule v5.12 note but were not in `D:\beanAlliance\design_system\project`; CSS and rules were taken from `bundle.css` and `rules/rules.json`.
+
+**1.11.0 — 8 Nov 2026: LiveChange, and the shared LedgerSchedule changes v5.4 to v5.9 that fit SongNodes**
+- Source: LedgerSchedule (Bean Alliance) v5.9, tokens v25, `D:\beanAlliance\design_system\project`, last changed 8 Nov 2026 09:04 AEDT (read-only copy, sha256 `289bb661…`). Previous SongNodes import: beanAlliance v4.20.2 (1.6.0).
+- Added the `LiveChange` component and `SongNodes.live` helper (`source/livechange.src.js`, appended to `bundle.js`; `source/css/56-live-change.css`): remote moves glide with an outline and tag, my move waits then saves or is put back, a generating item shows still placeholder bars, a removed item greys then leaves (LIV-001 to LIV-021, DR-059, DR-060).
+- Added the `live-*` token family (16 tokens: glides 150/240/400 ms, `live-ease`, fades 160/120 ms, mark hold 4 s, failed hold 8 s, pending after 1 s, 5 tries of 10 s, stall 60 s, glide limit 12, bar 8px, mark 2px; `live-sweep` 1600 ms is kept for parity but unused) and `stroke-mark` 1.5px, `dash` 4px, `dash-gap` 3px to `size` (from LedgerSchedule v5.6 strokes). Exported to `tokens.css` and DTCG `tokens/tokens.json` (`build_agentconf.py` now writes the `live` group).
+- Added PRT-080: printed tables carry column hairlines (LedgerSchedule v5.6, DR-061).
+- Changed *Motion*: new section "When the data changes under you"; Reduced motion lists LiveChange.
+- Fixed the rule fragments: INT-001 and WRT-116 were in the shipped `rules.yaml` but in no fragment, so a rebuild dropped them; they are now in `rules/frag/batch1b.yaml`, unchanged. Rules 1693 → 1714, no ID removed or changed.
+- Not adopted (business-only or already covered): planning (v5.7), KPI states, I-MR control chart, ChartBand, RunBand, BoxPlot, HeatScale, TrialStamp, SignOff, paper washes; Stepper and Slider (`NumberField`, `RangeSlider` exist); OrderList (`DragDrop` exists); the menu "Reduce motion" item (`PreferencesPanel` has it); the placeholder sweep and marching border (nothing loops); warn toasts for a put-back (toasts are confirmations only); named people in tags (SongNodes changes come from a device or the weekly run).
+- Added components, tokens, a helper and classes, nothing renamed or removed, so a minor.
+
 **1.10.0 — 7 Nov 2026: every page prints by the print rules, not only the set sheet**
 - Added `source/css/62-print-document.css`: the generic print rules of *Print and export* now ship in `bundle.css` for every page, not only inside `.sn-page-print`: shell, menus and copy buttons hidden; `data-print="show"`/`"hide"`; headings kept with what follows; cards, figure tiles, figures and table rows not split; table header rows repeated; closed `details` and hidden tab panels printed open; external links print their host from `data-host`.
 - Added the named pages `@page doc` (A4 portrait, opt in with class `sn-print-doc` on `body`) and `@page wide` (A4 landscape, class `sn-print-wide` on a section, figure or diagram; consecutive wide blocks share landscape pages). Both print "Page X of Y" bottom right in `caption` Inter `fg-3`; margin boxes cannot read CSS variables, so `build_tokens.py` writes the values from the token tables into `02-theme-media.css`. *Print and export* already named `@page wide` and the page-x-of-y footer; neither was built. Added classes and named pages, so a minor.
@@ -265,6 +343,80 @@ Markus's BeanAlliance decisions of 1 Nov 2026, brought into SongNodes at his req
 |---|---|
 | DR-058 | While a page's `EmptyState` displays the primary action, the `PageHeader` primary action is not rendered (the EmptyState is the view). A page presents at most one primary button (`.sn-btn--primary`) at any time. Verified by `scripts/check_design_system.py` as a DOM and AST check on previews and page components. |
 
+### DR-059 to DR-061 — LedgerSchedule v5.4 to v5.9 imported (8 Nov 2026), 1.11.0
+8 Nov 2026 · fitted from the release; where LedgerSchedule and an existing SongNodes rule differ, the SongNodes rule is kept (a sync, not a policy change).
+
+| # | Decision |
+|---|---|
+| DR-059 | LiveChange is the only way a list moves on its own (LIV-001 to LIV-021). The existing rule wins over the import: a change waits while the list is pointed at, focused or dragged ("N changes – Show"). |
+| DR-060 | A put-back is said by a warn InlineMessage with `role=alert` and **Try again** after the list, not a warning toast; placeholder bars and the waiting border stand still in every motion setting. |
+| DR-061 | Printed tables carry column hairlines as well as row hairlines (PRT-080). |
+
+Preserved SongNodes rules in the LiveChange import (1.11.0; not open questions):
+
+| LedgerSchedule v5.9 | SongNodes 1.11.0 | Kept because |
+|---|---|---|
+| Glide limit 12 items | 12 items (`live-glide-limit`) | Same value; more moved items show markers, which matches *Layout stability when data changes*. |
+| Placeholder sweep every 1.6 s; marching dashed waiting border | Still bars and a still dashed border | *Motion allowance*: nothing loops except a real busy indicator (DR-060). |
+| Put-back said by a warning toast | Warn InlineMessage after the list, `role=alert`, Try again | *Feedback*: toasts are confirmations only (DR-060). |
+| Tags name the person ("Moved by …") | Tags name the device or the weekly run | SongNodes has no roster; changes come from devices and the weekly run. |
+| Remote change glides at once | Waits while the list is pointed at, focused or dragged | *Layout stability*: a hovered, focused or dragged row never moves (DR-059). |
+
+LedgerSchedule v5.10 to v5.12 items not imported into SongNodes 1.12.0 (reviewed 9 Nov 2026; SongNodes is not fully aligned with LedgerSchedule):
+
+| LedgerSchedule | Why not in SongNodes |
+|---|---|
+| PlanningReview `runs` slot (v5.11) | Bean Alliance supermarket planning. |
+| StockProjectionChart fixes (v5.12) | Bean Alliance stock projection. |
+| ChartKit speed chart (v5.12) | Plant OEE chart; SongNodes uses ChartFrame / Sparkline / Heatmap. |
+| `mod-line-speed`, `mod-rework-console` (v5.12) | Bean Alliance module colours. |
+| ApprovalQueue week board (v5.12) | Bean Alliance approvals. |
+| Stepper Escape SPR-023 (v5.12) | SongNodes has no unit-tooltip Stepper; NumberField unchanged. |
+| `dismiss_v1.js` binary as published | Named in the release but not present in the source tree. |
+
+LedgerSchedule v5.13 items not imported into SongNodes 1.12.1 (reviewed 10 Nov 2026):
+
+| LedgerSchedule | Why not in SongNodes |
+|---|---|
+| StockProjectionChart table leaves Floor blank when a week has no floor (SPJ-124, Q-469) | Bean Alliance stock projection. |
+| PlanningReview flag-tag wrap at 760 px and under (PRV-027, Q-468) | Bean Alliance supermarket planning; CSS was already in LedgerSchedule `bundle.css`. |
+| `rules/INDEX.md` recount (3329 rules) | LedgerSchedule bookkeeping; SongNodes has its own rule index. |
+
+LedgerSchedule v5.5 to v5.9 items not imported into SongNodes 1.11.0 (reviewed 8 Nov 2026; only LiveChange was imported then):
+
+| LedgerSchedule | Why not in SongNodes |
+|---|---|
+| Stepper (v5.5) | `NumberField` already covers stepped numbers (BPM, key offset) with its own NFD rules; no second number control. |
+| Slider and linked sliders (v5.5) | `RangeSlider` covers ranges (BPM, energy); SongNodes has no shares that must sum to a total. |
+| OrderList (v5.5) | Ordered lists (set slots, paths) are reordered with `DragDrop`, which already has keyboard Move up / Move down. |
+| ChartBand, RunBand, BoxPlot, HeatScale and the heat ramp (v5.5, v5.8) | Business KPI charts (shift runs, machine states, supplier spread). SongNodes charts use `ChartFrame`, `Sparkline` and `Heatmap`; no matching music use or data. |
+| Menu › Reduce motion (MNU-108 to MNU-111) | SongNodes has no page menu bar; Reduce motion lives in `PreferencesPanel` (08-motion.md). |
+| PlanningReview, StockProjectionChart, PolicyCard, PlanningHistory (v5.7), TrialStamp, SignOff, CrossCheck | Bean Alliance planning, sign-off and roster content. |
+
+### DR-062 to DR-064 — sliders and ordered controls (7 Nov 2026)
+
+Markus's BeanAlliance decisions on sliders and ordered lists (v4.21 to v5.7), brought into SongNodes at his request ("bring in all sliders and similar interactivity components"), plus his answer of 7 Nov 2026 that genre weights need not sum to 100%.
+
+| DR | Decision |
+|---|---|
+| DR-062 | Genre-mix weights are relative: independent 0.00–1.00 values that need not sum to 1.00 or 100%. Each pillar shows its share of the mix. Supersedes MUS-047. A linked group (sum kept) exists for parts of a fixed whole, such as minutes inside a set, and is opt-in with `data-total`. |
+| DR-063 | Every slider is paired with a typed value of the same range and step, each following the other at once; a slider is never the only way to set a number (WCAG 2.5.7). |
+| DR-064 | A short fixed list whose order is the setting is an `OrderList`: the `DragDrop` handle plus Move up and Move down buttons, never a select per row and never drag alone. |
+
+### DR-065 to DR-071 — the LedgerSchedule v4.21 to v5.36 import (12 Nov 2026)
+
+Fits made while bringing the newer beanAlliance features into SongNodes at Markus's request of 12 Nov 2026. Each keeps an earlier SongNodes decision or replaces a plant idea with its music counterpart; Q30 to Q34 hold the ones Markus may want to overturn.
+
+| DR | Decision |
+|---|---|
+| DR-065 | A save that did not land is never a toast (toasts are confirmations only): the `SaveMark`, the count in `ConnectionStatus` and a warn `InlineMessage` after the pressed control carry it, with Try again. LedgerSchedule uses a warn toast. |
+| DR-066 | The `InfoTip` button carries no `title` and opens after 500 ms on hover (DR-055 stands). LedgerSchedule gives the button a `title`. |
+| DR-067 | Old content kept while new content loads is dimmed with `opacity-stale` 0.65, not LedgerSchedule's 0.55, because at 0.55 primary text in the light theme falls to 3.7:1; the token is named in the SongNodes opacity family. |
+| DR-068 | Optimistic (shown at once, saved behind): set order, tags, notes, ratings and settings. Waits for the answer: deleting a set, removing a streaming service, saving API keys, and any write to a Spotify or TIDAL playlist. |
+| DR-069 | In a DataTable row or SetSlot, four to six actions take the one-primary-plus-kebab form so the row height never changes; on cards the kebab starts at seven, as in LedgerSchedule. |
+| DR-070 | No suggestion action asks before acting: add to set and dismiss act at once and confirm with a Toast that offers Undo. A flag's tip may end with one source link (the only link allowed in a tooltip). |
+| DR-071 | On figure pages a duration switches to hours and minutes from 120 min; a held ring or bar measures a set against its own length, and "removed" means since the last save; trends show 12 weekly runs. |
+
 ## How rules are derived
 
 1. Markus's own decisions (DR-001…DR-016) and his past corrections win.
@@ -278,7 +430,19 @@ Markus's BeanAlliance decisions of 1 Nov 2026, brought into SongNodes at his req
 - **Q-PRINT-1 (7 Nov 2026, data-flow investigation):** `PrintSheet`'s traceability footer (`.sn-page-print__foot`, `position: fixed; bottom: -12mm`) is clipped in Chromium PDF output, so printed sets lose the footer. Options: move it to the PDF footer template as long documents do, or to `bottom: 0` with reserved space. Not changed in 1.10.0.
 
 
-None are open. All questions raised at the 1.0.0 release were answered on 24 Oct 2026 (DR-018 revised, DR-021 to DR-030); Q10 and Q17 on 28 Oct 2026 (DR-031, DR-032); Q9, Q11–Q16 and Q18 on 2 Nov 2026 (DR-043 to DR-050); Q23–Q27 on 2 Nov 2026 (DR-051 to DR-055); the harmonic scoring questions on 2 Nov 2026 (DR-056). A new question goes in a table here, with its options and the default until answered.
+Q28 to Q34 are open (table below). All other questions raised at the 1.0.0 release were answered on 24 Oct 2026 (DR-018 revised, DR-021 to DR-030); Q10 and Q17 on 28 Oct 2026 (DR-031, DR-032); Q9, Q11–Q16 and Q18 on 2 Nov 2026 (DR-043 to DR-050); Q23–Q27 on 2 Nov 2026 (DR-051 to DR-055); the harmonic scoring questions on 2 Nov 2026 (DR-056). A new question goes in a table here, with its options and the default until answered.
+
+Open, with the default used until Markus answers:
+
+| # | Question | Options | Default until answered |
+|---|---|---|---|
+| Q28 | Scale of the genre mix weights (DR-062) | 0.00–1.00 in steps of 0.05 (as 18-music-domain) · whole percent 0–100 | 0.00–1.00, step 0.05 |
+| Q29 | First use of `OrderList` | The order the next-track suggestion weighs key, energy and BPM · the order metadata sources are tried · none until a need appears | None: the pattern is specified, nothing is built until a use is chosen |
+| Q30 | A failed save (DR-065) | SaveMark and inline message only · also a warn toast with Try again, as beanAlliance | SaveMark and inline message only |
+| Q31 | `title` on the InfoTip button (DR-066) | None · a `title`, as beanAlliance | None |
+| Q32 | How dim stale content is (DR-067) | 0.65 · 0.55 as beanAlliance · 0.75 so secondary text also holds 4.5:1 | 0.65 |
+| Q33 | Row actions in a table row or set slot (DR-069) | Kebab from four · kebab from seven as on cards | Kebab from four |
+| Q34 | Durations on figure pages (DR-071) | Hours from 120 min · hours from 60 min as `format.span` does elsewhere | Hours from 120 min on figure pages only |
 
 Closed on 2 Nov 2026:
 

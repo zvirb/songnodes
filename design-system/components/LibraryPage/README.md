@@ -25,6 +25,7 @@ The crate: filter, search and sort every track in the Melbourne club library, th
 - Empty: `DataTable` empty row "No tracks match these filters" naming the filters, with "Clear filters".
 - Error: `DataTable` error row (what failed, filters kept, Try again); tiles and rail stay usable.
 - Offline: header `ConnectionStatus` offline; table shows cached rows with their stamp; add-to-set queues locally.
+- Optimistic edits use SaveMark; the Outbox count sits in the ConnectionStatus; first loads of known-shape slots use Skeleton (20-responsive-pages).
 
 ## Responsive
 ≥1024px: rail 248px + table. 768–1023px: "Filters (3)" button with active-filter chips above the table, rail opens as a right sheet. <600px: table rows become stacked cards (`data-label` captions); primary goes full width; secondary actions fold into More actions. Wall: content capped at 1400px. Booth: larger type; the track column truncates, full name in `title`.
