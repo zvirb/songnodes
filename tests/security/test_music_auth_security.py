@@ -142,3 +142,50 @@ def test_spotify_manual_refresh_sanitizes_exception(monkeypatch, test_app):
         assert response.status_code == 500
         assert SECRET_ERROR_MSG not in response.text
         assert response.json()["detail"] == "Manual refresh failed"
+
+
+def test_spotify_callback_sanitizes_error_param(test_app):
+    client = TestClient(test_app)
+    response = client.get(f"{PREFIX}/spotify/callback?code=foo&state=bar&error={SECRET_ERROR_MSG}")
+    assert response.status_code == 400
+    assert SECRET_ERROR_MSG not in response.text
+    assert response.json()["detail"] == "Spotify authorization failed"
+
+
+def test_tidal_device_init_sanitizes_upstream_error(monkeypatch, test_app):
+    client = TestClient(test_app)
+
+    monkeypatch.setattr(music_auth, "TIDAL_CLIENT_ID", "dummy_cid")
+    monkeypatch.setattr(music_auth, "TIDAL_CLIENT_SECRET", "dummy_csec")
+
+    class FakeResponse:
+        status = 400
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc_val, exc_tb):
+            pass
+
+        async def text(self):
+            return SECRET_ERROR_MSG
+
+    class FakeSession:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc_val, exc_tb):
+            pass
+
+        def post(self, *args, **kwargs):
+            return FakeResponse()
+
+    monkeypatch.setattr(music_auth.aiohttp, "ClientSession", FakeSession)
+
+    response = client.post(f"{PREFIX}/tidal/device/init")
+    assert response.status_code == 400
+    assert SECRET_ERROR_MSG not in response.text
+    assert response.json()["detail"] == "Device authorization failed"

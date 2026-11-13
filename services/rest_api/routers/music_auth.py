@@ -482,7 +482,7 @@ async def spotify_callback(
             logger.error(f"Spotify authorization error: {error}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Spotify authorization failed: {error}"
+                detail="Spotify authorization failed"
             )
 
         # Validate state parameter (CSRF protection) - retrieve from Redis
@@ -592,7 +592,7 @@ async def spotify_callback(
                     logger.error(f"🎵 [SPOTIFY] Token exchange failed: {error_msg}")
                     raise HTTPException(
                         status_code=response.status,
-                        detail=f"Token exchange failed: {error_msg}"
+                        detail="Token exchange failed"
                     )
 
     except HTTPException:
@@ -730,7 +730,7 @@ async def spotify_exchange_token(
                     logger.error(f"🎵 [SPOTIFY] Token exchange failed: {error_msg}")
                     raise HTTPException(
                         status_code=response.status,
-                        detail=f"Token exchange failed: {error_msg}"
+                        detail="Token exchange failed"
                     )
 
     except aiohttp.ClientError as e:
@@ -833,7 +833,7 @@ async def spotify_refresh_token(
                     logger.error(f"🎵 [SPOTIFY] Token refresh failed: {error_msg}")
                     raise HTTPException(
                         status_code=response.status,
-                        detail=f"Token refresh failed: {error_msg}"
+                        detail="Token refresh failed"
                     )
 
     except HTTPException:
@@ -982,9 +982,10 @@ async def init_tidal_device_flow(
                     return TidalDeviceCodeResponse(**result)
                 else:
                     error_text = await response.text()
+                    logger.error(f"Tidal device authorization failed: {error_text}")
                     raise HTTPException(
                         status_code=response.status,
-                        detail=f"Device authorization failed: {error_text}"
+                        detail="Device authorization failed"
                     )
 
     except HTTPException:
@@ -1218,7 +1219,7 @@ async def tidal_oauth_callback(
                     logger.error(f"Tidal token exchange failed: {error_text}")
                     raise HTTPException(
                         status_code=response.status,
-                        detail=f"Token exchange failed: {error_text[:200]}"
+                        detail="Token exchange failed"
                     )
 
     except HTTPException:
@@ -1289,7 +1290,7 @@ async def refresh_tidal_token(
                     logger.error(f"Tidal token refresh failed: {error_text}")
                     raise HTTPException(
                         status_code=response.status,
-                        detail=f"Token refresh failed: {error_text[:200]}"
+                        detail="Token refresh failed"
                     )
 
     except HTTPException:
@@ -1464,7 +1465,7 @@ async def manual_refresh_spotify_token():
                     logger.error(f"🎵 [SPOTIFY] Manual token refresh failed: {error_msg}")
                     raise HTTPException(
                         status_code=response.status,
-                        detail=f"Token refresh failed: {error_msg}"
+                        detail="Token refresh failed"
                     )
 
     except HTTPException:

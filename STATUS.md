@@ -570,6 +570,13 @@ Built server-side search using FTS/trigram and hooked up to the frontend UI.
 - Sanitized raw exception strings (`detail=f"... {str(exc)}"`) and upstream error response bodies (`detail=f"... {token_resp.text[:200]}"`) in `services/rest_api/routers/user_auth.py`. Replaced internal detail responses with sanitized error messages ("Failed to communicate with Duo token endpoint", "Duo token exchange failed", "Invalid id_token claims") while preserving server-side logging (`logger.error(..., exc_info=True)`).
 - Added security regression unit tests in `tests/security/test_user_auth_security.py`.
 - Checks: `PYTHONPATH=services/rest_api:services uv run --with-requirements services/rest_api/requirements.txt --with pytest python -m pytest -o addopts="" --noconftest tests/security/test_user_auth_security.py tests/rest_api/test_user_auth.py` passed (29/29).
+
+### SEC: Music Auth Upstream Provider Error Leakage Remediation (2026-11-08)
+- Start: 2026-11-08
+- End: 2026-11-08
+- Sanitized raw upstream provider error messages (`detail=f"...: {error_msg}"`), error bodies (`detail=f"...: {error_text}"`), and query error params (`detail=f"Spotify authorization failed: {error}"`) across Spotify and Tidal OAuth callback, token exchange, and token refresh endpoints in `services/rest_api/routers/music_auth.py`. Replaced internal detail responses with constant generic messages while preserving server-side logging (`logger.error(...)`).
+- Added security regression unit tests in `tests/security/test_music_auth_security.py`.
+- Checks: `PYTHONPATH=services/rest_api:services uv run --with-requirements services/rest_api/requirements.txt --with pytest python -m pytest -o addopts="" --noconftest tests/security/test_music_auth_security.py tests/rest_api/test_tidal_auth_no_query_secret.py` passed (17/17).
 <!-- SLOT:SEC_SENTINEL END -->
 
 <!-- SLOT:QA1 BEGIN -->
