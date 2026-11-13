@@ -182,3 +182,44 @@ def test_undefined_class_reported_unless_baselined(tmp_path, monkeypatch):
     assert sorted(m.split()[1] for _, _, m in out) == ["sn-mb-3", "sn-p-5"]
     out = cds.check_undefined_classes(files, {"class sn-mb-3"})
     assert [m.split()[1] for _, _, m in out] == ["sn-p-5"]
+
+
+def test_strict_reports_pending_and_layout_debt(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(cds, 'get_git_files', lambda mode: ['frontend/src/Old.tsx'])
+    monkeypatch.setattr(cds, 'load_pending_files', lambda: ['frontend/src/Old.tsx'])
+    monkeypatch.setattr(cds, 'load_layout_baseline', lambda: {'main frontend/src/Old.tsx'})
+    monkeypatch.setattr(cds, 'check_file', lambda path: [(3, '<main> without a page container')])
+    monkeypatch.setattr(cds, 'check_previews_one_primary', lambda: [])
+    monkeypatch.setattr(cds, 'check_undefined_classes', lambda files, baseline: [])
+    monkeypatch.setattr(sys, 'argv', ['checker', '--check', '--strict', '--json'])
+    with pytest.raises(SystemExit) as result:
+        cds.main()
+    import json
+    report = json.loads(capsys.readouterr().out)
+    assert result.value.code == 1
+    assert report['checkedFiles'] == 1
+    assert report['strict'] is True
+    assert report['findings'][0]['line'] == 3
+
+
+def test_json_reports_clean_run_and_works_outside_repo(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(cds, 'get_git_files', lambda mode: [])
+    monkeypatch.setattr(cds, 'load_pending_files', lambda: [])
+    monkeypatch.setattr(cds, 'load_layout_baseline', lambda: set())
+    monkeypatch.setattr(cds, 'check_previews_one_primary', lambda: [])
+    monkeypatch.setattr(sys, 'argv', ['checker', '--check', '--json'])
+    with pytest.raises(SystemExit) as result:
+        cds.main()
+    import json
+    assert json.loads(capsys.readouterr().out)['findings'] == []
+    assert result.value.code == 0
+    assert os.path.samefile(os.getcwd(), os.path.dirname(os.path.dirname(script_path)))
+
+
+def test_git_enumeration_failure_is_not_a_clean_pass(monkeypatch):
+    def fail(*args, **kwargs):
+        raise OSError('git unavailable')
+    monkeypatch.setattr(cds.subprocess, 'run', fail)
+    with pytest.raises(RuntimeError, match='Cannot enumerate source files'):
+        cds.get_git_files('check')

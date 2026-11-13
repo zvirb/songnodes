@@ -3220,3 +3220,14 @@ Original-head security checks pass; E2E fails on eight inherited screenshot base
 - Next task: Review and merge `song_adjacency_graph_stats`, and refresh Linux Playwright Home visual snapshots if required by CI.
 <!-- SLOT:HOMESTATS END -->
 
+<!-- SLOT:DSLINT1 BEGIN -->
+### DSLINT1 — Audit design-system conformance (2026-11-13)
+- Started: extend existing conformance tooling into a repeatable all-route audit. Existing checks found in scripts/check_design_system.py and frontend/tests/e2e (design-rules and accessibility); coverage gaps include exempt files, discovered routes and sticky shell behaviour.
+- Owned paths: scripts/check_design_system.py; tests/test_check_design_system.py; frontend/scripts/design-system-audit.mjs; frontend/scripts/design-system-audit.test.mjs; frontend/package.json; docs/design-system/AUDIT.md; STATUS.md (this slot only).
+- Checks planned: Python checker tests; Node audit tests; audit discovery/source run; rendered audit if the local frontend is available; git diff --check on owned files.
+- Changed: reused existing checker with strict/no-baseline JSON reporting, cwd-independent execution and fail-closed git enumeration; added route-discovered real-browser audit command, regression tests and docs/design-system/AUDIT.md. No application page changed.
+- Checks: Python tests 15 passed (python -X utf8 -m pytest tests/test_check_design_system.py -q); Node tests 3 passed; normal and strict source scans passed with 0 findings; route discovery found 22 patterns; diff whitespace check passed.
+- Live audit: 204 cases on 17 concrete routes across dark/light/booth, 390/1440 and normal/XL text; exit 1 with 669 repeated findings and no audit-error exceptions. Includes 138 header-scroll findings, missing shell/header controls, headings, console errors and axe findings. Report: frontend/test-results/design-system-audit-live.json (generated, not committed).
+- Coverage gaps: five patterns need concrete examples (*, /callback/:service, /settings/:settingId, /track/:id, /tracks/:id). Editorial/data-truth and unreached-state review remains manual; this is not full certification. Earlier Python run needed UTF-8 mode on Windows; corrected invocation passed.
+- Exact next task: fix AppHeader sticky scrolling in its own owned-path package, using the Home top:-500 result as reproduction; supply real parameter examples for complete route coverage.
+<!-- SLOT:DSLINT1 END -->
