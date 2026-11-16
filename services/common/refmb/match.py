@@ -46,10 +46,12 @@ class IsrcChoice:
 
 
 def combined_lookup(artist: str, title: str) -> str:
-    """Key for the canonical dump's `combined_lookup` column and for `sn_cmd_lookup`.
+    """Key for `canonical_musicbrainz_data.combined_lookup`, indexed by `sn_cmd_lookup`.
 
-    Uses `unidecode` when it is installed (the ListenBrainz implementation). Otherwise
-    NFKD accent-folding, which matches unidecode for Latin accents and can differ for
+    ListenBrainz builds that column with `unidecode` after stripping non-word characters,
+    which is what turns CJK into Pinyin. An `unaccent` expression over `recording` does
+    not match the column. Uses `unidecode` when it is installed. Otherwise NFKD
+    accent-folding, which matches unidecode for Latin accents and can differ for
     characters such as ß. The worker image installs unidecode so the two agree.
     """
     stripped = _NON_WORD.sub('', f'{artist or ""}{title or ""}').lower()

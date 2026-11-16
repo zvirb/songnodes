@@ -18,4 +18,4 @@ This document records the decision to change the deployment model for the `ref_m
 ## Reload Procedure
 - To avoid downtime or impacting running services, reloads will write to a new schema (e.g., `ref_mb_YYYYMMDD`).
 - Once loading and indexing are complete, an atomic `ALTER SCHEMA ... RENAME` swap will make it the active schema.
-- The dump ID and reload metadata must be recorded in the `dump_meta` table.
+- The dump id is read from `ref_mb.load_manifest` when that table is present, otherwise from `MB_LOCAL_DUMP_ID`. The live mirror has no `dump_meta` table.

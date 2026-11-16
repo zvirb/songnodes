@@ -105,7 +105,7 @@ Fix: generate the `ref_mb` DDL from the official CreateTables.sql at the dump's 
 7. **Refresh cadence: monthly, plus on demand. No replication.**
    - The weekly Sunday 7:37 musicLibrary run consumes the local lookup but does not reload it.
    - A reload takes about 30 minutes: COPY 397 s plus core indexes, skipping the title-trigram GIN.
-   - Do it into a new schema `ref_mb_YYYYMMDD`, then an atomic `ALTER SCHEMA … RENAME` swap. Record the dump id in `dump_meta` (migration 100:396-402).
+   - Do it into a new schema `ref_mb_YYYYMMDD`, then an atomic `ALTER SCHEMA … RENAME` swap. Record the dump id in `ref_mb.load_manifest`. The live mirror has no `dump_meta` table. See `SETTINGS.md`.
    - The library grows by tens of tracks a week (INTEGRATION_PLAN.md:77), so newer MusicBrainz data rarely changes outcomes. For a brand-new release missing from the dump, the live WS provider stays as a fallback.
 
 8. **Missing downloads: none needed.** The JSON release dump, cdstubs, edit/editor/stats and event-art are not used. Cover-art (NC) is excluded by decision 1.
@@ -124,6 +124,6 @@ Fix: generate the `ref_mb` DDL from the official CreateTables.sql at the dump's 
     - Caveat: all 319 library tracks carry an ISRC, so ISRC-hidden ground truth flatters fuzzy recall a little. Report recall separately for the pending/rejected items.
 
 11. **Fuzzy tuning:**
-    - Keep the artist-first trigram path with `SET LOCAL enable_seqscan=off` (queries.sql F3).
+    - Fuzzy artist uses `sn_ac_trgm` on `artist_credit (lower(ref_mb.musicbrainz_unaccent(name)))` with `SET LOCAL pg_trgm.similarity_threshold = 0.64`. The earlier `enable_seqscan=off` workaround is not the live path. See `SETTINGS.md`.
     - Test `random_page_cost=1.1` in the dedicated container. This is safe there precisely because of decision 3.
     - Do not build the title-only trigram GIN: 418 s to build and 8-31 s per query.

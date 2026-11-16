@@ -3282,3 +3282,12 @@ Original-head security checks pass; E2E fails on eight inherited screenshot base
 - Checks: queue/source-checker Python suite passed 53 tests; browser-audit Node suite passed 3; frontend type-check passed; strict source scan found 0 findings; repository diff whitespace check passed. Final regression rerun passed the same 53 tests after the last ownership/verification guards. No live task was claimed or applied.
 - Git: queue commit 7674ef14 and existing-project snapshot e3594533 were pushed to origin/dslint1/design-system-audit; local and remote source heads matched. Git safety guard and deleted-path check passed; main was already an ancestor. Runtime ownership and .codex-worktrees remain excluded. No main merge or deployment was performed. Next task: review WQ00001 in a newly authorized worker run; all 104 tasks remain unclaimed and no schedule is enabled.
 <!-- SLOT:WQ1 END -->
+
+<!-- SLOT:MBFIX BEGIN -->
+### MBFIX: Use the live ref_mb indexes in the local resolver
+- Start: 2026-11-16 (branch cursor/ref-mb-query-indexes-f014 off current main). PR 567 is already merged. A read-only check of the live mirror found uuid redirects cast to text, an exact tier that seq-scans recording, and a fuzzy query against artist instead of sn_ac_trgm.
+- Scope: services/common/refmb/, its tests, and the ref_mb docs. No loader. No songnodes DDL. test_target_scrape.py is out of scope.
+- Changed: redirect lookups bind uuid arrays (`recording_gid_redirect_pkey`, `sn_crr_recording`); the exact recording expression is gone and canonical exact uses `combined_lookup` / `sn_cmd_lookup`; fuzzy queries `artist_credit` with `musicbrainz_unaccent` and `similarity_threshold` 0.64 (`sn_ac_trgm`) and stays review-only; dump id comes from `load_manifest` or `MB_LOCAL_DUMP_ID`. Genre SQL is unchanged. `docs/integration/ref_mb/GENRE_LOAD_PLAN.md` describes a CC0-only load on the laptop mirror.
+- Checks: `PYTHONPATH=services python3 -m pytest services/common/tests services/common/refmb/test_refmb.py --noconftest -q -o addopts=` 232 passed, 3 skipped, 24 subtests passed. No live ref_mb, so the measured timings were not re-run.
+- Next: owner reviews the PR. Do not merge from this branch. The genre load stays a plan until it is run on the ref-mb container.
+<!-- SLOT:MBFIX END -->

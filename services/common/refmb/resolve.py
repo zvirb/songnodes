@@ -5,13 +5,14 @@ The connection is expected to have `search_path` set to the mirror schema plus `
 column names (SCHEMA_SEQUENCE 31) plus the canonical dump tables. Names that are not in
 this repository are called out in `ASSUMPTIONS`.
 
-Order: ISRC (canonical-collapsed) → exact normalised artist+title → canonical
-`combined_lookup` → artist-first trigram fuzzy (review only) → recording gid redirect.
+Order: ISRC (canonical-collapsed) → canonical `combined_lookup` (index `sn_cmd_lookup`)
+→ artist-credit trigram fuzzy (review only, index `sn_ac_trgm`) → recording gid redirect.
 """
 from __future__ import annotations
 
 import os
 import re
+import uuid
 from dataclasses import dataclass, field
 from typing import Any, List, Optional, Sequence, Tuple
 
@@ -24,6 +25,7 @@ from .match import (
     combined_lookup,
     confidence_bucket,
 )
+from .settings import read_dump_id
 
 _UUID = re.compile(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')
 
@@ -36,17 +38,10 @@ JOIN ref_mb.artist_credit ac ON ac.id = r.artist_credit
 WHERE i.isrc = $1::bpchar
 """
 
-# Assumed expression of the custom index sn_cmd_lookup. Not created by this repository.
-EXACT_SQL = """
-/* sn_cmd_lookup: assumed expression index on this predicate */
-SELECT r.id, r.gid::text AS mbid, r.name AS title, ac.name AS artist, r.length AS duration_ms
-FROM ref_mb.recording r
-JOIN ref_mb.artist_credit ac ON ac.id = r.artist_credit
-WHERE lower(regexp_replace(public.unaccent(ac.name || r.name), '[^\\w]+', '', 'g')) = $1
-LIMIT 25
-"""
-
+# sn_cmd_lookup is CREATE INDEX ... ON canonical_musicbrainz_data (combined_lookup).
+# The key is combined_lookup() in Python (unidecode), not an expression over recording.
 CANONICAL_SQL = """
+/* sn_cmd_lookup: canonical_musicbrainz_data (combined_lookup) */
 SELECT NULL::int AS id, recording_mbid::text AS mbid, recording_name AS title,
        artist_credit_name AS artist, NULL::int AS duration_ms
 FROM ref_mb.canonical_musicbrainz_data
@@ -55,37 +50,45 @@ ORDER BY score DESC
 LIMIT 5
 """
 
+# sn_ac_trgm is the only trigram index: artist_credit (lower(ref_mb.musicbrainz_unaccent(name))).
+# artist_id below is artist_credit.id. The % operator uses pg_trgm.similarity_threshold.
 FUZZY_ARTIST_SQL = """
-SELECT a.id AS artist_id, similarity(lower(public.unaccent(a.name)), lower(public.unaccent($1))) AS sim
-FROM ref_mb.artist a
-WHERE lower(public.unaccent(a.name)) % lower(public.unaccent($1))
-ORDER BY lower(public.unaccent(a.name)) <-> lower(public.unaccent($1))
+/* sn_ac_trgm: artist_credit (lower(ref_mb.musicbrainz_unaccent(name))) */
+SELECT ac.id AS artist_id,
+       similarity(lower(ref_mb.musicbrainz_unaccent(ac.name)), lower(ref_mb.musicbrainz_unaccent($1))) AS sim
+FROM ref_mb.artist_credit ac
+WHERE lower(ref_mb.musicbrainz_unaccent(ac.name)) % lower(ref_mb.musicbrainz_unaccent($1))
+ORDER BY lower(ref_mb.musicbrainz_unaccent(ac.name)) <-> lower(ref_mb.musicbrainz_unaccent($1))
 LIMIT 5
 """
 
+FUZZY_THRESHOLD_SQL = f"SET LOCAL pg_trgm.similarity_threshold = {FUZZY_SIMILARITY_FLOOR:.2f}"
+
 FUZZY_RECORDING_SQL = """
 SELECT r.id, r.gid::text AS mbid, r.name AS title, ac.name AS artist, r.length AS duration_ms,
-       similarity(lower(public.unaccent(r.name)), lower(public.unaccent($2))) AS title_sim
-FROM ref_mb.artist_credit_name acn
-JOIN ref_mb.artist_credit ac ON ac.id = acn.artist_credit
-JOIN ref_mb.recording r ON r.artist_credit = ac.id
-WHERE acn.artist = $1 AND acn.position = 0
-ORDER BY lower(public.unaccent(r.name)) <-> lower(public.unaccent($2))
+       similarity(lower(ref_mb.musicbrainz_unaccent(r.name)), lower(ref_mb.musicbrainz_unaccent($2))) AS title_sim
+FROM ref_mb.recording r
+JOIN ref_mb.artist_credit ac ON ac.id = r.artist_credit
+WHERE r.artist_credit = $1
+ORDER BY lower(ref_mb.musicbrainz_unaccent(r.name)) <-> lower(ref_mb.musicbrainz_unaccent($2))
 LIMIT 20
 """
 
+# Compare uuid to uuid. Casting the column to text seq-scans and exceeds the 2 s statement timeout.
 GID_REDIRECT_SQL = """
+/* recording_gid_redirect_pkey */
 SELECT g.gid::text AS old_gid, r.id, r.gid::text AS mbid, r.name AS title, ac.name AS artist, r.length AS duration_ms
 FROM ref_mb.recording_gid_redirect g
 JOIN ref_mb.recording r ON r.id = g.new_id
 JOIN ref_mb.artist_credit ac ON ac.id = r.artist_credit
-WHERE g.gid::text = ANY($1::text[])
+WHERE g.gid = ANY($1::uuid[])
 """
 
 CANONICAL_REDIRECT_SQL = """
+/* sn_crr_recording */
 SELECT recording_mbid::text AS recording_mbid, canonical_recording_mbid::text AS canonical_recording_mbid
 FROM ref_mb.canonical_recording_redirect
-WHERE recording_mbid::text = ANY($1::text[])
+WHERE recording_mbid = ANY($1::uuid[])
 """
 
 RECORDING_BY_GID_SQL = """
@@ -125,13 +128,15 @@ LIMIT 8
 
 ASSUMPTIONS = (
     'isrc.isrc is char(12); the parameter is cast to bpchar so the index is used',
-    'sn_cmd_lookup is the expression index on lower(regexp_replace(unaccent(artist_credit.name || recording.name), non-word, empty))',
+    'sn_cmd_lookup is the index on canonical_musicbrainz_data (combined_lookup); the Python key is unidecode combined_lookup',
     'canonical_musicbrainz_data.combined_lookup matches ListenBrainz combined_lookup; higher score is preferred; there is no year column',
-    'canonical_recording_redirect columns are recording_mbid, canonical_recording_mbid (uuid text)',
-    'artist-first fuzzy uses pg_trgm on lower(unaccent(artist.name)) with enable_seqscan off; similarity >= 0.64 is review only',
-    'release dates come from release_country and release_unknown_country (CC0), not the derived first-release table',
-    'genre comes only from CC0 l_genre_release_group; tag votes are not loaded',
+    'canonical_recording_redirect.recording_mbid is uuid; sn_crr_recording is used by a uuid array comparison',
+    'recording_gid_redirect.gid is uuid; recording_gid_redirect_pkey is used by a uuid array comparison',
     'recording_gid_redirect.new_id is recording.id',
+    'fuzzy artist uses sn_ac_trgm on artist_credit (lower(ref_mb.musicbrainz_unaccent(name))) with similarity_threshold 0.64; a hit is review only',
+    'release dates come from release_country and release_unknown_country (CC0), not the derived first-release table',
+    'genre SQL reads CC0 l_genre_release_group; those tables are present but empty, and the link is not a user tag',
+    'dump id comes from ref_mb.load_manifest when present, else MB_LOCAL_DUMP_ID, else none; dump_meta does not exist',
 )
 
 
@@ -194,7 +199,7 @@ class MatchResult:
     duration_delta: Optional[int]
     mix_class_match: bool
     confidence_bucket: str
-    dump_version: str
+    dump_version: Optional[str]
     normaliser_version: str
     isrc: Optional[str] = None
     duration_ms: Optional[int] = None
@@ -221,11 +226,40 @@ def _partial_date(year: Any, month: Any, day: Any) -> Optional[tuple]:
     return (y, 0, 0, f'{y:04d}')
 
 
+def _uuid_list(mbids: Sequence[Any]) -> list:
+    """UUID objects for `ANY($1::uuid[])`. Text arrays do not use the uuid indexes."""
+    found = []
+    seen = set()
+    for mbid in mbids:
+        text = _text(mbid).strip()
+        if not _UUID.match(text):
+            continue
+        parsed = uuid.UUID(text)
+        if parsed in seen:
+            continue
+        seen.add(parsed)
+        found.append(parsed)
+    return found
+
+
 class MusicBrainzResolver:
     def __init__(self, conn: Any, dump_version: Optional[str] = None):
         self.conn = conn
-        self.dump_version = dump_version or os.getenv('MB_LOCAL_DUMP_ID', '') or 'unspecified'
+        # None means resolve it from load_manifest or MB_LOCAL_DUMP_ID on the first match.
+        self._dump_override = dump_version
+        self._dump_cached: Optional[str] = None
+        self._dump_resolved = False
         self.normaliser_version = 'combined_lookup-v1'
+
+    async def _dump_id(self) -> Optional[str]:
+        if self._dump_override is not None:
+            return self._dump_override or None
+        if self._dump_resolved:
+            return self._dump_cached
+        self._dump_resolved = True
+        found = await read_dump_id(self.conn)
+        self._dump_cached = found or os.getenv('MB_LOCAL_DUMP_ID') or None
+        return self._dump_cached
 
     async def _fetch(self, sql: str, *args) -> list:
         try:
@@ -237,7 +271,7 @@ class MusicBrainzResolver:
         return list(rows or [])
 
     async def _redirect_maps(self, mbids: Sequence[str]) -> tuple:
-        ids = [mbid for mbid in mbids if mbid]
+        ids = _uuid_list(mbids)
         if not ids:
             return {}, {}
         gid_rows = await self._fetch(GID_REDIRECT_SQL, ids)
@@ -327,7 +361,7 @@ class MusicBrainzResolver:
             duration_delta=duration_delta,
             mix_class_match=method != 'fuzzy',
             confidence_bucket=bucket,
-            dump_version=self.dump_version,
+            dump_version=await self._dump_id(),
             normaliser_version=self.normaliser_version,
             isrc=isrc,
             duration_ms=chosen.duration_ms if chosen else None,
@@ -355,16 +389,6 @@ class MusicBrainzResolver:
             isrc=isrc, artist_sim=1.0 if choice.outcome == 'accept' else 0.0, title_sim=1.0 if choice.outcome == 'accept' else 0.0,
             duration_delta=delta,
         )
-
-    async def _by_exact(self, key: str) -> Optional[MatchResult]:
-        rows = await self._decorate(await self._fetch(EXACT_SQL, key))
-        if not rows:
-            return None
-        unique = {row.canonical: row for row in rows}
-        outcome = 'accept' if len(unique) == 1 else 'review'
-        chosen = next(iter(unique.values())) if outcome == 'accept' else None
-        return await self._finish('exact_normalized', outcome, chosen, list(unique.values()), variant='sn_cmd_lookup',
-                                  artist_sim=1.0 if outcome == 'accept' else 0.0, title_sim=1.0 if outcome == 'accept' else 0.0)
 
     async def _by_canonical(self, key: str) -> Optional[MatchResult]:
         rows = await self._decorate(await self._fetch(CANONICAL_SQL, key))
@@ -410,7 +434,7 @@ class MusicBrainzResolver:
         table cannot abort the transaction that holds this candidate."""
         if set_local:
             try:
-                await self.conn.execute('SET LOCAL enable_seqscan = off')
+                await self.conn.execute(FUZZY_THRESHOLD_SQL)
             except Exception as exc:
                 if not _skippable(exc):
                     raise
@@ -429,9 +453,10 @@ class MusicBrainzResolver:
         return None
 
     async def _by_gid(self, mbid: str) -> Optional[MatchResult]:
-        if not _UUID.match(mbid or ''):
+        ids = _uuid_list([mbid])
+        if not ids:
             return None
-        rows = await self._fetch(GID_REDIRECT_SQL, [mbid])
+        rows = await self._fetch(GID_REDIRECT_SQL, ids)
         if not rows:
             rows = await self._fetch(RECORDING_BY_GID_SQL, mbid)
             # A current gid is not a new match; only a redirect (or a gid that canonicalises
@@ -458,9 +483,6 @@ class MusicBrainzResolver:
                 return found
         key = combined_lookup(artist or '', full_title)
         if key:
-            found = await self._by_exact(key)
-            if found is not None:
-                return found
             found = await self._by_canonical(key)
             if found is not None:
                 return found

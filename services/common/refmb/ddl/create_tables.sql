@@ -271,6 +271,7 @@ CREATE TABLE ref_mb.canonical_recording_redirect (
     canonical_release_mbid text
 );
 
+-- Not on the live mirror. Dump id is read from ref_mb.load_manifest. Kept here so older fixtures still parse.
 CREATE TABLE ref_mb.dump_meta (
     schema_sequence text,
     timestamp text,

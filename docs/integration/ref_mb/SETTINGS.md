@@ -40,29 +40,34 @@ export MB_LOCAL_PASSWORD_FILE=/path/to/ref_mb_reader_password.txt
 export ENRICHMENT_PROVIDERS=musicbrainz_local,musicbrainz
 ```
 
-`MB_LOCAL_DUMP_ID` is optional and is stored with each match. Leave it unset if the dump id is not known.
+`MB_LOCAL_DUMP_ID` is optional. When a match is stored, the dump id is read from `ref_mb.load_manifest` if that table exists (`dump_id`, otherwise `schema_sequence`, otherwise `id`), then from `MB_LOCAL_DUMP_ID`. There is no `dump_meta` table. If neither source is set, the stored dump id is empty.
 
 ## Lookup order
 
 When the flag is on, `musicbrainz_local` is registered ahead of the web `musicbrainz` provider:
 
-1. **ISRC.** `isrc.isrc` is `char(12)`. The parameter is cast with `::bpchar` so Postgres can use the index. Hits are collapsed through `recording_gid_redirect` and `canonical_recording_redirect`. One canonical recording is accepted. If several remain, accept only when duration within ±5 seconds and artist similarity ≥ 0.85 leave exactly one. Otherwise the hit is review and the resolver does not try a weaker tier.
-2. **Exact normalised artist and title.** The key is ListenBrainz `combined_lookup` (punctuation stripped, lowercased, transliterated). The SQL predicate is the expression assumed for the custom index `sn_cmd_lookup`.
-3. **Canonical exact.** `canonical_musicbrainz_data.combined_lookup`, highest `score` first. The dump has no year column.
-4. **Artist-first trigram fuzzy.** `pg_trgm` on `lower(unaccent(artist.name))` with `enable_seqscan` off for that statement, then recordings for that artist credit. Similarity ≥ 0.64 is still **review only**. Fuzzy is never auto-accepted.
-5. **GID redirect.** A supplied recording MBID is followed through `recording_gid_redirect` and the canonical redirect. A gid that does not redirect is not treated as a match.
+1. **ISRC.** `isrc.isrc` is `char(12)`. The parameter is cast with `::bpchar` so Postgres can use the index. Hits are collapsed through `recording_gid_redirect` and `canonical_recording_redirect`. Those redirects compare uuid columns to `ANY($1::uuid[])` (`recording_gid_redirect_pkey`, `sn_crr_recording`). Casting the columns to text seq-scans and exceeds the 2 second statement timeout. One canonical recording is accepted. If several remain, accept only when duration within ±5 seconds and artist similarity ≥ 0.85 leave exactly one. Otherwise the hit is review and the resolver does not try a weaker tier.
+2. **Canonical exact.** Python builds the ListenBrainz `combined_lookup` key (`unidecode` after stripping non-word characters, which is what maps CJK to Pinyin) and compares it to `canonical_musicbrainz_data.combined_lookup`. That column is indexed by `sn_cmd_lookup`. Highest `score` first. The dump has no year column. There is no second exact tier over `recording` / `artist_credit`: that expression is not what `sn_cmd_lookup` indexes, it seq-scans the recording table, and it disagrees with `combined_lookup` on a noticeable share of rows.
+3. **Artist-credit trigram fuzzy.** `sn_ac_trgm` is on `artist_credit (lower(ref_mb.musicbrainz_unaccent(name)))`. The query uses that expression and `SET LOCAL pg_trgm.similarity_threshold = 0.64` inside the transaction. Recordings are then read for that artist credit. Similarity ≥ 0.64 is still **review only**. Fuzzy is never auto-accepted. The `artist` table and `public.unaccent` are not used; that path seq-scans.
+4. **GID redirect.** A supplied recording MBID is followed through `recording_gid_redirect` and the canonical redirect, again as uuid arrays. A gid that does not redirect is not treated as a match.
 
-The stored id is the canonical recording MBID. Other candidate MBIDs are kept on the evidence raw payload (accepted matches) or on `enrichment_metadata.review_candidates` (review). Label, release date/year and genre are read from CC0 tables: `release_label`/`label`, `release_country` and `release_unknown_country`, and `l_genre_release_group` → `genre`. Tag votes, ratings, the derived first-release table and cover art are not queried.
+The stored id is the canonical recording MBID. Other candidate MBIDs are kept on the evidence raw payload (accepted matches) or on `enrichment_metadata.review_candidates` (review). Label and release date/year are read from CC0 tables: `release_label`/`label`, `release_country` and `release_unknown_country`. Genre is read by `GENRE_SQL` from `l_genre_release_group` → `genre`. Those two tables exist on the mirror and are empty, so genre comes back empty. Loading them is described in `docs/integration/ref_mb/GENRE_LOAD_PLAN.md`. Tag votes, ratings, the derived first-release table and cover art are not queried.
 
-## Assumptions (not re-measured in CI)
+## Indexes the queries use
 
-CI mocks the database. These names were not found as `CREATE INDEX` statements in the repository, so the queries assume the stock MusicBrainz schema plus the following:
+Checked against the live mirror (Postgres 16, schema `ref_mb`). CI still mocks the database and does not time these.
+
+| Index | Relation | Used by |
+| ----- | -------- | ------- |
+| `sn_cmd_lookup` | `canonical_musicbrainz_data (combined_lookup)` | canonical exact |
+| `sn_crr_recording` | `canonical_recording_redirect (recording_mbid)` | canonical redirect, uuid comparison |
+| `recording_gid_redirect_pkey` | `recording_gid_redirect (gid)` | gid redirect, uuid comparison |
+| `sn_ac_trgm` | `artist_credit (lower(ref_mb.musicbrainz_unaccent(name)))` | fuzzy artist, with `similarity_threshold` 0.64 |
+
+## Assumptions
 
 - Lookup SQL is schema-qualified as `ref_mb`, so `MB_LOCAL_SCHEMA` needs to stay `ref_mb`.
-- Index `sn_cmd_lookup` matches `lower(regexp_replace(public.unaccent(artist_credit.name || recording.name), '[^\w]+', '', 'g'))`.
-- `canonical_recording_redirect` columns are `recording_mbid`, `canonical_recording_mbid` (uuid text). Higher `score` on `canonical_musicbrainz_data` is the preferred row.
-- `recording_gid_redirect.new_id` is `recording.id`. `l_genre_release_group.entity0` is genre and `entity1` is the release group. If that link table was not loaded, genre is left empty.
-- `unaccent` and `pg_trgm` are installed and visible from `public`.
-- The worker image installs `unidecode` so the Python key matches `combined_lookup`. Without it, Latin accents still fold, but a few characters (for example ß) can differ.
-
-What this change could not verify without the live mirror: that `sn_cmd_lookup` uses that exact expression, that the trigram indexes are the artist-first ones, index-only ISRC timing, and the measured precision figures.
+- `recording_gid_redirect.new_id` is `recording.id`. `l_genre_release_group.entity0` is genre and `entity1` is the release group.
+- `ref_mb.musicbrainz_unaccent` and `pg_trgm` are installed in the mirror. Fuzzy does not call `public.unaccent`.
+- The worker image installs `unidecode` so the Python key matches `combined_lookup`. Without it, Latin accents still fold, but a few characters (for example ß) and non-Latin scripts can differ.
+- `load_manifest` may be absent. Health and matches then use `MB_LOCAL_DUMP_ID`, or no dump id.
