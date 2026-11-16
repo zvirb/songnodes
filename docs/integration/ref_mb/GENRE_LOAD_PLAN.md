@@ -51,7 +51,7 @@ Do not load the whole `link` file for this task. `GENRE_SQL` does not join `link
 
 ## Load order
 
-Foreign keys, when present, require this order. Skip a step when the target table is already populated.
+Foreign keys, when present, require this order. Skip a step when the target table is already populated. Run all six steps in one transaction on database `ref_mb`, and keep the primary keys of rows this transaction inserts. `COMMIT` only after the verification queries below look right. `ROLLBACK` otherwise. A skipped table is not written, so it must not be truncated later.
 
 1. `genre_alias_type` from `mbdump/genre_alias_type`.
 2. `genre` from `mbdump/genre`.
@@ -99,20 +99,25 @@ GROUP BY lt.name
 ORDER BY COUNT(*) DESC;
 ```
 
-The names should be relationship phrases such as "is named after release group". A result that looks like a catalogue of musical genres means the wrong file was loaded. Stop and roll back.
+The names should be relationship phrases such as "is named after release group". A result that looks like a catalogue of musical genres means the wrong file was loaded. Roll the open transaction back. Do not truncate the tables.
 
 `GENRE_SQL` itself stays sparse on purpose. A recording that is not on one of those few release groups still returns no genre.
 
 ## Rollback
 
-On database `ref_mb` only, remove the rows this load added:
+Run the load in one transaction on database `ref_mb`. If verification fails before `COMMIT`, `ROLLBACK`. That undoes only the uncommitted inserts and leaves every skipped table as it was.
+
+Do not `TRUNCATE` `genre`, `genre_alias`, `genre_alias_type`, `l_genre_release_group`, `link`, or `link_type`. A step that was skipped because the table already had rows would lose those rows. `genre_alias_type` is the example: two existing lookup rows must survive a load that did not insert them.
+
+If the load was already committed, delete only the primary keys this load inserted. Record those ids before commit (a temporary table in the same session is enough) and delete from the child tables first:
 
 ```sql
-TRUNCATE TABLE
-  ref_mb.l_genre_release_group,
-  ref_mb.genre_alias,
-  ref_mb.genre,
-  ref_mb.genre_alias_type;
+DELETE FROM ref_mb.l_genre_release_group WHERE id IN (SELECT id FROM ref_mb_load_inserted_lgrg);
+DELETE FROM ref_mb.genre_alias WHERE id IN (SELECT id FROM ref_mb_load_inserted_genre_alias);
+DELETE FROM ref_mb.genre WHERE id IN (SELECT id FROM ref_mb_load_inserted_genre);
+DELETE FROM ref_mb.genre_alias_type WHERE id IN (SELECT id FROM ref_mb_load_inserted_genre_alias_type);
+DELETE FROM ref_mb.link WHERE id IN (SELECT id FROM ref_mb_load_inserted_link);
+DELETE FROM ref_mb.link_type WHERE id IN (SELECT id FROM ref_mb_load_inserted_link_type);
 ```
 
-If step 5 inserted specific `link` rows into a table that already held data, delete those ids rather than truncating `ref_mb.link` or `ref_mb.link_type`. Do not drop the schema. Do not run this against the songnodes database. The dump files on `E:\` stay where they are.
+An empty id list deletes nothing. Do not drop the schema. Do not run this against the songnodes database. The dump files on `E:\` stay where they are.

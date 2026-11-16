@@ -238,6 +238,28 @@ async def test_dump_id_prefers_load_manifest_then_env(monkeypatch):
     result = await MusicBrainzResolver(Scripted(missing)).resolve('deadmau5', 'Strobe')
     assert result.dump_version is None
 
+    class _Timeout(Exception):
+        sqlstate = '57014'
+
+    def timed_out(sql, args):
+        if _kind(sql) == 'manifest':
+            raise _Timeout('canceling statement due to statement timeout')
+        if _kind(sql) == 'canonical':
+            return [_row(id=None, mbid=MBID_A, title='Strobe', artist='deadmau5', duration_ms=None)]
+        return []
+
+    monkeypatch.setenv('MB_LOCAL_DUMP_ID', 'env-after-timeout')
+    result = await MusicBrainzResolver(Scripted(timed_out)).resolve('deadmau5', 'Strobe')
+    assert result is not None
+    assert result.method == 'canonical_exact'
+    assert result.confidence_bucket == 'auto'
+    assert result.dump_version == 'env-after-timeout'
+
+    monkeypatch.delenv('MB_LOCAL_DUMP_ID', raising=False)
+    result = await MusicBrainzResolver(Scripted(timed_out)).resolve('deadmau5', 'Strobe')
+    assert result is not None
+    assert result.dump_version is None
+
 
 @pytest.mark.asyncio
 async def test_read_dump_id_returns_none_when_the_table_is_missing():
@@ -252,6 +274,15 @@ async def test_read_dump_id_returns_none_when_the_table_is_missing():
 
     assert 'dump_meta' not in LOAD_MANIFEST_SQL
     assert await read_dump_id(Conn()) is None
+
+    class _Timeout(Exception):
+        sqlstate = '57014'
+
+    class Slow:
+        async def fetchrow(self, sql, *args):
+            raise _Timeout('canceling statement due to statement timeout')
+
+    assert await read_dump_id(Slow()) is None
 
 
 def test_fuzzy_bucket_is_never_auto():

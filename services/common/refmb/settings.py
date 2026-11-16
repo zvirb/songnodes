@@ -24,23 +24,25 @@ LIMIT 1
 """
 
 
-def _missing_object(exc: BaseException) -> bool:
+def _dump_id_unavailable(exc: BaseException) -> bool:
+    """Missing manifest, or a statement timeout. Provenance must not fail the match."""
     sqlstate = getattr(exc, 'sqlstate', None)
-    if sqlstate in {'42P01', '42703', '42883'}:
+    if sqlstate in {'42P01', '42703', '42883', '57014'}:
         return True
     text = str(exc).lower()
-    return 'does not exist' in text or 'undefined' in text
+    return 'does not exist' in text or 'undefined' in text or 'statement timeout' in text
 
 
 async def read_dump_id(conn: Any) -> Optional[str]:
-    """Dump id from `ref_mb.load_manifest`, or None when that table is missing or empty.
+    """Dump id from `ref_mb.load_manifest`, or None when that table is missing, empty, or timed out.
 
-    Does not consult `MB_LOCAL_DUMP_ID`. Callers apply that fallback themselves.
+    A statement timeout (SQLSTATE 57014) is treated as no dump id. Callers still apply
+    `MB_LOCAL_DUMP_ID`. This lookup must not discard a match that has already succeeded.
     """
     try:
         row = await conn.fetchrow(LOAD_MANIFEST_SQL)
     except Exception as exc:
-        if _missing_object(exc):
+        if _dump_id_unavailable(exc):
             return None
         raise
     if not row:
