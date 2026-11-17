@@ -23,8 +23,16 @@ from common.refmb.match import (  # noqa: E402
     combined_lookup,
     confidence_bucket,
 )
-from common.refmb.resolve import EXACT_SQL, ISRC_SQL, MusicBrainzResolver  # noqa: E402
-from common.refmb.settings import RefMBSettings  # noqa: E402
+from common.refmb.resolve import (  # noqa: E402
+    CANONICAL_REDIRECT_SQL,
+    CANONICAL_SQL,
+    FUZZY_ARTIST_SQL,
+    FUZZY_THRESHOLD_SQL,
+    GID_REDIRECT_SQL,
+    ISRC_SQL,
+    MusicBrainzResolver,
+)
+from common.refmb.settings import LOAD_MANIFEST_SQL, RefMBSettings, read_dump_id  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[3]
 MBID_A = '11111111-1111-4111-8111-111111111111'
@@ -40,11 +48,17 @@ class Scripted:
     def __init__(self, handler):
         self.handler = handler
         self.seen = []
+        self.calls = []
         self.executed = []
 
     async def fetch(self, sql, *args):
         self.seen.append(sql)
+        self.calls.append((sql, args))
         return self.handler(sql, args)
+
+    async def fetchrow(self, sql, *args):
+        rows = await self.fetch(sql, *args)
+        return rows[0] if rows else None
 
     async def execute(self, sql, *args):
         self.executed.append(sql)
@@ -68,9 +82,9 @@ def _kind(sql: str) -> str:
         return 'canon-redirect'
     if 'recording_gid_redirect' in sql:
         return 'gid'
-    if 'FROM ref_mb.artist a' in sql:
+    if 'musicbrainz_unaccent(ac.name)' in sql:
         return 'fuzzy-artist'
-    if 'artist_credit_name' in sql:
+    if 'title_sim' in sql:
         return 'fuzzy-recording'
     if 'l_genre_release_group' in sql:
         return 'genre'
@@ -78,8 +92,8 @@ def _kind(sql: str) -> str:
         return 'enrich'
     if 'r.gid = $1::uuid' in sql:
         return 'by-gid'
-    if 'sn_cmd_lookup' in sql:
-        return 'exact'
+    if 'load_manifest' in sql:
+        return 'manifest'
     return 'other'
 
 
@@ -94,11 +108,23 @@ def test_combined_lookup_matches_contract_vectors():
     assert mismatches == []
 
 
-def test_isrc_parameter_is_cast_to_bpchar():
+def test_isrc_parameter_is_cast_to_bpchar_and_redirects_compare_uuids():
     assert '$1::bpchar' in ISRC_SQL
     assert 'isrc::text' not in ISRC_SQL
     assert 'i.isrc =' in ISRC_SQL
-    assert 'sn_cmd_lookup' in EXACT_SQL
+    assert 'g.gid = ANY($1::uuid[])' in GID_REDIRECT_SQL
+    assert '::text[]' not in GID_REDIRECT_SQL
+    assert '::text' not in GID_REDIRECT_SQL.split('WHERE', 1)[1]
+    assert 'recording_mbid = ANY($1::uuid[])' in CANONICAL_REDIRECT_SQL
+    assert '::text[]' not in CANONICAL_REDIRECT_SQL
+    assert '::text' not in CANONICAL_REDIRECT_SQL.split('WHERE', 1)[1]
+    assert 'combined_lookup = $1' in CANONICAL_SQL
+    assert 'sn_cmd_lookup' in CANONICAL_SQL
+    assert 'regexp_replace' not in CANONICAL_SQL
+    assert 'musicbrainz_unaccent(ac.name)' in FUZZY_ARTIST_SQL
+    assert 'FROM ref_mb.artist_credit ac' in FUZZY_ARTIST_SQL
+    assert 'FROM ref_mb.artist a' not in FUZZY_ARTIST_SQL
+    assert FUZZY_THRESHOLD_SQL == 'SET LOCAL pg_trgm.similarity_threshold = 0.64'
 
 
 def test_unique_isrc_is_accepted_without_a_duration():
@@ -153,6 +179,112 @@ def test_isrc_ambiguity_is_review_when_duration_or_artist_does_not_single_one_ou
     assert choose_isrc(rows, 'Eric Prydz', None).outcome == 'review'
 
 
+def test_combined_lookup_transliterates_with_unidecode():
+    pytest.importorskip('unidecode')
+    from unidecode import unidecode
+
+    # CJK letters are word characters, so they survive the strip and unidecode maps them to Pinyin.
+    assert combined_lookup('周杰伦', '晴天') == unidecode('周杰伦晴天')
+
+
+@pytest.mark.asyncio
+async def test_canonical_tier_binds_the_unidecode_combined_lookup():
+    seen = {}
+
+    def handler(sql, args):
+        if _kind(sql) == 'canonical':
+            seen['key'] = args[0]
+            return [_row(id=None, mbid=MBID_A, title='Strobe', artist='deadmau5', duration_ms=None)]
+        return []
+
+    resolver, conn = _resolver(handler)
+    result = await resolver.resolve('deadmau5', 'Strobe')
+    assert result.method == 'canonical_exact'
+    assert result.confidence_bucket == 'auto'
+    assert seen['key'] == combined_lookup('deadmau5', 'Strobe')
+    assert 'regexp_replace' not in ''.join(conn.seen)
+
+
+@pytest.mark.asyncio
+async def test_dump_id_prefers_load_manifest_then_env(monkeypatch):
+    monkeypatch.delenv('MB_LOCAL_DUMP_ID', raising=False)
+
+    def with_manifest(sql, args):
+        if _kind(sql) == 'manifest':
+            return [_row(dump_id='dump-2026-10-24')]
+        if _kind(sql) == 'canonical':
+            return [_row(id=None, mbid=MBID_A, title='Strobe', artist='deadmau5', duration_ms=None)]
+        return []
+
+    resolver = MusicBrainzResolver(Scripted(with_manifest))
+    result = await resolver.resolve('deadmau5', 'Strobe')
+    assert result.dump_version == 'dump-2026-10-24'
+
+    class _Missing(Exception):
+        sqlstate = '42P01'
+
+    def missing(sql, args):
+        if _kind(sql) == 'manifest':
+            raise _Missing('relation ref_mb.load_manifest does not exist')
+        if _kind(sql) == 'canonical':
+            return [_row(id=None, mbid=MBID_A, title='Strobe', artist='deadmau5', duration_ms=None)]
+        return []
+
+    monkeypatch.setenv('MB_LOCAL_DUMP_ID', 'env-dump')
+    result = await MusicBrainzResolver(Scripted(missing)).resolve('deadmau5', 'Strobe')
+    assert result.dump_version == 'env-dump'
+
+    monkeypatch.delenv('MB_LOCAL_DUMP_ID', raising=False)
+    result = await MusicBrainzResolver(Scripted(missing)).resolve('deadmau5', 'Strobe')
+    assert result.dump_version is None
+
+    class _Timeout(Exception):
+        sqlstate = '57014'
+
+    def timed_out(sql, args):
+        if _kind(sql) == 'manifest':
+            raise _Timeout('canceling statement due to statement timeout')
+        if _kind(sql) == 'canonical':
+            return [_row(id=None, mbid=MBID_A, title='Strobe', artist='deadmau5', duration_ms=None)]
+        return []
+
+    monkeypatch.setenv('MB_LOCAL_DUMP_ID', 'env-after-timeout')
+    result = await MusicBrainzResolver(Scripted(timed_out)).resolve('deadmau5', 'Strobe')
+    assert result is not None
+    assert result.method == 'canonical_exact'
+    assert result.confidence_bucket == 'auto'
+    assert result.dump_version == 'env-after-timeout'
+
+    monkeypatch.delenv('MB_LOCAL_DUMP_ID', raising=False)
+    result = await MusicBrainzResolver(Scripted(timed_out)).resolve('deadmau5', 'Strobe')
+    assert result is not None
+    assert result.dump_version is None
+
+
+@pytest.mark.asyncio
+async def test_read_dump_id_returns_none_when_the_table_is_missing():
+    class _Missing(Exception):
+        sqlstate = '42P01'
+
+    class Conn:
+        async def fetchrow(self, sql, *args):
+            assert 'load_manifest' in sql
+            assert 'dump_meta' not in sql
+            raise _Missing('relation ref_mb.load_manifest does not exist')
+
+    assert 'dump_meta' not in LOAD_MANIFEST_SQL
+    assert await read_dump_id(Conn()) is None
+
+    class _Timeout(Exception):
+        sqlstate = '57014'
+
+    class Slow:
+        async def fetchrow(self, sql, *args):
+            raise _Timeout('canceling statement due to statement timeout')
+
+    assert await read_dump_id(Slow()) is None
+
+
 def test_fuzzy_bucket_is_never_auto():
     assert confidence_bucket('fuzzy', 'accept') == 'review'
     assert confidence_bucket('isrc', 'accept') == 'auto'
@@ -169,14 +301,16 @@ def _empty(sql, args):
 
 
 @pytest.mark.asyncio
-async def test_resolve_order_is_isrc_exact_canonical_fuzzy_then_gid():
+async def test_resolve_order_is_isrc_canonical_fuzzy_then_gid():
     resolver, conn = _resolver(_empty)
     result = await resolver.resolve('deadmau5', 'Strobe', isrc='USRC17607839', mbid=MBID_A)
     assert result is None
     kinds = [_kind(sql) for sql in conn.seen]
-    assert kinds[:4] == ['isrc', 'exact', 'canonical', 'fuzzy-artist']
+    assert kinds[:3] == ['isrc', 'canonical', 'fuzzy-artist']
+    assert 'exact' not in kinds
     assert 'gid' in kinds
-    assert 'SET LOCAL enable_seqscan = off' in conn.executed
+    assert FUZZY_THRESHOLD_SQL in conn.executed
+    assert not any('enable_seqscan' in sql for sql in conn.executed)
 
 
 @pytest.mark.asyncio
@@ -195,7 +329,9 @@ async def test_ambiguous_isrc_does_not_fall_through_and_stays_review():
     assert result.confidence_bucket == 'review'
     assert result.method == 'isrc'
     assert {item['mbid'] for item in result.candidates} == {MBID_A, MBID_B}
-    assert 'exact' not in [_kind(sql) for sql in conn.seen]
+    kinds = [_kind(sql) for sql in conn.seen]
+    assert 'canonical' not in kinds
+    assert 'fuzzy-artist' not in kinds
 
 
 @pytest.mark.asyncio
@@ -223,6 +359,10 @@ async def test_isrc_hit_stores_canonical_mbid_label_and_year():
     assert result.genres == ('Progressive House',)
     assert result.candidates[0]['canonical_mbid'] == MBID_C
     assert '$1::bpchar' in conn.seen[0]
+    gid_args = [args for sql, args in conn.calls if _kind(sql) == 'gid']
+    canon_args = [args for sql, args in conn.calls if _kind(sql) == 'canon-redirect']
+    assert gid_args[0][0] == [uuid.UUID(MBID_A)]
+    assert canon_args[0][0] == [uuid.UUID(MBID_A)]
 
 
 class _MissingRelation(Exception):

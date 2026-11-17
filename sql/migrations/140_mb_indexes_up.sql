@@ -3,5 +3,6 @@
 -- NO-OP. ref_mb.normalize_lookup belongs on the external mirror, not in songnodes.
 -- Creating it here requires a ref_mb schema in the app database, which migration 100
 -- no longer creates. See docs/integration/ref_mb/DECISION.md.
--- The lookup expression the mirror is assumed to index (sn_cmd_lookup) is documented
--- in docs/integration/ref_mb/SETTINGS.md.
+-- On the external mirror, sn_cmd_lookup is an index on
+-- canonical_musicbrainz_data (combined_lookup), not an expression over recording.
+-- See docs/integration/ref_mb/SETTINGS.md.

@@ -1,9 +1,58 @@
 import os
 import re
-from typing import Optional
+from typing import Any, Optional
 from dataclasses import dataclass
 from urllib.parse import quote_plus
 import asyncpg
+
+# dump_meta is not on the live mirror. load_manifest's column names are not fixed;
+# take the first of these keys that is present and non-empty.
+LOAD_MANIFEST_SQL = """
+SELECT COALESCE(
+    NULLIF(to_jsonb(m)->>'dump_id', ''),
+    NULLIF(to_jsonb(m)->>'schema_sequence', ''),
+    NULLIF(to_jsonb(m)->>'id', '')
+) AS dump_id
+FROM ref_mb.load_manifest m
+ORDER BY COALESCE(
+    to_jsonb(m)->>'loaded_at',
+    to_jsonb(m)->>'finished_at',
+    to_jsonb(m)->>'timestamp',
+    ''
+) DESC
+LIMIT 1
+"""
+
+
+def _dump_id_unavailable(exc: BaseException) -> bool:
+    """Missing manifest, or a statement timeout. Provenance must not fail the match."""
+    sqlstate = getattr(exc, 'sqlstate', None)
+    if sqlstate in {'42P01', '42703', '42883', '57014'}:
+        return True
+    text = str(exc).lower()
+    return 'does not exist' in text or 'undefined' in text or 'statement timeout' in text
+
+
+async def read_dump_id(conn: Any) -> Optional[str]:
+    """Dump id from `ref_mb.load_manifest`, or None when that table is missing, empty, or timed out.
+
+    A statement timeout (SQLSTATE 57014) is treated as no dump id. Callers still apply
+    `MB_LOCAL_DUMP_ID`. This lookup must not discard a match that has already succeeded.
+    """
+    try:
+        row = await conn.fetchrow(LOAD_MANIFEST_SQL)
+    except Exception as exc:
+        if _dump_id_unavailable(exc):
+            return None
+        raise
+    if not row:
+        return None
+    try:
+        value = row['dump_id']
+    except (KeyError, IndexError, TypeError):
+        return None
+    text = '' if value is None else str(value).strip()
+    return text or None
 
 _IDENT = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
 
@@ -92,13 +141,7 @@ async def check_health(settings: Optional[RefMBSettings] = None) -> dict:
         if pool:
             async with pool.acquire() as conn:
                 result["reachable"] = True
-                # Query dump_id safely (assuming it exists, but might not)
-                try:
-                    row = await conn.fetchrow("SELECT schema_sequence FROM dump_meta ORDER BY timestamp DESC LIMIT 1")
-                    if row:
-                        result["dump_id"] = row['schema_sequence']
-                except asyncpg.exceptions.UndefinedTableError:
-                    pass
+                result["dump_id"] = await read_dump_id(conn) or os.getenv("MB_LOCAL_DUMP_ID") or None
     except Exception:
         pass
     finally:

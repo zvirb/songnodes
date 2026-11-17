@@ -42,4 +42,4 @@ Each question has a recommendation. Evidence is in `mb_database_report.md`.
 
 10. **Measure matching quality on real songnodes tracks?** Precision/recall was not measured, because no songnodes data was read. Next step if approved: export a sample of (artist, title, isrc, duration_ms) from songnodes read-only and run queries.sql F1-F3 against `ref_mb`.
 
-11. **Should fuzzy matching be tuned?** The planner picks a seq scan on artist_credit for trigram queries (4.4-4.8 s vs 0.4-0.8 s with the GIN). queries.sql forces the index path with `SET LOCAL enable_seqscan=off`. An alternative is `random_page_cost=1.1` on SSD, which was not tested.
+11. **Should fuzzy matching be tuned?** The planner picks a seq scan on artist_credit for trigram queries (4.4-4.8 s vs 0.4-0.8 s with the GIN). queries.sql forces the index path with `SET LOCAL enable_seqscan=off`. An alternative is `random_page_cost=1.1` on SSD, which was not tested. Update 16 Nov 2026: the resolver uses `sn_ac_trgm` and `pg_trgm.similarity_threshold = 0.64` (`SETTINGS.md`), not `enable_seqscan`.
