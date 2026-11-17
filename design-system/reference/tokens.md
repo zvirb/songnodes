@@ -147,6 +147,16 @@
 | color.on-svc-spotify | `#000000` | Text on svc-spotify. |
 | color.svc-tidal | `#000000` | TIDAL's black: only on the 'Connect TIDAL' button (with a 1px white border on dark grounds). |
 | color.on-svc-tidal | `#ffffff` | Text on svc-tidal. |
+| color.queue-done | `{status-ok}` | Queue monitor (WorkQueue): fill of a task tile whose task is complete. Solid, with the origin letter in queue-tile-ink; the state word is in the tile's name and the legend, never colour alone. |
+| color.queue-ready | `{status-warn}` | Queue monitor: fill of a task tile that is ready for a run to pick up. Solid, letter in queue-tile-ink. |
+| color.queue-running | `{fg}` | Queue monitor: fill of a task tile a run has claimed (In progress). The inverse of the page (fg), so it stands out in every theme; letter in queue-tile-ink. |
+| color.queue-waiting | `{line-strong}` | Queue monitor: the dashed stroke-mark (1.5px) edge of a waiting task's tile; the tile itself is surface-1 and its letter fg-2. Holds 3:1 on surface-1 like every control border. |
+| color.queue-tile-ink | `{surface-1}` | Queue monitor: the origin letter (S, F, P, C) on a solid tile (done, ready, running). Holds 4.5:1 on queue-done, queue-ready and queue-running in dark, light and booth. |
+| color.origin-original | `{fg-2}` | Queue monitor: 4px bottom edge of a tile, and its chart fill, for a task in the original plan (first import). Neutral on purpose: most tasks are original, and the eye goes to the ones added since. No letter. |
+| color.origin-split | `{chart-1}` | Queue monitor: bottom edge and chart fill for a task split off a task that needed another run. Letter S. |
+| color.origin-followup | `{chart-2}` | Queue monitor: bottom edge and chart fill for a follow-up a run added. Letter F. |
+| color.origin-planner | `{chart-3}` | Queue monitor: bottom edge and chart fill for a task the planner added. Letter P. |
+| color.origin-chat | `{chart-4}` | Queue monitor: bottom edge and chart fill for a task added from a chat session. Letter C. |
 | spacing.space-0 | `0px` | No gap. |
 | spacing.space-0.5 | `2px` | Hairline nudges: energy segment gap, icon-to-badge. |
 | spacing.space-1 | `4px` | Tight: chip padding block, icon-to-label in dense rows. |

@@ -1551,8 +1551,8 @@ PR: https://github.com/zvirb/songnodes/pull/331 (merged 2026-10-28)
 
 <!-- SLOT:AX1 BEGIN -->
 ### AX1: Accessibility fixes on Target tracks and Pipeline
-- Start: _not started_
-- End: _not finished_
+- Start: Sun 15 Nov 2026 22:41 (Sonnet :37, WQ00111). Scope: last-error cell, fg-3 on raised surfaces. Next: stage, verify, apply.
+- End: Sun 15 Nov 2026 22:45. Applied (builder Sonnet-37-20261115-2241, integrator Sonnet-37-int-20261115-2247): Dead jobs last-error cell uses .sn-last-error (new ScraperProgressPage.css) instead of truncate and 300px; stage Clock icon and .ttm__id use fg-2. Run: design-system strict check and tsc (precheck, verify). Not run: axe in three browsers, vitest, oxlint, vite build. Button names were already present. Next: WQ00171 (e2e) confirms axe live.
 <!-- SLOT:AX1 END -->
 
 ## Scheduled run
@@ -3292,3 +3292,41 @@ Original-head security checks pass; E2E fails on eight inherited screenshot base
 - Review: a manifest statement timeout (57014) now yields no dump id and keeps the match; the genre-load rollback is a transaction rollback or a delete of inserted ids only, not TRUNCATE.
 - Next: owner reviews the PR. Do not merge from this branch. The genre load stays a plan until it is run on the ref-mb container.
 <!-- SLOT:MBFIX END -->
+
+<!-- SLOT:WQ-MULTI BEGIN -->
+### WQ-MULTI — Parallel multi-agent execution completed (2026-11-15)
+- **Queue completion**: All `110` queue tasks (`WQ00001`–`WQ00104` plus gap tasks `WQ00105`–`WQ00110`) are now `Done` (`Done: 110`, `Ready: 0`, `Waiting: 0`, `In progress: 0`, `Retired: 0`, `Split: 0`, `active_claims: 0`).
+- **Wave 2 execution (capped at 4 parallel non-overlapping workers)**:
+  - `worker-w2-graph` -> `integrator-w2-graph` (`df0b3041f0c64a67ad1bcca371560809`): Verified and applied `WQ00008` (`GraphPage.tsx`). Worker ran full Vitest unit suite (`70` files / `607` tests), `design-system-audit.test.mjs` (`3/3`), `oxlint --type-aware`, and a 60-case Chromium `inspectPage` matrix check (`nonZeroCount: 0`, `visibleCount: 1` for `main h1`).
+  - `worker-w2-camelot` -> `integrator-w2-camelot` (`9fea36fd2482497c853e39bf32a23609`): Verified and applied `WQ00011` (`CamelotPage.tsx`). Worker ran Camelot/registry/PageParts Vitest (`4` files / `15` tests) and `oxlint`.
+  - `worker-w2-library` -> `integrator-w2-library` (`ba42e2ea5bba4f6f96b81c1e7f92fb09`): Verified and applied `WQ00015`, `WQ00019`, `WQ00020` (`LibraryPage.tsx`, resolved with upstream `WQ00105` `PageLoading` and `WQ00107` `TrackCell` 24x24px target-size fix). Worker ran `src/features/musicLibrary` Vitest (`9` files / `82` tests).
+  - `worker-w2-pipeline` -> `integrator-w2-pipeline` (`3d70a48337ac46b2a4076da765ac2d78`): Verified and applied `WQ00054` (`/pipeline`), `WQ00058` (`/pipeline/runs`) (`ScraperProgressPage.tsx`). Worker ran pipeline/runs Vitest (`8` files / `51` tests) and `oxlint --type-aware`.
+  - Under cooperative locking in `plan/agent-queue`, concurrent batch workers/integrators (`batch6a`–`batch6c`) ran cleanly alongside Wave 2 without lock collisions, completing the remaining tasks (`SettingsPage.tsx` option label accessibility update + `OAuthCallback.tsx`, `design-system-route-examples.json`, `AppShell.tsx`/`app.css`, and remaining page heading checks).
+- **Checks run after final code changes**:
+  - `python -X utf8 plan/agent-queue/tools/queue.py validate`: `{"valid": true, "tasks": 110, "active_claims": 0}` (`exit 0`).
+  - `python -X utf8 plan/agent-queue/tools/queue.py git-check`: `{"safe": true, "branch": "main"}` (`exit 0`).
+  - `python -X utf8 -m pytest tests/test_agent_queue.py`: `39 passed` (`exit 0`).
+  - `python -X utf8 scripts/check_design_system.py --check --strict --json`: `checkedFiles: 280`, `findings: []` (`exit 0`).
+  - `node frontend/node_modules/typescript/bin/tsc --noEmit -p frontend`: `exit 0`.
+  - `npm run test:unit` (in `E:\songnodes\frontend`): `70 test files passed (70)`, `607 tests passed (607)` (`exit 0`).
+  - Not run in this session: live Playwright E2E / full Chromium browser re-audit against a running stack after all integrations.
+- **Unresolved issues**: None in the agent queue (`0 Ready`, `0 Waiting`, `0 In progress`).
+- **Exact next task**: Review all applied working-tree changes and optionally run the live Playwright E2E/design-system browser audit before committing or deploying (no commit, push, merge, or deployment was performed).
+<!-- SLOT:WQ-MULTI END -->
+
+<!-- SLOT:WQ-APPLY1 BEGIN -->
+### WQ-APPLY1 — Apply verified queue proposals (2026-11-14)
+- User: "always go ahead and apply". config.json mode proposal-only -> apply-verified; rule Q014 and decision D009 recorded; backups in plan/agent-queue/_archive/.
+- Applied and Done (each re-verified under its own integrator claim: design-system strict check exit 0, tsc exit 0): WQ00051 OAuthCallback.tsx, WQ00100 frontend/tests/design-system-route-examples.json (new), WQ00003 app.css sticky header, WQ00001 AppShell connection status, WQ00002 AppShell More actions menu (rebuilt on AppShell after WQ00001; prior proposal 0c736517 superseded by cb1d849e).
+- Tool: queue.py snapshot walk now prunes node_modules/.git/etc. instead of walking then filtering (same files; verify 3 min+ -> 40 s over the mount). tests/test_agent_queue.py: 39 passed.
+- Environment: added frontend/node_modules/@typescript/typescript-linux-x64 7.0.2 so tsc runs in the device Linux shell; sandboxes via TMPDIR under .runtime/sandboxes.
+- Queue: Done 5, Ready 99, Waiting 0, active claims 0; validate valid; git-check safe. Not committed, pushed or deployed.
+- Scheduled tasks Opus :07, :29, :52 and Sonnet :37 updated 14 Nov 2026: their SongNodes fallback now applies verified proposals (integrator run id "<run>-int-..."), clears Waiting tasks first, and sets TMPDIR. Sonnet :44 and Parallel are disabled and were not changed.
+<!-- SLOT:WQ-APPLY1 END -->
+
+<!-- SLOT:PLANNER BEGIN -->
+### PLANNER — Nightly queue planner (slot added 2026-11-15 by planner-20261115-2141)
+- Last run planner-20261116-2141 (16 Nov 2026 21:41 Sydney): validate valid (177 tasks, 0 claims), git-check safe. Done 111, Ready 66.
+- Graded: Sonnet :37 pair on WQ00111 Completed as claimed (axe not run, carried by WQ00171); spot-check held. Nothing added, retired or split (Ready over limit); no rule proposed; decision D014. No undefined steps.
+- Report: plan/agent-queue/reports/20261116-planner.md. Next: nightly run 17 Nov 21:40.
+<!-- SLOT:PLANNER END -->

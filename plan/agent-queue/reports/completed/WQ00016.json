@@ -1,0 +1,68 @@
+{
+  "outputs": [
+    {
+      "path": "frontend/src/shell/AppShell.tsx",
+      "proposed": "f97226a707384a97ecab0a1690476f4de9f4abf4bdaee00ffe4d726c478b0f9d",
+      "baseline": "f97226a707384a97ecab0a1690476f4de9f4abf4bdaee00ffe4d726c478b0f9d"
+    },
+    {
+      "path": "frontend/src/styles/app.css",
+      "proposed": "77db85fba25bfa8ddcc36fc147cfce28eae19cb92aed30aebbcece15342d9804",
+      "baseline": "77db85fba25bfa8ddcc36fc147cfce28eae19cb92aed30aebbcece15342d9804"
+    }
+  ],
+  "review": "Independent review passed: AppShell.tsx and app.css fixes (WQ00105, WQ00106) resolve the 73 route shell audit observations; isolated strict design-system check and tsc --noEmit passed.",
+  "reviewer": "integrator-batch6b",
+  "verification": {
+    "proposal": "49960afdafb3447d8ad7e793e212adab",
+    "agent": "integrator-batch6b",
+    "claim": "77022c7c960a43869a2ff6bd251c747d",
+    "tested": "2026-11-14T21:49:21.885904+00:00",
+    "sandbox": "C:\\Users\\marku\\AppData\\Local\\Temp\\snq\\846c3647cd",
+    "results": [
+      {
+        "command": [
+          "C:\\Users\\marku\\AppData\\Local\\Microsoft\\WindowsApps\\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\\python.exe",
+          "scripts/check_design_system.py",
+          "--check",
+          "--strict"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "node",
+          "frontend/node_modules/typescript/bin/tsc",
+          "--noEmit",
+          "-p",
+          "frontend"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "passed": true,
+    "outputs": [
+      {
+        "path": "frontend/src/shell/AppShell.tsx",
+        "proposed": "f97226a707384a97ecab0a1690476f4de9f4abf4bdaee00ffe4d726c478b0f9d",
+        "baseline": "f97226a707384a97ecab0a1690476f4de9f4abf4bdaee00ffe4d726c478b0f9d"
+      },
+      {
+        "path": "frontend/src/styles/app.css",
+        "proposed": "77db85fba25bfa8ddcc36fc147cfce28eae19cb92aed30aebbcece15342d9804",
+        "baseline": "77db85fba25bfa8ddcc36fc147cfce28eae19cb92aed30aebbcece15342d9804"
+      }
+    ],
+    "shared": {
+      "frontend/src/lib/songnodes.tsx": "9eebab0582b5a39dac45527afd329ccc29e32c441a369c8898dd125f9093848d",
+      "frontend/src/styles/design-system/bundle.css": "d1c142e62dc6eff45dae50113463f1f1094bf8cf911f0d3d08489db2bf9843b1",
+      "frontend/src/styles/design-system/tokens.css": "55b2959e7101b6eedf6f112a0669464dce8ba365c23377adb572844c55617b43"
+    }
+  },
+  "applied": "2026-11-14T21:49:35.119944+00:00",
+  "deployed": false
+}

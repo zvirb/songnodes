@@ -1,0 +1,98 @@
+{
+  "outputs": [
+    {
+      "path": "tests/integration/test_dev_catalog_reads.py",
+      "proposed": "1355fc69fe750fd928d0411b782bc66f545418b4a79aaa85542d579cf75d0601",
+      "baseline": "f6b9d7360debdcdf06f3a4fee19aca07d77fe7117b88063378b9ab4cfba12fcf"
+    },
+    {
+      "path": "tests/integration/test_dev_catalog_writes.py",
+      "proposed": "f55b305a0f98d5d9c0886b23ec4c92dcb203e70303a2ae6b7e875c36f2e84611",
+      "baseline": "e1e7f61bfff1fe31edb724b95a983ff50de2535af7b72244c9194e423426a112"
+    },
+    {
+      "path": "tests/integration/test_dev_worker.py",
+      "proposed": "e8c7ab757a4567b6eebee915c664a0085969e0c2324b6167eb32888a3feed168",
+      "baseline": "44272aa9aa68c346e09445d7c1027d11bcc82617a2f34bf982970dd4d0a2aba1"
+    },
+    {
+      "path": "tests/integration/scenarios/evidence.py",
+      "proposed": "679569dc9caa6a11e8ee9ceca3da5cd948a0b22efcc18404e8c760b880947926",
+      "baseline": "79b10140c155b254e91c0e8ae6161df9d41c840018a0d76b4324c396be20375a"
+    },
+    {
+      "path": "tests/integration/scenarios/ingest.py",
+      "proposed": "9ed940add5581710657a37cefc31d740fadb36a526621287f1ae6c72a06a0991",
+      "baseline": "22745690ea90138b931d3170c53501180b358e57cc3f9c2d602533a865db1ec7"
+    }
+  ],
+  "review": "Independent review passed: paginated catalog read/write assertions, populated-DB scenario skips, and outbox_events/outbox_consumers column fix in test_dev_worker.py.",
+  "reviewer": "integrator-wq00183",
+  "verification": {
+    "proposal": "be4d9275a06945ce9610f72b78645736",
+    "agent": "integrator-wq00183",
+    "claim": "5a1c179056154e78adac727dd3537240",
+    "tested": "2026-11-17T08:53:30.650246+00:00",
+    "sandbox": "C:\\Users\\marku\\AppData\\Local\\Temp\\snq\\c9aaeb0a4c",
+    "results": [
+      {
+        "command": [
+          "C:\\Users\\marku\\AppData\\Local\\Microsoft\\WindowsApps\\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\\python.exe",
+          "scripts/check_design_system.py",
+          "--check",
+          "--strict"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "node",
+          "frontend/node_modules/typescript/bin/tsc",
+          "--noEmit",
+          "-p",
+          "frontend"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "passed": true,
+    "outputs": [
+      {
+        "path": "tests/integration/test_dev_catalog_reads.py",
+        "proposed": "1355fc69fe750fd928d0411b782bc66f545418b4a79aaa85542d579cf75d0601",
+        "baseline": "f6b9d7360debdcdf06f3a4fee19aca07d77fe7117b88063378b9ab4cfba12fcf"
+      },
+      {
+        "path": "tests/integration/test_dev_catalog_writes.py",
+        "proposed": "f55b305a0f98d5d9c0886b23ec4c92dcb203e70303a2ae6b7e875c36f2e84611",
+        "baseline": "e1e7f61bfff1fe31edb724b95a983ff50de2535af7b72244c9194e423426a112"
+      },
+      {
+        "path": "tests/integration/test_dev_worker.py",
+        "proposed": "e8c7ab757a4567b6eebee915c664a0085969e0c2324b6167eb32888a3feed168",
+        "baseline": "44272aa9aa68c346e09445d7c1027d11bcc82617a2f34bf982970dd4d0a2aba1"
+      },
+      {
+        "path": "tests/integration/scenarios/evidence.py",
+        "proposed": "679569dc9caa6a11e8ee9ceca3da5cd948a0b22efcc18404e8c760b880947926",
+        "baseline": "79b10140c155b254e91c0e8ae6161df9d41c840018a0d76b4324c396be20375a"
+      },
+      {
+        "path": "tests/integration/scenarios/ingest.py",
+        "proposed": "9ed940add5581710657a37cefc31d740fadb36a526621287f1ae6c72a06a0991",
+        "baseline": "22745690ea90138b931d3170c53501180b358e57cc3f9c2d602533a865db1ec7"
+      }
+    ],
+    "shared": {
+      "frontend/src/lib/songnodes.tsx": "9eebab0582b5a39dac45527afd329ccc29e32c441a369c8898dd125f9093848d",
+      "frontend/src/styles/design-system/bundle.css": "d1c142e62dc6eff45dae50113463f1f1094bf8cf911f0d3d08489db2bf9843b1",
+      "frontend/src/styles/design-system/tokens.css": "55b2959e7101b6eedf6f112a0669464dce8ba365c23377adb572844c55617b43"
+    }
+  },
+  "applied": "2026-11-17T08:53:45.585060+00:00",
+  "deployed": false
+}

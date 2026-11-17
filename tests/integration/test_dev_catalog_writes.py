@@ -134,9 +134,16 @@ class CatalogWrites(unittest.TestCase):
         attributed = self.track_row(self.name('Assign Target'), self.name('Assign Attributed'))
 
         def missing():
-            status, data = request(8082, '/api/v1/tracks/missing-artist?limit=500')
-            self.assertEqual(status, 200, data)
-            return [row['title'] for row in data]
+            titles = []
+            offset = 0
+            while True:
+                status, data = request(8082, f'/api/v1/tracks/missing-artist?limit=500&offset={offset}')
+                self.assertEqual(status, 200, data)
+                titles.extend(row['title'] for row in data)
+                if len(data) < 500:
+                    break
+                offset += 500
+            return titles
 
         self.assertIn(self.name('Assign Orphan'), missing())
         self.assertNotIn(self.name('Assign Attributed'), missing())

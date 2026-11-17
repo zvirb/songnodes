@@ -599,8 +599,8 @@ switch (id) {
           label="Row density"
           value={prefs.density as 'comfortable' | 'compact'}
           options={[
-            { value: 'comfortable', label: 'Comfortable (40px)' },
-            { value: 'compact', label: 'Compact (32px)' },
+            { value: 'comfortable', label: 'Comfortable', ariaLabel: 'Comfortable (40px)' },
+            { value: 'compact', label: 'Compact', ariaLabel: 'Compact (32px)' },
           ]}
           onChange={(v) => {
             SN.prefs.setDensity(v);

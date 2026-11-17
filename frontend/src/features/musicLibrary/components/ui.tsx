@@ -394,7 +394,7 @@ export const TrackCell: React.FC<{ t: LibraryTrack; extra?: React.ReactNode; lin
   const meta: React.ReactNode[] = [];
   if (extra) meta.push(<span key="x">{extra}</span>);
   if (t.m) meta.push(<span className="sn-track-cell__mix" key="m">{t.m}</span>);
-  if (t.lbl) meta.push(<span key="l">{t.lbl}</span>);
+  if (t.lbl) meta.push(<span className="sn-track-cell__mix" key="l">{t.lbl}</span>);
   if (t.d) meta.push(<span className="sn-track-cell__dur" key="d">{SN.format.duration(t.d)}</span>);
   const ext = links ? EXT.filter(([k]) => t[k]) : [];
   const [showCov, setShowCov] = useState(false);

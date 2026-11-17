@@ -828,7 +828,7 @@
   toast.DEFAULT_MS = { plain: 4000, action: 8000 };
 
   window.SongNodes = {
-    version: "1.14.0", DOMAIN_MAP: DOMAIN_MAP,
+    version: "1.15.0", DOMAIN_MAP: DOMAIN_MAP,
     locale: LOCALE, timeZone: TZ,
     modules: MODULES, module: function (k) { for (var i = 0; i < MODULES.length; i++) if (MODULES[i].key === k) return MODULES[i]; return null; },
     icons: ICONS, icon: icon, iconNames: Object.keys(ICONS),

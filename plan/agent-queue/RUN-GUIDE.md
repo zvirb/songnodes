@@ -29,6 +29,7 @@ claim --agent RUN --role frontend --tasks WQ00001
 heartbeat --agent RUN --claim TOKEN
 held --agent RUN
 release --agent RUN --claim TOKEN --note "Exact remainder"
+precheck plan/agent-queue/reports/RUN/proposal --agent RUN --claim TOKEN
 stage plan/agent-queue/reports/RUN/proposal --agent RUN --claim TOKEN
 claim --agent REVIEWER --role integrator --tasks WQ00001
 verify --agent REVIEWER --claim REVIEW_TOKEN --proposal STAGE_TOKEN
@@ -45,8 +46,15 @@ repair
 git-check
 ```
 
-Apply/rollback refuse to run in the current proposal-only mode. Changing mode to
-apply-verified requires explicit project authorization. The user's operator Git
+Mode is apply-verified since 2026-11-14 (Q014, D009; user: "always go ahead and apply").
+A task is finished when an integrator (a run id different from the builder) has verified
+and applied its staged proposal, recording Done. A moved baseline is rebuilt on the current
+file and re-verified, never forced.
+
+Device shell (Linux VM on tuf-boi): export TMPDIR=$HOME/mnt/songnodes/plan/agent-queue/.runtime/sandboxes
+before verify/precheck (the VM temp disk is too small). TypeScript 7 needs its Linux binary
+frontend/node_modules/@typescript/typescript-linux-x64 (installed 2026-11-14, same version).
+Each verify takes about 40 s; run one per shell call (calls stop at 180 s). The user's operator Git
 commit/sync request is separate from worker permissions. No deployment, DB action,
 provider edit, push, merge or automatic worker/schedule is enabled.
 
@@ -60,6 +68,9 @@ never edit after partial acquisition. Folder locks exclude descendants; independ
 files can run concurrently. Claims snapshot baselines and shared-source versions.
 Use an isolated worktree; preserve unrelated dirty files. Heartbeat every 10 minutes.
 Write complete proposals under reports/RUN/proposal using repository-relative paths.
+Run `precheck` on the proposal until it passes (exit 0); `stage` refuses proposals that
+were not prechecked, failed, or changed afterwards. Do not stop after writing a proposal.
+Test only in isolated copies (precheck, a temp worktree), never by editing the live tree.
 Stage copies immutable evidence and returns tasks to Waiting. Record actual tests,
 git rollback reference and exact remainder. Two failed fix attempts stop the run.
 Never describe a staged result as applied or deployed.
@@ -109,3 +120,21 @@ python -X utf8 plan/agent-queue/tools/queue.py git-check
 
 Before pushing follow AGENTS.md: fetch main, inspect deletions, update from main
 and rerun checks. The queue supplies no exception to that protocol.
+
+## Queue Monitor refresh (every run, last step)
+
+The Queue Monitor is the Dashboard artifact https://claude.ai/artifact/3bm8Kqg3SPBuMD9WHiH24L (slug 150cc260-fb70-426a-9d83-3cbd4fd65f35). It is the current queue page. The older "SongNodes Work Queue" page (https://claude.ai/artifact/3LMop46JU62EFnuf1ZBmQB, from plan/work-queue-2026-10-30) is retired: do not refresh it and do not add tasks to that older system.
+
+It reads four CSV files that nothing updates by itself. After your queue work is finished (and before you stop), refresh it:
+
+1. From the repo root: `python3 -X utf8 plan/agent-queue/tools/monitor_refresh.py`. It reads the ignored runtime state read-only and writes queue_tasks.csv, events.csv, runs.csv and locks.csv to plan/agent-queue/monitor/ (ignored; derived data). It counts complete tasks two ways (task states and completed events) and exits 3 if they disagree: report that in your run note and still publish.
+2. Stage the four files with the device stage tool, then `upload_asset` them to the monitor slug.
+3. `db_write` op `update` on `datasets/tasks`, `datasets/events`, `datasets/runs` and `datasets/locks`: set `source.url` to the new `/_blob/...` url, pass `ifVersion` from `db_get`, and set `updated` (at, by) and `edit` (via claude, at). The tasks file is `queue_tasks.csv`.
+4. Check by `db_get` of each dataset that `source.url` is the new blob, and compare the monitor's complete and open counts with the script's printed counts.
+5. If a write is refused ("needs an editor"), do not retry. Note it in your run report under For Markus.
+
+The refresh publishes nothing but those four datasets. Never write a design system version number into any queue row or task text; say "the current design system".
+
+## Human lane (Q018)
+
+Role `human` has no permissions. Never claim, stage or verify with `--role human`. Tasks with role `human` are questions or steps for Markus; list the open ones in your report under For Markus, do not answer or close them, and let anything that depends on them wait. Design questions for Markus go to him as a rendered options page; that page is human housekeeping, not a doc (docs/CATEGORIES.md, category H).

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Title, Button, Card } from './ds';
+import { Title, Button } from './ds';
 import { SnIcon } from '../lib/songnodes';
 import { API_BASE_URL } from '../lib/apiBase';
 
@@ -298,7 +298,12 @@ const OAuthCallback: React.FC = () => {
   }, []);
 
   return (
-    <main className="sn-page-auth" id="main" tabIndex={-1}>
+    <main
+      className="sn-page-auth"
+      id="main"
+      tabIndex={-1}
+      aria-busy={status === 'processing' ? 'true' : undefined}
+    >
       {status === 'error' ? (
         <section className="sn-error-state sn-error-state--panel" data-status="bad" aria-labelledby="oauth-error-title" role="alert">
           <div className="sn-error-state__icon" aria-hidden="true"><SnIcon name="alert-triangle" size={20} /></div>
@@ -314,9 +319,13 @@ const OAuthCallback: React.FC = () => {
           </div>
         </section>
       ) : (
-        <Card>
+        <section
+          className="sn-card sn-page-auth__card"
+          aria-labelledby="oauth-status-title"
+          aria-busy={status === 'processing' ? 'true' : undefined}
+        >
           <div className="sn-card__head">
-            <Title size="title-s" as="h1" className="sn-card__primary">
+            <Title size="title-s" as="h1" className="sn-card__primary" id="oauth-status-title">
               {status === 'processing' && `Connecting: ${service.charAt(0).toUpperCase() + service.slice(1)}`}
               {status === 'success' && `${service.charAt(0).toUpperCase() + service.slice(1)}: Connected`}
             </Title>
@@ -324,11 +333,11 @@ const OAuthCallback: React.FC = () => {
 
           <div className="sn-card__body">
             {status === 'processing' && (
-              <div className="sn-spinner" aria-busy="true" aria-label="Processing"></div>
+              <span className="sn-spinner" aria-hidden="true" />
             )}
             <p className="body">{message}</p>
           </div>
-        </Card>
+        </section>
       )}
     </main>
   );

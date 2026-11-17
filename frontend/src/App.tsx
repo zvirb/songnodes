@@ -10,7 +10,7 @@ import { getAppRoutes } from './routes/registry';
 const OAuthCallback = React.lazy(() => import('./components/OAuthCallback'));
 
 const PageLoading: React.FC = () => (
-  <main className="sn-page__main" id="main">
+  <main className="sn-page__main" id="main" tabIndex={-1} aria-busy="true">
     <div className="sn-loading-state" aria-busy="true" data-slow>
       <div className="sn-card sn-loading-state__tiles" style={{ minHeight: '120px' }}>
         <span className="sn-skel" style={{ '--w': '40%', '--h': '1.75rem' } as React.CSSProperties} />
@@ -34,8 +34,9 @@ const App: React.FC = () => {
           <Route path="/callback/:service" element={<OAuthCallback />} />
           <Route element={<AppShell />}>
             {routes.map((route, i) => {
+              const suspended = <React.Suspense fallback={<PageLoading />}>{route.element}</React.Suspense>;
               if (route.path === '/') {
-                return <Route key="index" index element={route.element} />;
+                return <Route key="index" index element={suspended} />;
               }
               // Strip leading slash if any because it's a child route,
               // though react-router v6 supports absolute paths in nested routes as well.
@@ -44,7 +45,7 @@ const App: React.FC = () => {
               if (childPath.startsWith('/') && childPath !== '/') {
                 childPath = childPath.slice(1);
               }
-              return <Route key={route.path || i} path={childPath} element={route.element} />;
+              return <Route key={route.path || i} path={childPath} element={suspended} />;
             })}
           </Route>
         </Routes>

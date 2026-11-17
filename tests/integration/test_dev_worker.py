@@ -153,7 +153,7 @@ class WorkerEndToEnd(unittest.TestCase):
         # The worker chains projection and enrichment follow-ups by itself.
         def projection_caught_up():
             projected = sql(f"SELECT count(*) FROM projection_tracks WHERE track_title LIKE '%{self.marker}'").strip()
-            graph_drained = sql(f"SELECT count(*) FROM outbox_events WHERE payload::text LIKE '%{self.marker}%' AND seq > COALESCE((SELECT head FROM outbox_consumers WHERE consumer = 'graph_projection'), 0)").strip() == '0'
+            graph_drained = sql(f"SELECT count(*) FROM outbox_events WHERE payload::text LIKE '%{self.marker}%' AND id > COALESCE((SELECT last_id FROM outbox_consumers WHERE consumer = 'graph_projection'), 0)").strip() == '0'
             if projected == '3' and graph_drained:
                 return True
             return False

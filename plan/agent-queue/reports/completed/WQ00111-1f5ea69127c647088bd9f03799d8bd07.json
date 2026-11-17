@@ -1,0 +1,78 @@
+{
+  "outputs": [
+    {
+      "path": "frontend/src/components/TargetTracksManager.css",
+      "proposed": "4572b6b779e3baeac094c7e56111047722c891ad51a58ea3659a72edc8f36d57",
+      "baseline": "3640496883f2492b6ede73f1a37e3c1b2a2e426be5e74b2002d4d43a97053351"
+    },
+    {
+      "path": "frontend/src/pages/ScraperProgressPage.css",
+      "proposed": "bebd6a6c3ee6ce0822a8a8f15db6a38f7d6960969f167d016edd00346dae20df",
+      "baseline": null
+    },
+    {
+      "path": "frontend/src/pages/ScraperProgressPage.tsx",
+      "proposed": "d15578e241e28f006a791043fdce767e6b4d1f25e54a946465d787fdb5b19010",
+      "baseline": "957ef8f96655ba0f3d91109b82365bb471edb628df95572edc9de154a5d14b96"
+    }
+  ],
+  "review": "Integrator criteria review (Sonnet-37-int, not the builder). Reviewed: (1) Dead jobs last-error cell: Tailwind truncate class and inline maxWidth 300px replaced by .sn-last-error (40ch, ellipsis, nowrap, full text still in title) in new ScraperProgressPage.css - checked by reading the diff. (2) Contrast: stage Clock icon on a surface-2 card changed from fg-3 to fg-2 and marked aria-hidden; .ttm__id changed fg-3 to fg-2 (03-colour.md: fg-3 only on bg/surface-1) - checked by reading the diff against the colour card. (3) Button names: icon-only and OverflowMenu triggers in TargetTracksManager already carry labels and the Sync svg aria-label from the brief no longer exists on main, so no change needed - checked by reading source. Design-system strict check and tsc passed in verify. NOT RUN: axe in chromium, firefox and webkit on /sources/targets and /pipeline, dark and light (no Playwright browsers; VM session disk full), vitest, oxlint, vite build, visual check. The axe criterion is therefore unverified; the e2e task WQ00171 (depends on this one) must check it live.",
+  "reviewer": "Sonnet-37-int-20261115-2247",
+  "verification": {
+    "proposal": "14a304f56a7f4682b52a4aad171c816f",
+    "agent": "Sonnet-37-int-20261115-2247",
+    "claim": "ec9a427bd8134690af6b52b825c5b340",
+    "tested": "2026-11-15T22:45:12.758705+00:00",
+    "sandbox": "/tmp/snq/8aaf9f34a1",
+    "results": [
+      {
+        "command": [
+          "/usr/bin/python3",
+          "scripts/check_design_system.py",
+          "--check",
+          "--strict"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "node",
+          "frontend/node_modules/typescript/bin/tsc",
+          "--noEmit",
+          "-p",
+          "frontend"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "passed": true,
+    "outputs": [
+      {
+        "path": "frontend/src/components/TargetTracksManager.css",
+        "proposed": "4572b6b779e3baeac094c7e56111047722c891ad51a58ea3659a72edc8f36d57",
+        "baseline": "3640496883f2492b6ede73f1a37e3c1b2a2e426be5e74b2002d4d43a97053351"
+      },
+      {
+        "path": "frontend/src/pages/ScraperProgressPage.css",
+        "proposed": "bebd6a6c3ee6ce0822a8a8f15db6a38f7d6960969f167d016edd00346dae20df",
+        "baseline": null
+      },
+      {
+        "path": "frontend/src/pages/ScraperProgressPage.tsx",
+        "proposed": "d15578e241e28f006a791043fdce767e6b4d1f25e54a946465d787fdb5b19010",
+        "baseline": "957ef8f96655ba0f3d91109b82365bb471edb628df95572edc9de154a5d14b96"
+      }
+    ],
+    "shared": {
+      "frontend/src/lib/songnodes.tsx": "9eebab0582b5a39dac45527afd329ccc29e32c441a369c8898dd125f9093848d",
+      "frontend/src/styles/design-system/bundle.css": "d1c142e62dc6eff45dae50113463f1f1094bf8cf911f0d3d08489db2bf9843b1",
+      "frontend/src/styles/design-system/tokens.css": "55b2959e7101b6eedf6f112a0669464dce8ba365c23377adb572844c55617b43"
+    }
+  },
+  "applied": "2026-11-15T22:45:33.047331+00:00",
+  "deployed": false
+}

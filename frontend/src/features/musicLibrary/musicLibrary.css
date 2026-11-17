@@ -29,10 +29,57 @@
 /* The MusicBrainz info flag toggles the coverage panel: a button that looks like the TrackCell flag. */
 .sn-ml-flag-toggle {
   flex: none;
-  padding: 0;
+  justify-content: center;
+  min-height: var(--space-6);
+  min-width: var(--space-6);
+  padding: 0 var(--space-1);
   border: 0;
+  border-radius: var(--radius-chip);
   background: none;
   cursor: pointer;
 }
 .sn-ml-flag-toggle:hover { text-decoration: underline; }
 .sn-ml-flag-toggle:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.sn-track-cell__links .sn-link--ext {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--space-6);
+  min-width: var(--space-6);
+}
+
+.sn-page-log {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.sn-page-log .sn-tablebox {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+@media (max-width: 599px) {
+  .sn-data-table--stack .sn-track-cell,
+  .sn-data-table--stack .sn-track-cell__title,
+  .sn-data-table--stack .sn-track-cell__name,
+  .sn-data-table--stack .sn-track-cell__artist {
+    max-width: 100%;
+    min-width: 0;
+  }
+  .sn-data-table--stack .sn-track-cell__name,
+  .sn-data-table--stack .sn-track-cell__artist {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .sn-data-table--stack .sn-track-cell__meta {
+    flex-wrap: wrap;
+    row-gap: var(--space-1);
+    overflow: visible;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .sn-data-table--stack .sn-track-cell__meta > .sn-track-cell__mix {
+    max-width: 100%;
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "outputs": [
+    {
+      "path": "frontend/src/styles/app.css",
+      "proposed": "77db85fba25bfa8ddcc36fc147cfce28eae19cb92aed30aebbcece15342d9804",
+      "baseline": "4495bd89748006ca4edae0b409f6b60d2038888cb641a24840b0f43b18bb6d7a"
+    }
+  ],
+  "review": "Independent criteria review: html becomes the scroll container (overflow-x hidden, overflow-y auto) and body overflow visible, so position:sticky .sn-app-header stays at top:0 while scrolling (repro headerTop -500 -> 0). Verify passed under this claim. Applied per Markus 14 Nov 2026 'always go ahead and apply' (Q014).",
+  "reviewer": "integrator-apply-wq00003",
+  "verification": {
+    "proposal": "85b0bd5018aa4d64a21f5c9ad6475308",
+    "agent": "integrator-apply-wq00003",
+    "claim": "40f980c996c04d58aff97f5706bce604",
+    "tested": "2026-11-14T09:59:14.322868+00:00",
+    "sandbox": "/tmp/snq/b757c52cc3",
+    "results": [
+      {
+        "command": [
+          "/usr/bin/python3",
+          "scripts/check_design_system.py",
+          "--check",
+          "--strict"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "node",
+          "frontend/node_modules/typescript/bin/tsc",
+          "--noEmit",
+          "-p",
+          "frontend"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "passed": true,
+    "outputs": [
+      {
+        "path": "frontend/src/styles/app.css",
+        "proposed": "77db85fba25bfa8ddcc36fc147cfce28eae19cb92aed30aebbcece15342d9804",
+        "baseline": "4495bd89748006ca4edae0b409f6b60d2038888cb641a24840b0f43b18bb6d7a"
+      }
+    ],
+    "shared": {
+      "frontend/src/lib/songnodes.tsx": "9eebab0582b5a39dac45527afd329ccc29e32c441a369c8898dd125f9093848d",
+      "frontend/src/styles/design-system/bundle.css": "d1c142e62dc6eff45dae50113463f1f1094bf8cf911f0d3d08489db2bf9843b1",
+      "frontend/src/styles/design-system/tokens.css": "55b2959e7101b6eedf6f112a0669464dce8ba365c23377adb572844c55617b43"
+    }
+  },
+  "applied": "2026-11-14T09:59:17.462852+00:00",
+  "deployed": false
+}

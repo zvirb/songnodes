@@ -5,7 +5,8 @@
 
 /* The legacy stylesheets locked the page to the viewport for the old full-screen
    DJ interface. Pages now scroll; only the graph route fills the viewport. */
-html, body { height: auto; min-height: 100%; overflow: auto; }
+html { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: auto; }
+body { height: auto; min-height: 100%; overflow: visible; }
 body { position: static; background: var(--bg); color: var(--fg); font-family: var(--font-body); }
 #root { height: auto; min-height: 100vh; width: auto; overflow: visible; isolation: isolate; }
 svg.sn-icon { display: inline-block; }

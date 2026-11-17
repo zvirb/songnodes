@@ -1,0 +1,58 @@
+{
+  "outputs": [
+    {
+      "path": "frontend/src/pages/ScraperProgressPage.tsx",
+      "proposed": "957ef8f96655ba0f3d91109b82365bb471edb628df95572edc9de154a5d14b96",
+      "baseline": "957ef8f96655ba0f3d91109b82365bb471edb628df95572edc9de154a5d14b96"
+    }
+  ],
+  "review": "Independent criteria review: ScraperProgressPage.tsx (/pipeline main and error branches via PageHeader) and RunsPage (/pipeline/runs via <h1 className='sn-title title-l'>) render one visible <h1> across all states; lazy Suspense race resolved upstream by WQ00105. Pipeline/runs Vitest (8 files, 51/51), oxlint, verify check_design_system strict & tsc passed.",
+  "reviewer": "integrator-w2-pipeline",
+  "verification": {
+    "proposal": "fe52093b88ad47f7b7f3a677c3e29f4d",
+    "agent": "integrator-w2-pipeline",
+    "claim": "3d70a48337ac46b2a4076da765ac2d78",
+    "tested": "2026-11-14T21:52:46.479933+00:00",
+    "sandbox": "C:\\Users\\marku\\AppData\\Local\\Temp\\snq\\1089cba898",
+    "results": [
+      {
+        "command": [
+          "C:\\Users\\marku\\AppData\\Local\\Microsoft\\WindowsApps\\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\\python.exe",
+          "scripts/check_design_system.py",
+          "--check",
+          "--strict"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "node",
+          "frontend/node_modules/typescript/bin/tsc",
+          "--noEmit",
+          "-p",
+          "frontend"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "passed": true,
+    "outputs": [
+      {
+        "path": "frontend/src/pages/ScraperProgressPage.tsx",
+        "proposed": "957ef8f96655ba0f3d91109b82365bb471edb628df95572edc9de154a5d14b96",
+        "baseline": "957ef8f96655ba0f3d91109b82365bb471edb628df95572edc9de154a5d14b96"
+      }
+    ],
+    "shared": {
+      "frontend/src/lib/songnodes.tsx": "9eebab0582b5a39dac45527afd329ccc29e32c441a369c8898dd125f9093848d",
+      "frontend/src/styles/design-system/bundle.css": "d1c142e62dc6eff45dae50113463f1f1094bf8cf911f0d3d08489db2bf9843b1",
+      "frontend/src/styles/design-system/tokens.css": "55b2959e7101b6eedf6f112a0669464dce8ba365c23377adb572844c55617b43"
+    }
+  },
+  "applied": "2026-11-14T21:52:48.463821+00:00",
+  "deployed": false
+}

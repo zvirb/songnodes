@@ -1,0 +1,7 @@
+{
+  "*": "/audit-nonexistent-page",
+  "/callback/:service": "/callback/reddit",
+  "/settings/:settingId": "/settings/theme",
+  "/track/:id": "/track/f0100bc7-a9f6-4b53-94f1-f3d35ed73905",
+  "/tracks/:id": "/tracks/f0100bc7-a9f6-4b53-94f1-f3d35ed73905"
+}

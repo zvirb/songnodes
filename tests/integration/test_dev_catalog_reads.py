@@ -141,7 +141,14 @@ class CatalogReads(unittest.TestCase):
         self.assertEqual(row['track_count'], 2)
         self.assertIsNone(row['data_source'])  # There is no unique primary provider.
         self.assertEqual(row['data_sources'], ['fixture-a', 'fixture-b'])
-        listed = self.get('/api/v1/artists')
+        listed = []
+        offset = 0
+        while True:
+            page = self.get('/api/v1/artists?' + urlencode({'limit': 500, 'offset': offset}))
+            listed.extend(page)
+            if any(item['artist_id'] == self.ids['a1'] for item in page) or len(page) < 500:
+                break
+            offset += 500
         self.assertTrue(any(item['artist_id'] == self.ids['a1'] for item in listed))
         rows = self.get('/api/v1/artists/search?' + urlencode({'query': f'Alias {self.marker}'}))
         self.assertEqual([item['artist_id'] for item in rows], [self.ids['a1']])

@@ -1,7 +1,27 @@
-<!-- @dsCard group="Data" height=300 subtitle="Work packages in one wave: code, one-job title, state as a word and pill, dependency; blocked rows name the blocker" -->
+<!-- @dsCard group="Data" height=560 subtitle="Work packages in one wave: code, one-job title, state as a word and pill, dependency; blocked rows name the blocker. Queue monitor tiles: state is the fill, origin the bottom edge and letter, legend in words" -->
 <!doctype html>
 <html>
-<head><meta charset="utf-8"><title>WorkQueue — preview</title></head>
+<head><meta charset="utf-8"><title>WorkQueue — preview</title>
+<style>
+  /* Queue monitor preview: tokens only (WKQ-002, WKQ-003). Local wkq- classes; no sn- class is restyled. */
+  .wkq-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+  .wkq-head h3 { margin: 0; }
+  .wkq-count { color: var(--fg-2); }
+  .wkq-bar { display: flex; height: var(--space-2); border-radius: var(--radius-pill); overflow: hidden; background: var(--progress-track); }
+  .wkq-bar span { display: block; height: 100%; }
+  .wkq-tiles { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+  .wkq-tile { box-sizing: border-box; width: var(--control-sm); height: var(--control-sm); border-radius: var(--radius-chip); border: 0; border-bottom: 4px solid var(--wkq-origin); padding: 0; display: grid; place-items: center; font: var(--fw-data-strong) var(--fs-data-strong)/1 var(--font-data); color: var(--queue-tile-ink); cursor: pointer; }
+  .wkq-tile[data-state="done"] { background: var(--queue-done); }
+  .wkq-tile[data-state="ready"] { background: var(--queue-ready); }
+  .wkq-tile[data-state="running"] { background: var(--queue-running); }
+  .wkq-tile[data-state="waiting"] { background: var(--surface-1); border: var(--stroke-mark) dashed var(--queue-waiting); border-bottom: 4px solid var(--wkq-origin); color: var(--fg-2); }
+  .wkq-tile:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .wkq-legend { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); font: var(--fw-body-s) var(--fs-body-s)/var(--lh-body-s) var(--font-body); color: var(--fg-2); }
+  .wkq-key { display: inline-flex; align-items: center; gap: var(--space-1); }
+  .wkq-sw { box-sizing: border-box; width: var(--space-4); height: var(--space-4); border-radius: var(--radius-chip); }
+  .wkq-sw--edge { height: var(--space-1); }
+</style>
+</head>
 <body>
 <div class="sn-preview" id="root">
   <div class="sn-checklist-summary" id="sum"></div>
@@ -10,6 +30,13 @@
     <thead><tr><th scope="col">Code</th><th scope="col">Package</th><th scope="col">State</th><th scope="col">Depends on</th></tr></thead>
     <tbody id="rows"></tbody>
   </table>
+  <div class="sn-preview__label">Queue monitor: tiles by state and origin</div>
+  <section class="sn-card wkq-group" aria-labelledby="wkq-h">
+    <div class="wkq-head"><h3 class="sn-title title-s" id="wkq-h"><span class="sn-lead">Folder:</span> songnodes</h3><span class="sn-mono wkq-count" id="wkq-count"></span></div>
+    <div class="wkq-bar" id="wkq-bar" role="img"></div>
+    <div class="wkq-tiles" id="wkq-tiles"></div>
+  </section>
+  <div class="wkq-legend" id="wkq-legend"></div>
 </div>
 <script>
   var S = window.SongNodes;
@@ -24,6 +51,37 @@
     return '<tr><td class="sn-mono">' + S.esc(r[0]) + "</td><td>" + S.esc(r[1]) + '</td><td><span class="sn-pill sn-status-pill" data-status="' + r[2] + '">' + r[3] + '</span></td><td class="sn-mono">' + (r[4] ? S.esc(r[4]) : "–") + "</td></tr>";
   }).join("");
   document.getElementById("sum").innerHTML = '<span data-state="pass"><span class="sn-checklist-summary__n">2</span> merged</span><span data-state="warn"><span class="sn-checklist-summary__n">1</span> in review</span><span data-state="pending"><span class="sn-checklist-summary__n">2</span> not started</span>';
+</script>
+<script>
+  (function () {
+    /* Queue monitor tiles: state is the fill, origin the bottom edge and letter; every tile is named in words (WKQ-004). */
+    var S = window.SongNodes;
+    var ORIGIN = { original: ["origin-original", "", "Original plan"], split: ["origin-split", "S", "Split"], followup: ["origin-followup", "F", "Follow-up"], planner: ["origin-planner", "P", "Planner"], chat: ["origin-chat", "C", "Chat"] };
+    var STATE = { done: ["queue-done", "Done"], running: ["queue-running", "In progress"], ready: ["queue-ready", "Ready"], waiting: ["queue-waiting", "Waiting"] };
+    var tasks = [
+      ["Q-101", "done", "original", "Import the crate"], ["Q-102", "done", "original", "Tag the pillars"], ["Q-103", "done", "split", "Fix the energy gaps"],
+      ["Q-104", "done", "followup", "Check the rotation"], ["Q-105", "running", "original", "Build the Buy list page"], ["Q-106", "running", "chat", "Add the queue monitor"],
+      ["Q-107", "ready", "planner", "Publish the tokens"], ["Q-108", "ready", "original", "Rebuild the sheets"], ["Q-109", "waiting", "original", "Sync the app"],
+      ["Q-110", "waiting", "followup", "Retest the previews"], ["Q-111", "waiting", "split", "Refit the load budget"], ["Q-112", "waiting", "chat", "Answer Q30"]
+    ];
+    var n = { done: 0, running: 0, ready: 0, waiting: 0 };
+    document.getElementById("wkq-tiles").innerHTML = tasks.map(function (t) {
+      n[t[1]]++;
+      var o = ORIGIN[t[2]], name = t[0] + ", " + STATE[t[1]][1].toLowerCase() + ": " + t[3];
+      return '<button type="button" class="wkq-tile" data-state="' + t[1] + '" style="--wkq-origin: var(--' + o[0] + ')" aria-label="' + S.esc(name) + '" title="' + S.esc(name) + '">' + (o[1] ? '<span aria-hidden="true">' + o[1] + "</span>" : "") + "</button>";
+    }).join("");
+    document.getElementById("wkq-count").textContent = n.done + " done · " + tasks.length + " live";
+    var bar = document.getElementById("wkq-bar");
+    bar.setAttribute("aria-label", n.done + " done, " + n.running + " in progress, " + n.ready + " ready, " + n.waiting + " waiting");
+    bar.innerHTML = ["done", "running", "ready", "waiting"].map(function (k) {
+      var fill = k === "waiting" ? "var(--surface-3)" : "var(--" + STATE[k][0] + ")";
+      return '<span style="width:' + (100 * n[k] / tasks.length) + "%;background:" + fill + '"></span>';
+    }).join("");
+    var keys = ["done", "running", "ready"].map(function (k) { return '<span class="wkq-key"><span class="wkq-sw" style="background: var(--' + STATE[k][0] + ')" aria-hidden="true"></span>' + STATE[k][1] + "</span>"; });
+    keys.push('<span class="wkq-key"><span class="wkq-sw" style="background: var(--surface-1); border: var(--stroke-mark) dashed var(--queue-waiting)" aria-hidden="true"></span>Waiting</span>');
+    Object.keys(ORIGIN).forEach(function (k) { var o = ORIGIN[k]; keys.push('<span class="wkq-key"><span class="wkq-sw wkq-sw--edge" style="background: var(--' + o[0] + ')" aria-hidden="true"></span>' + o[2] + (o[1] ? " (" + o[1] + ")" : "") + "</span>"); });
+    document.getElementById("wkq-legend").innerHTML = keys.join("");
+  })();
 </script>
 </body>
 </html>

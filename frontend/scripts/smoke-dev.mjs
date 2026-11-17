@@ -43,7 +43,7 @@ try {
   const page = await browser.newPage();
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
-  await page.goto('http://127.0.0.1:3006/', { waitUntil: 'networkidle' });
+  await page.goto('http://127.0.0.1:3006/graph', { waitUntil: 'networkidle' });
   await page.locator('canvas').first().waitFor({ state: 'visible', timeout: 20000 });
   assert.equal(await page.getByText('Error Loading SongNodes', { exact: true }).count(), 0);
   assert.deepEqual(errors, [], 'Unexpected browser exceptions');

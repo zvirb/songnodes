@@ -239,8 +239,8 @@ export const BuyListPage: React.FC = () => {
   );
 
   return (
-    <main className="sn-page-log sn-page__main" id="main" tabIndex={-1}>
-      <div className="sn-page-log__section">
+    <main className="sn-page-log sn-page__main" id="main" tabIndex={-1} style={{ minWidth: 0 }}>
+      <div className="sn-page-log__section" style={{ minWidth: 0 }}>
         {/* Navigation back to library */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
           <Link
@@ -311,7 +311,7 @@ export const BuyListPage: React.FC = () => {
         {/* Filters */}
         <div style={{ display: 'flex', gap: 'var(--space-4)', margin: 'var(--space-4) 0', flexWrap: 'wrap', alignItems: 'center' }}>
           {/* Rotation filter chips */}
-          <div style={{ display: 'flex', gap: 'var(--space-1)', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-1)', alignItems: 'center', flexWrap: 'wrap' }}>
             <span className="caption" style={{ color: 'var(--fg-3)', marginRight: 'var(--space-1)' }}>Rotation:</span>
             {[
               { id: 'all', label: `All (${tracks.filter(t => !t.isBought).length})` },
@@ -330,7 +330,7 @@ export const BuyListPage: React.FC = () => {
           </div>
 
           {/* Store filter chips */}
-          <div style={{ display: 'flex', gap: 'var(--space-1)', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-1)', alignItems: 'center', flexWrap: 'wrap' }}>
             <span className="caption" style={{ color: 'var(--fg-3)', marginRight: 'var(--space-1)' }}>Store:</span>
             {[
               { id: 'all', label: 'All stores' },

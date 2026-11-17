@@ -1,0 +1,58 @@
+{
+  "outputs": [
+    {
+      "path": "frontend/tests/design-system-route-examples.json",
+      "proposed": "748dfe5e618dd6e6dd0074dc2b80291468444031c8803df2c7fade5b16b24f8d",
+      "baseline": null
+    }
+  ],
+  "review": "Independent criteria review: adds concrete examples for the 5 parameterised routes (*, /callback/:service, /settings/:settingId, /track/:id, /tracks/:id) so the audit can cover them; data file only. Verify passed under this claim. Applied per Markus 14 Nov 2026 'always go ahead and apply' (Q014).",
+  "reviewer": "integrator-apply-wq00100",
+  "verification": {
+    "proposal": "81a4db1cee4c4cfe9b4db4696f63b68c",
+    "agent": "integrator-apply-wq00100",
+    "claim": "827c60973c144baf9153ab8587cb397a",
+    "tested": "2026-11-14T09:58:21.582245+00:00",
+    "sandbox": "/tmp/snq/351fe0cc76",
+    "results": [
+      {
+        "command": [
+          "/usr/bin/python3",
+          "scripts/check_design_system.py",
+          "--check",
+          "--strict"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "node",
+          "frontend/node_modules/typescript/bin/tsc",
+          "--noEmit",
+          "-p",
+          "frontend"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "passed": true,
+    "outputs": [
+      {
+        "path": "frontend/tests/design-system-route-examples.json",
+        "proposed": "748dfe5e618dd6e6dd0074dc2b80291468444031c8803df2c7fade5b16b24f8d",
+        "baseline": null
+      }
+    ],
+    "shared": {
+      "frontend/src/lib/songnodes.tsx": "9eebab0582b5a39dac45527afd329ccc29e32c441a369c8898dd125f9093848d",
+      "frontend/src/styles/design-system/bundle.css": "d1c142e62dc6eff45dae50113463f1f1094bf8cf911f0d3d08489db2bf9843b1",
+      "frontend/src/styles/design-system/tokens.css": "55b2959e7101b6eedf6f112a0669464dce8ba365c23377adb572844c55617b43"
+    }
+  },
+  "applied": "2026-11-14T09:58:24.298995+00:00",
+  "deployed": false
+}

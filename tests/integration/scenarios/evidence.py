@@ -24,6 +24,10 @@ async def row(conn, track_id):
 
 async def main():
     conn = await connect()
+    if await conn.fetchval('SELECT count(*) FROM silver_enriched_tracks') > 0:
+        print('SCENARIO-SKIP catalog is not empty')
+        await conn.close()
+        return
     try:
         # --- BPM / key consensus with a genre-justified fold and near-agreement dissent
         t = await track(conn, 'consensus', genre=['House'])

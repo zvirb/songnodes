@@ -1,0 +1,368 @@
+{
+  "outputs": [
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/home-dark-desktop-chromium-linux.png",
+      "proposed": "1c8ee7c67295e4af73751c0f4f8a6d92d296e6c34a753712fe61c885bd3f0f8b",
+      "baseline": "1c8ee7c67295e4af73751c0f4f8a6d92d296e6c34a753712fe61c885bd3f0f8b"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/home-dark-phone-chromium-linux.png",
+      "proposed": "ae33dbf535d86972e174451839e5f76e978cc95bc3390d3348ca3b4d8996d0a4",
+      "baseline": "ae33dbf535d86972e174451839e5f76e978cc95bc3390d3348ca3b4d8996d0a4"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/home-light-desktop-chromium-linux.png",
+      "proposed": "19670961dbe3857c6d8b793db55fa8e87d24f2b55d1a3827adcf66efe37ebebb",
+      "baseline": "19670961dbe3857c6d8b793db55fa8e87d24f2b55d1a3827adcf66efe37ebebb"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/home-light-phone-chromium-linux.png",
+      "proposed": "ba4945eb9425fcd09220395955ad0f69041853e59ce99d0263b1eadba9459b53",
+      "baseline": "ba4945eb9425fcd09220395955ad0f69041853e59ce99d0263b1eadba9459b53"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/library-dark-desktop-chromium-linux.png",
+      "proposed": "5022f9116dcdf8aedac44835e534789f197d3759ca8fa694eccffb7609d88934",
+      "baseline": "5022f9116dcdf8aedac44835e534789f197d3759ca8fa694eccffb7609d88934"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/library-dark-phone-chromium-linux.png",
+      "proposed": "ea35b99277887710f07b3f998034319ef7ae50188897c45db0ed7e233393ac43",
+      "baseline": "ea35b99277887710f07b3f998034319ef7ae50188897c45db0ed7e233393ac43"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/library-light-desktop-chromium-linux.png",
+      "proposed": "3cdd3589a8d5c39c284a6fd5befdb553c255cd6da947683c2249f9c51c4a4b83",
+      "baseline": "3cdd3589a8d5c39c284a6fd5befdb553c255cd6da947683c2249f9c51c4a4b83"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/library-light-phone-chromium-linux.png",
+      "proposed": "a3f20d341325496b2c999290a470fb6fb348c055ae09ef63b3ce9ca5d636fb98",
+      "baseline": "a3f20d341325496b2c999290a470fb6fb348c055ae09ef63b3ce9ca5d636fb98"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/nav-drawer-dark-desktop-chromium-linux.png",
+      "proposed": "643fc7e10653e871a3cd1845cfdbe8eebb0301f44542f1e630ac3ed3dd194fe5",
+      "baseline": "643fc7e10653e871a3cd1845cfdbe8eebb0301f44542f1e630ac3ed3dd194fe5"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/nav-drawer-dark-phone-chromium-linux.png",
+      "proposed": "1865d9888a9fc1e3e44a75264dbf913c3affaa649053818bccb0c987ea645b5a",
+      "baseline": "1865d9888a9fc1e3e44a75264dbf913c3affaa649053818bccb0c987ea645b5a"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/nav-drawer-light-desktop-chromium-linux.png",
+      "proposed": "5da19934b26da990b7f811dcd1f0406439af49b380c8acc94a648c6bf90aea0d",
+      "baseline": "5da19934b26da990b7f811dcd1f0406439af49b380c8acc94a648c6bf90aea0d"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/nav-drawer-light-phone-chromium-linux.png",
+      "proposed": "25738131d7a49e89c113041569377058de6cf67fdf52fed8e007b17d00bad25c",
+      "baseline": "25738131d7a49e89c113041569377058de6cf67fdf52fed8e007b17d00bad25c"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/not-found-dark-desktop-chromium-linux.png",
+      "proposed": "a6b92b0773ceb4f168558729293c15706c9347610678815f51e6ee12170548be",
+      "baseline": "a6b92b0773ceb4f168558729293c15706c9347610678815f51e6ee12170548be"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/not-found-dark-phone-chromium-linux.png",
+      "proposed": "4c2d1b113f4446c29e173326096c0d78f05a729821d3e06d5f2ece3b7d13575a",
+      "baseline": "4c2d1b113f4446c29e173326096c0d78f05a729821d3e06d5f2ece3b7d13575a"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/not-found-light-desktop-chromium-linux.png",
+      "proposed": "84e416c7a54cc063e26878c588907ff896b5265070658d6e450c9cc48ee80c20",
+      "baseline": "84e416c7a54cc063e26878c588907ff896b5265070658d6e450c9cc48ee80c20"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/not-found-light-phone-chromium-linux.png",
+      "proposed": "1c99f8f7d3b453a4c399f6cb86379b2fa29bdac14af43acc10be33fe5e93dd86",
+      "baseline": "1c99f8f7d3b453a4c399f6cb86379b2fa29bdac14af43acc10be33fe5e93dd86"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/pipeline-dark-desktop-chromium-linux.png",
+      "proposed": "cd330df397eb770342e43901895ad78a5e63d2d32899389c54e4f96c8f5e19dc",
+      "baseline": "cd330df397eb770342e43901895ad78a5e63d2d32899389c54e4f96c8f5e19dc"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/pipeline-dark-phone-chromium-linux.png",
+      "proposed": "fb59a86262f9fd48dd7a8f9ca220b2ad4ff433f6541d3dcc00c2b730ed742292",
+      "baseline": "fb59a86262f9fd48dd7a8f9ca220b2ad4ff433f6541d3dcc00c2b730ed742292"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/pipeline-light-desktop-chromium-linux.png",
+      "proposed": "803221b8b5e14bd1854d25f57fdc9b70f7e9d0b4b72443f75fde0f7f27f4d3c6",
+      "baseline": "803221b8b5e14bd1854d25f57fdc9b70f7e9d0b4b72443f75fde0f7f27f4d3c6"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/pipeline-light-phone-chromium-linux.png",
+      "proposed": "6e6d471270329b24f865b2fd89bcfb848354a2753a140e12d741726d5635af28",
+      "baseline": "6e6d471270329b24f865b2fd89bcfb848354a2753a140e12d741726d5635af28"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/planned-module-dark-desktop-chromium-linux.png",
+      "proposed": "c188dc48ff240ed8e06a3a80abf15d4eaea340f0418fc0169ec9e33cb6869179",
+      "baseline": "c188dc48ff240ed8e06a3a80abf15d4eaea340f0418fc0169ec9e33cb6869179"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/planned-module-dark-phone-chromium-linux.png",
+      "proposed": "2b9f389889f69eec8c16ecbbf30fcd7fd843131bc56ef07658b451e45610c85b",
+      "baseline": "2b9f389889f69eec8c16ecbbf30fcd7fd843131bc56ef07658b451e45610c85b"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/planned-module-light-desktop-chromium-linux.png",
+      "proposed": "4867c16aa2a4a023d2260f53dc1ff096d917bb24a62a26ae2f718d2d9e1351f1",
+      "baseline": "4867c16aa2a4a023d2260f53dc1ff096d917bb24a62a26ae2f718d2d9e1351f1"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/planned-module-light-phone-chromium-linux.png",
+      "proposed": "2895acffb0908ac4a2ee2594914b8b1e81b3269305ac5a492930c83084936fbd",
+      "baseline": "2895acffb0908ac4a2ee2594914b8b1e81b3269305ac5a492930c83084936fbd"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/sets-dark-desktop-chromium-linux.png",
+      "proposed": "cf9169bba3331a6123afbc69be4fa46363c17c1aefcf7be64b2a291c3530d65e",
+      "baseline": "cf9169bba3331a6123afbc69be4fa46363c17c1aefcf7be64b2a291c3530d65e"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/sets-dark-phone-chromium-linux.png",
+      "proposed": "81731b588112245fe1f1cbafbaece308357d84fdc117ceeeaa667df41f34aa1d",
+      "baseline": "81731b588112245fe1f1cbafbaece308357d84fdc117ceeeaa667df41f34aa1d"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/sets-light-desktop-chromium-linux.png",
+      "proposed": "ca006996fa91c6de6ae2af158d521bb127739f58a49884b908e9e1fd8834bab3",
+      "baseline": "ca006996fa91c6de6ae2af158d521bb127739f58a49884b908e9e1fd8834bab3"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/sets-light-phone-chromium-linux.png",
+      "proposed": "643ebcec1b00d3006aca34b259f963887a1017118b8d7c167ba8476b4e2709b4",
+      "baseline": "643ebcec1b00d3006aca34b259f963887a1017118b8d7c167ba8476b4e2709b4"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/settings-dark-desktop-chromium-linux.png",
+      "proposed": "166b6a9e3bd3ea75fc9ad9c00c65b8da6bf136c68bc0ac01c93347dbd47041a4",
+      "baseline": "166b6a9e3bd3ea75fc9ad9c00c65b8da6bf136c68bc0ac01c93347dbd47041a4"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/settings-dark-phone-chromium-linux.png",
+      "proposed": "fa38e4c571d14adf1af662dd5918b69d62d248db27446d61e16c768688f897d3",
+      "baseline": "fa38e4c571d14adf1af662dd5918b69d62d248db27446d61e16c768688f897d3"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/settings-light-desktop-chromium-linux.png",
+      "proposed": "d467fad2907497ea46a426426c7387bfd20305d345f565d9508382bfca68f4df",
+      "baseline": "d467fad2907497ea46a426426c7387bfd20305d345f565d9508382bfca68f4df"
+    },
+    {
+      "path": "frontend/tests/e2e/visual.spec.ts-snapshots/settings-light-phone-chromium-linux.png",
+      "proposed": "64e76c31b104d207c5ae9e799c45133e44da4e3fa799265fdbe8ed827d9e67fd",
+      "baseline": "64e76c31b104d207c5ae9e799c45133e44da4e3fa799265fdbe8ed827d9e67fd"
+    }
+  ],
+  "review": "Independent review passed: Linux Chromium visual.spec.ts baselines refreshed (28/28 passed in e2e-docker.sh); strict design-system check and tsc --noEmit passed.",
+  "reviewer": "integrator-wq00182",
+  "verification": {
+    "proposal": "21e13f962fb54548b73b5d2c6f7caf75",
+    "agent": "integrator-wq00182",
+    "claim": "af5c2deea47749b59d4dfc2dc53cca33",
+    "tested": "2026-11-17T09:00:16.761826+00:00",
+    "sandbox": "C:\\Users\\marku\\AppData\\Local\\Temp\\snq\\50289c978d",
+    "results": [
+      {
+        "command": [
+          "C:\\Users\\marku\\AppData\\Local\\Microsoft\\WindowsApps\\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\\python.exe",
+          "scripts/check_design_system.py",
+          "--check",
+          "--strict"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "node",
+          "frontend/node_modules/typescript/bin/tsc",
+          "--noEmit",
+          "-p",
+          "frontend"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "passed": true,
+    "outputs": [
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/home-dark-desktop-chromium-linux.png",
+        "proposed": "1c8ee7c67295e4af73751c0f4f8a6d92d296e6c34a753712fe61c885bd3f0f8b",
+        "baseline": "1c8ee7c67295e4af73751c0f4f8a6d92d296e6c34a753712fe61c885bd3f0f8b"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/home-dark-phone-chromium-linux.png",
+        "proposed": "ae33dbf535d86972e174451839e5f76e978cc95bc3390d3348ca3b4d8996d0a4",
+        "baseline": "ae33dbf535d86972e174451839e5f76e978cc95bc3390d3348ca3b4d8996d0a4"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/home-light-desktop-chromium-linux.png",
+        "proposed": "19670961dbe3857c6d8b793db55fa8e87d24f2b55d1a3827adcf66efe37ebebb",
+        "baseline": "19670961dbe3857c6d8b793db55fa8e87d24f2b55d1a3827adcf66efe37ebebb"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/home-light-phone-chromium-linux.png",
+        "proposed": "ba4945eb9425fcd09220395955ad0f69041853e59ce99d0263b1eadba9459b53",
+        "baseline": "ba4945eb9425fcd09220395955ad0f69041853e59ce99d0263b1eadba9459b53"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/library-dark-desktop-chromium-linux.png",
+        "proposed": "5022f9116dcdf8aedac44835e534789f197d3759ca8fa694eccffb7609d88934",
+        "baseline": "5022f9116dcdf8aedac44835e534789f197d3759ca8fa694eccffb7609d88934"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/library-dark-phone-chromium-linux.png",
+        "proposed": "ea35b99277887710f07b3f998034319ef7ae50188897c45db0ed7e233393ac43",
+        "baseline": "ea35b99277887710f07b3f998034319ef7ae50188897c45db0ed7e233393ac43"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/library-light-desktop-chromium-linux.png",
+        "proposed": "3cdd3589a8d5c39c284a6fd5befdb553c255cd6da947683c2249f9c51c4a4b83",
+        "baseline": "3cdd3589a8d5c39c284a6fd5befdb553c255cd6da947683c2249f9c51c4a4b83"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/library-light-phone-chromium-linux.png",
+        "proposed": "a3f20d341325496b2c999290a470fb6fb348c055ae09ef63b3ce9ca5d636fb98",
+        "baseline": "a3f20d341325496b2c999290a470fb6fb348c055ae09ef63b3ce9ca5d636fb98"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/nav-drawer-dark-desktop-chromium-linux.png",
+        "proposed": "643fc7e10653e871a3cd1845cfdbe8eebb0301f44542f1e630ac3ed3dd194fe5",
+        "baseline": "643fc7e10653e871a3cd1845cfdbe8eebb0301f44542f1e630ac3ed3dd194fe5"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/nav-drawer-dark-phone-chromium-linux.png",
+        "proposed": "1865d9888a9fc1e3e44a75264dbf913c3affaa649053818bccb0c987ea645b5a",
+        "baseline": "1865d9888a9fc1e3e44a75264dbf913c3affaa649053818bccb0c987ea645b5a"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/nav-drawer-light-desktop-chromium-linux.png",
+        "proposed": "5da19934b26da990b7f811dcd1f0406439af49b380c8acc94a648c6bf90aea0d",
+        "baseline": "5da19934b26da990b7f811dcd1f0406439af49b380c8acc94a648c6bf90aea0d"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/nav-drawer-light-phone-chromium-linux.png",
+        "proposed": "25738131d7a49e89c113041569377058de6cf67fdf52fed8e007b17d00bad25c",
+        "baseline": "25738131d7a49e89c113041569377058de6cf67fdf52fed8e007b17d00bad25c"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/not-found-dark-desktop-chromium-linux.png",
+        "proposed": "a6b92b0773ceb4f168558729293c15706c9347610678815f51e6ee12170548be",
+        "baseline": "a6b92b0773ceb4f168558729293c15706c9347610678815f51e6ee12170548be"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/not-found-dark-phone-chromium-linux.png",
+        "proposed": "4c2d1b113f4446c29e173326096c0d78f05a729821d3e06d5f2ece3b7d13575a",
+        "baseline": "4c2d1b113f4446c29e173326096c0d78f05a729821d3e06d5f2ece3b7d13575a"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/not-found-light-desktop-chromium-linux.png",
+        "proposed": "84e416c7a54cc063e26878c588907ff896b5265070658d6e450c9cc48ee80c20",
+        "baseline": "84e416c7a54cc063e26878c588907ff896b5265070658d6e450c9cc48ee80c20"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/not-found-light-phone-chromium-linux.png",
+        "proposed": "1c99f8f7d3b453a4c399f6cb86379b2fa29bdac14af43acc10be33fe5e93dd86",
+        "baseline": "1c99f8f7d3b453a4c399f6cb86379b2fa29bdac14af43acc10be33fe5e93dd86"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/pipeline-dark-desktop-chromium-linux.png",
+        "proposed": "cd330df397eb770342e43901895ad78a5e63d2d32899389c54e4f96c8f5e19dc",
+        "baseline": "cd330df397eb770342e43901895ad78a5e63d2d32899389c54e4f96c8f5e19dc"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/pipeline-dark-phone-chromium-linux.png",
+        "proposed": "fb59a86262f9fd48dd7a8f9ca220b2ad4ff433f6541d3dcc00c2b730ed742292",
+        "baseline": "fb59a86262f9fd48dd7a8f9ca220b2ad4ff433f6541d3dcc00c2b730ed742292"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/pipeline-light-desktop-chromium-linux.png",
+        "proposed": "803221b8b5e14bd1854d25f57fdc9b70f7e9d0b4b72443f75fde0f7f27f4d3c6",
+        "baseline": "803221b8b5e14bd1854d25f57fdc9b70f7e9d0b4b72443f75fde0f7f27f4d3c6"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/pipeline-light-phone-chromium-linux.png",
+        "proposed": "6e6d471270329b24f865b2fd89bcfb848354a2753a140e12d741726d5635af28",
+        "baseline": "6e6d471270329b24f865b2fd89bcfb848354a2753a140e12d741726d5635af28"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/planned-module-dark-desktop-chromium-linux.png",
+        "proposed": "c188dc48ff240ed8e06a3a80abf15d4eaea340f0418fc0169ec9e33cb6869179",
+        "baseline": "c188dc48ff240ed8e06a3a80abf15d4eaea340f0418fc0169ec9e33cb6869179"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/planned-module-dark-phone-chromium-linux.png",
+        "proposed": "2b9f389889f69eec8c16ecbbf30fcd7fd843131bc56ef07658b451e45610c85b",
+        "baseline": "2b9f389889f69eec8c16ecbbf30fcd7fd843131bc56ef07658b451e45610c85b"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/planned-module-light-desktop-chromium-linux.png",
+        "proposed": "4867c16aa2a4a023d2260f53dc1ff096d917bb24a62a26ae2f718d2d9e1351f1",
+        "baseline": "4867c16aa2a4a023d2260f53dc1ff096d917bb24a62a26ae2f718d2d9e1351f1"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/planned-module-light-phone-chromium-linux.png",
+        "proposed": "2895acffb0908ac4a2ee2594914b8b1e81b3269305ac5a492930c83084936fbd",
+        "baseline": "2895acffb0908ac4a2ee2594914b8b1e81b3269305ac5a492930c83084936fbd"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/sets-dark-desktop-chromium-linux.png",
+        "proposed": "cf9169bba3331a6123afbc69be4fa46363c17c1aefcf7be64b2a291c3530d65e",
+        "baseline": "cf9169bba3331a6123afbc69be4fa46363c17c1aefcf7be64b2a291c3530d65e"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/sets-dark-phone-chromium-linux.png",
+        "proposed": "81731b588112245fe1f1cbafbaece308357d84fdc117ceeeaa667df41f34aa1d",
+        "baseline": "81731b588112245fe1f1cbafbaece308357d84fdc117ceeeaa667df41f34aa1d"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/sets-light-desktop-chromium-linux.png",
+        "proposed": "ca006996fa91c6de6ae2af158d521bb127739f58a49884b908e9e1fd8834bab3",
+        "baseline": "ca006996fa91c6de6ae2af158d521bb127739f58a49884b908e9e1fd8834bab3"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/sets-light-phone-chromium-linux.png",
+        "proposed": "643ebcec1b00d3006aca34b259f963887a1017118b8d7c167ba8476b4e2709b4",
+        "baseline": "643ebcec1b00d3006aca34b259f963887a1017118b8d7c167ba8476b4e2709b4"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/settings-dark-desktop-chromium-linux.png",
+        "proposed": "166b6a9e3bd3ea75fc9ad9c00c65b8da6bf136c68bc0ac01c93347dbd47041a4",
+        "baseline": "166b6a9e3bd3ea75fc9ad9c00c65b8da6bf136c68bc0ac01c93347dbd47041a4"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/settings-dark-phone-chromium-linux.png",
+        "proposed": "fa38e4c571d14adf1af662dd5918b69d62d248db27446d61e16c768688f897d3",
+        "baseline": "fa38e4c571d14adf1af662dd5918b69d62d248db27446d61e16c768688f897d3"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/settings-light-desktop-chromium-linux.png",
+        "proposed": "d467fad2907497ea46a426426c7387bfd20305d345f565d9508382bfca68f4df",
+        "baseline": "d467fad2907497ea46a426426c7387bfd20305d345f565d9508382bfca68f4df"
+      },
+      {
+        "path": "frontend/tests/e2e/visual.spec.ts-snapshots/settings-light-phone-chromium-linux.png",
+        "proposed": "64e76c31b104d207c5ae9e799c45133e44da4e3fa799265fdbe8ed827d9e67fd",
+        "baseline": "64e76c31b104d207c5ae9e799c45133e44da4e3fa799265fdbe8ed827d9e67fd"
+      }
+    ],
+    "shared": {
+      "frontend/src/lib/songnodes.tsx": "9eebab0582b5a39dac45527afd329ccc29e32c441a369c8898dd125f9093848d",
+      "frontend/src/styles/design-system/bundle.css": "d1c142e62dc6eff45dae50113463f1f1094bf8cf911f0d3d08489db2bf9843b1",
+      "frontend/src/styles/design-system/tokens.css": "55b2959e7101b6eedf6f112a0669464dce8ba365c23377adb572844c55617b43"
+    }
+  },
+  "applied": "2026-11-17T09:00:30.933344+00:00",
+  "deployed": false
+}

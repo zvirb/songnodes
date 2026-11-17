@@ -9,7 +9,7 @@
 set -euo pipefail
 
 repo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
-image="mcr.microsoft.com/playwright:v1.64.1-noble"   # keep in step with @playwright/test
+image="mcr.microsoft.com/playwright:v1.65.0-noble"   # keep in step with @playwright/test
 network="${E2E_NETWORK:-songnodes-dev_default}"
 base_url="${E2E_BASE_URL:-http://frontend:8080}"
 

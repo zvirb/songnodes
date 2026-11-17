@@ -199,6 +199,17 @@ add("svc-spotify", "#1db954", "Spotify's own green: only on the 'Connect Spotify
 add("on-svc-spotify", "#000000", "Text on svc-spotify.")
 add("svc-tidal", {"dark": "#000000", "light": "#000000", "booth": "#000000"}, "TIDAL's black: only on the 'Connect TIDAL' button (with a 1px white border on dark grounds).")
 add("on-svc-tidal", "#ffffff", "Text on svc-tidal.")
+# 1.15.0: Queue monitor (WorkQueue card). Aliases of existing tokens only: no new values, so every theme follows.
+add("queue-done", "{status-ok}", "Queue monitor (WorkQueue): fill of a task tile whose task is complete. Solid, with the origin letter in queue-tile-ink; the state word is in the tile's name and the legend, never colour alone.")
+add("queue-ready", "{status-warn}", "Queue monitor: fill of a task tile that is ready for a run to pick up. Solid, letter in queue-tile-ink.")
+add("queue-running", "{fg}", "Queue monitor: fill of a task tile a run has claimed (In progress). The inverse of the page (fg), so it stands out in every theme; letter in queue-tile-ink.")
+add("queue-waiting", "{line-strong}", "Queue monitor: the dashed stroke-mark (1.5px) edge of a waiting task's tile; the tile itself is surface-1 and its letter fg-2. Holds 3:1 on surface-1 like every control border.")
+add("queue-tile-ink", "{surface-1}", "Queue monitor: the origin letter (S, F, P, C) on a solid tile (done, ready, running). Holds 4.5:1 on queue-done, queue-ready and queue-running in dark, light and booth.")
+add("origin-original", "{fg-2}", "Queue monitor: 4px bottom edge of a tile, and its chart fill, for a task in the original plan (first import). Neutral on purpose: most tasks are original, and the eye goes to the ones added since. No letter.")
+add("origin-split", "{chart-1}", "Queue monitor: bottom edge and chart fill for a task split off a task that needed another run. Letter S.")
+add("origin-followup", "{chart-2}", "Queue monitor: bottom edge and chart fill for a follow-up a run added. Letter F.")
+add("origin-planner", "{chart-3}", "Queue monitor: bottom edge and chart fill for a task the planner added. Letter P.")
+add("origin-chat", "{chart-4}", "Queue monitor: bottom edge and chart fill for a task added from a chat session. Letter C.")
 
 # ---------------------------------------------------------------- contrast report
 def val(name, theme):
@@ -237,6 +248,9 @@ for th, _ in THEMES:
     for b in ("bg", "surface-1", "surface-2"): need("now", b, 3, th)
     need("on-now", "now", 4.5, th)
     for i in range(1, 9): need(f"chart-{i}", "surface-1", 3, th)
+    # 1.15.0 Queue monitor: the origin letter on solid tiles; the waiting edge and solid tiles against the card
+    for q in ("queue-done", "queue-ready", "queue-running"): need("queue-tile-ink", q, 4.5, th); need(q, "surface-1", 3, th)
+    need("queue-waiting", "surface-1", 3, th); need("fg-2", "surface-1", 4.5, th)
     for n in range(1, 13):
         for l in "ab": need(f"key-{n}{l}", "surface-1", 3, th)
 print("CONTRAST FAILS:" if fails else "Contrast: all pairs pass.")
@@ -344,7 +358,7 @@ for _g in TYPE["groups"]:
                       ("fw-" + _s["name"], str(_s["fontWeight"]), "Font weight of the %s style." % _s["name"])]
 
 tok = {
- "name": "SongNodes", "version": "1.14.0",
+ "name": "SongNodes", "version": "1.15.0",
  "meta": {"source": "Decisions page 24 Oct 2026 + songnodes repo audit + Naarm Set Builder", "generator": "source/build_tokens.py"},
  "color": {"themes": [{"id": t, "name": n} for t, n in THEMES], "tokens": tokens},
  "type": TYPE,

@@ -50,6 +50,7 @@ Router for agents. Read this file first; open only the sheet you need. Rules are
 | BAN | Toast wrap | 1 | rules/sheets/BAN.md | 07-feedback-status.md |
 | PSZ | Page size | 1 | rules/sheets/PSZ.md | 17-governance.md |
 | INT | Empty state and page header action | 1 | rules/sheets/INT.md | components/EmptyState/README.md |
+| WKQ | Queue monitor: task tiles, origins, rates, finish estimate | 10 | rules/sheets/WKQ.md | components/WorkQueue/README.md |
 | GOV | Versioning, conformance, exceptions | 38 | rules/sheets/GOV.md | 17-governance.md |
 
 ## What to load

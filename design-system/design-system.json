@@ -850,9 +850,9 @@
   ],
   "lastChange": {
     "by": "Markus",
-    "at": "2026-11-12T11:55:00Z",
+    "at": "2026-11-13T23:59:55Z",
     "via": "Claude",
-    "note": "1.14.0 test suite added under tests/ (Playwright Test, 540 tests: 532 pass, 8 marked as known defects listed in Governance); no design-system file changed. Before that, 1.14.0: the newer beanAlliance features (LedgerSchedule v4.21 to v5.36) imported and fitted to SongNodes: QuickSave (SongNodes.save), Diagnostics (SongNodes.diag), Skeleton, SaveMark, Outbox (SongNodes.resp), CardFlag, SuggestionActions, full RowActions; FigureTile link form and states, held-scale ProgressRing and ProgressBar, Heatmap not-measured cell; guidelines 20 responsive pages, 21 figure pages, 22 forms and load; InfoTip Escape fix, theme when storage refuses, toast roles, type-scale tokens, Page n of N in print. DR-065 to DR-071, Q30 to Q34 open. 2,137 rules, validate passes. Before that, 1.13.0: the published line merged with the repo and E: drive line."
+    "note": "1.15.0: Queue monitor colours and rules. Ten colour tokens added as aliases of existing tokens (queue-done, queue-ready, queue-running, queue-waiting, queue-tile-ink, origin-original, origin-split, origin-followup, origin-planner, origin-chat); WorkQueue card gains a Queue monitor section with WKQ-001 to WKQ-010 and preview tiles; contrast report extended. 2,147 rules. Before that, 1.14.0 test suite added under tests/ (Playwright Test, 540 tests: 532 pass, 8 marked as known defects listed in Governance); no design-system file changed. Before that, 1.14.0: the newer beanAlliance features (LedgerSchedule v4.21 to v5.36) imported and fitted to SongNodes: QuickSave (SongNodes.save), Diagnostics (SongNodes.diag), Skeleton, SaveMark, Outbox (SongNodes.resp), CardFlag, SuggestionActions, full RowActions; FigureTile link form and states, held-scale ProgressRing and ProgressBar, Heatmap not-measured cell; guidelines 20 responsive pages, 21 figure pages, 22 forms and load; InfoTip Escape fix, theme when storage refuses, toast roles, type-scale tokens, Page n of N in print. DR-065 to DR-071, Q30 to Q34 open. 2,137 rules, validate passes. Before that, 1.13.0: the published line merged with the repo and E: drive line."
   },
   "layout": "files",
   "libraries": [],

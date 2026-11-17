@@ -20935,6 +20935,121 @@
   status: active
   replaced_by: null
   history_ref: null
+- id: WKQ-001
+  statement: A queue monitor shall show one tile per live task, and retired tasks and split parents shall
+    get no tile and shall be left out of every total.
+  scope:
+  - page
+  - component
+  check_type: dom
+  test: The number of task tiles equals the rows whose state is not Retired and that are not split parents,
+    and the totals use the same count.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: WKQ-002
+  statement: A tile's fill shall be its state, with queue-done, queue-ready and queue-running solid, and
+    a waiting tile shall be the card surface with a dashed queue-waiting edge.
+  scope:
+  - page
+  - component
+  check_type: visual
+  test: Computed backgrounds of done, ready and running tiles equal those tokens; a waiting tile has surface-1
+    and a dashed queue-waiting border, in dark, light and booth.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: WKQ-003
+  statement: A tile's 4px bottom edge shall be its origin in an origin-* token, and split, follow-up,
+    planner and chat tiles shall also carry the letter S, F, P or C in queue-tile-ink, or in fg-2 on a
+    waiting tile.
+  scope:
+  - page
+  - component
+  check_type: visual
+  test: Each tile's bottom border colour equals its origin token; non-original tiles show their letter
+    with 4.5:1 against the tile.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: WKQ-004
+  statement: A task's state shall never be shown by colour alone; hovering, focusing or selecting a tile
+    shall show its id, state word and title, and the legend shall name every state and every origin.
+  scope:
+  - page
+  - component
+  check_type: dom
+  test: Each tile has an accessible name holding id, state word and title; the legend lists the four states
+    and five origins in words.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: WKQ-005
+  statement: Tiles shall be grouped by folder or area, each group a card with a done and live count and
+    a stacked progress bar in the same state colours, with the tiles in id order by default.
+  scope:
+  - page
+  - component
+  check_type: dom
+  test: Each group card shows "n done of m" and a bar whose segments use the queue state tokens; tiles
+    inside are sorted by id.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: WKQ-006
+  statement: Rates shall use the 24 hours ending at the last whole hour, and the finish estimate shall
+    show three methods (all rows, without one-off batches, completions only), shall say "No finish date
+    at this pace" when rows arrive as fast as they complete, and shall never invent a date.
+  scope:
+  - page
+  check_type: judgement
+  test: With arrivals at or above completions the estimate reads "No finish date at this pace" for that
+    method and shows no date.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: WKQ-007
+  statement: In the hourly chart rows added shall sit above the zero line and rows completed below it,
+    each coloured by origin.
+  scope:
+  - page
+  - chart
+  check_type: visual
+  test: Added bars extend up from zero and completed bars down from zero, filled with origin-* tokens.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: WKQ-008
+  statement: '"Running now" shall come from the lock and claim files, not from the State column.'
+  scope:
+  - page
+  check_type: judgement
+  test: A row marked In progress with no lock or claim file is not listed under Running now.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: WKQ-009
+  statement: Every time a queue monitor shows shall be Australia/Melbourne time written through SongNodes.format.
+  scope:
+  - page
+  - copy
+  check_type: lint
+  test: Times on the page match the format.day, format.time or format.stamp patterns and none is UTC.
+  status: active
+  replaced_by: null
+  history_ref: null
+- id: WKQ-010
+  statement: The theme switch shall be a SegmentedControl with one option per theme that sets the theme
+    of the whole page through SongNodes.prefs, and the page shall carry no colour of its own.
+  scope:
+  - page
+  - css
+  check_type: lint
+  test: The switch is a `.sn-segmented-control` radiogroup calling SongNodes.prefs.setTheme; the page's
+    own CSS holds no colour literal and no theme palette.
+  status: active
+  replaced_by: null
+  history_ref: null
 - id: WRT-001
   statement: Copy shall lead with the fact and then state what to do next, not the feeling.
   scope:

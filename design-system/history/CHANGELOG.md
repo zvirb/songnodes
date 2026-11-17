@@ -2,6 +2,14 @@
 
 All notable changes to the design system, newest first, in the style of Keep a Changelog. Source: 17-governance.md, Change log. Dates are Melbourne.
 
+## [1.15.0] - 2026-11-14
+Queue monitor colours and rules. Full entry: 17-governance.md, Change log.
+
+### Added
+- Tokens `queue-done`, `queue-ready`, `queue-running`, `queue-waiting`, `queue-tile-ink`, `origin-original`, `origin-split`, `origin-followup`, `origin-planner`, `origin-chat`: aliases of existing tokens, no new values.
+- `WorkQueue` section "Queue monitor" with rules WKQ-001 to WKQ-010 (fragment `rules/frag/batch6.yaml`) and the tiles and legend in its preview.
+- Contrast checks for the origin letter on solid tiles and the waiting edge.
+
 ## [1.14.0] - 2026-11-12
 The newer LedgerSchedule features (v4.21 to v5.36), fitted to SongNodes. Full entry: 17-governance.md, Change log.
 

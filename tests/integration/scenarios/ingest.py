@@ -44,6 +44,10 @@ async def count(conn, table, column, pattern):
 
 async def main():
     conn = await connect()
+    if await conn.fetchval('SELECT count(*) FROM silver_enriched_tracks') > 0 or await conn.fetchval('SELECT count(*) FROM bronze_scraped_tracks') > 0:
+        print('SCENARIO-SKIP catalog is not empty')
+        await conn.close()
+        return
     A = f'Artist A {MARKER}'
     B = f'Artist B {MARKER}'
     try:

@@ -1,4 +1,4 @@
-import concurrent.futures
+﻿import concurrent.futures
 import importlib.util
 import json
 from pathlib import Path
@@ -46,6 +46,31 @@ def change(queue, operation, *args):
         queue.validate(state)
         queue.save(state)
         return result
+
+
+def checked_stage(queue, token, agent, directory):
+    assert queue.precheck(token, agent, directory)['passed']
+    return change(queue, 'stage', token, agent, directory)
+
+
+def test_stage_refuses_unchecked_failing_and_changed_proposals(queue):
+    ids = change(queue, 'add', [task('a')])
+    claim = change(queue, 'claim', 'worker', ids, 'frontend')
+    proposal = queue.home / 'reports/run/proposal/src'
+    proposal.mkdir(parents=True)
+    (proposal / 'a').write_text('proposal', encoding='utf8')
+    with pytest.raises(ValueError, match='Run precheck'):
+        change(queue, 'stage', claim['token'], 'worker', str(proposal.parent))
+    (proposal / 'a').write_text('wrong', encoding='utf8')
+    assert not queue.precheck(claim['token'], 'worker', str(proposal.parent))['passed']
+    with pytest.raises(ValueError, match='Precheck failed'):
+        change(queue, 'stage', claim['token'], 'worker', str(proposal.parent))
+    (proposal / 'a').write_text('proposal', encoding='utf8')
+    with pytest.raises(ValueError, match='changed since precheck'):
+        change(queue, 'stage', claim['token'], 'worker', str(proposal.parent))
+    assert queue.load()['tasks'][0]['state'] == 'In progress'
+    checked_stage(queue, claim['token'], 'worker', str(proposal.parent))
+    assert queue.load()['tasks'][0]['state'] == 'Waiting'
 
 
 def test_claim_conflicts_and_independent_files(queue):
@@ -135,7 +160,7 @@ def test_staging_preserves_source_and_records_waiting(queue):
     proposal = queue.home / 'reports/run/proposal/src'
     proposal.mkdir(parents=True)
     (proposal / 'a').write_text('proposal', encoding='utf8')
-    report = change(queue, 'stage', claim['token'], 'worker', str(proposal.parent))
+    report = checked_stage(queue, claim['token'], 'worker', str(proposal.parent))
     assert report['verification'] == 'Pending; not applied'
     assert (queue.root / 'src/a').read_text() == 'original'
     assert queue.load()['tasks'][0]['state'] == 'Waiting'
@@ -209,7 +234,7 @@ def staged(queue):
     proposal = queue.home / 'reports/run/proposal/src'
     proposal.mkdir(parents=True)
     (proposal / 'a').write_text('proposal', encoding='utf8')
-    change(queue, 'stage', worker['token'], 'builder', str(proposal.parent))
+    checked_stage(queue, worker['token'], 'builder', str(proposal.parent))
     integrator = change(queue, 'claim', 'reviewer', ids, 'integrator')
     return ids, worker, integrator
 
@@ -286,8 +311,9 @@ def test_folder_snapshots_support_existing_and_new_outputs(queue):
     proposal = queue.home / 'reports/folder/proposal/src'
     proposal.mkdir(parents=True)
     (proposal / 'new').write_text('new output', encoding='utf8')
-    report = change(queue, 'stage', claim['token'], 'builder', str(proposal.parent))
-    assert report['outputs'][0]['baseline'] is None
+    (proposal / 'a').write_text('proposal', encoding='utf8')
+    report = checked_stage(queue, claim['token'], 'builder', str(proposal.parent))
+    assert next(o for o in report['outputs'] if o['path'] == 'src/new')['baseline'] is None
 
 
 def test_retired_resources_and_invalid_splits_are_blocked(queue):

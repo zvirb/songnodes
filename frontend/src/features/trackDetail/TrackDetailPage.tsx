@@ -299,7 +299,7 @@ export const TrackDetailPage: React.FC = () => {
             </div>
 
             {transitions.length > 0 ? (
-              <div className="sn-tablebox">
+              <div className="sn-tablebox" tabIndex={0} role="region" aria-label={`Tracks connected to ${artist} – ${title}`}>
                 <table className="sn-table">
                   <caption className="sn-sr">Tracks connected to {artist} – {title}</caption>
                   <thead>
@@ -353,7 +353,7 @@ export const TrackDetailPage: React.FC = () => {
           {/* Heard on / Sources */}
           <section className="sn-card" style={{ padding: 'var(--space-4)' }}>
             <SectionHeading title="Heard on" count={source} />
-            <div className="sn-tablebox" style={{ marginTop: 'var(--space-3)' }}>
+            <div className="sn-tablebox" tabIndex={0} role="region" aria-label={`Sources and plays for ${artist} – ${title}`} style={{ marginTop: 'var(--space-3)' }}>
               <table className="sn-table">
                 <caption className="sn-sr">Sources and plays for {artist} – {title}</caption>
                 <thead>

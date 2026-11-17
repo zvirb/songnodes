@@ -1,0 +1,58 @@
+{
+  "outputs": [
+    {
+      "path": "frontend/src/components/OAuthCallback.tsx",
+      "proposed": "691525032e6dee7434786a010b90b617bdcc822249910ee857b49adffa3e2751",
+      "baseline": "09c13621feab259c9869832e451935bad00ba54afa2969d61a62439912ec16b3"
+    }
+  ],
+  "review": "Independent criteria review: invalid div spinner with aria-busy replaced by aria-hidden span; non-existent .sn-auth-callback replaced by design-system sn-card; aria-busy moved to main and section. Verify passed (design-system strict check, tsc) under this claim. Applied per Markus 14 Nov 2026 'always go ahead and apply' (Q014).",
+  "reviewer": "integrator-apply-wq00051",
+  "verification": {
+    "proposal": "0e4e693e07ce4e9e9797b0d69a0e9084",
+    "agent": "integrator-apply-wq00051",
+    "claim": "392a6244a6df4b068a4329e9f2e6b0a4",
+    "tested": "2026-11-14T09:54:09.662468+00:00",
+    "sandbox": "/sessions/rcw-01nvwnfwbkxjbzvfqd83cuae/tmp/snq/b9d38fafd6",
+    "results": [
+      {
+        "command": [
+          "/usr/bin/python3",
+          "scripts/check_design_system.py",
+          "--check",
+          "--strict"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "node",
+          "frontend/node_modules/typescript/bin/tsc",
+          "--noEmit",
+          "-p",
+          "frontend"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "passed": true,
+    "outputs": [
+      {
+        "path": "frontend/src/components/OAuthCallback.tsx",
+        "proposed": "691525032e6dee7434786a010b90b617bdcc822249910ee857b49adffa3e2751",
+        "baseline": "09c13621feab259c9869832e451935bad00ba54afa2969d61a62439912ec16b3"
+      }
+    ],
+    "shared": {
+      "frontend/src/lib/songnodes.tsx": "9eebab0582b5a39dac45527afd329ccc29e32c441a369c8898dd125f9093848d",
+      "frontend/src/styles/design-system/bundle.css": "d1c142e62dc6eff45dae50113463f1f1094bf8cf911f0d3d08489db2bf9843b1",
+      "frontend/src/styles/design-system/tokens.css": "55b2959e7101b6eedf6f112a0669464dce8ba365c23377adb572844c55617b43"
+    }
+  },
+  "applied": "2026-11-14T09:54:20.941624+00:00",
+  "deployed": false
+}

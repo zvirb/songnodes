@@ -1,0 +1,7 @@
+/* Last-error cell of the Dead jobs table: one line, ellipsis, full text in the title. */
+.sn-last-error {
+  max-width: 40ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

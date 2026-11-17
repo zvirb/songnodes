@@ -5,7 +5,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { SN, SnIcon, MODULE_ROUTES, moduleOf, type ModuleKey } from '../lib/songnodes';
-import { ToastRegion } from '../components/ds';
+import { SlidersHorizontal } from 'lucide-react';
+import { LoadingPanel, OverflowMenu, ToastRegion, type OverflowItem } from '../components/ds';
 import { CreditsFooter } from './CreditsFooter';
 
 interface HeaderState {
@@ -33,6 +34,10 @@ const GROUPS: [string, ModuleKey[]][] = [
   ['Explore', ['graph', 'library', 'harmony']],
   ['Collect', ['sources']],
   ['System', ['pipeline', 'services']],
+];
+
+const HEADER_ACTIONS: OverflowItem[] = [
+  { id: 'display', label: 'Display preferences', icon: SlidersHorizontal, group: 'View' },
 ];
 
 const isApple = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
@@ -107,7 +112,9 @@ const NavDrawer: React.FC<{ open: boolean; onClose: () => void; current: HeaderS
   );
 };
 
-const AppHeader: React.FC<{ state: HeaderState; drawerOpen: boolean; onOpenDrawer: () => void; menuRef: React.RefObject<HTMLButtonElement | null> }> = ({ state, drawerOpen, onOpenDrawer, menuRef }) => {
+type ConnectionState = 'live' | 'offline';
+
+const AppHeader: React.FC<{ state: HeaderState; connection: ConnectionState; drawerOpen: boolean; onOpenDrawer: () => void; menuRef: React.RefObject<HTMLButtonElement | null> }> = ({ state, connection, drawerOpen, onOpenDrawer, menuRef }) => {
   const navigate = useNavigate();
   const stamp = state.updatedAt ? new Date(state.updatedAt) : null;
   return (
@@ -129,11 +136,16 @@ const AppHeader: React.FC<{ state: HeaderState; drawerOpen: boolean; onOpenDrawe
               <time dateTime={stamp.toISOString()} title={`Updated ${SN.format.stamp(stamp)}`}>{SN.format.relative(stamp)}</time>
             </span>
           ) : null}
+          <span className="sn-pill sn-app-header__conn" data-status={connection === 'live' ? 'ok' : 'bad'}>
+            <span className="sn-app-header__conn-text">{connection === 'live' ? 'Live' : 'Offline'}</span>
+            <span className="sn-sr"> live updates</span>
+          </span>
           <button className="sn-btn sn-btn--sm sn-app-header__search" type="button" aria-keyshortcuts="Control+K Meta+K /" onClick={() => navigate('/library?focus=search')}>
             <SnIcon name="search" size={16} />
             <span className="sn-app-header__search-label">Search</span>
             <kbd aria-hidden="true">{isApple ? '⌘K' : 'Ctrl K'}</kbd>
           </button>
+          <OverflowMenu small items={HEADER_ACTIONS} onSelect={(id) => { if (id === 'display') navigate('/settings#display'); }} />
         </div>
       </div>
     </header>
@@ -143,6 +155,9 @@ const AppHeader: React.FC<{ state: HeaderState; drawerOpen: boolean; onOpenDrawe
 /** Shell used by every page except the OAuth return page. */
 export const AppShell: React.FC = () => {
   const [state, setState] = useState<HeaderState>({ lead: 'SongNodes', title: 'Home', current: 'home' });
+  const [connection, setConnection] = useState<ConnectionState>(() => (
+    typeof navigator === 'undefined' || navigator.onLine ? 'live' : 'offline'
+  ));
   const [drawerOpen, setDrawerOpen] = useState(false);
   const menuRef = useRef<HTMLButtonElement>(null);
   const location = useLocation();
@@ -155,6 +170,17 @@ export const AppShell: React.FC = () => {
   }, []);
 
   useEffect(() => { setDrawerOpen(false); }, [location.pathname]);
+
+  useEffect(() => {
+    const handleOnline = () => setConnection('live');
+    const handleOffline = () => setConnection('offline');
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Ctrl/⌘ K and / (outside text fields) jump to search (AppHeader contract).
   useEffect(() => {
@@ -176,8 +202,16 @@ export const AppShell: React.FC = () => {
     <HeaderCtx.Provider value={ctx}>
       <a className="sn-skip" href="#main">Skip to content</a>
       <div className="sn-shell" inert={drawerOpen ? true : undefined}>
-        <AppHeader state={state} drawerOpen={drawerOpen} onOpenDrawer={() => setDrawerOpen(true)} menuRef={menuRef} />
-        <Outlet />
+        <AppHeader state={state} connection={connection} drawerOpen={drawerOpen} onOpenDrawer={() => setDrawerOpen(true)} menuRef={menuRef} />
+        <React.Suspense
+          fallback={(
+            <main className="sn-page__main" id="main" tabIndex={-1} aria-busy="true">
+              <LoadingPanel message="Loading page…" />
+            </main>
+          )}
+        >
+          <Outlet />
+        </React.Suspense>
         <CreditsFooter />
       </div>
       <NavDrawer open={drawerOpen} onClose={closeDrawer} current={state.current} />

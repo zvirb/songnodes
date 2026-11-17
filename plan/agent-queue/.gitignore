@@ -9,3 +9,4 @@ retired-register/
 reports/*
 !reports/design-system-audit.json
 !reports/completed/
+monitor/

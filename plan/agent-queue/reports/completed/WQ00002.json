@@ -1,0 +1,58 @@
+{
+  "outputs": [
+    {
+      "path": "frontend/src/shell/AppShell.tsx",
+      "proposed": "eca879b46ab6441c2c15d5521048bcbb17ae40768e2bf65f4bc8df03914efd48",
+      "baseline": "cd4a38e87e3786961a378a1c6cb085945a3ec78e179336b74153bc049b62bcb5"
+    }
+  ],
+  "review": "Independent criteria review (reviewer differs from rebase worker): adds design-system OverflowMenu 'More actions' to the app header with a Display preferences item that navigates to /settings#display; rebuilt on AppShell.tsx after WQ00001 so the connection status is kept. Verify passed under this claim. Applied per Markus 14 Nov 2026 'always go ahead and apply' (Q014).",
+  "reviewer": "integrator-apply-wq00002",
+  "verification": {
+    "proposal": "cb1d849edf6e4e53b3c1f42424ef5774",
+    "agent": "integrator-apply-wq00002",
+    "claim": "aa884ab0bf054b4ab2ce6ac64545eefc",
+    "tested": "2026-11-14T10:03:34.708727+00:00",
+    "sandbox": "/tmp/snq/77e83e1ca5",
+    "results": [
+      {
+        "command": [
+          "/usr/bin/python3",
+          "scripts/check_design_system.py",
+          "--check",
+          "--strict"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "node",
+          "frontend/node_modules/typescript/bin/tsc",
+          "--noEmit",
+          "-p",
+          "frontend"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "passed": true,
+    "outputs": [
+      {
+        "path": "frontend/src/shell/AppShell.tsx",
+        "proposed": "eca879b46ab6441c2c15d5521048bcbb17ae40768e2bf65f4bc8df03914efd48",
+        "baseline": "cd4a38e87e3786961a378a1c6cb085945a3ec78e179336b74153bc049b62bcb5"
+      }
+    ],
+    "shared": {
+      "frontend/src/lib/songnodes.tsx": "9eebab0582b5a39dac45527afd329ccc29e32c441a369c8898dd125f9093848d",
+      "frontend/src/styles/design-system/bundle.css": "d1c142e62dc6eff45dae50113463f1f1094bf8cf911f0d3d08489db2bf9843b1",
+      "frontend/src/styles/design-system/tokens.css": "55b2959e7101b6eedf6f112a0669464dce8ba365c23377adb572844c55617b43"
+    }
+  },
+  "applied": "2026-11-14T10:03:39.188087+00:00",
+  "deployed": false
+}

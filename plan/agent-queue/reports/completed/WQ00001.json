@@ -1,0 +1,58 @@
+{
+  "outputs": [
+    {
+      "path": "frontend/src/shell/AppShell.tsx",
+      "proposed": "cd4a38e87e3786961a378a1c6cb085945a3ec78e179336b74153bc049b62bcb5",
+      "baseline": "2e9a6070c17bf0f4654a768fbefe4878c006678aa1dd7d4e55860f31639cb79d"
+    }
+  ],
+  "review": "Independent criteria review: AppHeader shows a Live/Offline connection status driven by navigator.onLine and online/offline events, with accessible label and sn-sr text. Verify passed under this claim. Applied per Markus 14 Nov 2026 'always go ahead and apply' (Q014).",
+  "reviewer": "integrator-apply-wq00001",
+  "verification": {
+    "proposal": "2242a29491344d218da95c7e1c849fe2",
+    "agent": "integrator-apply-wq00001",
+    "claim": "af4c64fc68f24334b1456138615810a7",
+    "tested": "2026-11-14T09:59:59.739006+00:00",
+    "sandbox": "/tmp/snq/d29e4fc9e5",
+    "results": [
+      {
+        "command": [
+          "/usr/bin/python3",
+          "scripts/check_design_system.py",
+          "--check",
+          "--strict"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "node",
+          "frontend/node_modules/typescript/bin/tsc",
+          "--noEmit",
+          "-p",
+          "frontend"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "passed": true,
+    "outputs": [
+      {
+        "path": "frontend/src/shell/AppShell.tsx",
+        "proposed": "cd4a38e87e3786961a378a1c6cb085945a3ec78e179336b74153bc049b62bcb5",
+        "baseline": "2e9a6070c17bf0f4654a768fbefe4878c006678aa1dd7d4e55860f31639cb79d"
+      }
+    ],
+    "shared": {
+      "frontend/src/lib/songnodes.tsx": "9eebab0582b5a39dac45527afd329ccc29e32c441a369c8898dd125f9093848d",
+      "frontend/src/styles/design-system/bundle.css": "d1c142e62dc6eff45dae50113463f1f1094bf8cf911f0d3d08489db2bf9843b1",
+      "frontend/src/styles/design-system/tokens.css": "55b2959e7101b6eedf6f112a0669464dce8ba365c23377adb572844c55617b43"
+    }
+  },
+  "applied": "2026-11-14T10:00:03.681984+00:00",
+  "deployed": false
+}

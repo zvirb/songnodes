@@ -56,7 +56,8 @@
 | components/TaskNotice/README.md, 07-feedback-status.md | 1 |
 | components/TextField/README.md | 1 |
 | components/Toast/README.md | 6 |
+| components/WorkQueue/README.md | 10 |
 
-Total rules: 2137
+Total rules: 2147
 Schema/format errors: 0
 History items segregated: 166

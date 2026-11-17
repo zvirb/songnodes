@@ -27,6 +27,22 @@ def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
 
 
+
+SNAPSHOT_EXCLUDED = {'node_modules', '.git', '.runtime', 'test-results', 'playwright-report', 'dist', '__pycache__'}
+
+
+def walk_pruned(source, excluded):
+    """Yield every path under source like rglob('*'), but never descend into excluded folders.
+
+    Same files as the old rglob-then-filter loop (excluded parts were filtered anyway); skipping the
+    walk into node_modules avoids ~30k stat calls, which took minutes over a mounted drive.
+    """
+    for directory, folders, files in os.walk(source):
+        folders[:] = sorted(f for f in folders if f not in excluded)
+        base = Path(directory)
+        for name in folders + sorted(files):
+            yield base / name
+
 def atomic(path, text):
     path.parent.mkdir(parents=True, exist_ok=True)
     previous_mode = path.stat().st_mode if path.exists() else None
@@ -259,6 +275,7 @@ class Queue:
         for proposal in outputs:
             if not proposal.resolve().is_relative_to(source):
                 raise ValueError('Proposal symlink escapes staging')
+        for proposal in outputs:
             rel = proposal.relative_to(source).as_posix()
             resource = self.resource('file:' + rel)
             if not any(self.conflict(resource, owned) for owned in claim['resources'] if not owned.startswith('_')):
@@ -269,6 +286,7 @@ class Queue:
             manifest.append(dict(path=rel, proposed=digest(proposal), baseline=expected))
         if claim['shared'] != {p: digest(self.root / p) for p in self.config['shared_sources']}:
             raise ValueError('Shared source changed; rebuild under a fresh claim')
+        self.require_precheck(agent, claim, [(p.relative_to(source).as_posix(), p) for p in outputs])
         for item in manifest:
             target = self.runtime / 'reports' / token / 'proposal' / item['path']
             atomic(target, (source / item['path']).read_bytes())
@@ -307,10 +325,35 @@ class Queue:
             claim, report = self.proposal(state, token, agent, proposal)
             if 'verify' not in self.config['roles'][claim['role']]:
                 raise ValueError('Role cannot verify')
+        outputs = [(o['path'], (self.runtime / 'reports' / proposal / 'proposal' / o['path']).read_bytes(), o['proposed']) for o in report['outputs']]
+        sandbox, results = self.isolated_checks(outputs)
+        verification = dict(proposal=proposal, agent=agent, claim=token, tested=now(), sandbox=str(sandbox), results=results, passed=all(r['exit'] == 0 for r in results), outputs=report['outputs'], shared=report['shared'])
+        atomic(self.runtime / 'reports' / (token + '.verification.json'), json.dumps(verification, indent=2))
+        with self.mutex():
+            state = self.load()
+            self.owner(state, token, agent)
+            try:
+                self.proposal(state, token, agent, proposal)
+            except ValueError as error:
+                verification['passed'] = False
+                verification['results'].append(dict(command=['baseline-recheck'], exit=1, stderr=str(error)))
+            atomic(self.runtime / 'reports' / (token + '.verification.json'), json.dumps(verification, indent=2))
+            self.event(state, agent, claim['tasks'], 'verified' if verification['passed'] else 'verification-failed', 'Isolated proposal checks; no source applied', claim['resources'], verification)
+            if not verification['passed']:
+                self.release(state, token, agent, 'Verification failed; staged outputs and exact command results retained', waiting=True)
+            self.save(state)
+        return verification
+
+    def isolated_checks(self, outputs):
+        """Run the configured gates on a snapshot of the inputs with the outputs overlaid.
+
+        The sandbox sits under the system temp folder on purpose: Windows rejects the
+        long paths a sandbox inside .runtime produces for nested Playwright snapshots.
+        """
         commands = self.config.get('verification_commands', [])
         if not commands:
             raise ValueError('No verification gates configured')
-        sandbox = self.runtime / 'reports' / token / ('verify-' + uuid.uuid4().hex)
+        sandbox = Path(tempfile.gettempdir()) / 'snq' / uuid.uuid4().hex[:10]
         results = []
         try:
             sandbox.mkdir(parents=True)
@@ -318,14 +361,14 @@ class Queue:
                 source = (self.root / item).resolve()
                 if not source.is_relative_to(self.root):
                     raise ValueError('Verification input escapes project')
-                for path in ([source] if source.is_file() else source.rglob('*')):
-                    if not path.is_file() or any(part in {'node_modules', '.git', '.runtime', 'test-results', 'playwright-report', 'dist', '__pycache__'} for part in path.relative_to(self.root).parts):
+                for path in ([source] if source.is_file() else walk_pruned(source, SNAPSHOT_EXCLUDED)):
+                    if not path.is_file() or any(part in SNAPSHOT_EXCLUDED for part in path.relative_to(self.root).parts):
                         continue
                     if not path.resolve().is_relative_to(self.root):
                         raise ValueError('Verification input symlink escapes project')
                     atomic(sandbox / path.relative_to(self.root), path.read_bytes())
-            for output in report['outputs']:
-                atomic(sandbox / output['path'], (self.runtime / 'reports' / proposal / 'proposal' / output['path']).read_bytes())
+            for rel, data, _ in outputs:
+                atomic(sandbox / rel, data)
             for argv in [['git', '-c', 'core.longpaths=true', 'init', '--quiet'], ['git', '-c', 'core.longpaths=true', 'add', '--all']]:
                 subprocess.run(argv, cwd=sandbox, check=True, capture_output=True)
             dependencies = self.root / 'frontend/node_modules'
@@ -344,29 +387,40 @@ class Queue:
                     results.append(dict(command=argv, exit=run.returncode, stdout=run.stdout, stderr=run.stderr))
                 except (OSError, subprocess.TimeoutExpired) as error:
                     results.append(dict(command=argv, exit=-1, stderr=str(error)))
-            if any(digest(sandbox / item['path']) != item['proposed'] for item in report['outputs']):
+            if any(digest(sandbox / rel) != expected for rel, _, expected in outputs):
                 results.append(dict(command=['snapshot-integrity'], exit=1, stderr='Tests changed proposed outputs'))
         except (OSError, ValueError, subprocess.SubprocessError) as error:
             details = getattr(error, "stderr", None) or str(error)
             if isinstance(details, bytes):
                 details = details.decode("utf8", errors="replace")
             results.append(dict(command=["verification-setup"], exit=-1, stderr=details))
-        verification = dict(proposal=proposal, agent=agent, claim=token, tested=now(), sandbox=str(sandbox), results=results, passed=all(r['exit'] == 0 for r in results), outputs=report['outputs'], shared=report['shared'])
-        atomic(self.runtime / 'reports' / (token + '.verification.json'), json.dumps(verification, indent=2))
+        return sandbox, results
+
+    def precheck(self, token, agent, directory):
+        """Worker-side gate: run the same checks as verify before anything can be staged."""
         with self.mutex():
-            state = self.load()
-            self.owner(state, token, agent)
-            try:
-                self.proposal(state, token, agent, proposal)
-            except ValueError as error:
-                verification['passed'] = False
-                verification['results'].append(dict(command=['baseline-recheck'], exit=1, stderr=str(error)))
-            atomic(self.runtime / 'reports' / (token + '.verification.json'), json.dumps(verification, indent=2))
-            self.event(state, agent, claim['tasks'], 'verified' if verification['passed'] else 'verification-failed', 'Isolated proposal checks; no source applied', claim['resources'], verification)
-            if not verification['passed']:
-                self.release(state, token, agent, 'Verification failed; staged outputs and exact command results retained', waiting=True)
-            self.save(state)
-        return verification
+            claim = self.owner(self.load(), token, agent)
+        source = Path(directory).resolve()
+        if not source.is_relative_to((self.home / 'reports').resolve()):
+            raise ValueError('Proposal must be isolated under reports/')
+        outputs = [(p.relative_to(source).as_posix(), p.read_bytes(), digest(p)) for p in sorted(source.rglob('*')) if p.is_file()]
+        if not outputs:
+            raise ValueError('Empty proposal')
+        sandbox, results = self.isolated_checks(outputs)
+        record = dict(claim=token, agent=agent, tested=now(), sandbox=str(sandbox), results=results, passed=all(r['exit'] == 0 for r in results), outputs={rel: d for rel, _, d in outputs})
+        atomic(self.home / 'reports' / agent / 'precheck.json', json.dumps(record, indent=2))
+        return dict(passed=record['passed'], failed=[dict(command=r['command'], exit=r['exit'], output=((r.get('stderr') or '') + (r.get('stdout') or ''))[-1500:]) for r in results if r['exit'] != 0], outputs=record['outputs'])
+
+    def require_precheck(self, agent, claim, outputs):
+        path = self.home / 'reports' / agent / 'precheck.json'
+        if not path.is_file():
+            raise ValueError('Run precheck on this proposal first; stage refuses unchecked proposals')
+        record = json.loads(path.read_text(encoding='utf8'))
+        current = {rel: digest(proposal) for rel, proposal in outputs}
+        if record.get('claim') != claim['token'] or record.get('outputs') != current:
+            raise ValueError('Proposal changed since precheck; rerun precheck')
+        if not record.get('passed'):
+            raise ValueError('Precheck failed; fix the proposal and rerun precheck. Failing proposals are never staged')
 
     def transition(self, state, ids, target, note, children=()):
         if target not in {'Ready', 'Waiting', 'Retired', 'Split'} or not note:
@@ -526,7 +580,7 @@ class Queue:
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--queue', default=str(HERE))
-    parser.add_argument('command', choices=['init', 'status', 'resolve', 'add', 'claim', 'heartbeat', 'held', 'release', 'break-stale', 'stage', 'validate', 'repair', 'verify', 'apply', 'recover-apply', 'rollback', 'transition', 'defer', 'git-check'])
+    parser.add_argument('command', choices=['init', 'status', 'resolve', 'add', 'claim', 'heartbeat', 'held', 'release', 'break-stale', 'precheck', 'stage', 'validate', 'repair', 'verify', 'apply', 'recover-apply', 'rollback', 'transition', 'defer', 'git-check'])
     parser.add_argument('items', nargs='*')
     parser.add_argument('--agent', default='operator')
     parser.add_argument('--role', default='frontend')
@@ -543,6 +597,10 @@ def main():
     queue = Queue(args.queue)
     if args.command == 'verify':
         result = queue.verify(args.claim, args.agent, args.proposal)
+        print(json.dumps(result, indent=2))
+        return 0 if result['passed'] else 1
+    if args.command == 'precheck':
+        result = queue.precheck(args.claim, args.agent, args.items[0])
         print(json.dumps(result, indent=2))
         return 0 if result['passed'] else 1
     with queue.mutex():

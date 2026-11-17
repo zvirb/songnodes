@@ -12,6 +12,7 @@ import RunsPage from '../features/pipeline/RunsPage';
 import { api } from '../services/api';
 import { usePageHeader } from '../shell/AppShell';
 import { PageHeader } from '../shell/PageParts';
+import './ScraperProgressPage.css';
 
 import { SectionHeading, TextField, SegmentedControl, Button } from '../components/ds';
 import { API_BASE_URL } from '../lib/apiBase';
@@ -538,7 +539,7 @@ const ScraperProgressPage: React.FC = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                     {stg.state === 'done' && <CheckCircle2 size={18} color="var(--status-ok)" />}
                     {stg.state === 'running' && <RefreshCw size={18} className="sn-spinner" color="var(--brand)" />}
-                    {stg.state === 'waiting' && <Clock size={18} color="var(--fg-3)" />}
+                    {stg.state === 'waiting' && <Clock size={18} color="var(--fg-2)" aria-hidden="true" />}
                     {stg.state === 'failed' && <XCircle size={18} color="var(--status-bad)" />}
                     {stg.state === 'warning' && <AlertTriangle size={18} color="var(--status-warn)" />}
 
@@ -643,7 +644,7 @@ const ScraperProgressPage: React.FC = () => {
                   <tr key={j.job_id}>
                     <td className="data">{j.job_id.substring(0, 8)}</td>
                     <td>{j.kind}</td>
-                    <td className="caption data truncate" style={{ maxWidth: '300px' }} title={j.last_error || ''}>
+                    <td className="caption data sn-last-error" title={j.last_error || ''}>
                       {j.last_error || <span className="sn-none">–</span>}
                     </td>
                     <td>
