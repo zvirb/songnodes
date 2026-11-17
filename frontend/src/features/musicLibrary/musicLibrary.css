@@ -54,6 +54,11 @@
   overflow-x: hidden;
 }
 
+.sn-page-log__section {
+  min-width: 0;
+  max-width: 100%;
+}
+
 .sn-page-log .sn-tablebox {
   max-width: 100%;
   overflow-x: auto;

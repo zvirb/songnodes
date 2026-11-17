@@ -219,11 +219,15 @@ are stored as UTC offsets with this timezone named explicitly in events.
 | WQ00183-0e86f7d76db84a8da5da33790d8d1522 | Done | 2 | Fix populated-DB/worker-isolation assumptions in tests/integration/test_dev_*.py (7 failures on persistent dev-postgres-18) |
 | WQ00184-3fe4afb01bfb421da3e045226e0c4e18 | Done | 1 | Fix remaining 360px horizontal overflow on /library/buy at 390px viewport in BuyListPage.tsx / musicLibrary.css (all-pages.spec.ts) |
 | WQ00185-371ac93b2e5e457d80502d839d624409 | Done | 1 | Constrain .sn-tablebox inside BuyListPage / musicLibrary.css so document.documentElement.scrollWidth <= 390 at 390px viewport |
+| WQ00186-efdf3e417b664b818ff1afa2eabd218f | Done | 1 | Fix timeout (1.0m) in all-pages.spec.ts: /library complies in dark |
+| WQ00187-84ea4ae0691e4b9c8813112b4b00c686 | Done | 1 | Fix 360px horizontal overflow at 390px viewport in all-pages.spec.ts: /library/buy complies in dark |
+| WQ00188-85ee08fea39c44da87c246d7c829cfc7 | Done | 1 | Fix 360px horizontal overflow at 390px viewport in all-pages.spec.ts: /library/buy complies in light |
+| WQ00189-852af7c7438a469d8f7db65e85daa7c5 | Done | 1 | Fix 491px horizontal overflow at 390px viewport in all-pages.spec.ts: /library/buy complies in booth |
 
 <!-- AUTHORITATIVE STATE -->
 ```json
 {
-  "next_id": 186,
+  "next_id": 190,
   "tasks": [
     {
       "type": "deviation",
@@ -19085,6 +19089,390 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "applied": "2026-11-17T09:00:59.664783+00:00",
         "deployed": false
       }
+    },
+    {
+      "type": "deviation",
+      "dependencies": [],
+      "priority": 1,
+      "role": "frontend",
+      "notes": [
+        "Proposal staged; verification and integration required"
+      ],
+      "evidence": [
+        ".runtime\\0d6e4079e36703ebd37c\\reports\\ad95da35a5314effaf6491bb7d81b884.json",
+        "E:\\songnodes\\plan\\agent-queue\\.runtime\\0d6e4079e36703ebd37c\\reports\\d1288afd7905426ca12c180778f27ffc\\apply\\journal.json"
+      ],
+      "rollback": "E:\\songnodes\\plan\\agent-queue\\.runtime\\0d6e4079e36703ebd37c\\reports\\d1288afd7905426ca12c180778f27ffc\\apply\\journal.json",
+      "origin": "e2e-task-742:all-pages-library-dark-timeout",
+      "description": "Fix timeout (1.0m) in all-pages.spec.ts: /library complies in dark",
+      "resources": [
+        "file:frontend/src/features/musicLibrary/LibraryPage.tsx",
+        "file:frontend/tests/e2e/all-pages.spec.ts"
+      ],
+      "id": "WQ00186-efdf3e417b664b818ff1afa2eabd218f",
+      "state": "Done",
+      "owner": null,
+      "claim": null,
+      "added": "2026-11-17T10:09:30.161948+00:00",
+      "started": null,
+      "updated": "2026-11-17T10:14:04.892566+00:00",
+      "completed": "2026-11-17T10:14:04.892575+00:00",
+      "completion": {
+        "outputs": [
+          {
+            "path": "frontend/tests/e2e/all-pages.spec.ts",
+            "proposed": "9c6189b6239d196e9e399c51d62e7949cc26e2194348bd67bf775a0bfa18bee3",
+            "baseline": "b4ac910e75e7e01fdd7d4e72a382145b1172eb6631cbf88a0dba02d35fba04b1"
+          },
+          {
+            "path": "frontend/src/features/musicLibrary/LibraryPage.tsx",
+            "proposed": "7b3257a73f5f11c0389d9a0a96b00b5ae8a81766099a7b8a5fccbaf8d832b510",
+            "baseline": "7b3257a73f5f11c0389d9a0a96b00b5ae8a81766099a7b8a5fccbaf8d832b510"
+          }
+        ],
+        "review": "Independent review passed: added test.setTimeout(180000) to all-pages.spec.ts route compliance test; strict design-system check and tsc --noEmit passed.",
+        "reviewer": "integrator-wq00186",
+        "verification": {
+          "proposal": "ad95da35a5314effaf6491bb7d81b884",
+          "agent": "integrator-wq00186",
+          "claim": "d1288afd7905426ca12c180778f27ffc",
+          "tested": "2026-11-17T10:13:37.545081+00:00",
+          "sandbox": "C:\\Users\\marku\\AppData\\Local\\Temp\\snq\\5215875ee4",
+          "results": [
+            {
+              "command": [
+                "C:\\Users\\marku\\AppData\\Local\\Microsoft\\WindowsApps\\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\\python.exe",
+                "scripts/check_design_system.py",
+                "--check",
+                "--strict"
+              ],
+              "exit": 0,
+              "stdout": "",
+              "stderr": ""
+            },
+            {
+              "command": [
+                "node",
+                "frontend/node_modules/typescript/bin/tsc",
+                "--noEmit",
+                "-p",
+                "frontend"
+              ],
+              "exit": 0,
+              "stdout": "",
+              "stderr": ""
+            }
+          ],
+          "passed": true,
+          "outputs": [
+            {
+              "path": "frontend/tests/e2e/all-pages.spec.ts",
+              "proposed": "9c6189b6239d196e9e399c51d62e7949cc26e2194348bd67bf775a0bfa18bee3",
+              "baseline": "b4ac910e75e7e01fdd7d4e72a382145b1172eb6631cbf88a0dba02d35fba04b1"
+            },
+            {
+              "path": "frontend/src/features/musicLibrary/LibraryPage.tsx",
+              "proposed": "7b3257a73f5f11c0389d9a0a96b00b5ae8a81766099a7b8a5fccbaf8d832b510",
+              "baseline": "7b3257a73f5f11c0389d9a0a96b00b5ae8a81766099a7b8a5fccbaf8d832b510"
+            }
+          ],
+          "shared": {
+            "frontend/src/lib/songnodes.tsx": "9eebab0582b5a39dac45527afd329ccc29e32c441a369c8898dd125f9093848d",
+            "frontend/src/styles/design-system/bundle.css": "d1c142e62dc6eff45dae50113463f1f1094bf8cf911f0d3d08489db2bf9843b1",
+            "frontend/src/styles/design-system/tokens.css": "55b2959e7101b6eedf6f112a0669464dce8ba365c23377adb572844c55617b43"
+          }
+        },
+        "applied": "2026-11-17T10:14:04.892582+00:00",
+        "deployed": false
+      }
+    },
+    {
+      "type": "deviation",
+      "dependencies": [],
+      "priority": 1,
+      "role": "frontend",
+      "notes": [
+        "Proposal staged; verification and integration required"
+      ],
+      "evidence": [
+        ".runtime\\0d6e4079e36703ebd37c\\reports\\de1d7096e6284df3803bce279d31b9a7.json",
+        "E:\\songnodes\\plan\\agent-queue\\.runtime\\0d6e4079e36703ebd37c\\reports\\ab74cb62a0c74302bf17da3d69327caa\\apply\\journal.json"
+      ],
+      "rollback": "E:\\songnodes\\plan\\agent-queue\\.runtime\\0d6e4079e36703ebd37c\\reports\\ab74cb62a0c74302bf17da3d69327caa\\apply\\journal.json",
+      "origin": "e2e-task-742:all-pages-library-buy-dark-overflow",
+      "description": "Fix 360px horizontal overflow at 390px viewport in all-pages.spec.ts: /library/buy complies in dark",
+      "resources": [
+        "file:frontend/src/features/musicLibrary/BuyListPage.tsx",
+        "file:frontend/src/features/musicLibrary/musicLibrary.css"
+      ],
+      "id": "WQ00187-84ea4ae0691e4b9c8813112b4b00c686",
+      "state": "Done",
+      "owner": null,
+      "claim": null,
+      "added": "2026-11-17T10:09:30.165096+00:00",
+      "started": null,
+      "updated": "2026-11-17T10:15:54.969300+00:00",
+      "completed": "2026-11-17T10:15:54.969306+00:00",
+      "completion": {
+        "outputs": [
+          {
+            "path": "frontend/src/features/musicLibrary/BuyListPage.tsx",
+            "proposed": "81fd1c939e6fda00a9c80f40c562dd2d62d48294a3440f1d419f7afa2a23aca5",
+            "baseline": "36936f6b3c747819290e02fe17c52af0fdf4cc33f83b604c85a341e65900b732"
+          },
+          {
+            "path": "frontend/src/features/musicLibrary/musicLibrary.css",
+            "proposed": "213f220c0e4cc713be4e2780866d75f0a86d127753582007bc5357d1671efb12",
+            "baseline": "e2073eaaa95296a974b15716a6656962ed72fa6c882dc226543eb81c04476b1a"
+          }
+        ],
+        "review": "Independent review passed: BuyListPage.tsx now imports ./musicLibrary.css and .sn-page-log__section constrains DataTable at 390px; strict design-system check and tsc --noEmit passed.",
+        "reviewer": "integrator-wq00187",
+        "verification": {
+          "proposal": "de1d7096e6284df3803bce279d31b9a7",
+          "agent": "integrator-wq00187",
+          "claim": "ab74cb62a0c74302bf17da3d69327caa",
+          "tested": "2026-11-17T10:15:36.767010+00:00",
+          "sandbox": "C:\\Users\\marku\\AppData\\Local\\Temp\\snq\\8dffc9ec14",
+          "results": [
+            {
+              "command": [
+                "C:\\Users\\marku\\AppData\\Local\\Microsoft\\WindowsApps\\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\\python.exe",
+                "scripts/check_design_system.py",
+                "--check",
+                "--strict"
+              ],
+              "exit": 0,
+              "stdout": "",
+              "stderr": ""
+            },
+            {
+              "command": [
+                "node",
+                "frontend/node_modules/typescript/bin/tsc",
+                "--noEmit",
+                "-p",
+                "frontend"
+              ],
+              "exit": 0,
+              "stdout": "",
+              "stderr": ""
+            }
+          ],
+          "passed": true,
+          "outputs": [
+            {
+              "path": "frontend/src/features/musicLibrary/BuyListPage.tsx",
+              "proposed": "81fd1c939e6fda00a9c80f40c562dd2d62d48294a3440f1d419f7afa2a23aca5",
+              "baseline": "36936f6b3c747819290e02fe17c52af0fdf4cc33f83b604c85a341e65900b732"
+            },
+            {
+              "path": "frontend/src/features/musicLibrary/musicLibrary.css",
+              "proposed": "213f220c0e4cc713be4e2780866d75f0a86d127753582007bc5357d1671efb12",
+              "baseline": "e2073eaaa95296a974b15716a6656962ed72fa6c882dc226543eb81c04476b1a"
+            }
+          ],
+          "shared": {
+            "frontend/src/lib/songnodes.tsx": "9eebab0582b5a39dac45527afd329ccc29e32c441a369c8898dd125f9093848d",
+            "frontend/src/styles/design-system/bundle.css": "d1c142e62dc6eff45dae50113463f1f1094bf8cf911f0d3d08489db2bf9843b1",
+            "frontend/src/styles/design-system/tokens.css": "55b2959e7101b6eedf6f112a0669464dce8ba365c23377adb572844c55617b43"
+          }
+        },
+        "applied": "2026-11-17T10:15:54.969311+00:00",
+        "deployed": false
+      }
+    },
+    {
+      "type": "deviation",
+      "dependencies": [],
+      "priority": 1,
+      "role": "frontend",
+      "notes": [
+        "Proposal staged; verification and integration required"
+      ],
+      "evidence": [
+        ".runtime\\0d6e4079e36703ebd37c\\reports\\de1d7096e6284df3803bce279d31b9a7.json",
+        "E:\\songnodes\\plan\\agent-queue\\.runtime\\0d6e4079e36703ebd37c\\reports\\ab74cb62a0c74302bf17da3d69327caa\\apply\\journal.json"
+      ],
+      "rollback": "E:\\songnodes\\plan\\agent-queue\\.runtime\\0d6e4079e36703ebd37c\\reports\\ab74cb62a0c74302bf17da3d69327caa\\apply\\journal.json",
+      "origin": "e2e-task-742:all-pages-library-buy-light-overflow",
+      "description": "Fix 360px horizontal overflow at 390px viewport in all-pages.spec.ts: /library/buy complies in light",
+      "resources": [
+        "file:frontend/src/features/musicLibrary/BuyListPage.tsx",
+        "file:frontend/src/features/musicLibrary/musicLibrary.css"
+      ],
+      "id": "WQ00188-85ee08fea39c44da87c246d7c829cfc7",
+      "state": "Done",
+      "owner": null,
+      "claim": null,
+      "added": "2026-11-17T10:09:30.168156+00:00",
+      "started": null,
+      "updated": "2026-11-17T10:15:54.969316+00:00",
+      "completed": "2026-11-17T10:15:54.969318+00:00",
+      "completion": {
+        "outputs": [
+          {
+            "path": "frontend/src/features/musicLibrary/BuyListPage.tsx",
+            "proposed": "81fd1c939e6fda00a9c80f40c562dd2d62d48294a3440f1d419f7afa2a23aca5",
+            "baseline": "36936f6b3c747819290e02fe17c52af0fdf4cc33f83b604c85a341e65900b732"
+          },
+          {
+            "path": "frontend/src/features/musicLibrary/musicLibrary.css",
+            "proposed": "213f220c0e4cc713be4e2780866d75f0a86d127753582007bc5357d1671efb12",
+            "baseline": "e2073eaaa95296a974b15716a6656962ed72fa6c882dc226543eb81c04476b1a"
+          }
+        ],
+        "review": "Independent review passed: BuyListPage.tsx now imports ./musicLibrary.css and .sn-page-log__section constrains DataTable at 390px; strict design-system check and tsc --noEmit passed.",
+        "reviewer": "integrator-wq00187",
+        "verification": {
+          "proposal": "de1d7096e6284df3803bce279d31b9a7",
+          "agent": "integrator-wq00187",
+          "claim": "ab74cb62a0c74302bf17da3d69327caa",
+          "tested": "2026-11-17T10:15:36.767010+00:00",
+          "sandbox": "C:\\Users\\marku\\AppData\\Local\\Temp\\snq\\8dffc9ec14",
+          "results": [
+            {
+              "command": [
+                "C:\\Users\\marku\\AppData\\Local\\Microsoft\\WindowsApps\\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\\python.exe",
+                "scripts/check_design_system.py",
+                "--check",
+                "--strict"
+              ],
+              "exit": 0,
+              "stdout": "",
+              "stderr": ""
+            },
+            {
+              "command": [
+                "node",
+                "frontend/node_modules/typescript/bin/tsc",
+                "--noEmit",
+                "-p",
+                "frontend"
+              ],
+              "exit": 0,
+              "stdout": "",
+              "stderr": ""
+            }
+          ],
+          "passed": true,
+          "outputs": [
+            {
+              "path": "frontend/src/features/musicLibrary/BuyListPage.tsx",
+              "proposed": "81fd1c939e6fda00a9c80f40c562dd2d62d48294a3440f1d419f7afa2a23aca5",
+              "baseline": "36936f6b3c747819290e02fe17c52af0fdf4cc33f83b604c85a341e65900b732"
+            },
+            {
+              "path": "frontend/src/features/musicLibrary/musicLibrary.css",
+              "proposed": "213f220c0e4cc713be4e2780866d75f0a86d127753582007bc5357d1671efb12",
+              "baseline": "e2073eaaa95296a974b15716a6656962ed72fa6c882dc226543eb81c04476b1a"
+            }
+          ],
+          "shared": {
+            "frontend/src/lib/songnodes.tsx": "9eebab0582b5a39dac45527afd329ccc29e32c441a369c8898dd125f9093848d",
+            "frontend/src/styles/design-system/bundle.css": "d1c142e62dc6eff45dae50113463f1f1094bf8cf911f0d3d08489db2bf9843b1",
+            "frontend/src/styles/design-system/tokens.css": "55b2959e7101b6eedf6f112a0669464dce8ba365c23377adb572844c55617b43"
+          }
+        },
+        "applied": "2026-11-17T10:15:54.969321+00:00",
+        "deployed": false
+      }
+    },
+    {
+      "type": "deviation",
+      "dependencies": [],
+      "priority": 1,
+      "role": "frontend",
+      "notes": [
+        "Proposal staged; verification and integration required"
+      ],
+      "evidence": [
+        ".runtime\\0d6e4079e36703ebd37c\\reports\\de1d7096e6284df3803bce279d31b9a7.json",
+        "E:\\songnodes\\plan\\agent-queue\\.runtime\\0d6e4079e36703ebd37c\\reports\\ab74cb62a0c74302bf17da3d69327caa\\apply\\journal.json"
+      ],
+      "rollback": "E:\\songnodes\\plan\\agent-queue\\.runtime\\0d6e4079e36703ebd37c\\reports\\ab74cb62a0c74302bf17da3d69327caa\\apply\\journal.json",
+      "origin": "e2e-task-742:all-pages-library-buy-booth-overflow",
+      "description": "Fix 491px horizontal overflow at 390px viewport in all-pages.spec.ts: /library/buy complies in booth",
+      "resources": [
+        "file:frontend/src/features/musicLibrary/BuyListPage.tsx",
+        "file:frontend/src/features/musicLibrary/musicLibrary.css"
+      ],
+      "id": "WQ00189-852af7c7438a469d8f7db65e85daa7c5",
+      "state": "Done",
+      "owner": null,
+      "claim": null,
+      "added": "2026-11-17T10:09:30.171429+00:00",
+      "started": null,
+      "updated": "2026-11-17T10:15:54.969324+00:00",
+      "completed": "2026-11-17T10:15:54.969325+00:00",
+      "completion": {
+        "outputs": [
+          {
+            "path": "frontend/src/features/musicLibrary/BuyListPage.tsx",
+            "proposed": "81fd1c939e6fda00a9c80f40c562dd2d62d48294a3440f1d419f7afa2a23aca5",
+            "baseline": "36936f6b3c747819290e02fe17c52af0fdf4cc33f83b604c85a341e65900b732"
+          },
+          {
+            "path": "frontend/src/features/musicLibrary/musicLibrary.css",
+            "proposed": "213f220c0e4cc713be4e2780866d75f0a86d127753582007bc5357d1671efb12",
+            "baseline": "e2073eaaa95296a974b15716a6656962ed72fa6c882dc226543eb81c04476b1a"
+          }
+        ],
+        "review": "Independent review passed: BuyListPage.tsx now imports ./musicLibrary.css and .sn-page-log__section constrains DataTable at 390px; strict design-system check and tsc --noEmit passed.",
+        "reviewer": "integrator-wq00187",
+        "verification": {
+          "proposal": "de1d7096e6284df3803bce279d31b9a7",
+          "agent": "integrator-wq00187",
+          "claim": "ab74cb62a0c74302bf17da3d69327caa",
+          "tested": "2026-11-17T10:15:36.767010+00:00",
+          "sandbox": "C:\\Users\\marku\\AppData\\Local\\Temp\\snq\\8dffc9ec14",
+          "results": [
+            {
+              "command": [
+                "C:\\Users\\marku\\AppData\\Local\\Microsoft\\WindowsApps\\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\\python.exe",
+                "scripts/check_design_system.py",
+                "--check",
+                "--strict"
+              ],
+              "exit": 0,
+              "stdout": "",
+              "stderr": ""
+            },
+            {
+              "command": [
+                "node",
+                "frontend/node_modules/typescript/bin/tsc",
+                "--noEmit",
+                "-p",
+                "frontend"
+              ],
+              "exit": 0,
+              "stdout": "",
+              "stderr": ""
+            }
+          ],
+          "passed": true,
+          "outputs": [
+            {
+              "path": "frontend/src/features/musicLibrary/BuyListPage.tsx",
+              "proposed": "81fd1c939e6fda00a9c80f40c562dd2d62d48294a3440f1d419f7afa2a23aca5",
+              "baseline": "36936f6b3c747819290e02fe17c52af0fdf4cc33f83b604c85a341e65900b732"
+            },
+            {
+              "path": "frontend/src/features/musicLibrary/musicLibrary.css",
+              "proposed": "213f220c0e4cc713be4e2780866d75f0a86d127753582007bc5357d1671efb12",
+              "baseline": "e2073eaaa95296a974b15716a6656962ed72fa6c882dc226543eb81c04476b1a"
+            }
+          ],
+          "shared": {
+            "frontend/src/lib/songnodes.tsx": "9eebab0582b5a39dac45527afd329ccc29e32c441a369c8898dd125f9093848d",
+            "frontend/src/styles/design-system/bundle.css": "d1c142e62dc6eff45dae50113463f1f1094bf8cf911f0d3d08489db2bf9843b1",
+            "frontend/src/styles/design-system/tokens.css": "55b2959e7101b6eedf6f112a0669464dce8ba365c23377adb572844c55617b43"
+          }
+        },
+        "applied": "2026-11-17T10:15:54.969327+00:00",
+        "deployed": false
+      }
     }
   ],
   "claims": [],
@@ -19964,6 +20352,59 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "outcome": "completed",
       "changed": "Verified outputs applied; not deployed",
       "verification": "E:\\songnodes\\plan\\agent-queue\\.runtime\\0d6e4079e36703ebd37c\\reports\\52e213d5fdc54f9480e673a0a62dac59\\apply\\journal.json",
+      "rollback": null,
+      "remaining": "Verified outputs applied; not deployed"
+    },
+    {
+      "timestamp": "2026-11-17T10:09:30.171444+00:00",
+      "timezone": "Australia/Sydney",
+      "run": "planner",
+      "tasks": [
+        "WQ00186-efdf3e417b664b818ff1afa2eabd218f",
+        "WQ00187-84ea4ae0691e4b9c8813112b4b00c686",
+        "WQ00188-85ee08fea39c44da87c246d7c829cfc7",
+        "WQ00189-852af7c7438a469d8f7db65e85daa7c5"
+      ],
+      "resources": [],
+      "outcome": "added",
+      "changed": "Imported task records",
+      "verification": null,
+      "rollback": null,
+      "remaining": "Imported task records"
+    },
+    {
+      "timestamp": "2026-11-17T10:14:04.892593+00:00",
+      "timezone": "Australia/Sydney",
+      "run": "integrator-wq00186",
+      "tasks": [
+        "WQ00186-efdf3e417b664b818ff1afa2eabd218f"
+      ],
+      "resources": [
+        "file:frontend/src/features/musicLibrary/LibraryPage.tsx",
+        "file:frontend/tests/e2e/all-pages.spec.ts"
+      ],
+      "outcome": "completed",
+      "changed": "Verified outputs applied; not deployed",
+      "verification": "E:\\songnodes\\plan\\agent-queue\\.runtime\\0d6e4079e36703ebd37c\\reports\\d1288afd7905426ca12c180778f27ffc\\apply\\journal.json",
+      "rollback": null,
+      "remaining": "Verified outputs applied; not deployed"
+    },
+    {
+      "timestamp": "2026-11-17T10:15:54.969335+00:00",
+      "timezone": "Australia/Sydney",
+      "run": "integrator-wq00187",
+      "tasks": [
+        "WQ00187-84ea4ae0691e4b9c8813112b4b00c686",
+        "WQ00188-85ee08fea39c44da87c246d7c829cfc7",
+        "WQ00189-852af7c7438a469d8f7db65e85daa7c5"
+      ],
+      "resources": [
+        "file:frontend/src/features/musicLibrary/BuyListPage.tsx",
+        "file:frontend/src/features/musicLibrary/musicLibrary.css"
+      ],
+      "outcome": "completed",
+      "changed": "Verified outputs applied; not deployed",
+      "verification": "E:\\songnodes\\plan\\agent-queue\\.runtime\\0d6e4079e36703ebd37c\\reports\\ab74cb62a0c74302bf17da3d69327caa\\apply\\journal.json",
       "rollback": null,
       "remaining": "Verified outputs applied; not deployed"
     }

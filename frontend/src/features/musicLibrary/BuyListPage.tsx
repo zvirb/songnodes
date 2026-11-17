@@ -7,6 +7,7 @@ import { loadLibrary, type LibraryTrack } from './data';
 import { usePageHeader } from '../../shell/AppShell';
 import { PageHeader } from '../../shell/PageParts';
 import { api } from '../../services/api';
+import './musicLibrary.css';
 
 export interface BuyTrackItem {
   id: string;

@@ -3326,7 +3326,7 @@ Original-head security checks pass; E2E fails on eight inherited screenshot base
 
 <!-- SLOT:PLANNER BEGIN -->
 ### PLANNER — Nightly queue planner (slot added 2026-11-15 by planner-20261115-2141)
-- Last run planner-20261116-2141 (16 Nov 2026 21:41 Sydney): validate valid (177 tasks, 0 claims), git-check safe. Done 111, Ready 66.
-- Graded: Sonnet :37 pair on WQ00111 Completed as claimed (axe not run, carried by WQ00171); spot-check held. Nothing added, retired or split (Ready over limit); no rule proposed; decision D014. No undefined steps.
-- Report: plan/agent-queue/reports/20261116-planner.md. Next: nightly run 17 Nov 21:40.
+- Last run planner-20261117-2141 (17 Nov 2026 21:41 Sydney): validate valid (189 tasks, 0 claims), git-check safe. Done 120, Ready 69.
+- Graded the tuf-boi session runs on WQ00181-WQ00189: WQ00184/WQ00185 Wasted (inert stylesheet), WQ00181/WQ00183/WQ00186/WQ00187-189 Unverified, WQ00182 completed outside the queue; WQ00180 Partial. No scheduled run reached the queue. Proposed Q020; decision D017. Nothing added, retired or split (Ready over limit). No undefined steps.
+- Report: plan/agent-queue/reports/20261117-planner.md. Next: nightly run 18 Nov 21:40.
 <!-- SLOT:PLANNER END -->

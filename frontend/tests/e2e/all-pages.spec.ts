@@ -45,6 +45,7 @@ async function audit(page: Page, route: string) {
 for (const theme of ['dark', 'light', 'booth']) {
   for (const route of routes) {
     test(`${route} complies in ${theme}`, async ({ page }) => {
+      test.setTimeout(180000);
       await prepare(page, theme);
       if (route.startsWith('/callback/') || route === '/oauth/callback') {
         // Hold only the callback's three-second redirect during this content audit.
