@@ -1,11 +1,11 @@
-fastapi==0.162.2
+fastapi==0.163.0
 uvicorn[standard]==0.54.0
 pydantic==2.14.3
 python-multipart==0.0.33
 psutil==7.2.2
 spacy==3.8.18
 textblob==0.20.1
-regex==2026.11.7
+regex==2026.11.9
 numpy==2.5.4
 redis==8.1.0
 python-dateutil==4.0.0
