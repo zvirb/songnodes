@@ -3,6 +3,14 @@
 Run `python -X utf8 plan/agent-queue/tools/queue.py COMMAND` from the repo root.
 Read AGENTS.md, GOVERNANCE.md, the task/dependencies and recent local status first.
 
+## Store: the queue database (Q026, since 2026-11-21)
+
+1. Source of truth on main: `plan/agent-queue/qdb/queue.db`, while `qdb/queue-db.json` says `"mode": "authoritative"` and `"branch": "main"`. Only tools/queue.py writes it (inside the .mutex, on a private temp copy renamed over the shared file).
+2. QUEUE.md and `.runtime/<branch-hash>/state.json` are generated views, rewritten by the tool after every change. Never edit them, queue.db or queue-db.json by hand.
+3. Read tasks with qdb.py from the Queue Monitor folder (D:\beanAllianceOne\build\queue-monitor\docker\standalone\qdb.py; device VM: `$HOME/mnt/beanAllianceOne/build/queue-monitor/docker/standalone/qdb.py`), never by reading the 1 MB QUEUE.md table: `qdb.py ready plan/agent-queue --band`, `qdb.py show plan/agent-queue ID`, `qdb.py info plan/agent-queue`. Device VM: `export QDB_TMP=/tmp` first. Change state only with queue.py commands.
+4. Other branches and worktrees keep the older store described below (QUEUE.md catalog plus branch-local state.json).
+5. If the tool refuses with "state.json changed outside the queue database", stop and report it. The operator adopts the file with `qdb-import` or returns to the older store with `qdb-import --state shadow` (nothing is lost: state.json is a full mirror). Return to the database with `qdb-import --state authoritative`, which flips only when the regenerated views are byte-identical.
+
 ## Git and restart safety
 
 QUEUE.md is the portable catalog of tasks and terminal evidence; its baseline states
@@ -39,11 +47,13 @@ rollback --agent REVIEWER --claim FOLLOWUP_TOKEN --proposal APPLIED_TOKEN
 transition --tasks WQ00001 --state Ready --note "Blocker resolved"
 transition --tasks WQ00001 --state Split --children WQ00002 WQ00003 --note "Precise split"
 transition --tasks WQ00001 --state Retired --note "Replacement and rationale"
+amend --tasks WQ00001 --note "Reason" [--dependencies ... --criteria ... --description ... --priority N --resources ... --set-role ROLE]
 defer --tasks WQ00001 --batch WQ00100 --note "Pending verification"
 break-stale --agent OPERATOR --abandoned RUN
 validate
 repair
 git-check
+qdb-import [--state authoritative|shadow]
 ```
 
 Mode is apply-verified since 2026-11-14 (Q014, D009; user: "always go ahead and apply").
@@ -59,6 +69,8 @@ commit/sync request is separate from worker permissions. No deployment, DB actio
 provider edit, push, merge or automatic worker/schedule is enabled.
 
 ## Worker prompt
+
+Write every note, STATUS slot, report and summary of work done by Q021 (i-have-adhd write-up style): outcome and next action for Markus first, what now works in concrete terms, numbered items, state of each, no preamble or recap.
 
 Read current governing files and applicable design-system cards. Select one Ready
 task by priority, dependencies and role. Reproduce the observation before editing:
@@ -77,7 +89,10 @@ Never describe a staged result as applied or deployed.
 
 ## Integrator prompt
 
-Claim staged Waiting tasks as integrator. Verify uses an isolated Git snapshot of
+Write every note, STATUS slot, report and summary of work done by Q021 (i-have-adhd write-up style): outcome and next action for Markus first, what now works in concrete terms, numbered items, state of each, no preamble or recap.
+
+Claim staged Waiting tasks as integrator, with a run id different from the one that staged them: `verify` refuses the stager's own agent name (Q026). Verify uses an isolated Git snapshot of
+(Q022, Q024: when Codex has credits, also run a read-only Codex CLI review of the proposal's worktree against the task criteria and record it in the apply note; never wait for it. Codex never stages or applies.)
 configured inputs with the proposed outputs overlaid. Existing frontend dependencies
 are linked for read access; checks must not change dependency installations. Checks
 run outside the metadata mutex and ownership is rechecked afterwards. Setup/test
@@ -95,7 +110,10 @@ Git commits provide the long-term rollback point after sync.
 
 ## Planner prompt
 
+Write every note, STATUS slot, report and summary of work done by Q021 (i-have-adhd write-up style): outcome and next action for Markus first, what now works in concrete terms, numbered items, state of each, no preamble or recap.
+
 Validate task states, locks, markers and evidence. Show stale ownership separately
+(Q023: when adding or reshaping tasks, group same-rule findings into one root-cause task, note which check tasks to claim together, plan one container rebuild per wave, split anything over the ~400-line budget and use `amend` for open tasks. Roles `e2e` and `backend` go to any run with a tuf-boi shell that reaches Docker and pytest (Q024).)
 from task state. Age alone never proves abandonment: contact/check the worker and
 attest that the exact named run is abandoned before break-stale. It retains history
 and invalidates the old token. Repair regenerates interrupted derived views. Pending
@@ -111,6 +129,8 @@ follow-ups with `add records.json`; origins deduplicate and IDs are immutable.
 observations and every display-matrix occurrence. reports/design-system-audit.json
 is immutable evidence. Coverage gaps are separate verification tasks. The historical
 dated tracker is untouched. BUILD-UNITS.csv documents the resolver configuration.
+
+Device VM: `python3 -m pytest -o addopts= --noconftest tests/test_agent_queue.py` (the repo conftest imports docker; pytest via `pip3 install --user pytest`).
 
 ```sh
 python -X utf8 -m pytest tests/test_agent_queue.py
