@@ -1,4 +1,9 @@
-"""Persistent, proposal-only queue. QUEUE.md is authoritative; other views replay it."""
+"""Persistent, proposal-only queue.
+
+Store (WQ00203, rule Q026): when qdb/queue-db.json says "mode": "authoritative" for the current branch, the
+queue database qdb/queue.db is the source of truth; QUEUE.md and .runtime/<branch>/state.json are regenerated
+from it as read-only views after every change. Any other branch, and "mode": "shadow", keep the older store:
+QUEUE.md catalog plus branch-local state.json (Q011), with queue.db rebuilt by the Queue Monitor."""
 import argparse
 import contextlib
 import hashlib
@@ -11,12 +16,51 @@ import time
 import uuid
 import copy
 import shutil
+import sqlite3
 import subprocess
 from datetime import datetime, timezone
 
 HERE = Path(__file__).resolve().parents[1]
 MARK = '\n<!-- AUTHORITATIVE STATE -->\n'
 STATES = {'Ready', 'In progress', 'Waiting', 'Done', 'Retired', 'Split'}
+QDB_WRITER = 'tools/queue.py'
+QDB_SCHEMA_VERSION = 1
+# qdb.py's SCHEMA (Queue Monitor folder): its read commands (info, ready, show, sql) use meta, tasks and status.
+# state_meta, claims and batches hold the rest of the state so it is rebuilt byte for byte.
+QDB_SCHEMA = '''
+CREATE TABLE meta(k TEXT PRIMARY KEY, v TEXT);
+CREATE TABLE tasks(id TEXT PRIMARY KEY, seq INTEGER, title TEXT, type TEXT, state TEXT, agent TEXT, priority INTEGER,
+  folders TEXT, item TEXT, done_when TEXT, depends TEXT, origin TEXT, parent TEXT, added TEXT, completed TEXT,
+  run_notes TEXT, verify_state TEXT, verified_by TEXT, verified_at TEXT, raw TEXT);
+CREATE INDEX tasks_state ON tasks(state, priority);
+CREATE TABLE status(seq INTEGER PRIMARY KEY, at TEXT, item TEXT, folder TEXT, state TEXT, built TEXT,
+  evidence TEXT, rollback TEXT, left_for TEXT, raw TEXT);
+CREATE TABLE state_meta(k TEXT PRIMARY KEY, v TEXT);
+CREATE TABLE claims(seq INTEGER PRIMARY KEY, token TEXT, agent TEXT, released TEXT, raw TEXT);
+CREATE TABLE batches(seq INTEGER PRIMARY KEY, id TEXT, state TEXT, raw TEXT);
+'''
+
+
+def text_digest(text):
+    return hashlib.sha256(text.encode('utf8')).hexdigest()
+
+
+def private_dir():
+    # Private copies never go to a shared mounted folder (the device VM cannot delete there): QDB_TMP, else /tmp.
+    base = os.environ.get('QDB_TMP') or ('/tmp' if os.path.isdir('/tmp') and os.access('/tmp', os.W_OK) else None)
+    return tempfile.TemporaryDirectory(prefix='snqdb_', dir=base)
+
+
+def replace_retrying(source, target):
+    # Windows refuses a rename over a file another process is copying; readers copy in well under a second.
+    for attempt in range(20):
+        try:
+            os.replace(source, target)
+            return
+        except PermissionError:
+            if attempt == 19:
+                raise
+            time.sleep(0.25)
 
 
 def now():
@@ -70,6 +114,119 @@ class Queue:
         self.branch = branch.stdout.strip() or detached.stdout.strip() or 'local'
         self.runtime = self.home / '.runtime' / hashlib.sha256(self.branch.encode()).hexdigest()[:20]
         self.runtime.mkdir(parents=True, exist_ok=True)
+        self.qdb = self.home / 'qdb'
+        self._auth = None       # store mode seen by the last load (save uses the same store)
+        self._generation = None  # queue.db generation the last load read; save refuses if another writer moved it
+
+    def qdb_config(self):
+        try:
+            return json.loads((self.qdb / 'queue-db.json').read_text(encoding='utf8'))
+        except (OSError, ValueError):
+            return {}
+
+    def authoritative(self):
+        # One database per checkout, for one branch only (default main); other branches keep the Q011 store.
+        config = self.qdb_config()
+        return config.get('mode') == 'authoritative' and config.get('branch', 'main') == self.branch
+
+    def read_db(self, meta_only=False):
+        """Read qdb/queue.db from a private copy, never the shared file itself. None if it is absent or was not
+        written by this tool (a shadow build by the Queue Monitor); then state.json, the full mirror, is used."""
+        path = self.qdb / 'queue.db'
+        if not path.is_file():
+            return None
+        with private_dir() as tmp:
+            local = Path(tmp) / 'queue.db'
+            shutil.copyfile(path, local)
+            connection = sqlite3.connect(local.as_uri() + '?mode=ro&immutable=1', uri=True)
+            try:
+                try:
+                    meta = dict(connection.execute('SELECT k, v FROM meta'))
+                except sqlite3.DatabaseError:
+                    meta = {}
+                if meta.get('writer') != QDB_WRITER:
+                    return None
+                if connection.execute('PRAGMA quick_check').fetchone()[0] != 'ok':
+                    raise ValueError('qdb/queue.db failed its integrity check; set qdb/queue-db.json mode to shadow (state.json is a full mirror)')
+                if meta_only:
+                    return None, meta
+                extra = {k: json.loads(v) for k, v in connection.execute('SELECT k, v FROM state_meta')}
+                rows = dict(tasks=[json.loads(r) for (r,) in connection.execute('SELECT raw FROM tasks ORDER BY seq')],
+                            events=[json.loads(r) for (r,) in connection.execute('SELECT raw FROM status ORDER BY seq')],
+                            claims=[json.loads(r) for (r,) in connection.execute('SELECT raw FROM claims ORDER BY seq')],
+                            batches=[json.loads(r) for (r,) in connection.execute('SELECT raw FROM batches ORDER BY seq')])
+            except sqlite3.DatabaseError as error:
+                raise ValueError(f'qdb/queue.db unreadable ({error}); set qdb/queue-db.json mode to shadow (state.json is a full mirror)') from error
+            finally:
+                connection.close()
+        state = {}
+        for key in extra.pop('_key_order'):
+            state[key] = rows[key] if key in rows else extra[key]
+        return state, meta
+
+    def write_db(self, state, state_text, force=False):
+        """Write the whole state to a private temp database (journal_mode=TRUNCATE), copy it beside
+        qdb/queue.db and rename it over the shared file. Called inside the .mutex only."""
+        current = self.read_db(meta_only=True)
+        meta = current[1] if current else {}
+        if current and not force and meta.get('generation') != self._generation:
+            raise ValueError('BUSY: queue database changed since it was loaded; retry the command')
+        generation = str(int(meta.get('generation', '0')) + 1)
+        self.qdb.mkdir(parents=True, exist_ok=True)
+        with private_dir() as tmp:
+            local = Path(tmp) / 'queue.db'
+            connection = sqlite3.connect(local)
+            try:
+                connection.execute('PRAGMA journal_mode=TRUNCATE')
+                connection.execute('PRAGMA synchronous=FULL')
+                connection.executescript(QDB_SCHEMA)
+                for seq, t in enumerate(state['tasks']):
+                    # Same columns and values as qdb.py's shadow build, so its read commands answer the same way.
+                    connection.execute('INSERT INTO tasks(id, seq, title, type, state, agent, priority, folders, item, done_when, depends, origin, parent, added, completed, run_notes, raw) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', (
+                        t['id'], seq, ' '.join(t.get('description', '').split())[:160], t.get('type', ''), t.get('state', ''),
+                        t.get('role') or t.get('owner') or '', t.get('priority'), '; '.join(t.get('resources') or []),
+                        t.get('description', ''), json.dumps(t.get('criteria') or '', ensure_ascii=False),
+                        ' '.join(t.get('dependencies') or []), t.get('origin', ''), '', t.get('added') or '',
+                        t.get('completed') or '', json.dumps(t.get('notes') or '', ensure_ascii=False), json.dumps(t, ensure_ascii=False)))
+                for seq, e in enumerate(state['events']):
+                    connection.execute('INSERT INTO status VALUES(?,?,?,?,?,?,?,?,?,?)', (
+                        seq, e.get('timestamp', ''), ' '.join(e.get('tasks') or []) + ' ' + e.get('run', ''), '', e.get('outcome', ''),
+                        e.get('summary', '') or e.get('note', ''), json.dumps(e.get('evidence', ''), ensure_ascii=False), '', '',
+                        json.dumps(e, ensure_ascii=False)))
+                for seq, c in enumerate(state['claims']):
+                    connection.execute('INSERT INTO claims VALUES(?,?,?,?,?)', (seq, c['token'], c['agent'], c.get('released'), json.dumps(c, ensure_ascii=False)))
+                for seq, b in enumerate(state.get('batches', [])):
+                    connection.execute('INSERT INTO batches VALUES(?,?,?,?)', (seq, b['id'], b.get('state'), json.dumps(b, ensure_ascii=False)))
+                extra = {k: v for k, v in state.items() if k not in {'tasks', 'events', 'claims', 'batches'}}
+                extra['_key_order'] = list(state)
+                connection.executemany('INSERT INTO state_meta VALUES(?,?)', [(k, json.dumps(v, ensure_ascii=False)) for k, v in extra.items()])
+                info = dict(schema=str(QDB_SCHEMA_VERSION), queue='songnodes', mode='authoritative', writer=QDB_WRITER, branch=self.branch,
+                            built_at=now(), source_dir=str(self.home), digest='', duplicate_ids='0', generation=generation,
+                            source_files=json.dumps(['qdb/queue.db (written by tools/queue.py)']),
+                            state_sha=text_digest(state_text), prev_state_sha=meta.get('state_sha', ''))
+                connection.executemany('INSERT INTO meta VALUES(?,?)', info.items())
+                connection.commit()
+                if connection.execute('PRAGMA integrity_check').fetchone()[0] != 'ok':
+                    raise ValueError('New queue database failed its integrity check; nothing was replaced')
+            finally:
+                connection.close()
+            fd, name = tempfile.mkstemp(dir=self.qdb, prefix='.write-')
+            try:
+                with os.fdopen(fd, 'wb') as stream:
+                    stream.write(local.read_bytes())
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                replace_retrying(name, self.qdb / 'queue.db')
+            finally:
+                if os.path.exists(name):
+                    os.unlink(name)
+        self._generation = generation
+        config = self.qdb_config()
+        config.update(built_at=now(), writer=QDB_WRITER, generation=int(generation), tasks=len(state['tasks']),
+                      ready=sum(t['state'] == 'Ready' for t in state['tasks']))
+        config.setdefault('branch', self.branch)
+        config['note'] = 'queue.db is written only by tools/queue.py in authoritative mode. Read with qdb.py (Queue Monitor folder). Never edit queue.db or this file by hand; change mode with queue.py qdb-import --state.'
+        atomic(self.qdb / 'queue-db.json', json.dumps(config, indent=2))
 
     @contextlib.contextmanager
     def mutex(self):
@@ -93,12 +250,26 @@ class Queue:
                 else:
                     fcntl.flock(stream, fcntl.LOCK_UN)
 
-    def load(self):
+    def load(self, legacy=False):
         text = (self.home / 'QUEUE.md').read_text(encoding='utf8')
         state = json.loads(text.split(MARK, 1)[1].removeprefix('```json\n').rsplit('\n```', 1)[0])
         catalog = state
-        if (self.runtime / 'state.json').exists():
+        self._auth = not legacy and self.authoritative()
+        self._generation = None
+        stored = self.read_db() if self._auth else None
+        if stored:
+            state, meta = stored
+            self._generation = meta.get('generation')
+            path = self.runtime / 'state.json'
+            mirror = hashlib.sha256(path.read_bytes()).hexdigest() if path.exists() else None
+            # The view may lag the database by one write after a crash (prev_state_sha); anything else means
+            # something other than this tool wrote state.json, and neither copy may win silently.
+            if mirror is not None and mirror not in {meta.get('state_sha'), meta.get('prev_state_sha')}:
+                raise ValueError('state.json changed outside the queue database; adopt it with `qdb-import --state authoritative` or return to the older store with `qdb-import --state shadow`')
+        elif (self.runtime / 'state.json').exists():
             state = json.loads((self.runtime / 'state.json').read_text(encoding='utf8'))
+        if state is not catalog:
+            # Tasks that arrive in QUEUE.md through Git (another branch's catalog) are still merged in, as before.
             by_id = {t['id']: t for t in state['tasks']}
             for task in catalog['tasks']:
                 if task['id'] not in by_id:
@@ -111,9 +282,9 @@ class Queue:
             raise ValueError('Malformed task records or duplicate IDs')
         return state
 
-    def save(self, state):
-        self.validate(state)
-        atomic(self.runtime / 'state.json', json.dumps(state, indent=2))
+    def render(self, state):
+        """The two generated views, as text: state.json (full mirror) and QUEUE.md (portable catalog)."""
+        state_text = json.dumps(state, indent=2)
         # Git transports task definitions and terminal results, never active leases.
         catalog = copy.deepcopy(state)
         catalog['claims'] = []
@@ -122,14 +293,51 @@ class Queue:
             if task['state'] not in {'Done', 'Retired', 'Split'}:
                 task['state'] = 'Ready'
             task.update(owner=None, claim=None, started=None)
-        state_for_view = state
         state = catalog
         rules = (self.home / 'GOVERNANCE.md').read_text(encoding='utf8')
         table = '\n| ID | State | Priority | Task |\n| --- | --- | --- | --- |\n'
         for task in state['tasks']:
             table += f"| {task['id']} | {task['state']} | {task['priority']} | {task['description'].replace('|', '/').replace(chr(10), ' ')} |\n"
-        atomic(self.home / 'QUEUE.md', rules + table + MARK + '```json\n' + json.dumps(state, indent=2) + '\n```\n')
-        self.views(state_for_view)
+        return state_text, rules + table + MARK + '```json\n' + json.dumps(state, indent=2) + '\n```\n'
+
+    def save(self, state, force=False):
+        self.validate(state)
+        state_text, queue_text = self.render(state)
+        if self._auth if self._auth is not None else self.authoritative():
+            self.write_db(state, state_text, force)   # the store first; the views below follow it
+        atomic(self.runtime / 'state.json', state_text)
+        atomic(self.home / 'QUEUE.md', queue_text)
+        self.views(state)
+
+    def qdb_import(self, target=None):
+        """Operator cut-over (WQ00203). Inside the mutex: write queue.db from the older store, rebuild the views
+        from the database and compare them byte for byte with the files on disk, and only if identical set the
+        mode (target 'authoritative'). target 'shadow' only sets the mode back; state.json is a full mirror."""
+        if target not in {None, 'authoritative', 'shadow'}:
+            raise ValueError('qdb-import --state takes authoritative or shadow')
+        config = self.qdb_config()
+        if target == 'shadow':
+            config.update(mode='shadow', note='Shadow: QUEUE.md and .runtime state.json are the store; the Queue Monitor rebuilds queue.db. Never edit by hand.')
+            atomic(self.qdb / 'queue-db.json', json.dumps(config, indent=2))
+            return dict(mode='shadow', branch=self.branch)
+        state = self.load(legacy=True)
+        self.validate(state)
+        before = {name: (path.read_bytes() if path.exists() else None) for name, path in [('state.json', self.runtime / 'state.json'), ('QUEUE.md', self.home / 'QUEUE.md')]}
+        self.write_db(state, self.render(state)[0], force=True)
+        stored, meta = self.read_db()
+        self.validate(stored)
+        after = dict(zip(['state.json', 'QUEUE.md'], [text.encode('utf8') for text in self.render(stored)]))
+        identical = {name: before[name] == after[name] for name in before}
+        result = dict(tasks=len(stored['tasks']), events=len(stored['events']), claims=len(stored['claims']), generation=int(meta['generation']),
+                      identical=identical, branch=self.branch, mode=config.get('mode', 'shadow'))
+        if target == 'authoritative':
+            if not all(identical.values()):
+                raise ValueError('Regenerated views differ from the files on disk; mode left unchanged: ' + json.dumps(identical))
+            config = self.qdb_config()
+            config.update(mode='authoritative', branch=self.branch)
+            atomic(self.qdb / 'queue-db.json', json.dumps(config, indent=2))   # last step: the flip
+            result['mode'] = 'authoritative'
+        return result
 
     def views(self, state):
         # Crash recovery replays these views; no task state lives in a view.
@@ -325,6 +533,8 @@ class Queue:
             claim, report = self.proposal(state, token, agent, proposal)
             if 'verify' not in self.config['roles'][claim['role']]:
                 raise ValueError('Role cannot verify')
+            if agent == report['agent']:
+                raise ValueError('Independent verification required: the run that staged this proposal cannot verify it')
         outputs = [(o['path'], (self.runtime / 'reports' / proposal / 'proposal' / o['path']).read_bytes(), o['proposed']) for o in report['outputs']]
         sandbox, results = self.isolated_checks(outputs)
         verification = dict(proposal=proposal, agent=agent, claim=token, tested=now(), sandbox=str(sandbox), results=results, passed=all(r['exit'] == 0 for r in results), outputs=report['outputs'], shared=report['shared'])
@@ -444,6 +654,54 @@ class Queue:
                     raise ValueError('BUSY: cannot retire a resource held by another task')
                 state.setdefault('retired_resources', []).extend(task['resources'])
         self.event(state, 'planner', ids, target.lower(), note)
+
+    def amend(self, state, ids, note, dependencies=None, criteria=None, description=None, priority=None, resources=None, role=None):
+        # Q023: reshape an open, unclaimed task at planning time; terminal tasks never change (Q006).
+        if not note:
+            raise ValueError('Exact reason required')
+        known = {t['id']: t for t in state['tasks']}
+        for ident in ids:
+            task = known[ident]
+            if task['claim'] or task['state'] != 'Ready':
+                raise ValueError('Only an unclaimed Ready task is amended (Waiting may hold a staged proposal)')
+            changes = []
+            if dependencies is not None:
+                if any(d not in known or d == ident or known[d]['state'] in {'Retired', 'Split'} for d in dependencies):
+                    raise ValueError('Dependency does not exist, is the task itself, or never becomes Done')
+                graph = {t['id']: list(t['dependencies']) for t in state['tasks']}
+                graph[ident] = list(dependencies)
+                seen, stack = set(), list(dependencies)
+                while stack:
+                    cur = stack.pop()
+                    if cur == ident:
+                        raise ValueError('Dependencies make a cycle')
+                    if cur not in seen:
+                        seen.add(cur)
+                        stack.extend(graph.get(cur, []))
+                task['dependencies'] = list(dependencies)
+                changes.append('dependencies set')
+            if criteria:
+                task['criteria'] = list(task.get('criteria', [])) + list(criteria)
+                changes.append(f'{len(criteria)} criteria added')
+            if description:
+                task['description'] = description
+                changes.append('description set')
+            if priority is not None:
+                task['priority'] = int(priority)
+                changes.append(f'priority {priority}')
+            if resources is not None:
+                task['resources'] = self.resolve(resources)
+                changes.append('resources set')
+            if role:
+                if role not in self.config['roles']:
+                    raise ValueError('Unknown role')
+                task['role'] = role
+                changes.append(f'role {role}')
+            if not changes:
+                raise ValueError('Nothing to amend')
+            task['notes'].append(f"Amended: {note} ({'; '.join(changes)})")
+            task['updated'] = now()
+        self.event(state, 'planner', ids, 'amended', note)
 
     def complete(self, state, claim, report, journal):
         record = json.loads(journal.read_text(encoding='utf8'))
@@ -580,7 +838,7 @@ class Queue:
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--queue', default=str(HERE))
-    parser.add_argument('command', choices=['init', 'status', 'resolve', 'add', 'claim', 'heartbeat', 'held', 'release', 'break-stale', 'precheck', 'stage', 'validate', 'repair', 'verify', 'apply', 'recover-apply', 'rollback', 'transition', 'defer', 'git-check'])
+    parser.add_argument('command', choices=['init', 'status', 'resolve', 'add', 'claim', 'heartbeat', 'held', 'release', 'break-stale', 'precheck', 'stage', 'validate', 'repair', 'verify', 'apply', 'recover-apply', 'rollback', 'transition', 'amend', 'defer', 'git-check', 'qdb-import'])
     parser.add_argument('items', nargs='*')
     parser.add_argument('--agent', default='operator')
     parser.add_argument('--role', default='frontend')
@@ -593,6 +851,12 @@ def main():
     parser.add_argument('--children', nargs='*', default=[])
     parser.add_argument('--batch')
     parser.add_argument('--json', action='store_true')
+    parser.add_argument('--dependencies', nargs='*', default=None)
+    parser.add_argument('--criteria', nargs='*', default=None)
+    parser.add_argument('--description')
+    parser.add_argument('--priority', type=int)
+    parser.add_argument('--resources', nargs='*', default=None)
+    parser.add_argument('--set-role', dest='set_role')
     args = parser.parse_args()
     queue = Queue(args.queue)
     if args.command == 'verify':
@@ -608,6 +872,10 @@ def main():
             if (queue.home / 'QUEUE.md').exists():
                 raise ValueError('Already initialized')
             queue.save(dict(next_id=1, tasks=[], claims=[], events=[]))
+            return
+        if args.command == 'qdb-import':
+            # Before the generic load: this is also the way out when state.json and queue.db disagree.
+            print(json.dumps(queue.qdb_import(args.state), indent=2))
             return
         state = queue.load()
         result = None
@@ -639,6 +907,8 @@ def main():
             result = queue.rollback(state, args.claim, args.agent, args.proposal)
         elif args.command == 'transition':
             queue.transition(state, args.tasks, args.state, args.note, args.children)
+        elif args.command == 'amend':
+            queue.amend(state, args.tasks, args.note, args.dependencies, args.criteria, args.description, args.priority, args.resources, args.set_role)
         elif args.command == 'defer':
             owner = next(t for t in state['tasks'] if t['id'] == args.batch)
             if owner['type'] != 'verification' or owner['state'] in {'Done', 'Retired', 'Split'}:

@@ -5,6 +5,7 @@ boundaries; numbered queue rules; RUN-GUIDE.md; individual tasks and worker defa
 QUEUE.md contains the portable catalog and readable task table. Current branch
 execution state is authoritative only in ignored .runtime/ (Q011). Never edit these
 records by hand. All tools take the same OS metadata mutex for metadata updates.
+Since Q026 the main branch's store is qdb/queue.db; QUEUE.md and state.json are views the tool regenerates.
 
 | Rule | Requirement and reason | Date and source |
 | --- | --- | --- |
@@ -27,6 +28,14 @@ records by hand. All tools take the same OS metadata mutex for metadata updates.
 | Q017 | Sharpens Q008 and Q013 for integrator reviews: an `apply` note names each acceptance criterion and how it was checked; a criterion that needs a browser or a running stack and was not run in that review is written "not run", never folded into "verified". A task closed because an upstream fix resolved it (proposal identical to its baseline) names the upstream task and the linked follow-up task that will check the observation live. Reason: on 14 Nov 2026 one review closed 73 header-scroll tasks with no file change and only the static design-system check and tsc, although their criteria require reproducing every display-matrix occurrence in a browser. | 2026-11-15, planner-20261115-2141 under the nightly planner authorization; fitted to Q013 (user: "why would you think you finished before actually running any tests") |
 | Q018 | Adds the `human` lane for work that needs Markus: design questions, account steps and sign-offs. The `human` role has no permissions in config.json, so no worker role (frontend, backend, e2e, integrator, planner) can claim, stage, verify or apply such a task, and no run may claim with `--role human`. A human task owns no files (resources empty), states its question or step and what unblocks, and is listed on the Queue Monitor under Markus. Runs never answer, guess or close one; tasks that depend on it simply wait. Markus's answer closes it with `transition --state Retired --note "Answered by Markus: <his choice or step done>"` by the operator or a planner relaying his words. A design question is put to him as a rendered options page; that page is human housekeeping (category H in docs/CATEGORIES.md), never a doc, and its task links it. | 2026-11-17, Markus (B3 brief: SongNodes work that needs Markus goes on the human lane); fitted to Q009, Q015 and Q016 (a new lane is a config role plus a numbered rule) |
 | Q019 | No standing tasks. Every task must be able to reach Done or Retired by a run that can claim it. Never add or keep a task that is meant to stay open, repeat, or go back to Ready or Waiting after each run (a recurring check, a batch gate, a watch, a 'runs whenever' task). Recurring work belongs to a scheduled task or to the planner, which adds ONE one-off task only when there is something to do, and that task closes Done. A task whose remainder needs something no scheduled run has (a Windows terminal, a running stack, a real btaskser session, real data, or Markus himself) waits on a human-lane task (Q018) that names that step; it is never left Ready for a worker role, and its blocker is a dependency the tool can see, so housekeeping cannot wake it early. A run that claims a task and changes nothing releases it Waiting on such a human task, never Ready. The planner, in its waste review, re-files or retires any task picked twice with no change, and lists it under For Markus. | 2026-11-17, Markus in chat ('we should never have a task that wastes tokens like this... it will get picked up over and over again when nothing needs to be run'); applied to all three queues (Bean Alliance rule 57, Personal Dashboard R25) |
+| Q020 | Sharpens Q013 and Q017 for tasks that fix a failing test or check: the task record carries criteria naming the exact failing command and the observed failure (for example the spec, test title, viewport and measured value). Its `apply` note records that command's result on the applied tree, or writes it "not run" and names the human-lane or e2e task that will run it; a static check (design-system check, tsc) never stands in for it. A follow-up for the same failure is added only after the previous fix's command was run and still failed, and it names that result. Reason: on 17 Nov 2026 the /library/buy 390px overflow was closed Done four times (WQ00181, WQ00184, WQ00185, then WQ00187-WQ00189), each on the design-system check and tsc only, with no criteria on the tasks; WQ00184 and WQ00185 changed musicLibrary.css, which BuyListPage.tsx did not import until WQ00187, so those fixes could not take effect on the page. | 2026-11-17, planner-20261117-2141 under the nightly planner authorization; fitted to Q013 (user: "why would you think you finished before actually running any tests and fixing what you found?") and Q017 |
+| Q021 | Write-up style for completed work. Every description of work done that a run writes (STATUS rows and cells, release, apply and transition notes, --note, --evidence and --left text, reports, run summaries, final messages, SendUserMessage and push notifications) follows the i-have-adhd principles: (a) the first line is the outcome and the one next action for Markus, or 'Nothing for Markus'; (b) say what now works in concrete terms (the task id, the file or page, what to open or try), never effort ('worked on', 'made some changes'); (c) multi-part results as a numbered list, one bounded item per line, most important first, at most 5 per group, with the full detail in the report file; (d) the state of each item: Done / Ready (exact remainder) / Waiting (on what), and 'part n of m' for split work; (e) failures matter-of-fact: cause, then fix or next step, no 'unfortunately' or 'there seems to be'; (f) remaining work gets a concrete time estimate in minutes or hours, never 'some work'; (g) no preamble, no recap of the steps taken, no closing pleasantries, and a second issue goes on its own line starting 'Separately:'. This changes how results are written, never which checks run or what is recorded: never drop a required cell or field, a check result (passed / failed / not run), a warning or a For Markus item to make the text shorter. Fixed formats (cell counts, two-line notifications, templates) stay as they are, with these principles applied inside them. | 2026-11-21, Markus in chat ('Please update all scheduled tasks and all queue instructions so that descriptions of work completed follows /i-have-adhd principles'); also Bean Alliance rule 60 and Personal Dashboard R27 |
+| Q022 | Roles per surface, from the shared-execution guide (Align, Plan, Implement, Verify). Align: a Claude chat with Markus settles rules and task shape. Plan: the planner adds and amends tasks and builds nothing. Implement: role `frontend` is the scheduled Claude runs, each in an isolated worktree; roles `e2e` and `backend` are Antigravity on tuf-boi (a shell with Docker and pytest), also in an isolated worktree (supersedes Q015's 'Claude Code on tuf-boi, or Markus' and the runner left open in Q016). Verify: the integrator is a different run from the builder, and its verify adds a read-only Codex CLI review of the worktree against the task criteria before `apply`; Codex never applies or stages. Every headless run (Antigravity, Codex, Claude CLI) has a turn cap, a budget cap and a wall-clock timeout with headroom. AGENTS.md stays the one rules file: CLAUDE.md imports it (`@AGENTS.md`) and GEMINI.md is a copy refreshed whenever AGENTS.md changes. | 2026-11-21, Markus in chat (answer to WQ00179: 'Antigravity builds, Codex verifies'); fitted to Q014-Q016 and the shared-execution guide |
+| Q023 | Shape tasks at planning time. (a) Group audit findings by rule across routes before filing: a rule that fails on two or more routes becomes one root-cause task naming the shared file. (b) Related check tasks (design checks, feature checks, same-rule deviations) are claimed together (`claim --tasks A B C`) and share one dev-server and browser session. (c) One container rebuild per wave of new code or new checks, never one per task. (d) A task over the ~400-line budget (AGENTS.md 1-3) is split at add time into linked parts; tasks that edit the same file run in dependency order. (e) Open tasks change through `queue.py amend`; terminal tasks never change (Q006). | 2026-11-21, Markus in chat (queue history review). Evidence: on 14 Nov ten per-page workers each found the same App.tsx Suspense false positive; five full rebuilds were queued (WQ00170-WQ00174, now three); GX4 and GX7 bundled four and five features each; WQ00180 and WQ00203 both rewrite tools/queue.py |
+| Q024 | Capability, not identity, decides who takes a task. Supersedes Q022 where it names a runner: any run (scheduled Claude, Claude Code CLI on tuf-boi, Antigravity, Codex, or Markus) may claim a task whose role it can actually perform, and skips one it cannot. Roles `e2e` and `backend` need a shell on tuf-boi that reaches Docker and pytest; any run with that shell may take them (Q015 and Q016 still limit what they may do). The integrator only has to be a different run from the builder; a read-only Codex review is added when Codex has credits and is never waited for. Task criteria that name one runner are read as 'a run with that capability'. | 2026-11-21 11:50, Markus in chat ('any agent to pick up any task with the exception of what they are capable of doing'; Antigravity and Codex run out of credits too quickly) |
+| Q025 | Ties Q022-Q024 to the older rules. `amend` changes only unclaimed Ready tasks: a Waiting task may hold a staged proposal whose criteria must not move after staging. Older criteria that name one runner (for example 'Role e2e only (rule Q015): ... Claude Code on tuf-boi or Markus') are read under Q024 as 'any run with a tuf-boi shell that reaches Docker'; what Q015 and Q016 forbid still holds. | 2026-11-21, independent check of the queue review (amend accepted Waiting tasks; e2e criteria kept the old runner text beside the new) |
+| Q026 | Queue database store. Supersedes Q011's 'authoritative only in .runtime/<branch>/state.json' and Q006's 'derived views replay from QUEUE.md' for the branch named in qdb/queue-db.json (main) while its mode is `authoritative`: qdb/queue.db is the queue's source of truth, written only by tools/queue.py, inside the .mutex, on a private temp database (journal_mode=TRUNCATE) that is copied beside the shared file and renamed over it, never written in place. QUEUE.md and .runtime/<branch>/state.json are generated read-only views rewritten after every change; never edit queue.db, queue-db.json, QUEUE.md or state.json by hand. Tasks that arrive through Git in QUEUE.md are still merged by ID; other branches and worktrees keep the Q011 store. Read tasks with qdb.py from the Queue Monitor folder (`info`, `ready`, `show`, `sql`), which reads a private copy. `verify` refuses a run whose agent name is the one that staged the proposal (Q012's independent check, now enforced). If state.json and queue.db disagree the tool refuses every command and names the fix (`qdb-import`); `qdb-import --state shadow` returns to the Q011 store with nothing lost, because state.json is a full mirror. | 2026-11-21, Markus in chat ('cut over ... all three now, in chat'); task WQ00203; fitted to Q006, Q011, Q012 and D019 |
+| Q027 | Files to delete go to a `_to_delete` folder, never deleted. Any run that would delete a file (a stale temp or lock file, a superseded copy, a file a task retires) moves it instead into `_to_delete/` at the top of the repo (`E:\songnodes\_to_delete\`, already git-ignored), keeping its path below the repo, and never runs rm, del or unlink. A file tracked by Git is removed from the index with `git rm --cached` before the move, in the same proposal. If a file of that name is already there, add -2, -3 and so on before the extension. The task's evidence names each file moved and where, so Markus can delete the folder himself. Files the queue tools manage (queue.db, views, .mutex, .runtime, locks) are never moved by hand: tools/queue.py handles them. | 2026-11-21 15:36, Markus in chat ('Move delete files to: _to_delete folders', then 'Yes' to a rule in all three queues) |
 
 Rule numbers are permanent. Supersede with a new rule and a DECISIONS.md entry;
 never delete historical rationale. Project timezone is Australia/Sydney; timestamps
@@ -204,15 +213,15 @@ are stored as UTC offsets with this timezone named explicitly in events.
 | WQ00168-a60d52711cc542efb13e4515c81a13e2 | Ready | 3 | Failed-runs badge in the AppHeader: count of scrape jobs that failed in the last 24 hours, linking to /pipeline/runs; Unknown when the API cannot be reached |
 | WQ00169-bfea293bd35743b083d224b6e51cbf0e | Ready | 3 | Key-clash checker on /sets: flag each adjacent pair outside Camelot compatibility or the BPM window, and offer up to three library swaps that fix it |
 | WQ00170-20b402115d5344df976e18d1f4ad1745 | Ready | 1 | Full container rebuild and e2e baseline from current main: first live check of the 110 applied queue fixes and everything merged since the 25 Oct rebuild |
-| WQ00171-14fceefdb42a42ebbaf636ef8313c5f2 | Ready | 1 | Full container rebuild and e2e of the outstanding fixes (AX1, SN-T09, SN-T10, R2 on /sets and /paths) |
+| WQ00171-14fceefdb42a42ebbaf636ef8313c5f2 | Retired | 1 | Full container rebuild and e2e of the outstanding fixes (AX1, SN-T09, SN-T10, R2 on /sets and /paths) |
 | WQ00172-1bea9f1a635d476aae67554b906ad9f4 | Ready | 2 | Full container rebuild and live run of every new feature-check spec and pytest check |
-| WQ00173-5c3361fe89014cc5aeca40bba0f9dbc5 | Ready | 2 | Full container rebuild and live design-rules, accessibility and visual run on every route after the design checks |
+| WQ00173-5c3361fe89014cc5aeca40bba0f9dbc5 | Retired | 2 | Full container rebuild and live design-rules, accessibility and visual run on every route after the design checks |
 | WQ00174-6f07b908177541c991da7b62803d8c54 | Ready | 3 | Full container rebuild and e2e of the invented features (energy-wave target, key clash, cue sheet, graph strength legend, rotation freshness, proven transitions, failed-runs badge) |
 | WQ00175-7c67b933228744d6acacb89aaec5cfe0 | Ready | 1 | SN-T02: no login succeeds without a configured user in the Duo/password auth router (PR #578): remove any default admin login |
 | WQ00176-c6a17d1c827844e8a5abb4918f6e1921 | Ready | 1 | SN-T05: stop the unified scraper at bronze: a scrape writes bronze rows only and library/ingest creates silver once (also removes the Unknown Artist silver writes, standing-rule R8) |
 | WQ00177-3e94e7b4923b403f93d1cee154df7954 | Ready | 2 | SN-T06: document the real layer model in docs/DATA_LAYER.md after SN-T05 (scraper writes bronze only; one silver ETL; retire or keep data-transformer stated plainly) |
 | WQ00178-222046a4048042ec9c8488a98a3a26ae | Ready | 1 | Markus: commit and sync the applied queue work. On 16 Nov git-check reported 41 uncommitted working-tree changes on main (design-system edits of 14 Nov and the queue fixes applied 14-16 Nov). Workers may not commit, push or open a PR (Q014); main takes changes only through a work-package branch and pull request (CLAUDE.md, AGENTS.md). |
-| WQ00179-ba8bf0ecc13e4e408ae4d9d394625d7b | Ready | 2 | Markus: choose how the five e2e tasks (WQ00170 to WQ00174) get a shell that reaches Docker on tuf-boi. The device shell has no docker command or socket, so container deployment cannot start from a scheduled run (Q015 keeps those runs on role frontend). |
+| WQ00179-ba8bf0ecc13e4e408ae4d9d394625d7b | Retired | 2 | Markus: choose how the five e2e tasks (WQ00170 to WQ00174) get a shell that reaches Docker on tuf-boi. The device shell has no docker command or socket, so container deployment cannot start from a scheduled run (Q015 keeps those runs on role frontend). |
 | WQ00180-5751396febf44934b08a29d41cea9cc0 | Ready | 1 | Operator tooling: add the queue's export command and progress-dashboard recipe, the human housekeeping lane (_human) with audit and reclassify, and documentation categories with the docs index. Holds no files; edits the queue tool itself, so it cannot be a worker proposal. |
 | WQ00181-f54ba63a71da4b2bad2d22332afc2e12 | Done | 1 | Fix /library/buy 360px horizontal overflow at 390px viewport in BuyListPage.tsx (all-pages.spec.ts) |
 | WQ00182-341275c82f7c4259aae5010b75df0c41 | Done | 2 | Refresh Playwright visual.spec.ts Linux Chromium baselines via scripts/e2e-docker.sh visual --project=chromium --update-snapshots |
@@ -223,11 +232,32 @@ are stored as UTC offsets with this timezone named explicitly in events.
 | WQ00187-84ea4ae0691e4b9c8813112b4b00c686 | Done | 1 | Fix 360px horizontal overflow at 390px viewport in all-pages.spec.ts: /library/buy complies in dark |
 | WQ00188-85ee08fea39c44da87c246d7c829cfc7 | Done | 1 | Fix 360px horizontal overflow at 390px viewport in all-pages.spec.ts: /library/buy complies in light |
 | WQ00189-852af7c7438a469d8f7db65e85daa7c5 | Done | 1 | Fix 491px horizontal overflow at 390px viewport in all-pages.spec.ts: /library/buy complies in booth |
+| WQ00190-3bd9681f863b4aa4b403fc0204bb35ea | Ready | 1 | GX1: Ring layout fixes in graphLayout.ts: multi-hop tracks seat on the next ring inside a bounded angular sector of their parent (no long chords across the centre), disconnected components and unlinked tracks pack onto shared outer rings (no spiral in Whole library), plus computeEdgeVisibility (SN.fitEdgeCuts + SN.edgeVisibility, optional minStrength) and interpolateSeats for 320ms seat morphs |
+| WQ00191-82ab396574024618991ae69e5597d8e8 | Ready | 1 | GX2: Progressive label level of detail and colour mode persistence in graphView.ts: shouldRenderNodeLabel (focused and 1-hop neighbours when zoomed out, ring 1 from zoom 0.85, all labels from graph-label-zoom 1.5) and GraphColourMode (none, energy, key, genre; default none) with read/store helpers |
+| WQ00192-d53b0b3643b94254810fb8bec3bb6efb | Ready | 1 | GX3: Add Colour by segmented control (Neutral, Energy, Key, Genre) and dynamic mode legend to GraphControlsDock |
+| WQ00193-77f0962956ee498292c1b38510506759 | Split | 1 | GX4: 60fps PIXI graph renderer, animated edge-traversal highlight, smooth 320ms ring morphing, curved links, edge spotlighting and unified camera glide |
+| WQ00194-7d94f1f4cd434b8f9206f8d43c8ff5fe | Ready | 1 | GX5: Anchor-preserving deterministic polar layout (-v origin pinning, mutual-neighbour half-plane preservation, polar (r, theta) interpolation) and circular island packing for connected components (>= 3 tracks) in graphLayout.ts |
+| WQ00195-6608b0889a7f433d949e428cbe5f9811 | Ready | 1 | GX6: Cap default Neighbourhood expansion to 35 strongest links with '+N weaker links' expand toggle, add Connected clusters (>= 3 tracks) vs All tracks toggle for Whole Library, and add 3-tier zoom + 2D screen-space label collision culling in graphView.ts and GraphControlsDock.tsx |
+| WQ00196-a4a733c1723e45a0ab50f8c52360cf88 | Retired | 2 | Markus: approve adding frontend dependencies (sigma v4, @react-sigma/core, graphology, flatbush) for Phase 2 single-context WebGL renderer migration (SDF typography, GPU color-ID picking, depth/zIndex bucketing at 42,634-100,000+ track scale) |
+| WQ00197-897acd70abcb4747b4012141f15057f3 | Ready | 2 | Markus: approve Phase 3 & 4 backend/DB scope (widening config.json writable paths for services/graph-visualization-api/, pipeline/, sql/) for offline Leiden + ForceAtlas2 + UMAP layout persistence (x, y, cluster_id) and binary Float32Array/Arrow skeleton endpoint (~956 KB at 42.6k tracks) |
+| WQ00198-504db0a65ee14bd189ed357caabc7c08 | Split | 1 | GX7: Screen-space stroke/label sizing (eliminating 392% zoom bloat), round linecaps, radially outward translucent pill badges, 2px harmonic Camelot outer rim + key badge, 200ms polar (r, theta) glide with directional chevron pulse and clickable GraphBreadcrumbTrail history strip |
+| WQ00199-3c621bda154045858bb0bbc3dfaa3eb3 | Ready | 2 | GX8: Zero-copy transferable ArrayBuffer spatial index in Web Worker for 42k-100k+ frustum/label queries plus Tier-3 on-demand /api/graph/data?view=neighbourhood loading in useDataLoader.ts |
+| WQ00200-f877775583ea4915b864f5b50af86e2d | Ready | 2 | GX9: Phase 2 Sigma.js v4 (@react-sigma/core + graphology) single-context WebGL migration with native GPU SDF text/shapes, GPU color-ID picking, depth/zIndex bucketing, itemSizesReference screen sizing and Worker-built Flatbush culling |
+| WQ00201-898f1f39c70c4b109febc54b3dbd7d84 | Ready | 2 | GX10: Phase 4 three-tier binary graph client: hydrate Whole Library Float32Array/Uint32Array skeleton (16 B/node, 12 B/edge) in Web Worker with IndexedDB cache, lazy viewport label catalog (Tier 2), and O(1) ego neighbourhood API (Tier 3) |
+| WQ00202-251f2cb20ba64e94a0e3c064ecac9a47 | Ready | 1 | Fix Camelot wheel layout mismatch and misaligned track-count overlay on /harmony: pass library counts prop into CamelotWheel, remove broken custom overlay SVG in CamelotPage.tsx, and tighten wheel card spacing |
+| WQ00203-88b44cc1d69544668c215cf9ce9bc4c7 | Retired | 2 | Queue database cut-over: make plan/agent-queue/qdb/queue.db the store tools/queue.py writes (Markus chat Sat 21 Nov 2026, shared-execution guide). Load and save go through queue.db (journal_mode=TRUNCATE, inside the existing .mutex; reuse the schema and read-a-copy code in D:\beanAllianceOne\build\queue-monitor\docker\standalone\qdb.py), and QUEUE.md and .runtime/<branch>/state.json are regenerated as read-only views after every change so the Queue Monitor and old readers keep working. Keep the existing stage/verify/apply proposal flow and make the verify step require a run whose agent name differs from the stager's (the independent check). Set qdb/queue-db.json mode to authoritative last. Holds no files; edits the queue tool itself, so it cannot be a worker proposal. |
+| WQ00204-1f3ab2a0bfde4a5ca39f8953ec246b65 | Ready | 1 | GX4 part 1 of 2: 60fps graph frame loop and link drawing on PIXI: decouple D3 zoom from React re-renders, ring guides, Bezier links, Now pill, edge spotlighting and progressive labels |
+| WQ00205-2c4a6f87c3d74b4393867666af62e646 | Ready | 1 | GX4 part 2 of 2: smooth travel between tracks: one 320ms seat morph with interpolateSeats, readable neighbourhood camera, animated traversed-edge pulse and breadcrumb ring |
+| WQ00206-a28da8590012444e95ccef4e5d55c2eb | Ready | 1 | GX7 part 1 of 2: screen-space stroke and label sizing (no zoom bloat), round linecaps, radially outward pill badges and the Camelot rim with key badge |
+| WQ00207-daf2c46d01514fc1a72dc76754e1647f | Ready | 1 | GX7 part 2 of 2: 200ms polar glide with directional chevron pulse, path/history polyline and the clickable GraphBreadcrumbTrail |
+| WQ00208-2268f16a7b3d46e28514f7859045eb13 | Ready | 2 | Add a Done path for planner tooling tasks (Markus chat 21 Nov 2026). Tasks of type tooling hold no files and edit the queue tool itself, so they can't go through stage/apply and today can only close as Retired (WQ00203 hit this). Add a queue.py command (e.g. `complete --tasks ID --note EVIDENCE`) that closes an In progress tooling task as Done only when: the task type is tooling and it holds no resources; the note names the evidence (tests, report path, rollback); and a second run whose agent name differs from the one that did the work records the criteria review (same independent check as Q012/Q026). Write it through the queue database store (Q026) and keep the shadow store working. Add the rule to QUEUE.md rules and the RUN-GUIDE. Holds no files; edits the queue tool itself, so it cannot be a worker proposal. |
+| WQ00209-f0cd184e2e804d3e842a5728cf6e2693 | Ready | 2 | Linked follow-up to WQ00203 (Q006: terminal tasks never reopen, so WQ00203 stays Retired). WQ00203 finished on 21 Nov but closed Retired only because tooling tasks had no Done path. Using the complete command from WQ00208, close this row as Done carrying WQ00203's evidence: reports/20261121-WQ00203-queue-db-cutover.md, DECISIONS D022, rule Q026, rollback copy _archive/20261121-1219-WQ00203. Re-check the evidence still holds before closing (queue tests, validate, regenerate identical). Then amend any open task whose dependency was moved off WQ00203 so it can depend on this row instead where that is clearer. Holds no files. |
+| WQ00210-76d140c11db54a37be10a18d7216b79d | Ready | 2 | Add a rule command to tools/queue.py so a rule edit can't leave QUEUE.md different from queue.db (Markus chat Sun 22 Nov 2026 00:53, write-fork check). QUEUE.md is rendered with GOVERNANCE.md copied in, so a hand-added rule (Q027 on 21 Nov) changes the view's source outside the tool; it only matched again because the chat ran repair. `rule --id Q0nn --text ... [--supersedes Q0mm]` appends the rule row to GOVERNANCE.md and regenerates the views inside the .mutex in one write, refusing an existing id; every write first checks GOVERNANCE.md against what was rendered last and re-renders with a note if it changed. Runs after WQ00208 because both edit tools/queue.py (Q023 d). Holds no files; edits the queue tool itself. |
 
 <!-- AUTHORITATIVE STATE -->
 ```json
 {
-  "next_id": 190,
+  "next_id": 211,
   "tasks": [
     {
       "type": "deviation",
@@ -16090,7 +16120,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:OT-R2-SETS",
@@ -16103,7 +16135,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Reproduce first; the rule is the design system one-primary rule (UX-07)",
         "Follow the current design system in full (design-system/ cards, docs/design-system/CODE_REFERENCE.md): tokens and sn-* classes only, no hex/rgb/px or local overrides; if a needed pattern is missing, do not invent one: release with the exact remainder naming the missing pattern",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00115 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00114-12e92c815de1451983fe85e2404ab66d",
@@ -16112,7 +16145,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:22.916869+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:22.916883+00:00",
+      "updated": "2026-11-21T00:47:19.298583+00:00",
       "completed": null
     },
     {
@@ -16120,7 +16153,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:OT-R2-PATHS",
@@ -16133,7 +16168,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Reproduce first on the current page (PF01 #603 changed it)",
         "Follow the current design system in full (design-system/ cards, docs/design-system/CODE_REFERENCE.md): tokens and sn-* classes only, no hex/rgb/px or local overrides; if a needed pattern is missing, do not invent one: release with the exact remainder naming the missing pattern",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00114 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00115-93f219bf2514476089675553d5bca18f",
@@ -16142,7 +16178,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:22.929443+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:22.929457+00:00",
+      "updated": "2026-11-21T00:47:19.298599+00:00",
       "completed": null
     },
     {
@@ -16150,7 +16186,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (2 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:DC-home",
@@ -16165,7 +16203,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run scripts/check_design_system.py --check --strict and frontend/tests/e2e/design-rules.spec.ts for this route where possible",
         "Report each confirmed deviation with rule, card, file:line, matrix occurrences and a ready-to-import follow-up record (origin design-check:<slug>:<rule>) for the planner; report false positives with evidence; zero findings is a valid result",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00117, WQ00118, WQ00119 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session",
+        "Q023: before filing follow-ups, group findings by rule across the whole group: a rule that fails on two or more routes becomes ONE root-cause follow-up naming the shared file (14 Nov: ten per-page tasks were one App.tsx Suspense root cause)"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00116-f8d38d233eb742eeb8e5708d9ec7df8b",
@@ -16174,7 +16214,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:22.945835+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:22.945849+00:00",
+      "updated": "2026-11-21T00:46:05.580051+00:00",
       "completed": null
     },
     {
@@ -16182,7 +16222,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (2 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:DC-graph",
@@ -16197,7 +16239,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run scripts/check_design_system.py --check --strict and frontend/tests/e2e/design-rules.spec.ts for this route where possible",
         "Report each confirmed deviation with rule, card, file:line, matrix occurrences and a ready-to-import follow-up record (origin design-check:<slug>:<rule>) for the planner; report false positives with evidence; zero findings is a valid result",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00116, WQ00118, WQ00119 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session",
+        "Q023: before filing follow-ups, group findings by rule across the whole group: a rule that fails on two or more routes becomes ONE root-cause follow-up naming the shared file (14 Nov: ten per-page tasks were one App.tsx Suspense root cause)"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00117-4a05589ecedb41e1bc1a87e913c25b85",
@@ -16206,7 +16250,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:22.951858+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:22.951871+00:00",
+      "updated": "2026-11-21T00:46:21.042002+00:00",
       "completed": null
     },
     {
@@ -16214,7 +16258,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (2 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:DC-paths",
@@ -16229,7 +16275,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run scripts/check_design_system.py --check --strict and frontend/tests/e2e/design-rules.spec.ts for this route where possible",
         "Report each confirmed deviation with rule, card, file:line, matrix occurrences and a ready-to-import follow-up record (origin design-check:<slug>:<rule>) for the planner; report false positives with evidence; zero findings is a valid result",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00116, WQ00117, WQ00119 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session",
+        "Q023: before filing follow-ups, group findings by rule across the whole group: a rule that fails on two or more routes becomes ONE root-cause follow-up naming the shared file (14 Nov: ten per-page tasks were one App.tsx Suspense root cause)"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00118-0e7792a273994dd881d58495b652b450",
@@ -16238,7 +16286,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:22.958299+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:22.958314+00:00",
+      "updated": "2026-11-21T00:47:19.297634+00:00",
       "completed": null
     },
     {
@@ -16246,7 +16294,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (2 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:DC-harmony",
@@ -16261,7 +16311,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run scripts/check_design_system.py --check --strict and frontend/tests/e2e/design-rules.spec.ts for this route where possible",
         "Report each confirmed deviation with rule, card, file:line, matrix occurrences and a ready-to-import follow-up record (origin design-check:<slug>:<rule>) for the planner; report false positives with evidence; zero findings is a valid result",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00116, WQ00117, WQ00118 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session",
+        "Q023: before filing follow-ups, group findings by rule across the whole group: a rule that fails on two or more routes becomes ONE root-cause follow-up naming the shared file (14 Nov: ten per-page tasks were one App.tsx Suspense root cause)"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00119-32eb663429ca4be799577e3a6b02b0af",
@@ -16270,7 +16322,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:22.963724+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:22.963737+00:00",
+      "updated": "2026-11-21T00:47:19.297693+00:00",
       "completed": null
     },
     {
@@ -16278,7 +16330,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (2 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:DC-library",
@@ -16293,7 +16347,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run scripts/check_design_system.py --check --strict and frontend/tests/e2e/design-rules.spec.ts for this route where possible",
         "Report each confirmed deviation with rule, card, file:line, matrix occurrences and a ready-to-import follow-up record (origin design-check:<slug>:<rule>) for the planner; report false positives with evidence; zero findings is a valid result",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00121, WQ00122, WQ00123, WQ00133 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session",
+        "Q023: before filing follow-ups, group findings by rule across the whole group: a rule that fails on two or more routes becomes ONE root-cause follow-up naming the shared file (14 Nov: ten per-page tasks were one App.tsx Suspense root cause)"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00120-c9f567c51b1e41ab93f5d4dcd1c44176",
@@ -16302,7 +16358,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:22.972183+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:22.972196+00:00",
+      "updated": "2026-11-21T00:47:19.297715+00:00",
       "completed": null
     },
     {
@@ -16310,7 +16366,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (2 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:DC-library-buy",
@@ -16325,7 +16383,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run scripts/check_design_system.py --check --strict and frontend/tests/e2e/design-rules.spec.ts for this route where possible",
         "Report each confirmed deviation with rule, card, file:line, matrix occurrences and a ready-to-import follow-up record (origin design-check:<slug>:<rule>) for the planner; report false positives with evidence; zero findings is a valid result",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00120, WQ00122, WQ00123, WQ00133 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session",
+        "Q023: before filing follow-ups, group findings by rule across the whole group: a rule that fails on two or more routes becomes ONE root-cause follow-up naming the shared file (14 Nov: ten per-page tasks were one App.tsx Suspense root cause)"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00121-13b9c3732c95460b981c2ea541cedecb",
@@ -16334,7 +16394,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:22.978900+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:22.978931+00:00",
+      "updated": "2026-11-21T00:47:19.297733+00:00",
       "completed": null
     },
     {
@@ -16342,7 +16402,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (2 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:DC-library-review",
@@ -16357,7 +16419,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run scripts/check_design_system.py --check --strict and frontend/tests/e2e/design-rules.spec.ts for this route where possible",
         "Report each confirmed deviation with rule, card, file:line, matrix occurrences and a ready-to-import follow-up record (origin design-check:<slug>:<rule>) for the planner; report false positives with evidence; zero findings is a valid result",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00120, WQ00121, WQ00123, WQ00133 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session",
+        "Q023: before filing follow-ups, group findings by rule across the whole group: a rule that fails on two or more routes becomes ONE root-cause follow-up naming the shared file (14 Nov: ten per-page tasks were one App.tsx Suspense root cause)"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00122-7bdf18fcc1774a7c8d6cd3847a7ef0dd",
@@ -16366,7 +16430,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:22.984920+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:22.984933+00:00",
+      "updated": "2026-11-21T00:47:19.297750+00:00",
       "completed": null
     },
     {
@@ -16374,7 +16438,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (2 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:DC-sets",
@@ -16389,7 +16455,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run scripts/check_design_system.py --check --strict and frontend/tests/e2e/design-rules.spec.ts for this route where possible",
         "Report each confirmed deviation with rule, card, file:line, matrix occurrences and a ready-to-import follow-up record (origin design-check:<slug>:<rule>) for the planner; report false positives with evidence; zero findings is a valid result",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00120, WQ00121, WQ00122, WQ00133 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session",
+        "Q023: before filing follow-ups, group findings by rule across the whole group: a rule that fails on two or more routes becomes ONE root-cause follow-up naming the shared file (14 Nov: ten per-page tasks were one App.tsx Suspense root cause)"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00123-21f3c80a6a78488484d6c8c76889b458",
@@ -16398,7 +16466,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:22.990372+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:22.990408+00:00",
+      "updated": "2026-11-21T00:47:19.297765+00:00",
       "completed": null
     },
     {
@@ -16406,7 +16474,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (2 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:DC-sources-targets",
@@ -16421,7 +16491,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run scripts/check_design_system.py --check --strict and frontend/tests/e2e/design-rules.spec.ts for this route where possible",
         "Report each confirmed deviation with rule, card, file:line, matrix occurrences and a ready-to-import follow-up record (origin design-check:<slug>:<rule>) for the planner; report false positives with evidence; zero findings is a valid result",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00125, WQ00126, WQ00127 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session",
+        "Q023: before filing follow-ups, group findings by rule across the whole group: a rule that fails on two or more routes becomes ONE root-cause follow-up naming the shared file (14 Nov: ten per-page tasks were one App.tsx Suspense root cause)"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00124-26c7fde7422c4129949a1d0be26c360b",
@@ -16430,7 +16502,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:22.996287+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:22.996303+00:00",
+      "updated": "2026-11-21T00:47:19.297797+00:00",
       "completed": null
     },
     {
@@ -16438,7 +16510,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (2 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:DC-sources-import",
@@ -16453,7 +16527,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run scripts/check_design_system.py --check --strict and frontend/tests/e2e/design-rules.spec.ts for this route where possible",
         "Report each confirmed deviation with rule, card, file:line, matrix occurrences and a ready-to-import follow-up record (origin design-check:<slug>:<rule>) for the planner; report false positives with evidence; zero findings is a valid result",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00124, WQ00126, WQ00127 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session",
+        "Q023: before filing follow-ups, group findings by rule across the whole group: a rule that fails on two or more routes becomes ONE root-cause follow-up naming the shared file (14 Nov: ten per-page tasks were one App.tsx Suspense root cause)"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00125-9273d10fb92d492e94fe6487748fea4f",
@@ -16462,7 +16538,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.003929+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.003944+00:00",
+      "updated": "2026-11-21T00:47:19.297813+00:00",
       "completed": null
     },
     {
@@ -16470,7 +16546,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (2 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:DC-pipeline",
@@ -16485,7 +16563,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run scripts/check_design_system.py --check --strict and frontend/tests/e2e/design-rules.spec.ts for this route where possible",
         "Report each confirmed deviation with rule, card, file:line, matrix occurrences and a ready-to-import follow-up record (origin design-check:<slug>:<rule>) for the planner; report false positives with evidence; zero findings is a valid result",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00124, WQ00125, WQ00127 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session",
+        "Q023: before filing follow-ups, group findings by rule across the whole group: a rule that fails on two or more routes becomes ONE root-cause follow-up naming the shared file (14 Nov: ten per-page tasks were one App.tsx Suspense root cause)"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00126-a36a1503f44144b3bb32d395890b722a",
@@ -16494,7 +16574,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.010081+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.010095+00:00",
+      "updated": "2026-11-21T00:47:19.297828+00:00",
       "completed": null
     },
     {
@@ -16502,7 +16582,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (2 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:DC-pipeline-runs",
@@ -16517,7 +16599,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run scripts/check_design_system.py --check --strict and frontend/tests/e2e/design-rules.spec.ts for this route where possible",
         "Report each confirmed deviation with rule, card, file:line, matrix occurrences and a ready-to-import follow-up record (origin design-check:<slug>:<rule>) for the planner; report false positives with evidence; zero findings is a valid result",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00124, WQ00125, WQ00126 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session",
+        "Q023: before filing follow-ups, group findings by rule across the whole group: a rule that fails on two or more routes becomes ONE root-cause follow-up naming the shared file (14 Nov: ten per-page tasks were one App.tsx Suspense root cause)"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00127-208aafae3ee841289124e0a6e2fee97e",
@@ -16526,7 +16610,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.014939+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.014953+00:00",
+      "updated": "2026-11-21T00:47:19.297844+00:00",
       "completed": null
     },
     {
@@ -16534,7 +16618,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (2 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:DC-settings",
@@ -16549,7 +16635,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run scripts/check_design_system.py --check --strict and frontend/tests/e2e/design-rules.spec.ts for this route where possible",
         "Report each confirmed deviation with rule, card, file:line, matrix occurrences and a ready-to-import follow-up record (origin design-check:<slug>:<rule>) for the planner; report false positives with evidence; zero findings is a valid result",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00129, WQ00130, WQ00131, WQ00132, WQ00134 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session",
+        "Q023: before filing follow-ups, group findings by rule across the whole group: a rule that fails on two or more routes becomes ONE root-cause follow-up naming the shared file (14 Nov: ten per-page tasks were one App.tsx Suspense root cause)"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00128-a4e7d489bcbf46ad831bdd19745f14a9",
@@ -16558,7 +16646,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.020114+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.020170+00:00",
+      "updated": "2026-11-21T00:47:19.297862+00:00",
       "completed": null
     },
     {
@@ -16566,7 +16654,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (2 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:DC-settings-detail",
@@ -16581,7 +16671,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run scripts/check_design_system.py --check --strict and frontend/tests/e2e/design-rules.spec.ts for this route where possible",
         "Report each confirmed deviation with rule, card, file:line, matrix occurrences and a ready-to-import follow-up record (origin design-check:<slug>:<rule>) for the planner; report false positives with evidence; zero findings is a valid result",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00128, WQ00130, WQ00131, WQ00132, WQ00134 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session",
+        "Q023: before filing follow-ups, group findings by rule across the whole group: a rule that fails on two or more routes becomes ONE root-cause follow-up naming the shared file (14 Nov: ten per-page tasks were one App.tsx Suspense root cause)"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00129-8ff5f11540c54885bb76fab552d29da0",
@@ -16590,7 +16682,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.025626+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.025639+00:00",
+      "updated": "2026-11-21T00:47:19.297879+00:00",
       "completed": null
     },
     {
@@ -16598,7 +16690,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (2 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:DC-login",
@@ -16613,7 +16707,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run scripts/check_design_system.py --check --strict and frontend/tests/e2e/design-rules.spec.ts for this route where possible",
         "Report each confirmed deviation with rule, card, file:line, matrix occurrences and a ready-to-import follow-up record (origin design-check:<slug>:<rule>) for the planner; report false positives with evidence; zero findings is a valid result",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00128, WQ00129, WQ00131, WQ00132, WQ00134 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session",
+        "Q023: before filing follow-ups, group findings by rule across the whole group: a rule that fails on two or more routes becomes ONE root-cause follow-up naming the shared file (14 Nov: ten per-page tasks were one App.tsx Suspense root cause)"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00130-d8ca6112581e48cfb704c4c9cf97f013",
@@ -16622,7 +16718,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.031117+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.031131+00:00",
+      "updated": "2026-11-21T00:47:19.297895+00:00",
       "completed": null
     },
     {
@@ -16630,7 +16726,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (2 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:DC-oauth-callback",
@@ -16645,7 +16743,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run scripts/check_design_system.py --check --strict and frontend/tests/e2e/design-rules.spec.ts for this route where possible",
         "Report each confirmed deviation with rule, card, file:line, matrix occurrences and a ready-to-import follow-up record (origin design-check:<slug>:<rule>) for the planner; report false positives with evidence; zero findings is a valid result",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00128, WQ00129, WQ00130, WQ00132, WQ00134 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session",
+        "Q023: before filing follow-ups, group findings by rule across the whole group: a rule that fails on two or more routes becomes ONE root-cause follow-up naming the shared file (14 Nov: ten per-page tasks were one App.tsx Suspense root cause)"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00131-cca0ccc3d5ef497cb566901546ea08f6",
@@ -16654,7 +16754,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.035635+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.035644+00:00",
+      "updated": "2026-11-21T00:47:19.297911+00:00",
       "completed": null
     },
     {
@@ -16662,7 +16762,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (2 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:DC-service-callback",
@@ -16677,7 +16779,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run scripts/check_design_system.py --check --strict and frontend/tests/e2e/design-rules.spec.ts for this route where possible",
         "Report each confirmed deviation with rule, card, file:line, matrix occurrences and a ready-to-import follow-up record (origin design-check:<slug>:<rule>) for the planner; report false positives with evidence; zero findings is a valid result",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00128, WQ00129, WQ00130, WQ00131, WQ00134 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session",
+        "Q023: before filing follow-ups, group findings by rule across the whole group: a rule that fails on two or more routes becomes ONE root-cause follow-up naming the shared file (14 Nov: ten per-page tasks were one App.tsx Suspense root cause)"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00132-aed039fca16e48a1af5a142750df87da",
@@ -16686,7 +16790,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.043688+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.043702+00:00",
+      "updated": "2026-11-21T00:47:19.297926+00:00",
       "completed": null
     },
     {
@@ -16694,7 +16798,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (2 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:DC-track-detail",
@@ -16709,7 +16815,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run scripts/check_design_system.py --check --strict and frontend/tests/e2e/design-rules.spec.ts for this route where possible",
         "Report each confirmed deviation with rule, card, file:line, matrix occurrences and a ready-to-import follow-up record (origin design-check:<slug>:<rule>) for the planner; report false positives with evidence; zero findings is a valid result",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00120, WQ00121, WQ00122, WQ00123 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session",
+        "Q023: before filing follow-ups, group findings by rule across the whole group: a rule that fails on two or more routes becomes ONE root-cause follow-up naming the shared file (14 Nov: ten per-page tasks were one App.tsx Suspense root cause)"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00133-0d2f0f2a624e491ebcc286a4fb253805",
@@ -16718,7 +16826,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.050014+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.050029+00:00",
+      "updated": "2026-11-21T00:47:19.297781+00:00",
       "completed": null
     },
     {
@@ -16726,7 +16834,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (2 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:DC-not-found",
@@ -16741,7 +16851,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run scripts/check_design_system.py --check --strict and frontend/tests/e2e/design-rules.spec.ts for this route where possible",
         "Report each confirmed deviation with rule, card, file:line, matrix occurrences and a ready-to-import follow-up record (origin design-check:<slug>:<rule>) for the planner; report false positives with evidence; zero findings is a valid result",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00128, WQ00129, WQ00130, WQ00131, WQ00132 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session",
+        "Q023: before filing follow-ups, group findings by rule across the whole group: a rule that fails on two or more routes becomes ONE root-cause follow-up naming the shared file (14 Nov: ten per-page tasks were one App.tsx Suspense root cause)"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00134-c3667a58febd40179baab7e6ee9cce2f",
@@ -16750,7 +16862,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.057262+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.057276+00:00",
+      "updated": "2026-11-21T00:47:19.297942+00:00",
       "completed": null
     },
     {
@@ -16758,7 +16870,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:FC-search-history",
@@ -16773,7 +16887,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run it where browsers are available (chromium at least); a criterion the app fails is kept as test.fixme with the reason, and listed in tests/feature-checks/FC-search-history.md with a ready-to-import fix record for the planner",
         "Source is read-only for this task: outputs are the spec and the report only",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00136, WQ00137, WQ00139, WQ00155 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00135-d168ec8e716a4bd781a987bf0163b7e1",
@@ -16782,7 +16897,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.072845+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.072862+00:00",
+      "updated": "2026-11-21T00:47:19.297958+00:00",
       "completed": null
     },
     {
@@ -16790,7 +16905,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:FC-autocomplete",
@@ -16805,7 +16922,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run it where browsers are available (chromium at least); a criterion the app fails is kept as test.fixme with the reason, and listed in tests/feature-checks/FC-autocomplete.md with a ready-to-import fix record for the planner",
         "Source is read-only for this task: outputs are the spec and the report only",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00135, WQ00137, WQ00139, WQ00155 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00136-7dd7d5ec3cc14d12abdfeddae8f7faaa",
@@ -16814,7 +16932,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.086529+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.086543+00:00",
+      "updated": "2026-11-21T00:47:19.297974+00:00",
       "completed": null
     },
     {
@@ -16822,7 +16940,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:FC-quick-search-palette",
@@ -16837,7 +16957,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run it where browsers are available (chromium at least); a criterion the app fails is kept as test.fixme with the reason, and listed in tests/feature-checks/FC-quick-search-palette.md with a ready-to-import fix record for the planner",
         "Source is read-only for this task: outputs are the spec and the report only",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00135, WQ00136, WQ00139, WQ00155 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00137-e58c5d85003f4241addab32c925b3889",
@@ -16846,7 +16967,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.100761+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.100781+00:00",
+      "updated": "2026-11-21T00:47:19.297990+00:00",
       "completed": null
     },
     {
@@ -16854,7 +16975,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:FC-target-suggestions",
@@ -16869,7 +16992,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run it where browsers are available (chromium at least); a criterion the app fails is kept as test.fixme with the reason, and listed in tests/feature-checks/FC-target-suggestions.md with a ready-to-import fix record for the planner",
         "Source is read-only for this task: outputs are the spec and the report only",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00140, WQ00142, WQ00143, WQ00144 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00138-3060868bd31a4ad38a1b426212065a8c",
@@ -16878,7 +17002,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.113262+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.113276+00:00",
+      "updated": "2026-11-21T00:47:19.298038+00:00",
       "completed": null
     },
     {
@@ -16886,7 +17010,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:FC-keyboard-nav",
@@ -16901,7 +17027,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run it where browsers are available (chromium at least); a criterion the app fails is kept as test.fixme with the reason, and listed in tests/feature-checks/FC-keyboard-nav.md with a ready-to-import fix record for the planner",
         "Source is read-only for this task: outputs are the spec and the report only",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00135, WQ00136, WQ00137, WQ00155 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00139-1036f34acd644e0d9ba83615b1a1e372",
@@ -16910,7 +17037,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.125500+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.125514+00:00",
+      "updated": "2026-11-21T00:47:19.298006+00:00",
       "completed": null
     },
     {
@@ -16918,7 +17045,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:FC-set-transitions-presets",
@@ -16933,7 +17062,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run it where browsers are available (chromium at least); a criterion the app fails is kept as test.fixme with the reason, and listed in tests/feature-checks/FC-set-transitions-presets.md with a ready-to-import fix record for the planner",
         "Source is read-only for this task: outputs are the spec and the report only",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00138, WQ00142, WQ00143, WQ00144 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00140-6bf4057a8d594552b6db1492332782ae",
@@ -16942,7 +17072,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.139450+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.139463+00:00",
+      "updated": "2026-11-21T00:47:19.298053+00:00",
       "completed": null
     },
     {
@@ -16950,7 +17080,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:FC-audio-preview",
@@ -16965,7 +17097,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run it where browsers are available (chromium at least); a criterion the app fails is kept as test.fixme with the reason, and listed in tests/feature-checks/FC-audio-preview.md with a ready-to-import fix record for the planner",
         "Source is read-only for this task: outputs are the spec and the report only",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00145, WQ00146 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00141-f1d982b550e74a2a8833683c8bc72b9d",
@@ -16974,7 +17107,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.153364+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.153401+00:00",
+      "updated": "2026-11-21T00:47:19.298211+00:00",
       "completed": null
     },
     {
@@ -16982,7 +17115,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:FC-set-export-reorder",
@@ -16997,7 +17132,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run it where browsers are available (chromium at least); a criterion the app fails is kept as test.fixme with the reason, and listed in tests/feature-checks/FC-set-export-reorder.md with a ready-to-import fix record for the planner",
         "Source is read-only for this task: outputs are the spec and the report only",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00138, WQ00140, WQ00143, WQ00144 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00142-6be0b6c586dc4342b72efe69bd869bba",
@@ -17006,7 +17142,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.168917+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.168930+00:00",
+      "updated": "2026-11-21T00:47:19.298068+00:00",
       "completed": null
     },
     {
@@ -17014,7 +17150,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:FC-saved-sets",
@@ -17029,7 +17167,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run it where browsers are available (chromium at least); a criterion the app fails is kept as test.fixme with the reason, and listed in tests/feature-checks/FC-saved-sets.md with a ready-to-import fix record for the planner",
         "Source is read-only for this task: outputs are the spec and the report only",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00138, WQ00140, WQ00142, WQ00144 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00143-7fcda89322a5405aba0d4219a9ea5fc3",
@@ -17038,7 +17177,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.186732+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.186745+00:00",
+      "updated": "2026-11-21T00:47:19.298084+00:00",
       "completed": null
     },
     {
@@ -17046,7 +17185,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:FC-send-to-tidal",
@@ -17061,7 +17202,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run it where browsers are available (chromium at least); a criterion the app fails is kept as test.fixme with the reason, and listed in tests/feature-checks/FC-send-to-tidal.md with a ready-to-import fix record for the planner",
         "Source is read-only for this task: outputs are the spec and the report only",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00138, WQ00140, WQ00142, WQ00143 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00144-6a9fa662bcbd420e874db75b8fd817c9",
@@ -17070,7 +17212,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.199534+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.199549+00:00",
+      "updated": "2026-11-21T00:47:19.298099+00:00",
       "completed": null
     },
     {
@@ -17078,7 +17220,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:FC-pathfinder",
@@ -17093,7 +17237,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run it where browsers are available (chromium at least); a criterion the app fails is kept as test.fixme with the reason, and listed in tests/feature-checks/FC-pathfinder.md with a ready-to-import fix record for the planner",
         "Source is read-only for this task: outputs are the spec and the report only",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00146, WQ00141 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00145-bcab155693f346d6bbbc61012c73762a",
@@ -17102,7 +17247,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.216310+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.216363+00:00",
+      "updated": "2026-11-21T00:47:19.298114+00:00",
       "completed": null
     },
     {
@@ -17110,7 +17255,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:FC-harmony",
@@ -17125,7 +17272,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run it where browsers are available (chromium at least); a criterion the app fails is kept as test.fixme with the reason, and listed in tests/feature-checks/FC-harmony.md with a ready-to-import fix record for the planner",
         "Source is read-only for this task: outputs are the spec and the report only",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00145, WQ00141 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00146-42653c5b9e8e4054ae7907814234bb1f",
@@ -17134,7 +17282,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.227509+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.227522+00:00",
+      "updated": "2026-11-21T00:47:19.298130+00:00",
       "completed": null
     },
     {
@@ -17142,7 +17290,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:FC-ai-setlists",
@@ -17157,7 +17307,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run it where browsers are available (chromium at least); a criterion the app fails is kept as test.fixme with the reason, and listed in tests/feature-checks/FC-ai-setlists.md with a ready-to-import fix record for the planner",
         "Source is read-only for this task: outputs are the spec and the report only",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00156, WQ00161 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00147-ea14f80755284b7fadfa211bcd8f58a7",
@@ -17166,7 +17317,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.239489+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.239503+00:00",
+      "updated": "2026-11-21T00:47:19.298474+00:00",
       "completed": null
     },
     {
@@ -17174,7 +17325,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:FC-pipeline-stages-window",
@@ -17189,7 +17342,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run it where browsers are available (chromium at least); a criterion the app fails is kept as test.fixme with the reason, and listed in tests/feature-checks/FC-pipeline-stages-window.md with a ready-to-import fix record for the planner",
         "Source is read-only for this task: outputs are the spec and the report only",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00149, WQ00158, WQ00159 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00148-2a89ee5cf38d4075a2cd2cf97722e484",
@@ -17198,7 +17352,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.250765+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.250778+00:00",
+      "updated": "2026-11-21T00:47:19.298244+00:00",
       "completed": null
     },
     {
@@ -17206,7 +17360,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:FC-pipeline-runs",
@@ -17221,7 +17377,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run it where browsers are available (chromium at least); a criterion the app fails is kept as test.fixme with the reason, and listed in tests/feature-checks/FC-pipeline-runs.md with a ready-to-import fix record for the planner",
         "Source is read-only for this task: outputs are the spec and the report only",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00148, WQ00158, WQ00159 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00149-bf215e10ffe34766ba654f174f632b10",
@@ -17230,7 +17387,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.263420+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.263433+00:00",
+      "updated": "2026-11-21T00:47:19.298267+00:00",
       "completed": null
     },
     {
@@ -17238,7 +17395,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:FC-review-queue",
@@ -17253,7 +17412,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run it where browsers are available (chromium at least); a criterion the app fails is kept as test.fixme with the reason, and listed in tests/feature-checks/FC-review-queue.md with a ready-to-import fix record for the planner",
         "Source is read-only for this task: outputs are the spec and the report only",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00151, WQ00152, WQ00153, WQ00160 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00150-53b418ec9ff849b49cba79d03037e217",
@@ -17262,7 +17422,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.277486+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.277499+00:00",
+      "updated": "2026-11-21T00:47:19.298319+00:00",
       "completed": null
     },
     {
@@ -17270,7 +17430,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:FC-track-detail",
@@ -17285,7 +17447,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run it where browsers are available (chromium at least); a criterion the app fails is kept as test.fixme with the reason, and listed in tests/feature-checks/FC-track-detail.md with a ready-to-import fix record for the planner",
         "Source is read-only for this task: outputs are the spec and the report only",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00150, WQ00152, WQ00153, WQ00160 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00151-a0ff7e1a3bc0419a9a68bc31cffb66cb",
@@ -17294,7 +17457,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.290505+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.290519+00:00",
+      "updated": "2026-11-21T00:47:19.298337+00:00",
       "completed": null
     },
     {
@@ -17302,7 +17465,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:FC-buy-list",
@@ -17317,7 +17482,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run it where browsers are available (chromium at least); a criterion the app fails is kept as test.fixme with the reason, and listed in tests/feature-checks/FC-buy-list.md with a ready-to-import fix record for the planner",
         "Source is read-only for this task: outputs are the spec and the report only",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00150, WQ00151, WQ00153, WQ00160 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00152-6507aa2c0a3242ee953673eda2a4ce97",
@@ -17326,7 +17492,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.301942+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.301956+00:00",
+      "updated": "2026-11-21T00:47:19.298397+00:00",
       "completed": null
     },
     {
@@ -17334,7 +17500,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:FC-home-launcher",
@@ -17349,7 +17517,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run it where browsers are available (chromium at least); a criterion the app fails is kept as test.fixme with the reason, and listed in tests/feature-checks/FC-home-launcher.md with a ready-to-import fix record for the planner",
         "Source is read-only for this task: outputs are the spec and the report only",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00150, WQ00151, WQ00152, WQ00160 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00153-1f7b512de66a49b4b7961a6270ceab9d",
@@ -17358,7 +17527,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.314959+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.314973+00:00",
+      "updated": "2026-11-21T00:47:19.298427+00:00",
       "completed": null
     },
     {
@@ -17366,7 +17535,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:FC-graph-view",
@@ -17381,7 +17552,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run it where browsers are available (chromium at least); a criterion the app fails is kept as test.fixme with the reason, and listed in tests/feature-checks/FC-graph-view.md with a ready-to-import fix record for the planner",
         "Source is read-only for this task: outputs are the spec and the report only",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00162, WQ00157 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00154-3632c59881d844c39049a2c9cce169d2",
@@ -17390,7 +17562,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.328578+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.328592+00:00",
+      "updated": "2026-11-21T00:47:19.298534+00:00",
       "completed": null
     },
     {
@@ -17398,7 +17570,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:FC-library-import-search",
@@ -17413,7 +17587,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run it where browsers are available (chromium at least); a criterion the app fails is kept as test.fixme with the reason, and listed in tests/feature-checks/FC-library-import-search.md with a ready-to-import fix record for the planner",
         "Source is read-only for this task: outputs are the spec and the report only",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00135, WQ00136, WQ00137, WQ00139 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00155-094523f7340a44efb7c93a753bbb9c8a",
@@ -17422,7 +17597,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.339831+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.339845+00:00",
+      "updated": "2026-11-21T00:47:19.298023+00:00",
       "completed": null
     },
     {
@@ -17430,7 +17605,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:FC-settings-auth",
@@ -17445,7 +17622,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run it where browsers are available (chromium at least); a criterion the app fails is kept as test.fixme with the reason, and listed in tests/feature-checks/FC-settings-auth.md with a ready-to-import fix record for the planner",
         "Source is read-only for this task: outputs are the spec and the report only",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00147, WQ00161 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00156-d515370bb45848569b04c1e001ded092",
@@ -17454,7 +17632,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.348843+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.348855+00:00",
+      "updated": "2026-11-21T00:47:19.298498+00:00",
       "completed": null
     },
     {
@@ -17462,7 +17640,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:FC-queue-applied-fixes",
@@ -17477,7 +17657,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Run it where browsers are available (chromium at least); a criterion the app fails is kept as test.fixme with the reason, and listed in tests/feature-checks/FC-queue-applied-fixes.md with a ready-to-import fix record for the planner",
         "Source is read-only for this task: outputs are the spec and the report only",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00154, WQ00162 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00157-be0555cb8adc49208e1ad2f0a67b1404",
@@ -17486,7 +17667,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.362008+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.362021+00:00",
+      "updated": "2026-11-21T00:47:19.298567+00:00",
       "completed": null
     },
     {
@@ -17494,7 +17675,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:FC-jobs-window",
@@ -17508,7 +17691,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Parts that need the live stack are marked skip with the reason; the e2e rebuild task runs them live",
         "Run pytest for the new file and record the result; failures stay as xfail with reason and a ready-to-import fix record in tests/feature-checks/FC-jobs-window.md",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00148, WQ00149, WQ00159 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00158-2372d7bd139d40b7a0567c18e6f7f4ab",
@@ -17517,7 +17701,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.369541+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.369554+00:00",
+      "updated": "2026-11-21T00:47:19.298287+00:00",
       "completed": null
     },
     {
@@ -17525,7 +17709,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:FC-bronze-integrity",
@@ -17539,7 +17725,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Parts that need the live stack are marked skip with the reason; the e2e rebuild task runs them live",
         "Run pytest for the new file and record the result; failures stay as xfail with reason and a ready-to-import fix record in tests/feature-checks/FC-bronze-integrity.md",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00148, WQ00149, WQ00158 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00159-c7d386d7e925404081734924fe8023ac",
@@ -17548,7 +17735,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.377228+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.377240+00:00",
+      "updated": "2026-11-21T00:47:19.298303+00:00",
       "completed": null
     },
     {
@@ -17556,7 +17743,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:FC-ingest-transitions",
@@ -17570,7 +17759,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Parts that need the live stack are marked skip with the reason; the e2e rebuild task runs them live",
         "Run pytest for the new file and record the result; failures stay as xfail with reason and a ready-to-import fix record in tests/feature-checks/FC-ingest-transitions.md",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00150, WQ00151, WQ00152, WQ00153 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00160-6bb010146895464aa29f9a65e470fd8e",
@@ -17579,7 +17769,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.383937+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.383947+00:00",
+      "updated": "2026-11-21T00:47:19.298447+00:00",
       "completed": null
     },
     {
@@ -17587,7 +17777,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:FC-api-auth",
@@ -17601,7 +17793,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Parts that need the live stack are marked skip with the reason; the e2e rebuild task runs them live",
         "Run pytest for the new file and record the result; failures stay as xfail with reason and a ready-to-import fix record in tests/feature-checks/FC-api-auth.md",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00147, WQ00156 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00161-f506c1bd002c421b94f00c18bdf882a9",
@@ -17610,7 +17803,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.390931+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.390943+00:00",
+      "updated": "2026-11-21T00:47:19.298517+00:00",
       "completed": null
     },
     {
@@ -17618,7 +17811,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "frontend",
-      "notes": [],
+      "notes": [
+        "Amended: Grouped with related tasks so one dev-server and browser session tests them together (Q023) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:FC-graph-apis",
@@ -17632,7 +17827,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Parts that need the live stack are marked skip with the reason; the e2e rebuild task runs them live",
         "Run pytest for the new file and record the result; failures stay as xfail with reason and a ready-to-import fix record in tests/feature-checks/FC-graph-apis.md",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q023: claim this task together with WQ00154, WQ00157 in one claim (claim --tasks ...); boot the dev server and browser once for the group and run the checks for all of them in that session"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00162-ddbc45aee5be4156a6374521d8034174",
@@ -17641,7 +17837,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:41:23.398320+00:00",
       "started": null,
-      "updated": "2026-11-14T23:41:23.398332+00:00",
+      "updated": "2026-11-21T00:47:19.298550+00:00",
       "completed": null
     },
     {
@@ -17893,7 +18089,10 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 1,
       "role": "e2e",
-      "notes": [],
+      "notes": [
+        "Amended: e2e runner set by Markus 21 Nov (Q022) (1 criteria added)",
+        "Amended: Any capable run may take it, not one named tool (Q024, Markus 21 Nov 11:50) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:E2E-0-baseline",
@@ -17909,7 +18108,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Output is the run report tests/e2e-runs/<task>.md only: image IDs, health results, every suite with pass/fail counts, each failure with file and error, and a ready-to-import fix record per failure for the planner; anything not run is recorded as not run with the reason",
         "Scope: the whole Playwright suite (frontend/tests/e2e incl. accessibility, design-rules, visual, smoke) and the full pytest suite",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Q022: built by Antigravity on tuf-boi (shell with Docker and pytest) in an isolated worktree with turn, budget and wall-clock caps; the integrator verify adds a read-only Codex CLI review against these criteria before apply",
+        "Q024: any run with a tuf-boi shell that reaches Docker and pytest may build this (Claude Code CLI, Antigravity, Codex or Markus); the integrator is any different run, and a Codex review is added only when Codex has credits"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00170-20b402115d5344df976e18d1f4ad1745",
@@ -17918,7 +18119,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:42:02.373409+00:00",
       "started": null,
-      "updated": "2026-11-14T23:42:02.373434+00:00",
+      "updated": "2026-11-21T00:51:58.355856+00:00",
       "completed": null
     },
     {
@@ -17932,7 +18133,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       ],
       "priority": 1,
       "role": "e2e",
-      "notes": [],
+      "notes": [
+        "Merged into WQ00174-6f07b908177541c991da7b62803d8c54: one rebuild for all new code (Q023)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:E2E-1-outstanding",
@@ -17952,12 +18155,12 @@ are stored as UTC offsets with this timezone named explicitly in events.
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00171-14fceefdb42a42ebbaf636ef8313c5f2",
-      "state": "Ready",
+      "state": "Retired",
       "owner": null,
       "claim": null,
       "added": "2026-11-14T23:42:02.377054+00:00",
       "started": null,
-      "updated": "2026-11-14T23:42:02.377068+00:00",
+      "updated": "2026-11-21T00:44:44.188487+00:00",
       "completed": null
     },
     {
@@ -17990,11 +18193,33 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "WQ00159-c7d386d7e925404081734924fe8023ac",
         "WQ00160-6bb010146895464aa29f9a65e470fd8e",
         "WQ00161-f506c1bd002c421b94f00c18bdf882a9",
-        "WQ00162-ddbc45aee5be4156a6374521d8034174"
+        "WQ00162-ddbc45aee5be4156a6374521d8034174",
+        "WQ00116-f8d38d233eb742eeb8e5708d9ec7df8b",
+        "WQ00117-4a05589ecedb41e1bc1a87e913c25b85",
+        "WQ00118-0e7792a273994dd881d58495b652b450",
+        "WQ00119-32eb663429ca4be799577e3a6b02b0af",
+        "WQ00120-c9f567c51b1e41ab93f5d4dcd1c44176",
+        "WQ00121-13b9c3732c95460b981c2ea541cedecb",
+        "WQ00122-7bdf18fcc1774a7c8d6cd3847a7ef0dd",
+        "WQ00123-21f3c80a6a78488484d6c8c76889b458",
+        "WQ00124-26c7fde7422c4129949a1d0be26c360b",
+        "WQ00125-9273d10fb92d492e94fe6487748fea4f",
+        "WQ00126-a36a1503f44144b3bb32d395890b722a",
+        "WQ00127-208aafae3ee841289124e0a6e2fee97e",
+        "WQ00128-a4e7d489bcbf46ad831bdd19745f14a9",
+        "WQ00129-8ff5f11540c54885bb76fab552d29da0",
+        "WQ00130-d8ca6112581e48cfb704c4c9cf97f013",
+        "WQ00131-cca0ccc3d5ef497cb566901546ea08f6",
+        "WQ00132-aed039fca16e48a1af5a142750df87da",
+        "WQ00133-0d2f0f2a624e491ebcc286a4fb253805",
+        "WQ00134-c3667a58febd40179baab7e6ee9cce2f"
       ],
       "priority": 2,
       "role": "e2e",
-      "notes": [],
+      "notes": [
+        "Amended: One container rebuild for both check waves (feature checks and design checks) instead of two (Q023) (dependencies set; 2 criteria added)",
+        "Amended: Any capable run may take it, not one named tool (Q024, Markus 21 Nov 11:50) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:E2E-2-feature-checks",
@@ -18010,7 +18235,10 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Output is the run report tests/e2e-runs/<task>.md only: image IDs, health results, every suite with pass/fail counts, each failure with file and error, and a ready-to-import fix record per failure for the planner; anything not run is recorded as not run with the reason",
         "Scope: frontend/tests/e2e/features/*.spec.ts with fixtures switched off (live API) and tests/feature_checks against the stack; skipped live parts are now run",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Absorbs WQ00173: in the same rebuild also run design-rules.spec.ts, accessibility.spec.ts and visual.spec.ts on every route in the full theme/width/size matrix and compare with the DC-* audit reports; one report covers both scopes",
+        "Q022: built by Antigravity on tuf-boi (shell with Docker and pytest) in an isolated worktree with turn, budget and wall-clock caps; the integrator verify adds a read-only Codex CLI review against these criteria before apply",
+        "Q024: any run with a tuf-boi shell that reaches Docker and pytest may build this (Claude Code CLI, Antigravity, Codex or Markus); the integrator is any different run, and a Codex review is added only when Codex has credits"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00172-1bea9f1a635d476aae67554b906ad9f4",
@@ -18019,7 +18247,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:42:02.381206+00:00",
       "started": null,
-      "updated": "2026-11-14T23:42:02.381223+00:00",
+      "updated": "2026-11-21T00:51:58.355912+00:00",
       "completed": null
     },
     {
@@ -18047,7 +18275,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       ],
       "priority": 2,
       "role": "e2e",
-      "notes": [],
+      "notes": [
+        "Merged into WQ00172-1bea9f1a635d476aae67554b906ad9f4: one rebuild runs the design-check scope too (Q023)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:E2E-3-design-checks",
@@ -18067,12 +18297,12 @@ are stored as UTC offsets with this timezone named explicitly in events.
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00173-5c3361fe89014cc5aeca40bba0f9dbc5",
-      "state": "Ready",
+      "state": "Retired",
       "owner": null,
       "claim": null,
       "added": "2026-11-14T23:42:02.385574+00:00",
       "started": null,
-      "updated": "2026-11-14T23:42:02.385589+00:00",
+      "updated": "2026-11-21T00:44:08.365640+00:00",
       "completed": null
     },
     {
@@ -18084,11 +18314,20 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "WQ00166-627ee20163ac48f1b9d7326008ec768e",
         "WQ00167-f879a611deb448188c1e8dc42c8ead95",
         "WQ00168-a60d52711cc542efb13e4515c81a13e2",
-        "WQ00169-bfea293bd35743b083d224b6e51cbf0e"
+        "WQ00169-bfea293bd35743b083d224b6e51cbf0e",
+        "WQ00111-1f5ea69127c647088bd9f03799d8bd07",
+        "WQ00112-a09828d711244f8eaaf47482356b6a2c",
+        "WQ00113-a36ff539728046b196974e26cb6f16bc",
+        "WQ00114-12e92c815de1451983fe85e2404ab66d",
+        "WQ00115-93f219bf2514476089675553d5bca18f"
       ],
       "priority": 3,
       "role": "e2e",
-      "notes": [],
+      "notes": [
+        "Amended: One container rebuild for new code (outstanding fixes and invented features) instead of two (Q023) (dependencies set; 2 criteria added)",
+        "Amended: Any capable run may take it, not one named tool (Q024, Markus 21 Nov 11:50) (1 criteria added)",
+        "Amended: Independent check: the WQ00171 spec list was only covered by full suite (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:E2E-4-new-features",
@@ -18104,7 +18343,11 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Output is the run report tests/e2e-runs/<task>.md only: image IDs, health results, every suite with pass/fail counts, each failure with file and error, and a ready-to-import fix record per failure for the planner; anything not run is recorded as not run with the reason",
         "Scope: sets, library, graph, track detail and shell specs plus a print-preview check of the cue sheet, then the full suite",
         "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
-        "Never write a design-system version number into notes; say 'the current design system'"
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Absorbs WQ00171: in the same rebuild also run e2e of the outstanding fixes (AX1, SN-T09, SN-T10, R2 on /sets and /paths); one report covers both scopes",
+        "Q022: built by Antigravity on tuf-boi (shell with Docker and pytest) in an isolated worktree with turn, budget and wall-clock caps; the integrator verify adds a read-only Codex CLI review against these criteria before apply",
+        "Q024: any run with a tuf-boi shell that reaches Docker and pytest may build this (Claude Code CLI, Antigravity, Codex or Markus); the integrator is any different run, and a Codex review is added only when Codex has credits",
+        "Absorbed WQ00171 scope, run in this same rebuild: accessibility.spec.ts for /sources/targets and /pipeline, the settings, graph and library specs, and design-rules for /sets and /paths, each reported by name before the full suite"
       ],
       "source": "plan/agent-queue/imports/2026-11-15-wave/build_records.py",
       "id": "WQ00174-6f07b908177541c991da7b62803d8c54",
@@ -18113,7 +18356,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:42:02.390004+00:00",
       "started": null,
-      "updated": "2026-11-14T23:42:02.390064+00:00",
+      "updated": "2026-11-21T00:57:06.165515+00:00",
       "completed": null
     },
     {
@@ -18121,7 +18364,10 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 1,
       "role": "backend",
-      "notes": [],
+      "notes": [
+        "Amended: Backend runner set by Markus 21 Nov (Q022); no scheduled cloud run can run these pytest files (1 criteria added)",
+        "Amended: Any capable run may take it, not one named tool (Q024, Markus 21 Nov 11:50) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:SN-T02",
@@ -18134,7 +18380,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Reproduce first: the router has changed since the 7 Nov report (#578, #602); if no default login exists, report a false positive with evidence and add the regression test only",
         "Test: tests/rest_api/test_user_auth_no_default.py proves no login without a configured user",
         "Role backend (rule Q016): the precheck/verify gates are the frontend ones (design-system check, tsc) and do not test Python, so the run must also run the named pytest files and paste their output into the proposal notes; the integrator re-runs them before apply and records \"not run\" honestly if it cannot",
-        "Owned paths only, one job, about 400 changed lines (AGENTS.md 1-3); no container, service or database action; no .env"
+        "Owned paths only, one job, about 400 changed lines (AGENTS.md 1-3); no container, service or database action; no .env",
+        "Q022: built by Antigravity on tuf-boi (shell with Docker and pytest) in an isolated worktree with turn, budget and wall-clock caps; the integrator verify adds a read-only Codex CLI review against these criteria before apply",
+        "Q024: any run with a tuf-boi shell that reaches Docker and pytest may build this (Claude Code CLI, Antigravity, Codex or Markus); the integrator is any different run, and a Codex review is added only when Codex has credits"
       ],
       "source": "TODO-ARCHITECTURAL-IMPROVEMENTS.md#SN-T02",
       "id": "WQ00175-7c67b933228744d6acacb89aaec5cfe0",
@@ -18143,7 +18391,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:47:29.037614+00:00",
       "started": null,
-      "updated": "2026-11-14T23:47:29.037646+00:00",
+      "updated": "2026-11-21T00:51:58.355948+00:00",
       "completed": null
     },
     {
@@ -18151,7 +18399,10 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 1,
       "role": "backend",
-      "notes": [],
+      "notes": [
+        "Amended: Backend runner set by Markus 21 Nov (Q022); no scheduled cloud run can run these pytest files (1 criteria added)",
+        "Amended: Any capable run may take it, not one named tool (Q024, Markus 21 Nov 11:50) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:SN-T05",
@@ -18165,7 +18416,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "Keep the BRZ1 per-row savepoints; check that ingestion already adopts bronze rows (docs/DATA_LAYER.md line 111) before removing the silver path, else stop and say what is missing",
         "Test: scrapers/tests/test_scraper_bronze_only.py plus the existing scrapers/tests suite",
         "Role backend (rule Q016): the precheck/verify gates are the frontend ones (design-system check, tsc) and do not test Python, so the run must also run the named pytest files and paste their output into the proposal notes; the integrator re-runs them before apply and records \"not run\" honestly if it cannot",
-        "Owned paths only, one job, about 400 changed lines (AGENTS.md 1-3); no container, service or database action; no .env"
+        "Owned paths only, one job, about 400 changed lines (AGENTS.md 1-3); no container, service or database action; no .env",
+        "Q022: built by Antigravity on tuf-boi (shell with Docker and pytest) in an isolated worktree with turn, budget and wall-clock caps; the integrator verify adds a read-only Codex CLI review against these criteria before apply",
+        "Q024: any run with a tuf-boi shell that reaches Docker and pytest may build this (Claude Code CLI, Antigravity, Codex or Markus); the integrator is any different run, and a Codex review is added only when Codex has credits"
       ],
       "source": "TODO-ARCHITECTURAL-IMPROVEMENTS.md#SN-T05",
       "id": "WQ00176-c6a17d1c827844e8a5abb4918f6e1921",
@@ -18174,7 +18427,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:47:29.050767+00:00",
       "started": null,
-      "updated": "2026-11-14T23:47:29.050784+00:00",
+      "updated": "2026-11-21T00:51:58.355963+00:00",
       "completed": null
     },
     {
@@ -18184,7 +18437,10 @@ are stored as UTC offsets with this timezone named explicitly in events.
       ],
       "priority": 2,
       "role": "backend",
-      "notes": [],
+      "notes": [
+        "Amended: Backend runner set by Markus 21 Nov (Q022); no scheduled cloud run can run these pytest files (1 criteria added)",
+        "Amended: Any capable run may take it, not one named tool (Q024, Markus 21 Nov 11:50) (1 criteria added)"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "wave-2026-11-15:SN-T06",
@@ -18195,7 +18451,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "criteria": [
         "Docs and compose must name the same jobs; CLAUDE.md is read-only here, list any CLAUDE.md change as a follow-up",
         "Role backend (rule Q016): the precheck/verify gates are the frontend ones (design-system check, tsc) and do not test Python, so the run must also run the named pytest files and paste their output into the proposal notes; the integrator re-runs them before apply and records \"not run\" honestly if it cannot",
-        "Owned paths only, one job, about 400 changed lines (AGENTS.md 1-3); no container, service or database action; no .env"
+        "Owned paths only, one job, about 400 changed lines (AGENTS.md 1-3); no container, service or database action; no .env",
+        "Q022: built by Antigravity on tuf-boi (shell with Docker and pytest) in an isolated worktree with turn, budget and wall-clock caps; the integrator verify adds a read-only Codex CLI review against these criteria before apply",
+        "Q024: any run with a tuf-boi shell that reaches Docker and pytest may build this (Claude Code CLI, Antigravity, Codex or Markus); the integrator is any different run, and a Codex review is added only when Codex has credits"
       ],
       "source": "TODO-ARCHITECTURAL-IMPROVEMENTS.md#SN-T06",
       "id": "WQ00177-3e94e7b4923b403f93d1cee154df7954",
@@ -18204,7 +18462,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-14T23:47:47.728400+00:00",
       "started": null,
-      "updated": "2026-11-14T23:47:47.728425+00:00",
+      "updated": "2026-11-21T00:51:58.355978+00:00",
       "completed": null
     },
     {
@@ -18238,7 +18496,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "dependencies": [],
       "priority": 2,
       "role": "human",
-      "notes": [],
+      "notes": [
+        "Answered by Markus (chat Sat 21 Nov 2026): Antigravity builds and runs the tuf-boi terminal work (e2e Docker rebuilds, backend pytest); Codex verifies"
+      ],
       "evidence": [],
       "rollback": null,
       "origin": "human:docker-reach-for-e2e-2026-11-17",
@@ -18251,12 +18511,12 @@ are stored as UTC offsets with this timezone named explicitly in events.
       ],
       "source": "plan/agent-queue/reports/20261116-planner.md#For Markus item 2",
       "id": "WQ00179-ba8bf0ecc13e4e408ae4d9d394625d7b",
-      "state": "Ready",
+      "state": "Retired",
       "owner": null,
       "claim": null,
       "added": "2026-11-17T06:41:13.713220+00:00",
       "started": null,
-      "updated": "2026-11-17T06:41:13.713222+00:00",
+      "updated": "2026-11-21T00:43:31.419272+00:00",
       "completed": null
     },
     {
@@ -18265,7 +18525,9 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "priority": 1,
       "role": "planner",
       "notes": [
-        "Stopped at Markus's choice because another session is editing this queue (Q018, monitor_refresh.py, docs/CATEGORIES.md). Nothing in queue.py, GOVERNANCE.md, RUN-GUIDE.md, DECISIONS.md or config.json was changed by this run. Remaining: queue export/audit/reclassify/categorize commands, six documentation categories as a rule (conflicts with docs/CATEGORIES.md), tests, dashboard refresh. Rollback copy: plan/agent-queue/_archive/20261117-1742-WQ00180 (taken after the other session's 06:41 edits). Checks run: none beyond baseline pytest tests/test_agent_queue.py (39 passed, before any change)."
+        "Stopped at Markus's choice because another session is editing this queue (Q018, monitor_refresh.py, docs/CATEGORIES.md). Nothing in queue.py, GOVERNANCE.md, RUN-GUIDE.md, DECISIONS.md or config.json was changed by this run. Remaining: queue export/audit/reclassify/categorize commands, six documentation categories as a rule (conflicts with docs/CATEGORIES.md), tests, dashboard refresh. Rollback copy: plan/agent-queue/_archive/20261117-1742-WQ00180 (taken after the other session's 06:41 edits). Checks run: none beyond baseline pytest tests/test_agent_queue.py (39 passed, before any change).",
+        "Amended: Both edit tools/queue.py; doing the cut-over first avoids rewriting the same code twice (Q023) (dependencies set; 1 criteria added)",
+        "Amended: WQ00203 finished 21 Nov (queue database store live, Q026) but closed Retired, so the dependency would block this task for good (dependencies set)"
       ],
       "evidence": [],
       "rollback": null,
@@ -18277,7 +18539,8 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "validate reports clean",
         "dashboard refreshed and cross-checked against a second method",
         "rules and run guide updated",
-        "rollback copy in _archive"
+        "rollback copy in _archive",
+        "Built on the queue database store from WQ00203; the amend command added 21 Nov keeps working"
       ],
       "id": "WQ00180-5751396febf44934b08a29d41cea9cc0",
       "state": "Ready",
@@ -18285,7 +18548,7 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "claim": null,
       "added": "2026-11-17T06:42:36.038963+00:00",
       "started": null,
-      "updated": "2026-11-17T06:47:45.549480+00:00",
+      "updated": "2026-11-21T01:46:15.731869+00:00",
       "completed": null
     },
     {
@@ -19473,6 +19736,764 @@ are stored as UTC offsets with this timezone named explicitly in events.
         "applied": "2026-11-17T10:15:54.969327+00:00",
         "deployed": false
       }
+    },
+    {
+      "type": "feature",
+      "dependencies": [],
+      "priority": 1,
+      "role": "frontend",
+      "notes": [
+        "Amended: Markus 22 Nov: change the design system for the layout half of GX1; done at the design-system source, frontend sync blocked (1 criteria added)",
+        "Amended: Frontend design-system sync done 22 Nov (D026) (1 criteria added)"
+      ],
+      "evidence": [],
+      "rollback": null,
+      "origin": "wave-2026-11-18:GX1-ring-sector-layout",
+      "resources": [
+        "file:frontend/src/lib/graphLayout.test.ts",
+        "file:frontend/src/lib/graphLayout.ts"
+      ],
+      "source": "Graph UX investigation 18 Nov 2026",
+      "description": "GX1: Ring layout fixes in graphLayout.ts: multi-hop tracks seat on the next ring inside a bounded angular sector of their parent (no long chords across the centre), disconnected components and unlinked tracks pack onto shared outer rings (no spiral in Whole library), plus computeEdgeVisibility (SN.fitEdgeCuts + SN.edgeVisibility, optional minStrength) and interpolateSeats for 320ms seat morphs",
+      "criteria": [
+        "Reproduce first with a unit test on a multi-component graph: ring count must not grow by one per component; connected child seats within a wedge of its parent",
+        "Anchor stays at (0,0); anchor links stay on ring 1; same input gives same seats; existing graphLayout tests keep passing",
+        "Export computeEdgeVisibility and interpolateSeats with unit tests",
+        "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Follow the current design system in full: tokens and sn-* classes only; no mock data",
+        "The ring-layout half (shared outer rings, children within their parent's sector) is now in the current design system's SN.ringLayout (Markus chose this 22 Nov, decision D025). graphLayout.ts must not re-implement it; the unit test reproducing ring count per component passes only once frontend/src/styles/design-system is synced, which waits on Markus (sync blocker in reports/20261121-planner.md)",
+        "Sync done 22 Nov (D026): the synced frontend copy has the new ring layout, so the ring-count and parent-sector unit tests can pass now; graphLayout.ts adds only the reproduce test, computeEdgeVisibility and interpolateSeats"
+      ],
+      "id": "WQ00190-3bd9681f863b4aa4b403fc0204bb35ea",
+      "state": "Ready",
+      "owner": null,
+      "claim": null,
+      "added": "2026-11-19T05:20:36.430507+00:00",
+      "started": null,
+      "updated": "2026-11-21T22:34:31.217346+00:00",
+      "completed": null
+    },
+    {
+      "type": "feature",
+      "dependencies": [],
+      "priority": 1,
+      "role": "frontend",
+      "notes": [],
+      "evidence": [],
+      "rollback": null,
+      "origin": "wave-2026-11-18:GX2-view-label-lod",
+      "resources": [
+        "file:frontend/src/lib/graphView.test.ts",
+        "file:frontend/src/lib/graphView.ts"
+      ],
+      "source": "Graph UX investigation 18 Nov 2026",
+      "description": "GX2: Progressive label level of detail and colour mode persistence in graphView.ts: shouldRenderNodeLabel (focused and 1-hop neighbours when zoomed out, ring 1 from zoom 0.85, all labels from graph-label-zoom 1.5) and GraphColourMode (none, energy, key, genre; default none) with read/store helpers",
+      "criteria": [
+        "Labels never show for every node below zoom 1.5; focused tracks always labelled",
+        "labelsForAll and existing graphView tests keep passing",
+        "Unit tests for label rules and colour mode storage, including blocked storage",
+        "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Follow the current design system in full: tokens and sn-* classes only; no mock data"
+      ],
+      "id": "WQ00191-82ab396574024618991ae69e5597d8e8",
+      "state": "Ready",
+      "owner": null,
+      "claim": null,
+      "added": "2026-11-19T05:20:36.434529+00:00",
+      "started": null,
+      "updated": "2026-11-19T05:20:36.434540+00:00",
+      "completed": null
+    },
+    {
+      "type": "feature",
+      "dependencies": [
+        "WQ00165-0b99b48b8730448fbb41e9c13d20e6bd",
+        "WQ00191-82ab396574024618991ae69e5597d8e8"
+      ],
+      "priority": 1,
+      "role": "frontend",
+      "notes": [],
+      "evidence": [],
+      "rollback": null,
+      "origin": "wave-2026-11-18:GX3-controls-colour-legend",
+      "resources": [
+        "file:frontend/src/components/GraphControlsDock.test.tsx",
+        "file:frontend/src/components/GraphControlsDock.tsx"
+      ],
+      "source": "Graph UX investigation 18 Nov 2026",
+      "description": "GX3: Add Colour by segmented control (Neutral, Energy, Key, Genre) and dynamic mode legend to GraphControlsDock",
+      "criteria": [
+        "Add Colour by segmented control (Neutral, Energy, Key, Genre) to the top-right .sn-graph-controls__colour panel in GraphControlsDock.tsx per the current design system GraphControls spec",
+        "Render dynamic legend items matching the active colour mode plus Selected, Now playing and Path state rings and the GraphStrengthLegend",
+        "All unit tests in frontend/src/components/GraphControlsDock.test.tsx pass",
+        "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Follow the current design system in full: tokens and sn-* classes only; no mock data"
+      ],
+      "id": "WQ00192-d53b0b3643b94254810fb8bec3bb6efb",
+      "state": "Ready",
+      "owner": null,
+      "claim": null,
+      "added": "2026-11-19T05:21:03.083691+00:00",
+      "started": null,
+      "updated": "2026-11-19T05:21:03.083710+00:00",
+      "completed": null
+    },
+    {
+      "type": "feature",
+      "dependencies": [
+        "WQ00190-3bd9681f863b4aa4b403fc0204bb35ea",
+        "WQ00191-82ab396574024618991ae69e5597d8e8",
+        "WQ00192-d53b0b3643b94254810fb8bec3bb6efb"
+      ],
+      "priority": 1,
+      "role": "frontend",
+      "notes": [
+        "Split at planning time: four features over the ~400-line budget (AGENTS.md 1-3, Q023)"
+      ],
+      "evidence": [],
+      "rollback": null,
+      "origin": "wave-2026-11-18:GX4-smooth-travel-renderer",
+      "resources": [
+        "file:frontend/src/components/DJInterface.graph.css",
+        "file:frontend/src/components/DJInterface.tsx",
+        "file:frontend/src/components/GraphVisualization.tsx",
+        "file:frontend/src/store/useStore.ts"
+      ],
+      "source": "Graph UX investigation 18 Nov 2026",
+      "description": "GX4: 60fps PIXI graph renderer, animated edge-traversal highlight, smooth 320ms ring morphing, curved links, edge spotlighting and unified camera glide",
+      "criteria": [
+        "Default viewState.colorBy to none (Neutral) in useStore.ts and wire GraphControlsDock colourMode and minStrength props in GraphVisualization.tsx",
+        "Decouple D3 zoom from 60Hz full-component React re-renders: increment frameRef.current in the D3 zoom handler, remove the 30fps cap in renderFrame, remove the no-force D3 simulation tick store writes, and debounce store.view.updateViewport",
+        "Eliminate conflicting navigateToNode vs fitToContent transitions on node click: smoothly morph node positions over duration-slow (320ms) with interpolateSeats, preserve a readable neighbourhood camera zoom when moving between connected tracks, highlight the traversed edge (previousAnchor -> currentAnchor) with an animated pulse and breadcrumb ring on the previous node",
+        "Draw faint concentric ring ellipse guides in Neighbourhood view, quadratic Bezier curves for non-radial links, Now pill tag above nowPlaying, computeEdgeVisibility focus spotlighting (dimming non-incident links to 0.25x on hover/select), and shouldRenderNodeLabel progressive label visibility",
+        "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Follow the current design system in full: tokens and sn-* classes only; no mock data"
+      ],
+      "id": "WQ00193-77f0962956ee498292c1b38510506759",
+      "state": "Split",
+      "owner": null,
+      "claim": null,
+      "added": "2026-11-19T05:21:31.582488+00:00",
+      "started": null,
+      "updated": "2026-11-21T00:47:19.329958+00:00",
+      "completed": null,
+      "children": [
+        "WQ00204-1f3ab2a0bfde4a5ca39f8953ec246b65",
+        "WQ00205-2c4a6f87c3d74b4393867666af62e646"
+      ]
+    },
+    {
+      "type": "feature",
+      "dependencies": [
+        "WQ00190-3bd9681f863b4aa4b403fc0204bb35ea"
+      ],
+      "priority": 1,
+      "role": "frontend",
+      "notes": [],
+      "evidence": [],
+      "rollback": null,
+      "origin": "wave-2026-11-19:GX5-anchor-polar-islands",
+      "resources": [
+        "file:frontend/src/lib/graphLayout.test.ts",
+        "file:frontend/src/lib/graphLayout.ts"
+      ],
+      "source": "Scalable SongNodes Graph Visualization doc (19 Nov 2026)",
+      "description": "GX5: Anchor-preserving deterministic polar layout (-v origin pinning, mutual-neighbour half-plane preservation, polar (r, theta) interpolation) and circular island packing for connected components (>= 3 tracks) in graphLayout.ts",
+      "criteria": [
+        "When navigating from active anchor A to adjacent B along vector v = B - A, seat B at (0, 0) and pin A on Ring 1 along exact opposite vector -v so A retreats behind B along the traversed edge",
+        "Preserve existing angular half-plane relative to the A <-> B axis for all mutual neighbours shared by A and B (preventing side-flipping on clicks); fan newly revealed neighbours of B into open angular gaps on the forward (+v) half-plane ordered by link strength / Camelot compatibility",
+        "Export interpolateSeatsPolar(fromSeats, toSeats, t, ease) using shortest-arc polar (r, theta) interpolation (180-250ms ease-out) so orbiting nodes glide cleanly around the centre instead of cutting straight chords",
+        "Export filterConnectedCore(tracks, links, minComponentSize = 3) and pack disconnected components into clean circular islands instead of an outer Archimedean spiral",
+        "All existing and new unit tests in frontend/src/lib/graphLayout.test.ts pass",
+        "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Follow the current design system in full: tokens and sn-* classes only; no mock data"
+      ],
+      "id": "WQ00194-7d94f1f4cd434b8f9206f8d43c8ff5fe",
+      "state": "Ready",
+      "owner": null,
+      "claim": null,
+      "added": "2026-11-19T05:29:17.973322+00:00",
+      "started": null,
+      "updated": "2026-11-19T05:29:17.973338+00:00",
+      "completed": null
+    },
+    {
+      "type": "feature",
+      "dependencies": [
+        "WQ00191-82ab396574024618991ae69e5597d8e8",
+        "WQ00192-d53b0b3643b94254810fb8bec3bb6efb"
+      ],
+      "priority": 1,
+      "role": "frontend",
+      "notes": [],
+      "evidence": [],
+      "rollback": null,
+      "origin": "wave-2026-11-19:GX6-degree-cap-core-toggle-collision",
+      "resources": [
+        "file:frontend/src/components/GraphControlsDock.test.tsx",
+        "file:frontend/src/components/GraphControlsDock.tsx",
+        "file:frontend/src/lib/graphView.test.ts",
+        "file:frontend/src/lib/graphView.ts"
+      ],
+      "source": "Scalable SongNodes Graph Visualization doc (19 Nov 2026)",
+      "description": "GX6: Cap default Neighbourhood expansion to 35 strongest links with '+N weaker links' expand toggle, add Connected clusters (>= 3 tracks) vs All tracks toggle for Whole Library, and add 3-tier zoom + 2D screen-space label collision culling in graphView.ts and GraphControlsDock.tsx",
+      "criteria": [
+        "Bound initial Neighbourhood view to top 30-35 strongest connections (max_degree cap) with an optional '+N weaker links' expansion control so staple hub tracks stay readable and bounded",
+        "Add a Connected clusters (>= 3 tracks) / All tracks toggle pill in GraphControlsDock for Whole Library view (defaulting to connected transition topology so 19,800+ singletons/pairs do not swamp the viewport)",
+        "Implement fast 2D screen-space AABB label collision rejection (cullCollidingLabels) and 3 zoom tiers (<60% zero ambient labels; 60%-140% top 40-60 viewport hub labels with collision rejection and optional hide-on-drag; >140% detail/neighbourhood radial labels)",
+        "All unit tests in frontend/src/lib/graphView.test.ts and frontend/src/components/GraphControlsDock.test.tsx pass",
+        "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Follow the current design system in full: tokens and sn-* classes only; no mock data"
+      ],
+      "id": "WQ00195-6608b0889a7f433d949e428cbe5f9811",
+      "state": "Ready",
+      "owner": null,
+      "claim": null,
+      "added": "2026-11-19T05:29:17.980226+00:00",
+      "started": null,
+      "updated": "2026-11-19T05:29:17.980234+00:00",
+      "completed": null
+    },
+    {
+      "type": "decision",
+      "dependencies": [],
+      "priority": 2,
+      "role": "human",
+      "notes": [
+        "Answered by Markus (chat Sun 22 Nov 2026): 'New libraries approved' - sigma v4, @react-sigma/core, graphology and flatbush may be added to frontend/package.json. Unblocks GX9 (WQ00200), which still waits on WQ00207 and WQ00199."
+      ],
+      "evidence": [],
+      "rollback": null,
+      "origin": "wave-2026-11-19:GX-DEC1-sigma-v4-deps",
+      "resources": [],
+      "source": "Scalable SongNodes Graph Visualization doc (19 Nov 2026)",
+      "description": "Markus: approve adding frontend dependencies (sigma v4, @react-sigma/core, graphology, flatbush) for Phase 2 single-context WebGL renderer migration (SDF typography, GPU color-ID picking, depth/zIndex bucketing at 42,634-100,000+ track scale)",
+      "criteria": [
+        "Needs Markus: confirm installing sigma v4, @react-sigma/core, graphology and flatbush in frontend/package.json (workers cannot bump dependencies per AGENTS.md rule 7 and queue config.json)",
+        "Unblocks: GX9 (Phase 2 Sigma.js v4 + Flatbush migration for /graph)",
+        "Answer by Retiring this task with the note \"Answered by Markus: <choice or installed commit>\""
+      ],
+      "id": "WQ00196-a4a733c1723e45a0ab50f8c52360cf88",
+      "state": "Retired",
+      "owner": null,
+      "claim": null,
+      "added": "2026-11-19T05:29:17.980249+00:00",
+      "started": null,
+      "updated": "2026-11-21T13:46:04.832250+00:00",
+      "completed": null
+    },
+    {
+      "type": "decision",
+      "dependencies": [],
+      "priority": 2,
+      "role": "human",
+      "notes": [],
+      "evidence": [],
+      "rollback": null,
+      "origin": "wave-2026-11-19:GX-DEC2-offline-layout-binary-api",
+      "resources": [],
+      "source": "Scalable SongNodes Graph Visualization doc (19 Nov 2026)",
+      "description": "Markus: approve Phase 3 & 4 backend/DB scope (widening config.json writable paths for services/graph-visualization-api/, pipeline/, sql/) for offline Leiden + ForceAtlas2 + UMAP layout persistence (x, y, cluster_id) and binary Float32Array/Arrow skeleton endpoint (~956 KB at 42.6k tracks)",
+      "criteria": [
+        "Needs Markus: approve widening queue writable paths (or running as owner job) for DB migration adding cached (x, y, cluster_id), offline Python igraph/leidenalg + ForceAtlas2 + UMAP batch layout job, and binary Float32Array/Arrow skeleton endpoint",
+        "Unblocks: GX10 (Phase 4 frontend binary buffer hydration + IndexedDB cache) and backend Phase 3/4 implementation tasks",
+        "Answer by Retiring this task with the note \"Answered by Markus: <choice>\""
+      ],
+      "id": "WQ00197-897acd70abcb4747b4012141f15057f3",
+      "state": "Ready",
+      "owner": null,
+      "claim": null,
+      "added": "2026-11-19T05:29:17.980264+00:00",
+      "started": null,
+      "updated": "2026-11-19T05:29:17.980267+00:00",
+      "completed": null
+    },
+    {
+      "type": "feature",
+      "dependencies": [
+        "WQ00193-77f0962956ee498292c1b38510506759",
+        "WQ00194-7d94f1f4cd434b8f9206f8d43c8ff5fe",
+        "WQ00195-6608b0889a7f433d949e428cbe5f9811"
+      ],
+      "priority": 1,
+      "role": "frontend",
+      "notes": [
+        "Split at planning time: five features over the ~400-line budget (AGENTS.md 1-3, Q023)"
+      ],
+      "evidence": [],
+      "rollback": null,
+      "origin": "wave-2026-11-19:GX7-screenspace-pills-rims-breadcrumbs",
+      "resources": [
+        "file:frontend/src/components/DJInterface.graph.css",
+        "file:frontend/src/components/DJInterface.tsx",
+        "file:frontend/src/components/GraphBreadcrumbTrail.test.tsx",
+        "file:frontend/src/components/GraphBreadcrumbTrail.tsx",
+        "file:frontend/src/components/GraphVisualization.tsx"
+      ],
+      "source": "Scalable SongNodes Graph Visualization doc (19 Nov 2026)",
+      "description": "GX7: Screen-space stroke/label sizing (eliminating 392% zoom bloat), round linecaps, radially outward translucent pill badges, 2px harmonic Camelot outer rim + key badge, 200ms polar (r, theta) glide with directional chevron pulse and clickable GraphBreadcrumbTrail history strip",
+      "criteria": [
+        "Decouple visual sizing from world zoom matrix (screen-space reference / sqrt(zoom) dampening): Whole Library edges locked to 0.75-1.25px screen-space at 10-20% alpha with quadratic Bezier curves; Neighbourhood edges locked to 1.5-3.5px screen-space with round linecaps (solid for real-set transitions, dashed for weak/fallback matches), strictly rendered back-to-front under nodes",
+        "Render two-line dark translucent screen-space pill badges (~140px truncation, design-system surface tokens) anchored radially outward along each node's polar angle so edges never slice through text; use 2D screen-space label collision rejection and optional hide-on-drag for 60 FPS",
+        "Add a thin 2px outer harmonic Camelot compatibility rim plus textual key badge (8A, 9A, ?) relative to the active track in Neighbourhood view while keeping core fills exclusively for states (Selected, Now Playing, Path)",
+        "Wire interpolateSeatsPolar (180-250ms ease-out cubic-bezier(0.22, 1, 0.36, 1)) with a directional chevron/gradient pulse along traversed edge A -> B, persistent Path/History polyline across recently visited tracks, and clickable GraphBreadcrumbTrail component at the top of the canvas",
+        "Unit tests in frontend/src/components/GraphBreadcrumbTrail.test.tsx pass",
+        "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Follow the current design system in full: tokens and sn-* classes only; no mock data"
+      ],
+      "id": "WQ00198-504db0a65ee14bd189ed357caabc7c08",
+      "state": "Split",
+      "owner": null,
+      "claim": null,
+      "added": "2026-11-19T05:29:43.430299+00:00",
+      "started": null,
+      "updated": "2026-11-21T00:47:19.340378+00:00",
+      "completed": null,
+      "children": [
+        "WQ00206-a28da8590012444e95ccef4e5d55c2eb",
+        "WQ00207-daf2c46d01514fc1a72dc76754e1647f"
+      ]
+    },
+    {
+      "type": "feature",
+      "dependencies": [
+        "WQ00113-a36ff539728046b196974e26cb6f16bc",
+        "WQ00194-7d94f1f4cd434b8f9206f8d43c8ff5fe"
+      ],
+      "priority": 2,
+      "role": "frontend",
+      "notes": [],
+      "evidence": [],
+      "rollback": null,
+      "origin": "wave-2026-11-19:GX8-worker-spatial-index-ego-loader",
+      "resources": [
+        "file:frontend/src/hooks/useDataLoader.ts",
+        "file:frontend/src/lib/packedSpatialIndex.test.ts",
+        "file:frontend/src/lib/packedSpatialIndex.ts",
+        "file:frontend/src/workers/graphIndex.worker.ts"
+      ],
+      "source": "Scalable SongNodes Graph Visualization doc (19 Nov 2026)",
+      "description": "GX8: Zero-copy transferable ArrayBuffer spatial index in Web Worker for 42k-100k+ frustum/label queries plus Tier-3 on-demand /api/graph/data?view=neighbourhood loading in useDataLoader.ts",
+      "criteria": [
+        "Implement packed static spatial index in packedSpatialIndex.ts backed by a single transferable ArrayBuffer (Flatbush-compatible bounding-box query API) and build it off-thread in graphIndex.worker.ts transferred via postMessage(buf, [buf])",
+        "Update useDataLoader.ts to fetch Tier-3 bounded neighbourhood payloads (/api/graph/data?view=neighbourhood&center=...&steps=2&max=35) in O(1) time when in Neighbourhood view instead of pulling 10,000+ whole-library nodes on initial load, hydrating the full library only when Whole Library view is requested",
+        "Unit tests in frontend/src/lib/packedSpatialIndex.test.ts verify viewport frustum queries and nearest-neighbour lookups",
+        "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Follow the current design system in full: tokens and sn-* classes only; no mock data"
+      ],
+      "id": "WQ00199-3c621bda154045858bb0bbc3dfaa3eb3",
+      "state": "Ready",
+      "owner": null,
+      "claim": null,
+      "added": "2026-11-19T05:29:43.438429+00:00",
+      "started": null,
+      "updated": "2026-11-19T05:29:43.438444+00:00",
+      "completed": null
+    },
+    {
+      "type": "feature",
+      "dependencies": [
+        "WQ00207-daf2c46d01514fc1a72dc76754e1647f",
+        "WQ00199-3c621bda154045858bb0bbc3dfaa3eb3"
+      ],
+      "priority": 2,
+      "role": "frontend",
+      "notes": [
+        "Amended: GX7 was split; GX9 now waits on its last part (dependencies set)",
+        "Amended: Gate met: WQ00196 approved by Markus 22 Nov and the libraries installed in chat 22 Nov (sigma 4.0.6, @react-sigma/core 6.0.0, flatbush 4.7.0 in frontend/package.json and lockfile; tsc passed; not committed). WQ00196 is Retired, so it no longer blocks; GX9 still waits on WQ00207 and WQ00199. (dependencies set)"
+      ],
+      "evidence": [],
+      "rollback": null,
+      "origin": "wave-2026-11-19:GX9-sigma-v4-webgl-migration",
+      "resources": [
+        "file:frontend/src/components/GraphVisualization.tsx",
+        "file:frontend/src/components/SigmaGraphCanvas.test.tsx",
+        "file:frontend/src/components/SigmaGraphCanvas.tsx"
+      ],
+      "source": "Scalable SongNodes Graph Visualization doc (19 Nov 2026)",
+      "description": "GX9: Phase 2 Sigma.js v4 (@react-sigma/core + graphology) single-context WebGL migration with native GPU SDF text/shapes, GPU color-ID picking, depth/zIndex bucketing, itemSizesReference screen sizing and Worker-built Flatbush culling",
+      "criteria": [
+        "Gated on GX-DEC1 (Q019): do not claim until sigma v4, @react-sigma/core, graphology and flatbush are approved and installed",
+        "Migrate /graph rendering onto Sigma.js v4 single WebGL context using Graphology callback iterators (forEachNode, forEachEdge) to avoid GC array allocations",
+        "Configure itemSizesReference: 'screen', GPU color-ID picking (pickingDownSizingRatio with edge/label picking opt-in), depth vs zIndex buckets for hover/selection promotion, and gl.depthMask(false) during transparent edge passes",
+        "Wire Worker-built Flatbush spatial index for viewport frustum culling and mid-zoom hub label collision rejection",
+        "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Follow the current design system in full: tokens and sn-* classes only; no mock data"
+      ],
+      "id": "WQ00200-f877775583ea4915b864f5b50af86e2d",
+      "state": "Ready",
+      "owner": null,
+      "claim": null,
+      "added": "2026-11-19T05:30:09.171940+00:00",
+      "started": null,
+      "updated": "2026-11-21T13:49:45.377236+00:00",
+      "completed": null
+    },
+    {
+      "type": "feature",
+      "dependencies": [
+        "WQ00197-897acd70abcb4747b4012141f15057f3",
+        "WQ00200-f877775583ea4915b864f5b50af86e2d"
+      ],
+      "priority": 2,
+      "role": "frontend",
+      "notes": [],
+      "evidence": [],
+      "rollback": null,
+      "origin": "wave-2026-11-19:GX10-binary-skeleton-client",
+      "resources": [
+        "file:frontend/src/hooks/useDataLoader.ts",
+        "file:frontend/src/lib/binaryGraphTransport.test.ts",
+        "file:frontend/src/lib/binaryGraphTransport.ts"
+      ],
+      "source": "Scalable SongNodes Graph Visualization doc (19 Nov 2026)",
+      "description": "GX10: Phase 4 three-tier binary graph client: hydrate Whole Library Float32Array/Uint32Array skeleton (16 B/node, 12 B/edge) in Web Worker with IndexedDB cache, lazy viewport label catalog (Tier 2), and O(1) ego neighbourhood API (Tier 3)",
+      "criteria": [
+        "Gated on GX-DEC2 (Q019): do not claim until backend offline layout persistence and binary skeleton endpoint exist",
+        "Parse Tier-1 binary Float32Array/Uint32Array (or Apache Arrow IPC) skeleton in a Web Worker, cache in IndexedDB, and build the transferable Flatbush spatial index without blocking the main thread",
+        "Hydrate Tier-2 string catalog lazily for visible viewport labels and instant Ctrl+K search; keep Tier-3 /api/graph/neighborhood/:id O(1) bounded at <= 35 neighbours",
+        "Unit tests in frontend/src/lib/binaryGraphTransport.test.ts verify binary buffer decoding (16 B/node, 12 B/edge) and IndexedDB cache round-trip",
+        "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Follow the current design system in full: tokens and sn-* classes only; no mock data"
+      ],
+      "id": "WQ00201-898f1f39c70c4b109febc54b3dbd7d84",
+      "state": "Ready",
+      "owner": null,
+      "claim": null,
+      "added": "2026-11-19T05:30:33.705294+00:00",
+      "started": null,
+      "updated": "2026-11-19T05:30:33.705310+00:00",
+      "completed": null
+    },
+    {
+      "type": "deviation",
+      "dependencies": [],
+      "priority": 1,
+      "role": "frontend",
+      "notes": [],
+      "evidence": [],
+      "rollback": null,
+      "origin": "chat-2026-11-19:harmony-camelot-wheel-layout-mismatch",
+      "resources": [
+        "file:frontend/src/components/CamelotWheel.test.tsx",
+        "file:frontend/src/components/CamelotWheel.tsx",
+        "file:frontend/src/features/camelot/CamelotPage.tsx",
+        "file:frontend/src/features/camelot/camelot.css",
+        "file:frontend/src/features/camelot/camelot.test.tsx"
+      ],
+      "source": "User screenshot and root-cause investigation (19 Nov 2026)",
+      "description": "Fix Camelot wheel layout mismatch and misaligned track-count overlay on /harmony: pass library counts prop into CamelotWheel, remove broken custom overlay SVG in CamelotPage.tsx, and tighten wheel card spacing",
+      "observation": {
+        "route": "/harmony",
+        "files": [
+          "frontend/src/features/camelot/CamelotPage.tsx",
+          "frontend/src/components/CamelotWheel.tsx",
+          "frontend/src/features/camelot/camelot.css"
+        ],
+        "symptom": "On /harmony, 24 floating white track-count numbers render shifted ~100px downward across the Camelot wheel wedges, center hub ('0 tracks'), 'Active key: 8A (A minor)' status line, and 'Hide track counts' button, while every wedge inside the wheel shows '0' and the center hub shows '0 tracks'.",
+        "root_causes": [
+          "CamelotPage.tsx (lines 93-147) wraps both <CamelotWheel> (wheel SVG + status line + action buttons) and .sn-camelot-page__stats inside <div style={{ position: 'relative' }}>, then renders an absolute-positioned custom overlay <svg viewBox='0 0 420 420' width='100%' height='100%'> (lines 104-141). Because the wrapper is taller than wide (~580px vs ~372px), SVG preserveAspectRatio='xMidYMid meet' vertically centers the 420x420 overlay viewBox inside the full card height instead of aligning with the top-aligned wheel SVG. Its radii (r=220 for B > viewBox radius 210; r=85 for A < hub radius 94) also place counts outside the wheel and inside the hub, and ignore the 'Hide track counts' toggle.",
+          "CamelotWheel.tsx (lines 15-27, 96-106, 154) lacks the optional counts?: Record<string, number> prop specified in design-system/api/components/CamelotWheel.md and frontend/src/styles/design-system/types/40-charts.d.ts. It reads counts exclusively from useStore(state => state.graphData.nodes), which is empty on /harmony (where tracks come from useUnifiedTracks()), leaving all built-in wedge counts, hubMeta, aria-labels and selectedTotal at 0.",
+          "Once the overlay SVG is removed, the inline position:relative wrapper div (CamelotPage.tsx:93) and unused CODES constant (CamelotPage.tsx:15) are dead code; .sn-camelot-wheel already applies gap: var(--space-3) so extra inline marginTop overrides in CamelotWheel.tsx (lines 321, 327) and unstyled <p> margins inside .sn-camelot-page__stats add excessive vertical whitespace."
+        ],
+        "prompt": "Fix the Camelot wheel card layout on /harmony so track counts render inside the wheel wedges and center hub per the current design system CamelotWheel card instead of via a misaligned overlay SVG. 1) In frontend/src/components/CamelotWheel.tsx, add optional counts?: Record<string, number> to CamelotWheelProps (matching design-system/api/components/CamelotWheel.md and frontend/src/styles/design-system/types/40-charts.d.ts). Update count(code) so that when counts is provided it reads counts[code] ?? 0, and when counts is omitted it preserves the existing fallback to tracksByKey[code]?.length || 0 from useStore(state => state.graphData) so KeyMoodPanel.tsx and /graph callers remain unchanged. Also remove redundant inline marginTop overrides on the status paragraph (line 321) and button row (line 327) where .sn-camelot-wheel's gap: var(--space-3) already controls vertical rhythm. 2) In frontend/src/features/camelot/CamelotPage.tsx, pass counts={counts} to <CamelotWheel>, delete the custom overlay <svg> (lines 103-141), delete the now-unnecessary <div style={{ position: 'relative' }}> wrapper (lines 93 and 147) so <CamelotWheel> and .sn-camelot-page__stats sit directly inside <section className='sn-card sn-camelot-page__wheel-card'>, and delete the unused top-level CODES constant (line 15). 3) In frontend/src/features/camelot/camelot.css, add min-width: 0 on .sn-camelot-page__wheel-card, use grid-template-columns: minmax(0, 420px) minmax(0, 1fr) at @media (min-width: 960px), and tidy .sn-camelot-page__stats paragraph spacing with tokens (margin: 0 on nested <p> with flex column gap var(--space-1)). 4) Add unit tests in frontend/src/components/CamelotWheel.test.tsx and update frontend/src/features/camelot/camelot.test.tsx to lock in both the real-count rendering and absence of any duplicate overlay SVG."
+      },
+      "criteria": [
+        "Read design-system/api/components/CamelotWheel.md and design-system/components/CamelotWheel/README.md before editing; follow the current design system in full (tokens and sn-* classes only; no hex, rgb(), px font sizes or emoji; never edit design-system/ or frontend/src/styles/design-system/)",
+        "frontend/src/components/CamelotWheel.tsx accepts optional counts?: Record<string, number> in CamelotWheelProps; when counts is provided, wedge counts (.sn-camelot-wheel__count), center hub track count (hubMeta), segment aria-label counts, and selectedTotal all use counts[code] ?? 0; when counts is omitted, fallback to graphData tracksByKey remains intact for KeyMoodPanel.tsx",
+        "frontend/src/features/camelot/CamelotPage.tsx passes counts={counts} to <CamelotWheel>, removes the entire custom absolute-positioned overlay <svg> (lines 103-141), removes the redundant <div style={{ position: 'relative' }}> wrapper (line 93) and unused CODES constant (line 15)",
+        "frontend/src/features/camelot/camelot.css constrains .sn-camelot-page__wheel-card with min-width: 0, uses minmax(0, 420px) minmax(0, 1fr) at min-width: 960px, and styles .sn-camelot-page__stats paragraphs cleanly with tokens; redundant inline marginTop overrides in CamelotWheel.tsx (lines 321, 327) are cleaned up so vertical spacing matches .sn-camelot-wheel gap",
+        "Clicking 'Hide track counts' / 'Show track counts' hides and restores all track counts on /harmony with zero floating or orphaned numbers remaining",
+        "Unit tests pass: run `npx vitest run src/features/camelot/camelot.test.tsx src/components/CamelotWheel.test.tsx` in frontend/ covering (a) CamelotWheel counts prop for wedges, hub, aria-labels, selectedTotal, and Hide/Show toggle, (b) CamelotWheel fallback to graphData when counts is omitted, (c) CamelotPage rendering exactly one .sn-camelot-wheel__svg inside .sn-camelot-page__wheel-card with no overlay SVG and showing real counts from useUnifiedTracks()",
+        "Precheck must pass (`python -X utf8 scripts/check_design_system.py --check --strict` and `node frontend/node_modules/typescript/bin/tsc --noEmit -p frontend`) before stage",
+        "Verify visually on /harmony in dark, light and booth themes at 390px and 1440px (confirming no overlapping count labels, real counts inside wedges and hub, and no horizontal overflow), or explicitly record browser verification as 'not run' with reason and note WQ00119/WQ00146/WQ00173 as the live browser checks per Q017 and Q020",
+        "Never write a design-system version number into notes or queue rows; say 'the current design system'"
+      ],
+      "id": "WQ00202-251f2cb20ba64e94a0e3c064ecac9a47",
+      "state": "Ready",
+      "owner": null,
+      "claim": null,
+      "added": "2026-11-19T05:36:42.921492+00:00",
+      "started": null,
+      "updated": "2026-11-19T05:36:42.921509+00:00",
+      "completed": null
+    },
+    {
+      "type": "tooling",
+      "dependencies": [],
+      "priority": 2,
+      "role": "planner",
+      "notes": [
+        "Amended: queue.py gained amend on 21 Nov (1 criteria added)",
+        "Done in chat: qdb/queue.db is the store on main (Q026, D022); closing next as Retired because the tool has no Done path for a planner tooling task.",
+        "Completed by chat-markus-20261121-1219 (Markus chat 21 Nov 2026), Retired only because a planner tooling task has no apply path to Done. Criteria: 1 queue tests 96 passed 6 skipped; 2 import then regenerate identical (QUEUE.md and state.json byte-identical, live and on a copy); 3 two parallel writers lose no task (test); 4 verify by the stager refused (test); 5 validate valid 207 tasks; 6 rules Q026 and RUN-GUIDE store section added, read tasks with qdb.py; 7 rollback copy _archive/20261121-1219-WQ00203; 8 amend tests pass on both stores. Evidence: reports/20261121-WQ00203-queue-db-cutover.md, DECISIONS D022. Reverse: qdb-import --state shadow."
+      ],
+      "evidence": [],
+      "rollback": null,
+      "origin": "chat:2026-11-21-queue-database-cutover",
+      "resources": [],
+      "description": "Queue database cut-over: make plan/agent-queue/qdb/queue.db the store tools/queue.py writes (Markus chat Sat 21 Nov 2026, shared-execution guide). Load and save go through queue.db (journal_mode=TRUNCATE, inside the existing .mutex; reuse the schema and read-a-copy code in D:\\beanAllianceOne\\build\\queue-monitor\\docker\\standalone\\qdb.py), and QUEUE.md and .runtime/<branch>/state.json are regenerated as read-only views after every change so the Queue Monitor and old readers keep working. Keep the existing stage/verify/apply proposal flow and make the verify step require a run whose agent name differs from the stager's (the independent check). Set qdb/queue-db.json mode to authoritative last. Holds no files; edits the queue tool itself, so it cannot be a worker proposal.",
+      "criteria": [
+        "queue tests pass",
+        "import of today's QUEUE.md then regenerate gives identical files",
+        "two writers in parallel lose no task",
+        "verify by the same agent that staged is refused",
+        "validate reports clean",
+        "rules and run guide updated (read tasks with qdb.py)",
+        "rollback copy in _archive",
+        "The amend command (added 21 Nov) keeps working on the database store, with its tests"
+      ],
+      "id": "WQ00203-88b44cc1d69544668c215cf9ce9bc4c7",
+      "state": "Retired",
+      "owner": null,
+      "claim": null,
+      "added": "2026-11-20T23:19:00.252067+00:00",
+      "started": null,
+      "updated": "2026-11-21T01:46:00.628150+00:00",
+      "completed": null
+    },
+    {
+      "type": "feature",
+      "dependencies": [
+        "WQ00190-3bd9681f863b4aa4b403fc0204bb35ea",
+        "WQ00191-82ab396574024618991ae69e5597d8e8",
+        "WQ00192-d53b0b3643b94254810fb8bec3bb6efb"
+      ],
+      "priority": 1,
+      "role": "frontend",
+      "notes": [],
+      "evidence": [],
+      "rollback": null,
+      "origin": "split:wave-2026-11-18:GX4:a",
+      "source": "Graph UX investigation 18 Nov 2026",
+      "description": "GX4 part 1 of 2: 60fps graph frame loop and link drawing on PIXI: decouple D3 zoom from React re-renders, ring guides, Bezier links, Now pill, edge spotlighting and progressive labels",
+      "resources": [
+        "file:frontend/src/components/DJInterface.graph.css",
+        "file:frontend/src/components/GraphVisualization.tsx",
+        "file:frontend/src/store/useStore.ts"
+      ],
+      "criteria": [
+        "Default viewState.colorBy to none (Neutral) in useStore.ts and wire GraphControlsDock colourMode and minStrength props in GraphVisualization.tsx",
+        "Decouple D3 zoom from 60Hz full-component React re-renders: increment frameRef.current in the D3 zoom handler, remove the 30fps cap in renderFrame, remove the no-force D3 simulation tick store writes, and debounce store.view.updateViewport",
+        "Draw faint concentric ring ellipse guides in Neighbourhood view, quadratic Bezier curves for non-radial links, Now pill tag above nowPlaying, computeEdgeVisibility focus spotlighting (dimming non-incident links to 0.25x on hover/select), and shouldRenderNodeLabel progressive label visibility",
+        "Markus chose (21 Nov) to build this on the current PIXI renderer now; keep renderer-independent logic (timing, sizing maths, camera and morph state) in pure modules with unit tests so GX9 can reuse it",
+        "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Follow the current design system in full: tokens and sn-* classes only; no mock data"
+      ],
+      "id": "WQ00204-1f3ab2a0bfde4a5ca39f8953ec246b65",
+      "state": "Ready",
+      "owner": null,
+      "claim": null,
+      "added": "2026-11-21T00:47:19.325984+00:00",
+      "started": null,
+      "updated": "2026-11-21T00:47:19.325998+00:00",
+      "completed": null
+    },
+    {
+      "type": "feature",
+      "dependencies": [
+        "WQ00204-1f3ab2a0bfde4a5ca39f8953ec246b65"
+      ],
+      "priority": 1,
+      "role": "frontend",
+      "notes": [],
+      "evidence": [],
+      "rollback": null,
+      "origin": "split:wave-2026-11-18:GX4:b",
+      "source": "Graph UX investigation 18 Nov 2026",
+      "description": "GX4 part 2 of 2: smooth travel between tracks: one 320ms seat morph with interpolateSeats, readable neighbourhood camera, animated traversed-edge pulse and breadcrumb ring",
+      "resources": [
+        "file:frontend/src/components/DJInterface.tsx",
+        "file:frontend/src/components/GraphVisualization.tsx"
+      ],
+      "criteria": [
+        "Eliminate conflicting navigateToNode vs fitToContent transitions on node click: smoothly morph node positions over duration-slow (320ms) with interpolateSeats, preserve a readable neighbourhood camera zoom when moving between connected tracks, highlight the traversed edge (previousAnchor -> currentAnchor) with an animated pulse and breadcrumb ring on the previous node",
+        "Markus chose (21 Nov) to build this on the current PIXI renderer now; keep renderer-independent logic (timing, sizing maths, camera and morph state) in pure modules with unit tests so GX9 can reuse it",
+        "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Follow the current design system in full: tokens and sn-* classes only; no mock data"
+      ],
+      "id": "WQ00205-2c4a6f87c3d74b4393867666af62e646",
+      "state": "Ready",
+      "owner": null,
+      "claim": null,
+      "added": "2026-11-21T00:47:19.329906+00:00",
+      "started": null,
+      "updated": "2026-11-21T00:47:19.329912+00:00",
+      "completed": null
+    },
+    {
+      "type": "feature",
+      "dependencies": [
+        "WQ00205-2c4a6f87c3d74b4393867666af62e646",
+        "WQ00194-7d94f1f4cd434b8f9206f8d43c8ff5fe",
+        "WQ00195-6608b0889a7f433d949e428cbe5f9811"
+      ],
+      "priority": 1,
+      "role": "frontend",
+      "notes": [],
+      "evidence": [],
+      "rollback": null,
+      "origin": "split:wave-2026-11-19:GX7:a",
+      "source": "Scalable SongNodes Graph Visualization doc (19 Nov 2026)",
+      "description": "GX7 part 1 of 2: screen-space stroke and label sizing (no zoom bloat), round linecaps, radially outward pill badges and the Camelot rim with key badge",
+      "resources": [
+        "file:frontend/src/components/DJInterface.graph.css",
+        "file:frontend/src/components/GraphVisualization.tsx"
+      ],
+      "criteria": [
+        "Decouple visual sizing from world zoom matrix (screen-space reference / sqrt(zoom) dampening): Whole Library edges locked to 0.75-1.25px screen-space at 10-20% alpha with quadratic Bezier curves; Neighbourhood edges locked to 1.5-3.5px screen-space with round linecaps (solid for real-set transitions, dashed for weak/fallback matches), strictly rendered back-to-front under nodes",
+        "Render two-line dark translucent screen-space pill badges (~140px truncation, design-system surface tokens) anchored radially outward along each node's polar angle so edges never slice through text; use 2D screen-space label collision rejection and optional hide-on-drag for 60 FPS",
+        "Add a thin 2px outer harmonic Camelot compatibility rim plus textual key badge (8A, 9A, ?) relative to the active track in Neighbourhood view while keeping core fills exclusively for states (Selected, Now Playing, Path)",
+        "Markus chose (21 Nov) to build this on the current PIXI renderer now; keep renderer-independent logic (timing, sizing maths, camera and morph state) in pure modules with unit tests so GX9 can reuse it",
+        "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Follow the current design system in full: tokens and sn-* classes only; no mock data"
+      ],
+      "id": "WQ00206-a28da8590012444e95ccef4e5d55c2eb",
+      "state": "Ready",
+      "owner": null,
+      "claim": null,
+      "added": "2026-11-21T00:47:19.330815+00:00",
+      "started": null,
+      "updated": "2026-11-21T00:47:19.330820+00:00",
+      "completed": null
+    },
+    {
+      "type": "feature",
+      "dependencies": [
+        "WQ00206-a28da8590012444e95ccef4e5d55c2eb"
+      ],
+      "priority": 1,
+      "role": "frontend",
+      "notes": [],
+      "evidence": [],
+      "rollback": null,
+      "origin": "split:wave-2026-11-19:GX7:b",
+      "source": "Scalable SongNodes Graph Visualization doc (19 Nov 2026)",
+      "description": "GX7 part 2 of 2: 200ms polar glide with directional chevron pulse, path/history polyline and the clickable GraphBreadcrumbTrail",
+      "resources": [
+        "file:frontend/src/components/DJInterface.tsx",
+        "file:frontend/src/components/GraphBreadcrumbTrail.test.tsx",
+        "file:frontend/src/components/GraphBreadcrumbTrail.tsx",
+        "file:frontend/src/components/GraphVisualization.tsx"
+      ],
+      "criteria": [
+        "Wire interpolateSeatsPolar (180-250ms ease-out cubic-bezier(0.22, 1, 0.36, 1)) with a directional chevron/gradient pulse along traversed edge A -> B, persistent Path/History polyline across recently visited tracks, and clickable GraphBreadcrumbTrail component at the top of the canvas",
+        "Unit tests in frontend/src/components/GraphBreadcrumbTrail.test.tsx pass",
+        "Markus chose (21 Nov) to build this on the current PIXI renderer now; keep renderer-independent logic (timing, sizing maths, camera and morph state) in pure modules with unit tests so GX9 can reuse it",
+        "Precheck must pass (design-system strict check and tsc) before stage; record every check actually run, and 'not run' for any that was not",
+        "Never write a design-system version number into notes; say 'the current design system'",
+        "Follow the current design system in full: tokens and sn-* classes only; no mock data"
+      ],
+      "id": "WQ00207-daf2c46d01514fc1a72dc76754e1647f",
+      "state": "Ready",
+      "owner": null,
+      "claim": null,
+      "added": "2026-11-21T00:47:19.340330+00:00",
+      "started": null,
+      "updated": "2026-11-21T00:47:19.340339+00:00",
+      "completed": null
+    },
+    {
+      "type": "tooling",
+      "dependencies": [],
+      "priority": 2,
+      "role": "planner",
+      "notes": [],
+      "evidence": [],
+      "rollback": null,
+      "origin": "chat:2026-11-21-tooling-done-path",
+      "resources": [],
+      "description": "Add a Done path for planner tooling tasks (Markus chat 21 Nov 2026). Tasks of type tooling hold no files and edit the queue tool itself, so they can't go through stage/apply and today can only close as Retired (WQ00203 hit this). Add a queue.py command (e.g. `complete --tasks ID --note EVIDENCE`) that closes an In progress tooling task as Done only when: the task type is tooling and it holds no resources; the note names the evidence (tests, report path, rollback); and a second run whose agent name differs from the one that did the work records the criteria review (same independent check as Q012/Q026). Write it through the queue database store (Q026) and keep the shadow store working. Add the rule to QUEUE.md rules and the RUN-GUIDE. Holds no files; edits the queue tool itself, so it cannot be a worker proposal.",
+      "criteria": [
+        "complete closes an In progress tooling task as Done with completion evidence and an independent review recorded",
+        "complete refuses: non-tooling tasks, tasks holding resources, a missing evidence note, and a review by the same agent that did the work",
+        "validate accepts tooling tasks closed Done this way (no verification block required) and still rejects other Done tasks without one",
+        "queue tests pass, with new tests for each refusal",
+        "works in authoritative and shadow modes; QUEUE.md and state.json regenerate identical after a round trip",
+        "rule added to QUEUE.md rules and the RUN-GUIDE; rollback copy in _archive"
+      ],
+      "id": "WQ00208-2268f16a7b3d46e28514f7859045eb13",
+      "state": "Ready",
+      "owner": null,
+      "claim": null,
+      "added": "2026-11-21T04:15:23.352195+00:00",
+      "started": null,
+      "updated": "2026-11-21T04:15:23.352221+00:00",
+      "completed": null
+    },
+    {
+      "type": "tooling",
+      "dependencies": [
+        "WQ00208-2268f16a7b3d46e28514f7859045eb13"
+      ],
+      "priority": 2,
+      "role": "planner",
+      "notes": [
+        "Waits on WQ00208 (Done path for tooling tasks)"
+      ],
+      "evidence": [],
+      "rollback": null,
+      "origin": "chat:2026-11-21-wq00203-done-record",
+      "resources": [],
+      "description": "Linked follow-up to WQ00203 (Q006: terminal tasks never reopen, so WQ00203 stays Retired). WQ00203 finished on 21 Nov but closed Retired only because tooling tasks had no Done path. Using the complete command from WQ00208, close this row as Done carrying WQ00203's evidence: reports/20261121-WQ00203-queue-db-cutover.md, DECISIONS D022, rule Q026, rollback copy _archive/20261121-1219-WQ00203. Re-check the evidence still holds before closing (queue tests, validate, regenerate identical). Then amend any open task whose dependency was moved off WQ00203 so it can depend on this row instead where that is clearer. Holds no files.",
+      "criteria": [
+        "WQ00203 is unchanged and still Retired",
+        "this row is Done through the complete command with an independent review, its note linking WQ00203 and its evidence",
+        "queue tests pass and validate is clean when it closes",
+        "open tasks that depended on WQ00203's work are checked and amended where needed, with the reason in each amend note"
+      ],
+      "id": "WQ00209-f0cd184e2e804d3e842a5728cf6e2693",
+      "state": "Ready",
+      "owner": null,
+      "claim": null,
+      "added": "2026-11-21T04:15:46.661828+00:00",
+      "started": null,
+      "updated": "2026-11-21T04:16:07.203853+00:00",
+      "completed": null
+    },
+    {
+      "type": "tooling",
+      "dependencies": [
+        "WQ00208-2268f16a7b3d46e28514f7859045eb13"
+      ],
+      "priority": 2,
+      "role": "planner",
+      "notes": [
+        "Waits on WQ00208 (same file, Q023 d)"
+      ],
+      "evidence": [],
+      "rollback": null,
+      "origin": "chat:2026-11-22-rule-command",
+      "resources": [],
+      "description": "Add a rule command to tools/queue.py so a rule edit can't leave QUEUE.md different from queue.db (Markus chat Sun 22 Nov 2026 00:53, write-fork check). QUEUE.md is rendered with GOVERNANCE.md copied in, so a hand-added rule (Q027 on 21 Nov) changes the view's source outside the tool; it only matched again because the chat ran repair. `rule --id Q0nn --text ... [--supersedes Q0mm]` appends the rule row to GOVERNANCE.md and regenerates the views inside the .mutex in one write, refusing an existing id; every write first checks GOVERNANCE.md against what was rendered last and re-renders with a note if it changed. Runs after WQ00208 because both edit tools/queue.py (Q023 d). Holds no files; edits the queue tool itself.",
+      "criteria": [
+        "rule adds or supersedes a rule and regenerates QUEUE.md and state.json in one write under the .mutex",
+        "an existing rule id is refused",
+        "a hand edit to GOVERNANCE.md is picked up by the next write and noted, never left as a mismatch",
+        "queue tests pass with new tests for each case; validate clean",
+        "a Q0nn rule and the RUN-GUIDE say rules are added only with the rule command"
+      ],
+      "id": "WQ00210-76d140c11db54a37be10a18d7216b79d",
+      "state": "Ready",
+      "owner": null,
+      "claim": null,
+      "added": "2026-11-21T14:30:34.505631+00:00",
+      "started": null,
+      "updated": "2026-11-21T14:30:52.498990+00:00",
+      "completed": null
     }
   ],
   "claims": [],
@@ -20407,7 +21428,338 @@ are stored as UTC offsets with this timezone named explicitly in events.
       "verification": "E:\\songnodes\\plan\\agent-queue\\.runtime\\0d6e4079e36703ebd37c\\reports\\ab74cb62a0c74302bf17da3d69327caa\\apply\\journal.json",
       "rollback": null,
       "remaining": "Verified outputs applied; not deployed"
+    },
+    {
+      "timestamp": "2026-11-19T05:20:36.434548+00:00",
+      "timezone": "Australia/Sydney",
+      "run": "planner",
+      "tasks": [
+        "WQ00190-3bd9681f863b4aa4b403fc0204bb35ea",
+        "WQ00191-82ab396574024618991ae69e5597d8e8"
+      ],
+      "resources": [],
+      "outcome": "added",
+      "changed": "Imported task records",
+      "verification": null,
+      "rollback": null,
+      "remaining": "Imported task records"
+    },
+    {
+      "timestamp": "2026-11-19T05:21:03.083721+00:00",
+      "timezone": "Australia/Sydney",
+      "run": "planner",
+      "tasks": [
+        "WQ00192-d53b0b3643b94254810fb8bec3bb6efb"
+      ],
+      "resources": [],
+      "outcome": "added",
+      "changed": "Imported task records",
+      "verification": null,
+      "rollback": null,
+      "remaining": "Imported task records"
+    },
+    {
+      "timestamp": "2026-11-19T05:21:31.582521+00:00",
+      "timezone": "Australia/Sydney",
+      "run": "planner",
+      "tasks": [
+        "WQ00193-77f0962956ee498292c1b38510506759"
+      ],
+      "resources": [],
+      "outcome": "added",
+      "changed": "Imported task records",
+      "verification": null,
+      "rollback": null,
+      "remaining": "Imported task records"
+    },
+    {
+      "timestamp": "2026-11-19T05:29:17.980274+00:00",
+      "timezone": "Australia/Sydney",
+      "run": "planner",
+      "tasks": [
+        "WQ00194-7d94f1f4cd434b8f9206f8d43c8ff5fe",
+        "WQ00195-6608b0889a7f433d949e428cbe5f9811",
+        "WQ00196-a4a733c1723e45a0ab50f8c52360cf88",
+        "WQ00197-897acd70abcb4747b4012141f15057f3"
+      ],
+      "resources": [],
+      "outcome": "added",
+      "changed": "Imported task records",
+      "verification": null,
+      "rollback": null,
+      "remaining": "Imported task records"
+    },
+    {
+      "timestamp": "2026-11-19T05:29:43.438457+00:00",
+      "timezone": "Australia/Sydney",
+      "run": "planner",
+      "tasks": [
+        "WQ00198-504db0a65ee14bd189ed357caabc7c08",
+        "WQ00199-3c621bda154045858bb0bbc3dfaa3eb3"
+      ],
+      "resources": [],
+      "outcome": "added",
+      "changed": "Imported task records",
+      "verification": null,
+      "rollback": null,
+      "remaining": "Imported task records"
+    },
+    {
+      "timestamp": "2026-11-19T05:30:09.171969+00:00",
+      "timezone": "Australia/Sydney",
+      "run": "planner",
+      "tasks": [
+        "WQ00200-f877775583ea4915b864f5b50af86e2d"
+      ],
+      "resources": [],
+      "outcome": "added",
+      "changed": "Imported task records",
+      "verification": null,
+      "rollback": null,
+      "remaining": "Imported task records"
+    },
+    {
+      "timestamp": "2026-11-19T05:30:33.705319+00:00",
+      "timezone": "Australia/Sydney",
+      "run": "planner",
+      "tasks": [
+        "WQ00201-898f1f39c70c4b109febc54b3dbd7d84"
+      ],
+      "resources": [],
+      "outcome": "added",
+      "changed": "Imported task records",
+      "verification": null,
+      "rollback": null,
+      "remaining": "Imported task records"
+    },
+    {
+      "timestamp": "2026-11-19T05:36:42.921517+00:00",
+      "timezone": "Australia/Sydney",
+      "run": "planner",
+      "tasks": [
+        "WQ00202-251f2cb20ba64e94a0e3c064ecac9a47"
+      ],
+      "resources": [],
+      "outcome": "added",
+      "changed": "Imported task records",
+      "verification": null,
+      "rollback": null,
+      "remaining": "Imported task records"
+    },
+    {
+      "timestamp": "2026-11-20T23:19:00.252095+00:00",
+      "timezone": "Australia/Sydney",
+      "run": "planner",
+      "tasks": [
+        "WQ00203-88b44cc1d69544668c215cf9ce9bc4c7"
+      ],
+      "resources": [],
+      "outcome": "added",
+      "changed": "Imported task records",
+      "verification": null,
+      "rollback": null,
+      "remaining": "Imported task records"
+    },
+    {
+      "timestamp": "2026-11-21T00:43:31.419330+00:00",
+      "timezone": "Australia/Sydney",
+      "run": "planner",
+      "tasks": [
+        "WQ00179-ba8bf0ecc13e4e408ae4d9d394625d7b"
+      ],
+      "resources": [],
+      "outcome": "retired",
+      "changed": "Answered by Markus (chat Sat 21 Nov 2026): Antigravity builds and runs the tuf-boi terminal work (e2e Docker rebuilds, backend pytest); Codex verifies",
+      "verification": null,
+      "rollback": null,
+      "remaining": "Answered by Markus (chat Sat 21 Nov 2026): Antigravity builds and runs the tuf-boi terminal work (e2e Docker rebuilds, backend pytest); Codex verifies"
+    },
+    {
+      "timestamp": "2026-11-21T00:44:08.365689+00:00",
+      "timezone": "Australia/Sydney",
+      "run": "planner",
+      "tasks": [
+        "WQ00173-5c3361fe89014cc5aeca40bba0f9dbc5"
+      ],
+      "resources": [],
+      "outcome": "retired",
+      "changed": "Merged into WQ00172-1bea9f1a635d476aae67554b906ad9f4: one rebuild runs the design-check scope too (Q023)",
+      "verification": null,
+      "rollback": null,
+      "remaining": "Merged into WQ00172-1bea9f1a635d476aae67554b906ad9f4: one rebuild runs the design-check scope too (Q023)"
+    },
+    {
+      "timestamp": "2026-11-21T00:44:44.188551+00:00",
+      "timezone": "Australia/Sydney",
+      "run": "planner",
+      "tasks": [
+        "WQ00171-14fceefdb42a42ebbaf636ef8313c5f2"
+      ],
+      "resources": [],
+      "outcome": "retired",
+      "changed": "Merged into WQ00174-6f07b908177541c991da7b62803d8c54: one rebuild for all new code (Q023)",
+      "verification": null,
+      "rollback": null,
+      "remaining": "Merged into WQ00174-6f07b908177541c991da7b62803d8c54: one rebuild for all new code (Q023)"
+    },
+    {
+      "timestamp": "2026-11-21T00:47:19.326004+00:00",
+      "timezone": "Australia/Sydney",
+      "run": "planner",
+      "tasks": [
+        "WQ00204-1f3ab2a0bfde4a5ca39f8953ec246b65"
+      ],
+      "resources": [],
+      "outcome": "added",
+      "changed": "Imported task records",
+      "verification": null,
+      "rollback": null,
+      "remaining": "Imported task records"
+    },
+    {
+      "timestamp": "2026-11-21T00:47:19.329917+00:00",
+      "timezone": "Australia/Sydney",
+      "run": "planner",
+      "tasks": [
+        "WQ00205-2c4a6f87c3d74b4393867666af62e646"
+      ],
+      "resources": [],
+      "outcome": "added",
+      "changed": "Imported task records",
+      "verification": null,
+      "rollback": null,
+      "remaining": "Imported task records"
+    },
+    {
+      "timestamp": "2026-11-21T00:47:19.329963+00:00",
+      "timezone": "Australia/Sydney",
+      "run": "planner",
+      "tasks": [
+        "WQ00193-77f0962956ee498292c1b38510506759"
+      ],
+      "resources": [],
+      "outcome": "split",
+      "changed": "Split at planning time: four features over the ~400-line budget (AGENTS.md 1-3, Q023)",
+      "verification": null,
+      "rollback": null,
+      "remaining": "Split at planning time: four features over the ~400-line budget (AGENTS.md 1-3, Q023)"
+    },
+    {
+      "timestamp": "2026-11-21T00:47:19.330824+00:00",
+      "timezone": "Australia/Sydney",
+      "run": "planner",
+      "tasks": [
+        "WQ00206-a28da8590012444e95ccef4e5d55c2eb"
+      ],
+      "resources": [],
+      "outcome": "added",
+      "changed": "Imported task records",
+      "verification": null,
+      "rollback": null,
+      "remaining": "Imported task records"
+    },
+    {
+      "timestamp": "2026-11-21T00:47:19.340344+00:00",
+      "timezone": "Australia/Sydney",
+      "run": "planner",
+      "tasks": [
+        "WQ00207-daf2c46d01514fc1a72dc76754e1647f"
+      ],
+      "resources": [],
+      "outcome": "added",
+      "changed": "Imported task records",
+      "verification": null,
+      "rollback": null,
+      "remaining": "Imported task records"
+    },
+    {
+      "timestamp": "2026-11-21T00:47:19.340382+00:00",
+      "timezone": "Australia/Sydney",
+      "run": "planner",
+      "tasks": [
+        "WQ00198-504db0a65ee14bd189ed357caabc7c08"
+      ],
+      "resources": [],
+      "outcome": "split",
+      "changed": "Split at planning time: five features over the ~400-line budget (AGENTS.md 1-3, Q023)",
+      "verification": null,
+      "rollback": null,
+      "remaining": "Split at planning time: five features over the ~400-line budget (AGENTS.md 1-3, Q023)"
+    },
+    {
+      "timestamp": "2026-11-21T01:46:00.628250+00:00",
+      "timezone": "Australia/Sydney",
+      "run": "planner",
+      "tasks": [
+        "WQ00203-88b44cc1d69544668c215cf9ce9bc4c7"
+      ],
+      "resources": [],
+      "outcome": "retired",
+      "changed": "Completed by chat-markus-20261121-1219 (Markus chat 21 Nov 2026), Retired only because a planner tooling task has no apply path to Done. Criteria: 1 queue tests 96 passed 6 skipped; 2 import then regenerate identical (QUEUE.md and state.json byte-identical, live and on a copy); 3 two parallel writers lose no task (test); 4 verify by the stager refused (test); 5 validate valid 207 tasks; 6 rules Q026 and RUN-GUIDE store section added, read tasks with qdb.py; 7 rollback copy _archive/20261121-1219-WQ00203; 8 amend tests pass on both stores. Evidence: reports/20261121-WQ00203-queue-db-cutover.md, DECISIONS D022. Reverse: qdb-import --state shadow.",
+      "verification": null,
+      "rollback": null,
+      "remaining": "Completed by chat-markus-20261121-1219 (Markus chat 21 Nov 2026), Retired only because a planner tooling task has no apply path to Done. Criteria: 1 queue tests 96 passed 6 skipped; 2 import then regenerate identical (QUEUE.md and state.json byte-identical, live and on a copy); 3 two parallel writers lose no task (test); 4 verify by the stager refused (test); 5 validate valid 207 tasks; 6 rules Q026 and RUN-GUIDE store section added, read tasks with qdb.py; 7 rollback copy _archive/20261121-1219-WQ00203; 8 amend tests pass on both stores. Evidence: reports/20261121-WQ00203-queue-db-cutover.md, DECISIONS D022. Reverse: qdb-import --state shadow."
+    },
+    {
+      "timestamp": "2026-11-21T04:15:23.352227+00:00",
+      "timezone": "Australia/Sydney",
+      "run": "planner",
+      "tasks": [
+        "WQ00208-2268f16a7b3d46e28514f7859045eb13"
+      ],
+      "resources": [],
+      "outcome": "added",
+      "changed": "Imported task records",
+      "verification": null,
+      "rollback": null,
+      "remaining": "Imported task records"
+    },
+    {
+      "timestamp": "2026-11-21T04:15:46.661860+00:00",
+      "timezone": "Australia/Sydney",
+      "run": "planner",
+      "tasks": [
+        "WQ00209-f0cd184e2e804d3e842a5728cf6e2693"
+      ],
+      "resources": [],
+      "outcome": "added",
+      "changed": "Imported task records",
+      "verification": null,
+      "rollback": null,
+      "remaining": "Imported task records"
+    },
+    {
+      "timestamp": "2026-11-21T13:46:04.832315+00:00",
+      "timezone": "Australia/Sydney",
+      "run": "planner",
+      "tasks": [
+        "WQ00196-a4a733c1723e45a0ab50f8c52360cf88"
+      ],
+      "resources": [],
+      "outcome": "retired",
+      "changed": "Answered by Markus (chat Sun 22 Nov 2026): 'New libraries approved' - sigma v4, @react-sigma/core, graphology and flatbush may be added to frontend/package.json. Unblocks GX9 (WQ00200), which still waits on WQ00207 and WQ00199.",
+      "verification": null,
+      "rollback": null,
+      "remaining": "Answered by Markus (chat Sun 22 Nov 2026): 'New libraries approved' - sigma v4, @react-sigma/core, graphology and flatbush may be added to frontend/package.json. Unblocks GX9 (WQ00200), which still waits on WQ00207 and WQ00199."
+    },
+    {
+      "timestamp": "2026-11-21T14:30:34.505808+00:00",
+      "timezone": "Australia/Sydney",
+      "run": "planner",
+      "tasks": [
+        "WQ00210-76d140c11db54a37be10a18d7216b79d"
+      ],
+      "resources": [],
+      "outcome": "added",
+      "changed": "Imported task records",
+      "verification": null,
+      "rollback": null,
+      "remaining": "Imported task records"
     }
+  ],
+  "retired_resources": [
+    "file:tests/e2e-runs/E2E-3-design-checks.md",
+    "file:tests/e2e-runs/E2E-1-outstanding.md"
   ]
 }
 ```

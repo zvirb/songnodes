@@ -10,3 +10,6 @@ reports/*
 !reports/design-system-audit.json
 !reports/completed/
 monitor/
+
+# queue database, rebuilt by the Queue Monitor container (Sat 21 Nov 2026)
+qdb/

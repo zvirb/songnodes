@@ -14,8 +14,8 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
 
-@pytest.fixture
-def queue(tmp_path):
+@pytest.fixture(params=['shadow', 'authoritative'])
+def queue(tmp_path, request):
     root = tmp_path / 'project'
     home = root / 'queue'
     home.mkdir(parents=True)
@@ -31,6 +31,10 @@ def queue(tmp_path):
     (home / 'config.json').write_text(json.dumps(config), encoding='utf8')
     (home / 'GOVERNANCE.md').write_text('# Rules\n', encoding='utf8')
     queue = module.Queue(home)
+    if request.param == 'authoritative':
+        # WQ00203: every test also runs with qdb/queue.db as the store.
+        (home / 'qdb').mkdir()
+        (home / 'qdb/queue-db.json').write_text(json.dumps(dict(mode='authoritative', branch=queue.branch)), encoding='utf8')
     queue.save(dict(next_id=1, tasks=[], claims=[], events=[]))
     return queue
 
@@ -204,7 +208,7 @@ def test_import_idempotent_and_corruption_detected(queue):
     state = queue.load()
     state['tasks'].append(state['tasks'][0])
     (queue.runtime / 'state.json').write_text(json.dumps(state), encoding='utf8')
-    with pytest.raises(ValueError, match='duplicate IDs'):
+    with pytest.raises(ValueError, match='duplicate IDs' if not queue.authoritative() else 'outside the queue database'):
         queue.load()
 
 
@@ -327,9 +331,12 @@ def test_retired_resources_and_invalid_splits_are_blocked(queue):
 
 
 def test_active_leases_never_enter_catalog_or_follow_new_branch(queue):
-    (queue.home / '.gitignore').write_text('.runtime/\n.mutex\n', encoding='utf8')
+    (queue.home / '.gitignore').write_text('.runtime/\n.mutex\nqdb/\n', encoding='utf8')
     for command in [['git', 'init', '--quiet'], ['git', 'symbolic-ref', 'HEAD', 'refs/heads/main'], ['git', 'add', '.'], ['git', '-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'commit', '-qm', 'Fixture']]:
         subprocess.run(command, cwd=queue.root, check=True, capture_output=True)
+    if queue.authoritative():
+        # The database belongs to main only; the new branch below keeps the branch-local store (Q011, Q026).
+        (queue.home / 'qdb/queue-db.json').write_text(json.dumps(dict(mode='authoritative', branch='main')), encoding='utf8')
     original = module.Queue(queue.home)
     ids = change(original, 'add', [task('branch-local')])
     lease = change(original, 'claim', 'main-worker', ids, 'frontend')
@@ -339,6 +346,7 @@ def test_active_leases_never_enter_catalog_or_follow_new_branch(queue):
     fresh = module.Queue(queue.home)
     assert fresh.load()['claims'] == []
     assert fresh.load()['tasks'][0]['owner'] is None
+    assert not fresh.authoritative()
     change(fresh, 'claim', 'fresh-worker', ids, 'frontend')
     subprocess.run(['git', 'checkout', '-q', 'main'], cwd=queue.root, check=True, capture_output=True)
     assert module.Queue(queue.home).load()['tasks'][0]['owner'] == 'main-worker'
@@ -389,3 +397,204 @@ def test_ignored_runtime_force_added_to_index_is_rejected(queue):
     subprocess.run(['git', 'add', '-f', str(path)], cwd=queue.root, check=True, capture_output=True)
     with pytest.raises(ValueError, match='ownership artifacts'):
         queue.git_check()
+
+
+def test_amend_sets_dependencies_criteria_and_refuses_cycles_and_terminal(queue):
+    a, b = change(queue, 'add', [task('amend-a'), task('amend-b', 'file:src/b')])
+    change(queue, 'amend', [b], 'order', [a], ['Run after a'])
+    state = queue.load()
+    tb = next(t for t in state['tasks'] if t['id'] == b)
+    assert tb['dependencies'] == [a] and tb['criteria'][-1] == 'Run after a' and tb['notes'][-1].startswith('Amended: order')
+    with pytest.raises(ValueError, match='cycle'):
+        change(queue, 'amend', [a], 'cycle', [b])
+    with pytest.raises(ValueError, match='Nothing to amend'):
+        change(queue, 'amend', [a], 'noop')
+    change(queue, 'transition', [a], 'Retired', 'gone')
+    with pytest.raises(ValueError, match='Only an unclaimed Ready'):
+        change(queue, 'amend', [a], 'x', None, ['late'])
+    with pytest.raises(ValueError, match='never becomes Done'):
+        change(queue, 'amend', [b], 'x', [a])
+
+
+def test_amend_refuses_claimed_task(queue):
+    ids = change(queue, 'add', [task('amend-c')])
+    change(queue, 'claim', 'worker', ids, 'frontend')
+    with pytest.raises(ValueError, match='Only an unclaimed Ready'):
+        change(queue, 'amend', ids, 'x', None, ['late'])
+
+
+# ---------------------------------------------------------------- WQ00203: queue database store (rule Q026)
+def cli(queue, *args):
+    return subprocess.run([sys.executable, str(SCRIPT), '--queue', str(queue.home), *args], capture_output=True, text=True)
+
+
+def views(queue):
+    return {path.name: path.read_bytes() for path in [queue.runtime / 'state.json', queue.home / 'QUEUE.md']}
+
+
+def test_import_then_regenerate_gives_identical_files(queue):
+    if queue.authoritative():
+        assert cli(queue, 'qdb-import', '--state', 'shadow').returncode == 0
+    assert not module.Queue(queue.home).authoritative()
+    ids, worker, integrator = staged(queue)
+    change(queue, 'add', [task('second', 'file:src/b')])
+    before = views(queue)
+    result = cli(queue, 'qdb-import', '--state', 'authoritative')
+    assert result.returncode == 0, result.stderr
+    report = json.loads(result.stdout)
+    assert report['identical'] == {'state.json': True, 'QUEUE.md': True} and report['mode'] == 'authoritative'
+    assert module.Queue(queue.home).authoritative()
+    assert cli(queue, 'repair').returncode == 0
+    assert views(queue) == before
+    assert module.Queue(queue.home).load() == json.loads(before['state.json'])
+    # The Queue Monitor's qdb.py reads meta, tasks and status: they must be current.
+    import sqlite3
+    connection = sqlite3.connect(queue.home / 'qdb/queue.db')
+    meta = dict(connection.execute('SELECT k, v FROM meta'))
+    assert meta['mode'] == 'authoritative' and meta['writer'] == 'tools/queue.py'
+    assert connection.execute('SELECT COUNT(*) FROM tasks').fetchone()[0] == 2
+    assert connection.execute("SELECT COUNT(*) FROM tasks WHERE state='Ready'").fetchone()[0] == 1
+    assert connection.execute('SELECT COUNT(*) FROM status').fetchone()[0] == len(json.loads(before['state.json'])['events'])
+    connection.close()
+
+
+def test_import_refuses_flip_when_views_differ(queue):
+    if queue.authoritative():
+        assert cli(queue, 'qdb-import', '--state', 'shadow').returncode == 0
+    change(module.Queue(queue.home), 'add', [task('one')])
+    (queue.home / 'GOVERNANCE.md').write_text('# Rules changed after the last save\n', encoding='utf8')
+    result = cli(queue, 'qdb-import', '--state', 'authoritative')
+    assert result.returncode == 1 and 'mode left unchanged' in result.stderr
+    assert not module.Queue(queue.home).authoritative()
+
+
+def test_two_writers_in_parallel_lose_no_task(queue):
+    def writer(name):
+        for index in range(6):
+            path = queue.home / f'input-{name}-{index}.json'
+            path.write_text(json.dumps([task(f'{name}-{index}', 'file:src/' + ('a' if name == 'one' else 'b'))]), encoding='utf8')
+            for _ in range(200):
+                result = cli(queue, 'add', str(path))
+                if result.returncode == 0:
+                    break
+                assert 'BUSY' in result.stderr, result.stderr
+                time.sleep(0.01)
+            else:
+                pytest.fail('Queue stayed busy')
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        list(pool.map(writer, ['one', 'two']))
+    state = queue.load()
+    assert sorted(t['origin'] for t in state['tasks']) == sorted(f'{n}-{i}' for n in ['one', 'two'] for i in range(6))
+    assert len({t['id'] for t in state['tasks']}) == 12 and state['next_id'] == 13
+    assert queue.validate(state)['valid']
+
+
+def test_writer_holding_an_old_database_copy_is_refused(queue):
+    if not queue.authoritative():
+        pytest.skip('generation check guards the database store only')
+    change(queue, 'add', [task('one')])
+    first, second = module.Queue(queue.home), module.Queue(queue.home)
+    a, b = first.load(), second.load()
+    first.add(a, [task('two')])
+    first.save(a)
+    second.add(b, [task('three')])
+    with pytest.raises(ValueError, match='BUSY'):
+        second.save(b)
+    assert sorted(t['origin'] for t in queue.load()['tasks']) == ['one', 'two']
+
+
+def test_verify_by_the_agent_that_staged_is_refused(queue):
+    ids = change(queue, 'add', [task('self-check')])
+    worker = change(queue, 'claim', 'builder', ids, 'frontend')
+    proposal = queue.home / 'reports/self/proposal/src'
+    proposal.mkdir(parents=True)
+    (proposal / 'a').write_text('proposal', encoding='utf8')
+    checked_stage(queue, worker['token'], 'builder', str(proposal.parent))
+    own = change(queue, 'claim', 'builder', ids, 'integrator')
+    with pytest.raises(ValueError, match='Independent verification'):
+        queue.verify(own['token'], 'builder', worker['token'])
+    assert not (queue.runtime / 'reports' / (own['token'] + '.verification.json')).exists()
+
+
+def test_state_json_written_outside_the_tool_is_refused_then_adopted(queue):
+    if not queue.authoritative():
+        pytest.skip('database store only')
+    change(queue, 'add', [task('one')])
+    path = queue.runtime / 'state.json'
+    state = json.loads(path.read_text(encoding='utf8'))
+    state['tasks'][0]['notes'].append('written by another tool')
+    path.write_text(json.dumps(state, indent=2), encoding='utf8')
+    with pytest.raises(ValueError, match='outside the queue database'):
+        queue.load()
+    assert cli(queue, 'status', '--json').returncode == 1
+    assert cli(queue, 'qdb-import').returncode == 0
+    assert queue.load()['tasks'][0]['notes'] == ['written by another tool']
+    assert cli(queue, 'validate').returncode == 0
+
+
+def test_interrupted_view_write_after_database_write_recovers(queue, monkeypatch):
+    if not queue.authoritative():
+        pytest.skip('database store only')
+    ids = change(queue, 'add', [task('one')])
+    real = module.atomic
+    def failing(path, text):
+        if Path(path).name == 'state.json':
+            raise OSError('interrupted before the view')
+        return real(path, text)
+    with monkeypatch.context() as patch:
+        patch.setattr(module, 'atomic', failing)
+        with pytest.raises(OSError):
+            change(queue, 'claim', 'worker', ids, 'frontend')
+    assert queue.load()['tasks'][0]['state'] == 'In progress'
+    assert cli(queue, 'repair').returncode == 0
+    assert json.loads((queue.runtime / 'state.json').read_text(encoding='utf8'))['tasks'][0]['state'] == 'In progress'
+
+
+def test_shadow_build_over_the_database_falls_back_to_the_mirror(queue):
+    if not queue.authoritative():
+        pytest.skip('database store only')
+    import os
+    import sqlite3
+    change(queue, 'add', [task('one')])
+    target = queue.home / 'qdb/queue.db'
+    other = queue.home / 'shadow.db'
+    connection = sqlite3.connect(other)
+    connection.execute('CREATE TABLE meta(k TEXT PRIMARY KEY, v TEXT)')
+    connection.execute("INSERT INTO meta VALUES('mode', 'shadow')")
+    connection.commit()
+    connection.close()
+    os.replace(other, target)
+    assert [t['origin'] for t in queue.load()['tasks']] == ['one']
+    change(queue, 'add', [task('two', 'file:src/b')])
+    connection = sqlite3.connect(target)
+    assert dict(connection.execute('SELECT k, v FROM meta'))['writer'] == 'tools/queue.py'
+    connection.close()
+    assert sorted(t['origin'] for t in queue.load()['tasks']) == ['one', 'two']
+
+
+def test_mode_back_to_shadow_keeps_every_record(queue):
+    if not queue.authoritative():
+        pytest.skip('database store only')
+    ids = change(queue, 'add', [task('one')])
+    change(queue, 'claim', 'worker', ids, 'frontend')
+    before = queue.load()
+    assert cli(queue, 'qdb-import', '--state', 'shadow').returncode == 0
+    legacy = module.Queue(queue.home)
+    assert not legacy.authoritative()
+    assert legacy.load() == before
+    database = (queue.home / 'qdb/queue.db').read_bytes()
+    change(legacy, 'add', [task('two', 'file:src/b')])
+    assert (queue.home / 'qdb/queue.db').read_bytes() == database
+    assert len(legacy.load()['tasks']) == 2
+
+
+def test_database_is_for_its_branch_only(queue):
+    if not queue.authoritative():
+        pytest.skip('database store only')
+    (queue.home / 'qdb/queue-db.json').write_text(json.dumps(dict(mode='authoritative', branch='some-other-branch')), encoding='utf8')
+    database = (queue.home / 'qdb/queue.db').read_bytes()
+    other = module.Queue(queue.home)
+    assert not other.authoritative()
+    change(other, 'add', [task('one')])
+    assert (queue.home / 'qdb/queue.db').read_bytes() == database
+    assert len(other.load()['tasks']) == 1
